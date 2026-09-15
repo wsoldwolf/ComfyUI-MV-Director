@@ -76,6 +76,7 @@ class InferenceFoundationTests(unittest.TestCase):
     def test_runtime_config_preserves_32k_trial_values(self) -> None:
         config = LlamaRuntimeConfig(n_ctx=32_768, kv_cache_type="q8_0")
         self.assertEqual(config.to_dict()["n_ctx"], 32_768)
+        LlamaRuntimeConfig(top_p=0.0).validate()
         with self.assertRaises(ValueError):
             LlamaRuntimeConfig(n_ctx=131_073).validate()
 

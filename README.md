@@ -6,7 +6,7 @@ EMDは**Easy MarkDown**の略です。Extended Markdownではありません。�
 
 ## 現在の状態
 
-2026-09-16時点で**Phase 0～5を実装済み**です。ComfyUI非依存のartifact型、canonical JSON、LLM/Vision行protocol、厳密EMD parser、翻訳保護span、Ref2VA六セクションrenderer、Context Loop Plan serializer、versioned H3 Timing Profile、GGUF scanner・ComfyUI `folder_paths` adapter・lifecycle・context予算・成功専用cacheを検証しています。Phase 3のImage to Subject EMD、Phase 4のDirection Enhancerに加え、Phase 5ではstrict plain lyrics parser、ローカルWhisper探索と遅延lifecycle、20ms energy VADとsample-domain refinement、順序付き歌詞整列、累積H3 frame量子化、Scene/Shot構造割当て、Template EMD及びSRTの共通renderer、`MVDirectorLyricSegmentation` wrapperを追加しました。Fake Whisperと純粋関数による自動テストは済んでいますが、実ボーカル・実Whisper checkpointでの品質測定とH3レンダリングはまだ実施していません。旧プロジェクトやComfyUIの実行側は変更していません。
+2026-09-16時点で**Phase 0～6を実装済み**です。ComfyUI非依存のartifact型、canonical JSON、LLM/Vision行protocol、厳密EMD parser、翻訳保護span、Ref2VA六セクションrenderer、Context Loop Plan serializer、versioned H3 Timing Profile、GGUF scanner・ComfyUI `folder_paths` adapter・lifecycle・context予算・成功専用cacheを検証しています。Phase 3のImage to Subject EMD、Phase 4のDirection Enhancer、Phase 5のLyric Segmentationに加え、Phase 6ではTemplate EMD取込み、歌詞要約・全体演出・人物動作・カメラの四段階行protocol、欠落slotだけの一回局所retry、作者台詞保護、LLM生成台詞の機械削除、四方式のlip-sync directive合成及び`MVDirectorTimelinePlanner` wrapperを追加しました。Fake backendと純粋関数による自動テストは済んでいますが、実GGUF・実ボーカル・実Whisper checkpointでの品質測定とH3レンダリングはまだ実施していません。旧プロジェクトやComfyUIの実行側は変更していません。
 
 開発方針は「互換性ではなく、必要な実装資産だけを再利用する」です。旧workflow、node ID、入力形式、出力schema及び修復経路との互換性は持たせません。一方、PCM padding、GGUF探索、model lifecycle、音声区間処理など、新仕様でも責務が変わらない有限な処理は選別して再利用します。旧実装に存在するという理由だけで、flag、fallback、validator又は補助nodeを新プロジェクトへ持ち込みません。
 
@@ -28,7 +28,7 @@ EMDは**Easy MarkDown**の略です。Extended Markdownではありません。�
 - 人物動作とカメラは別のLLMタスクにし、同じShot枠へPythonが合成します。人物動作の固定文をカメラ生成に再出力させません。
 - Timeline Plannerは`n_ctx`、`n_batch`、GPU layer、Flash Attention、KV cache等のllama.cpp調整値を旧ノード同様に公開します。Direction artifactはEnhancerから四方向を型付きで渡す任意の内部socket値で、利用者向けには同内容のEMD previewも出力します。
 - EnhancerとPlannerのLLMにはJSONやEMDを返させません。応答は`TYPE<TAB>SLOT<TAB>TEXT`の一行一recordに限定し、短いslotと実Scene/Shot ID・時刻の対応、typed artifact、EMD及び最終JSONはPythonが組み立てます。4Bが括弧、引用符又はJSON escapeを維持することへ依存しません。
-- Plannerへ渡る作者由来の`「...」`と明示`<d>...</d>`は先にplaceholderへ退避します。LLMが新しい引用台詞を生成してもretryせず、そのspanを機械削除してから既知placeholderだけを原文復元します。歌詞リップシンクはfilter後にPythonが挿入します。
+- Plannerへ渡る作者由来の`「...」`と明示`<d>...</d>`は先にplaceholderへ退避します。LLMが新しい引用台詞又はplaceholderを生成してもretryせず、そのspanを機械削除します。原文はSubject、Direction又は作者Shot本文の決定論的位置から一度だけ出力し、歌詞リップシンクはfilter後にPythonが挿入します。
 - EMDは人間が読める日本語のEasy MarkDown中間言語です。`# サブジェクト`で作品内IDの`` `人物N` ``、`` `場所N` ``、`` `物品N` ``を定義し、Ref2VAの意味上の`<Subject N>`と物理画像の`<Picture N>`を明示的に関連付けます。`<Subject N>`自体を画像入力slotとして扱いません。任意の`# 共通プロンプト`はスタイル、モーション、カメラ、その他を構造的に分離し、Compilerは見出しを除いた存在する本文をこの固定順でPlanの`prompt_prefix`へ出力します。スタイルがあれば必ず先頭です。
 - CompilerはEMD parser、限定翻訳orchestrator、JSON serializerです。H3へ渡す日本語の描写文だけを英訳し、補強・要約・並べ替えはしません。
 - 翻訳処理はCompiler内部の交換可能な`PromptTranslator` adapterとし、初期比較候補は4Bと8Bを想定します。既に英語のEMDは明示的なpass-through modeで処理できます。
@@ -77,4 +77,4 @@ Copyright © 2026 `wsoldwolf`
 
 ## 次の作業
 
-次はPhase 6のTimeline Plannerを実装します。その後、Context Loop 0.6.6のcommit `136db5dbbf25405063a96e898ae880e8785b7f29`との互換試験、実ボーカルによるWhisper/VAD境界、4B/8Bの英訳品質及び8GB VRAM環境での全体成立性を測ります。
+次はPhase 7のCompiler node wrapperを実装します。その後、Phase 8のutility/support nodeとworkflowを整備し、Context Loop 0.6.6のcommit `136db5dbbf25405063a96e898ae880e8785b7f29`との互換試験、実ボーカルによるWhisper/VAD境界、4B/8Bの英訳品質及び8GB VRAM環境での全体成立性を測ります。

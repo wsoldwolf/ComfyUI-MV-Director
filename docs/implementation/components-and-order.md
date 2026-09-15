@@ -1,7 +1,7 @@
 # 既存部品の移植可否と実装順序
 
 作成日: 2026-09-15<br>
-状態: 初期調査に基づく選定。Phase 0～5を新規実装し、次はPhase 6 Timeline Plannerへ進む。旧コードの直接コピーは行わず、有限な挙動だけを新名前空間へ再実装している。Phase 5はFake Whisperと純粋関数で検証済みで、実checkpointによる品質測定は統合試験で行う。
+状態: 初期調査に基づく選定。Phase 0～6を新規実装し、次はPhase 7 Compiler node wrapperへ進む。旧コードの直接コピーは行わず、有限な挙動だけを新名前空間へ再実装している。Phase 5はFake Whisper、Phase 6はFake Planner backendと純粋関数で検証済みで、実checkpoint及び実GGUFによる品質測定は統合試験で行う。
 
 ## 1. 判定基準
 
@@ -116,7 +116,7 @@ ComfyUI-MV-Director/
 - 日本語描写から英語promptへの一対一変換、保護span、`「...」`、明示`<d>...</d>`／`<d>[English]...</d>` pass-through、3種類のリップシンク駆動、各音響directive、省略音響、`無音`併記、不正文法のfixture
 - 音声参照slot、複数Shotと同一Shot内の複数``リップシンク 歌詞``行、駆動方式の重複、不完全な歌詞directiveのfixture
 - 旧ログ由来の「自然な動作なのに語句検査で止まった」入力fixture
-- Planner入力の作者台詞placeholder、既知placeholderの一回復元、未知／重複placeholder削除、LLM生成`「...」`／`<d>...</d>`削除、引用出現時のretryなしfixture
+- Planner入力の作者台詞placeholder、原位置からの作者原文一回出力、既知／未知／重複placeholder echo削除、LLM生成`「...」`／`<d>...</d>`削除、引用出現時のretryなしfixture
 - `MVD_LLM_RECORDS_V1`の`TYPE<TAB>SLOT<TAB>TEXT` parser fixture。並べ替え、前置き、Markdown fence、未知type、重複、欠落slotを含め、有効recordの部分回収とslot side tableの対応を固定する
 - `MVD_DIRECTION_V1.provenance`の固定record ID、source、position、target、disposition、reason及びhash fixture。semanticな採用理由を推測しない
 - Context Loop 0.6.6 commit `136db5dbbf25405063a96e898ae880e8785b7f29`が受理する`prompt_prefix`先頭連結、Ref2VA六セクション、正規Shot構文、Planの最小valid fixture
@@ -234,7 +234,7 @@ ComfyUI-MV-Director/
 3. lyric-notesと短いsong-direction
 4. action batch
 5. 確定actionを読むcamera batch
-6. 採用したLLM行recordの本文から新規引用台詞spanを削除し、既知placeholderだけを原文復元
+6. 採用したLLM行recordの本文から新規引用台詞spanとplaceholder echoを削除し、作者原文はPython所有位置から一度だけ出力
 7. 外部接続可能なlip-sync mode、対象概念、音声slot control
 8. Pythonによる同じShot IDへの合成、filter後のlip-sync directive挿入、完成EMD出力
 9. 旧Planner相当のllama.cpp調整socket、任意Direction artifact、cache mode及び三出力wrapper
@@ -245,7 +245,7 @@ ComfyUI-MV-Director/
 - actionをcamera LLMに再出力させない。
 - 同じShotではactionとcameraを全区間で並行させ、action、cameraの順でrenderする。cameraは数値sub-time、mid-shot cut、新規Shot又はaction変更を生成せず、cutは既存Shot境界だけに置く。
 - 行protocolの必須slot欠落以外の品質理由で自動retryしない。
-- LLMが引用台詞又はdialogue tagを生成してもretryせず、生成spanだけを機械削除する。作者台詞は一回だけ原文復元し、placeholderを最終EMDへ漏らさない。
+- LLMが引用台詞、dialogue tag又はplaceholder echoを生成してもretryせず、生成spanを機械削除する。作者台詞は原位置から一回だけ出力し、placeholderを最終EMDへ漏らさない。
 - Template EMD入力時にWhisper又は音声解析を再実行しない。
 - `lip_sync_mode`をLLMへ渡さず、PythonだけがLyric Segmentationで歌詞annotationを構造配置済みのScene又はShotへ対応directiveを出す。歌詞annotationは全modeで保持し、`lyrics`だけがShotの``リップシンク 歌詞``をmaterializeする。PlannerとCompilerは歌詞時刻の数値包含で再対応付けしない。mode又はAudio slotだけの変更で人物動作・カメラtaskを再推論しない。完成動画の音声選択は対応する動画生成WFのChain Policyが所有する。
 

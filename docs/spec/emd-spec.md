@@ -338,7 +338,7 @@ Shot本文中の`「...」`は明示的な日本語直接話法である。
 - 話者、source audio又は時間との一致を検査しない。
 - 閉じていない`「`は構文エラーにする。
 
-PlannerがLLMを使って完成EMDを作る場合は、作者由来の`「...」`と明示`<d>...</d>`をLLM呼出し前にID付きplaceholderへ退避する。LLMにはJSON又はEMDを返させず、`TYPE<TAB>SLOT<TAB>TEXT`の行recordだけを返させる。Pythonが採用したrecordの`TEXT`で、既知placeholder以外にLLMが新規生成した引用台詞spanを無条件で削除し、既知placeholderだけを原文へ戻す。引用出現又は削除を理由にLLMをretryしない。歌詞から作る``リップシンク 歌詞``はfilter後にPythonが挿入する。
+PlannerがLLMを使って完成EMDを作る場合は、作者由来の`「...」`と明示`<d>...</d>`をLLM呼出し前にID付きplaceholderへ退避する。LLMにはJSON又はEMDを返させず、`TYPE<TAB>SLOT<TAB>TEXT`の行recordだけを返させる。Pythonが採用したrecordの`TEXT`では、LLMが新規生成した引用台詞spanと既知・未知を問わないplaceholder echoを無条件で削除する。作者原文はSubject、Direction又は作者Shot本文のPython所有位置から一度だけ出力する。引用出現又は削除を理由にLLMをretryしない。歌詞から作る``リップシンク 歌詞``はfilter後にPythonが挿入する。
 
 この生成台詞filterはPlannerの出力制御であり、Compilerの入力修復ではない。人間が完成EMDへ直接書いた`「...」`又は`<d>...</d>`をCompilerが削除することはなく、上記の保護規則で処理する。
 

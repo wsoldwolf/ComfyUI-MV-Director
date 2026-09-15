@@ -4,7 +4,7 @@
 作成日: 2026-09-16<br>
 対象: Phase 0以降のPython実装
 
-実装状態（2026-09-16）: Phase 0～4をFake backendによる純Pythonテストまで実装済み。Phase 2はGGUF scanner、ComfyUI `folder_paths` adapter、runtime、context予算及び成功cacheを持つ。Phase 3は画像fingerprint、Vision model/mmproj pair、MTMD lifecycle、観測provenance、Subject EMD、`auto_h3` binding及び`MVDirectorImageToSubjectEMD` wrapperを持つ。Phase 4は固定演出profile、authority順付きpayload、`STYLE` / `MOTION` / `CAMERA` / `OTHER`行処理、欠落slotだけの一回局所retry、Direction provenance、EMD preview、context予算、成功cache及び`MVDirectorDirectionEnhancer` wrapperを持つ。実modelとComfyUI画面上の試験は未実施。
+実装状態（2026-09-16）: Phase 0～6をFake backendによる純Pythonテストまで実装済み。Phase 2はGGUF scanner、ComfyUI `folder_paths` adapter、runtime、context予算及び成功cacheを持つ。Phase 3は画像fingerprint、Vision model/mmproj pair、MTMD lifecycle、観測provenance、Subject EMD、`auto_h3` binding及び`MVDirectorImageToSubjectEMD` wrapperを持つ。Phase 4は固定演出profile、authority順付きpayload、四種の行処理、欠落slotだけの一回局所retry、Direction provenance、EMD preview及び`MVDirectorDirectionEnhancer` wrapperを持つ。Phase 5はstrict lyrics parser、Whisper/VAD整列、H3時間量子化、Template EMD/SRT renderer及び`MVDirectorLyricSegmentation` wrapperを持つ。Phase 6はTemplate取込み、四段階Planner、作者台詞保護、生成台詞除去、決定論的lip-sync合成、成功cache及び`MVDirectorTimelinePlanner` wrapperを持つ。実model、実音声及びComfyUI画面上の試験は未実施。
 
 ## 1. 目的
 

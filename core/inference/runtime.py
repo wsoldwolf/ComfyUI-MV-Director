@@ -29,8 +29,8 @@ class LlamaRuntimeConfig:
             raise ValueError("max_tokens and n_batch must be positive")
         if not 0.0 <= self.temperature <= 2.0:
             raise ValueError("temperature must be in 0..2")
-        if not 0.0 < self.top_p <= 1.0:
-            raise ValueError("top_p must be in (0, 1]")
+        if not 0.0 <= self.top_p <= 1.0:
+            raise ValueError("top_p must be in [0, 1]")
         if self.repetition_penalty <= 0.0:
             raise ValueError("repetition_penalty must be positive")
         if not 1 <= self.seed <= 2_147_483_647:
@@ -56,4 +56,3 @@ class TextInferenceBackend(Protocol):
 
     def close(self) -> None:
         ...
-

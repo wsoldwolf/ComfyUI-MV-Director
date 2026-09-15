@@ -113,7 +113,7 @@ EnhancerとPlannerのLLM出力にJSONを使いません。`MVD_LLM_RECORDS_V1`�
 
 人物動作を先に生成し、camera taskは確定actionを読み取り専用contextとして受けます。同じShotでは両者を全区間で並行させ、action、cameraの順に出力します。数値sub-timeとmid-shot cutは生成せず、cutはLyric Segmentationが既に確定したShot境界でだけ表現します。
 
-Plannerでは作者由来の`「...」`と明示`<d>...</d>`をLLM前に`__MVD_LOCKED_DIALOGUE_NNNN__`へ置換し、Python side tableへ退避します。採用したLLM行recordの本文に新規の引用台詞又はdialogue tagがあればspan全体を無条件削除し、既知placeholderだけを一回原文復元します。未知・重複placeholderも削除し、引用出現、削除又は未使用placeholderを理由にLLMをretryしません。Plannerが歌詞から作る``リップシンク 歌詞``はこのfilter後にPythonが挿入します。
+Plannerでは作者由来の`「...」`と明示`<d>...</d>`をLLM前に`__MVD_LOCKED_DIALOGUE_NNNN__`へ置換し、Python side tableへ退避します。採用したLLM行recordの本文に新規の引用台詞、dialogue tag又はplaceholder echoがあればspan全体を無条件削除します。作者原文はSubject、Direction又は作者Shot本文のPython所有位置から一度だけ出力し、引用出現、削除又は未使用placeholderを理由にLLMをretryしません。Plannerが歌詞から作る``リップシンク 歌詞``はこのfilter後にPythonが挿入します。
 
 ### 4.5 新ノードの名前空間
 

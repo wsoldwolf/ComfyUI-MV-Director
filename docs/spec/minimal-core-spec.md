@@ -565,7 +565,7 @@ Plannerの順序は次で固定する。
 3. `song-direction`: lyric notesだけから、全曲を通す短い弧、反復してよい要素、変化させる要素を作る。全歌詞を再添付しない。
 4. `actions`: direction、対象Scene、該当歌詞、必要な直前状態、Python所有Shot枠から、Shot IDごとの人物動作を生成する。
 5. `cameras`: 同じShot枠、確定したaction、camera profileから、Shot IDごとの構図とカメラを生成する。action本文を再出力しない。
-6. Pythonが採用した行recordの`TEXT`から新規生成された引用台詞を削除し、既知placeholderだけを原文へ復元する。
+6. Pythonが採用した行recordの`TEXT`から新規生成された引用台詞とplaceholder echoを削除する。
 7. Pythonが任意のサブジェクトEMD、direction、annotation、action、camera、audio templateを完全EMDへ合成し、選択したlip-sync modeのdirectiveを最後に挿入する。`<Subject N>`と`<Picture N>`の関連及び`` `H3長` ``は内容を創作又は再計算せずそのまま保持する。
 
 人物動作へ開始・主動作・終了の必須欄や最低段階数を課さない。区間内同期は一つ以上の自然文でH3へ伝える。カメラ出力に人物動作の置換・削除権限を与えない。
@@ -576,10 +576,10 @@ Plannerの順序は次で固定する。
 
 - placeholderは一run内で一意な`__MVD_LOCKED_DIALOGUE_0001__`形式とし、元文字列、入力record ID及び位置をPython side tableへ保持する。placeholderとside tableはEMD、cache preview又はH3 promptへ残さない。
 - LLM応答は2.6の行protocolでrecord化し、採用した各recordの`TEXT`だけを走査する。typeとslotにはfilterを掛けず、recordの対応関係を変更しない。
-- side tableにある既知placeholderは削除対象から除外し、原位置の文字列へ完全一致で復元する。未知placeholder及び同じ既知placeholderの二回目以降の出現は削除する。
+- side tableにある既知placeholderもLLM応答中ではsource echoとして削除する。未知placeholder及び重複placeholderも同じく削除する。原文はLLM応答から復元せず、Subject、Direction又は作者Shot本文のPython所有位置から一度だけ出力する。
 - LLMが新規生成した`「...」`、`『...』`、`“...”`、文字列field内の`"..."`又は`<d>...</d>`は、delimiterを含むspan全体を無条件で削除する。意味、言語、話者又は内容を判定しない。
 - 閉じdelimiterのない開始記号はその位置からfield末尾まで、対応する開始記号のない閉じdelimiterは閉じ記号だけを削除する。削除後は隣接空白だけを一個へ正規化し、空になった生成list itemは落とす。
-- このfilterによる削除、空item又は未使用placeholderはLLM retry条件にしない。`removed_generated_dialogue_count`と`unused_protected_dialogue_ids`をstatusへ残す。削除後の成果をそのままPython rendererへ渡す。
+- このfilterによる削除、空item又は未使用placeholderはLLM retry条件にしない。`removed_generated_dialogue_count`と`unused_protected_dialogue_ids`をstatusへ残す。削除後の成果と原位置に保持した作者本文をPython rendererへ渡す。
 - Plannerが`lip_sync_mode=lyrics`で歌詞から作る``リップシンク 歌詞`` directiveはLLM応答ではないためfilter後にPythonが挿入する。作者由来の復元台詞と同様、生成台詞として削除しない。他のmodeではこのdirectiveを挿入しないが、歌詞annotation自体は削除しない。
 
 Plannerには外部接続可能な`lip_sync_mode`（`off`、`context_loop`、`audio_reference`、`lyrics`。既定`lyrics`）、`lip_sync_target`（既定`人物1`）、`lip_sync_audio_slot`（1～3、`audio_reference`時だけ使用）を設ける。これらはLLM promptへ渡さず、Python rendererだけが次のように使う。
@@ -1028,7 +1028,7 @@ Compiler成功時は`plan_json`、`required_references`、入力EMD hash、H3 ti
 - Plannerが7.4の全socketを公開し、`n_ctx`を含むllama.cpp調整値とmodel overrideをcache signatureへ含める。
 - Direction artifact未接続でもPlannerが動作し、接続時は四方向を再分類せず読む。Enhancerのpreviewは人間が確認できるがPlannerは再parseしない。
 - provenanceは入力、採用行及び機械的破棄だけを固定enumで記録し、原文、LLMの意味判断又は推測した上書き理由を含めない。
-- Plannerが作者由来の`「...」`と明示`<d>...</d>`をplaceholderで保護して原文復元し、LLM新規生成の引用台詞だけを削除する。引用出現を理由にLLMをretryしない。
+- Plannerが作者由来の`「...」`と明示`<d>...</d>`をplaceholderでLLM入力から保護し、原文をPython所有位置へ一度だけ保持する。LLM新規生成の引用台詞及びplaceholder echoを削除し、引用出現を理由にLLMをretryしない。
 - annotationが原文artifactに保持され、H3 promptへ漏れない。
 - `<Subject N>`と任意の`<Picture N>`は`# サブジェクト`の予約行だけに現れ、自由文へ混在しない。
 - `# サブジェクト`に`<Subject N>`と任意の`<Picture N>`を持つ完全Ref2VA EMDを、画像tensorなしでもCompiler単独で処理できる。Picture関連があれば接続要求を返し、なければ参照なしH3内蔵概念として空の必要参照一覧を返す。
