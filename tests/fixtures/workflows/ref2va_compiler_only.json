@@ -1,0 +1,106 @@
+{
+  "last_node_id": 5,
+  "last_link_id": 4,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MVDirectorLoadTextFile",
+      "pos": [40, 80],
+      "size": [350, 180],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [{"name": "text", "type": "STRING", "links": [1]}],
+      "properties": {"Node name for S&R": "MVDirectorLoadTextFile"},
+      "widgets_values": ["IyDjgrXjg5bjgrjjgqfjgq/jg4gKKiBg5Lq654mpMWAKKiBgSDPjgrXjg5bjgrjjgqfjgq/jg4hgIGA8U3ViamVjdCAxPmAKKiBg5ZCN56ewYCBwZXJmb3JtZXIKKiBBbiBhZHVsdCBwZXJmb3JtZXIgaW4gYSBkYXJrIGNvYXQuCgo+IGDjgrfjg7zjg7NgIDEKIyDjgrfjg7zjg7MgMDA6MDAuMDAwIC0tPiAwMDowMC45MTcKKiBgSDPplbdgIDIyCiMjIOOCt+ODp+ODg+ODiCAwMDowMC4wMDAKKiBg5Lq654mpMWDjga9zdGFuZHMgYmVuZWF0aCBhIHNvZnQga2V5IGxpZ2h0Lg==", "compiler_input.txt", "{\"kind\":\"fixture\"}"]
+    },
+    {
+      "id": 2,
+      "type": "MVDirectorH3TimingProfile",
+      "pos": [40, 330],
+      "size": [350, 90],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {"name": "timing_profile", "type": "MV_DIRECTOR_H3_TIMING_PROFILE", "links": [2]},
+        {"name": "profile_json", "type": "STRING", "links": null},
+        {"name": "status", "type": "STRING", "links": null}
+      ],
+      "properties": {"Node name for S&R": "MVDirectorH3TimingProfile"},
+      "widgets_values": ["context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9"]
+    },
+    {
+      "id": 3,
+      "type": "MVDirectorEMDCompiler",
+      "pos": [500, 70],
+      "size": [430, 620],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {"name": "emd_text", "type": "STRING", "link": 1},
+        {"name": "h3_timing_profile", "type": "MV_DIRECTOR_H3_TIMING_PROFILE", "link": 2}
+      ],
+      "outputs": [
+        {"name": "plan_json", "type": "STRING", "links": [4]},
+        {"name": "required_references", "type": "MV_DIRECTOR_REQUIRED_REFERENCES", "links": null},
+        {"name": "status", "type": "STRING", "links": null}
+      ],
+      "properties": {"Node name for S&R": "MVDirectorEMDCompiler"},
+      "widgets_values": ["already_english", "[select a GGUF model]", "auto", 20, 4096, 0.0, 0.9, 1.05, -1, 256, 32768, true, "q8_0", true, false, 1]
+    },
+    {
+      "id": 4,
+      "type": "MiniMaxH3GenerationProfile",
+      "pos": [1040, 70],
+      "size": [360, 150],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [{"name": "lip_sync_options", "type": "H3_LIP_SYNC_OPTIONS", "link": null}],
+      "outputs": [
+        {"name": "chain_policy", "type": "H3_CHAIN_POLICY", "links": [3]},
+        {"name": "status", "type": "STRING", "links": null}
+      ],
+      "properties": {"Node name for S&R": "MiniMaxH3GenerationProfile"},
+      "widgets_values": ["Visual continuity", "Generate audio"]
+    },
+    {
+      "id": 5,
+      "type": "MiniMaxH3ChainPlanModern",
+      "pos": [1040, 300],
+      "size": [560, 520],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {"name": "chain_policy", "type": "H3_CHAIN_POLICY", "link": 3},
+        {"name": "plan_json_input", "type": "STRING", "link": 4},
+        {"name": "project_assets", "type": "H3_PROJECT_ASSETS", "link": null}
+      ],
+      "outputs": [
+        {"name": "plan", "type": "H3_CHAIN_PLAN", "links": null},
+        {"name": "summary", "type": "STRING", "links": null},
+        {"name": "clip_count", "type": "INT", "links": null},
+        {"name": "width", "type": "INT", "links": null},
+        {"name": "height", "type": "INT", "links": null},
+        {"name": "video_blend_frames", "type": "INT", "links": null}
+      ],
+      "properties": {"Node name for S&R": "MiniMaxH3ChainPlanModern"},
+      "widgets_values": ["{\"shots\":[]}", "mv_director_compiler_only", "", 960, 544, "video", "disabled", 10.0, 20, 1, 20, 0]
+    }
+  ],
+  "links": [
+    [1, 1, 0, 3, 0, "STRING"],
+    [2, 2, 0, 3, 1, "MV_DIRECTOR_H3_TIMING_PROFILE"],
+    [3, 4, 0, 5, 0, "H3_CHAIN_POLICY"],
+    [4, 3, 0, 5, 1, "STRING"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {"ds": {"scale": 0.8, "offset": [20, 20]}},
+  "version": 0.4
+}

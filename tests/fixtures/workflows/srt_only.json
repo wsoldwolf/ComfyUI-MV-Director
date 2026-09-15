@@ -1,0 +1,94 @@
+{
+  "last_node_id": 5,
+  "last_link_id": 4,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadAudio",
+      "pos": [40, 40],
+      "size": [300, 140],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [{"name": "AUDIO", "type": "AUDIO", "links": [1]}],
+      "properties": {"Node name for S&R": "LoadAudio"},
+      "widgets_values": ["short_bgm_millennium_torii_vocal.mp3", null]
+    },
+    {
+      "id": 2,
+      "type": "MVDirectorLoadTextFile",
+      "pos": [40, 230],
+      "size": [340, 170],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [{"name": "text", "type": "STRING", "links": [2]}],
+      "properties": {"Node name for S&R": "MVDirectorLoadTextFile"},
+      "widgets_values": ["W1ZFUlNFMV0KbGluZSBvbmUgbGluZSB0d28K", "lyrics.txt", "{\"size\":33,\"type\":\"text/plain\"}"]
+    },
+    {
+      "id": 3,
+      "type": "MVDirectorH3TimingProfile",
+      "pos": [40, 450],
+      "size": [340, 90],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {"name": "timing_profile", "type": "MV_DIRECTOR_H3_TIMING_PROFILE", "links": [3]},
+        {"name": "profile_json", "type": "STRING", "links": null},
+        {"name": "status", "type": "STRING", "links": null}
+      ],
+      "properties": {"Node name for S&R": "MVDirectorH3TimingProfile"},
+      "widgets_values": ["context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9"]
+    },
+    {
+      "id": 4,
+      "type": "MVDirectorLyricSegmentation",
+      "pos": [500, 80],
+      "size": [430, 420],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {"name": "vocal_audio", "type": "AUDIO", "link": 1},
+        {"name": "lyrics_text", "type": "STRING", "link": 2},
+        {"name": "h3_timing_profile", "type": "MV_DIRECTOR_H3_TIMING_PROFILE", "link": 3}
+      ],
+      "outputs": [
+        {"name": "template_emd", "type": "STRING", "links": null},
+        {"name": "srt_text", "type": "STRING", "links": [4]},
+        {"name": "timeline", "type": "MV_DIRECTOR_TIMELINE", "links": null},
+        {"name": "status", "type": "STRING", "links": null}
+      ],
+      "properties": {"Node name for S&R": "MVDirectorLyricSegmentation"},
+      "widgets_values": ["[select a local Whisper .pt model]", "ja", 10000, 0, "reuse", false]
+    },
+    {
+      "id": 5,
+      "type": "SaveText|pysssss",
+      "pos": [1030, 150],
+      "size": [330, 190],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [{"name": "text", "type": "STRING", "link": 4}],
+      "outputs": [],
+      "properties": {"Node name for S&R": "SaveText|pysssss"},
+      "widgets_values": ["output", "mv_director_lyrics.srt", "overwrite", true]
+    }
+  ],
+  "links": [
+    [1, 1, 0, 4, 0, "AUDIO"],
+    [2, 2, 0, 4, 1, "STRING"],
+    [3, 3, 0, 4, 2, "MV_DIRECTOR_H3_TIMING_PROFILE"],
+    [4, 4, 1, 5, 0, "STRING"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {"ds": {"scale": 0.85, "offset": [20, 20]}},
+  "version": 0.4
+}

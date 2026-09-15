@@ -1,7 +1,7 @@
 # 実装前仕様漏れ監査
 
 調査日: 2026-09-16<br>
-対象: `draft-0.33`最小コア仕様、`draft-0.10` EMD仕様、Context Loop 0.6.6 commit `136db5dbbf25405063a96e898ae880e8785b7f29`
+対象: `draft-0.33`最小コア仕様、`draft-0.10` EMD仕様、ComfyUI 0.36.0 commit `ee71d5c4993f29086b27fde1629a945ae48425bf`、Context Loop 0.6.9 commit `9860a063784c8c23b58e00107f2180e0df3c43d9`
 
 ## 1. 今回確定した事項
 
@@ -82,10 +82,20 @@ V1で記録するのは入力の供給、妥当なLLM行の採用、空・完全
 
 Shot枠はLyric Segmentationが所有するため、camera taskは新しい時刻又はShotを作らない。cutは既存Shot境界でだけ表現し、一つのShot内にmid-shot cutを置かない。cameraはactionの内容、開始、終了又は順序を変更しない。
 
+### Phase 8再確認: Audio参照のsource境界adapter（解決済み）
+
+固定commit `9860a063784c8c23b58e00107f2180e0df3c43d9`を実装時に再確認すると、Context LoopはPlan正規化時に各Sceneの`audio_start_seconds`を`generation_start_frame / 24`、`audio_duration_seconds`をraw H3 frame数 / 24から必ず作る。Tagged Audioの`source_timeline` modeもCurrent Shotのこの二値でfull trackを切り出し、外部の`MVD_TIMELINE_V1.scenes[].source_start_ms` / `source_end_ms`を受けるsocket又はPlan fieldはない。
+
+従ってP1-5で決めた「元音源のScene source境界を正本にする」は、現状のContext Loopノードを接続するだけでは成立しない。量子化されたPlan境界との差を黙って許容したworkflowは作らない。最小の解決候補は、padding前vocalの各source Scene sliceを順番のまま取り出し、対応するPlan delivered区間へ配置して量子化余剰だけをScene末尾PCM無音で埋めた参照専用trackを作ることである。これはresample、mix、音声内容のtruncateをせず、Scene内の無音を保持し、Context LoopがPlan frame windowでsliceしても各Sceneの元source範囲を一個の連続`<Audio 1>`として得られる。
+
+解決方法はAudio Pad Pairへ`reference_alignment=source_scenes_to_plan`と末尾追加出力`reference_audio_b`を持たせる案を採用した。通常の`padded_audio_a`、`padded_audio_b`及び`status`は意味とslot順を維持し、`reference_alignment=off`では追加出力も通常のpadded vocalと同じである。
+
+alignment有効時だけ、padding前vocalの各source Sceneを累積delivered frame位置へ配置し、量子化余剰をScene末尾PCM無音にする。音声内容はresample、mix又はtruncateせず、収まらない場合は停止する。これにより公開nodeを12個へ増やさず、Context LoopがPlan frame windowで切り出す一個のnative `<Audio 1>`へ各Sceneの元source範囲を連続供給できる。
+
 ## 4. 実装後の検証事項（仕様未確定ではない）
 
-- 基準commit 0.6.6に対し、`prompt_prefix`、六セクション、Shot時刻、`length`、Scene audio overrideをfixtureで検証する。
-- 実装環境のContext Loop checkoutは監査時点で基準commit `136db5dbbf25405063a96e898ae880e8785b7f29`と一致する。試験時にも実commitをpreflight表示する。
+- 基準commit 0.6.9に対し、`prompt_prefix`、六セクション、Shot時刻、`length`、Scene audio overrideをfixtureで検証する。
+- 実装環境のComfyUIとContext Loop checkoutは監査時点でそれぞれ基準commit `ee71d5c4993f29086b27fde1629a945ae48425bf`、`9860a063784c8c23b58e00107f2180e0df3c43d9`と一致する。試験時にも実commitをpreflight表示する。
 - 基準commit合格後、更新が続く現行Context Loopでも同じfixtureを走らせ、差分をadapterへ閉じ込める。
 - 8GB VRAMでContext Loop標準、Audio参照、歌詞の三方式を別々に実測し、初期化停止と生成品質を混同しない。
 - Styleを`prompt_prefix`先頭だけへ置く場合とScene promptにも明示する場合はH3出力A/Bで決め、Compilerが自動重複しない。
@@ -94,4 +104,4 @@ Shot枠はLyric Segmentationが所有するため、camera taskは新しい時�
 
 量子化別の最適context長、H3の画風変換品質、VAD閾値、歌詞口形の精度、カメラ表現の好みは実測で調整する。これらは仕様漏れではなく評価項目であり、初期parser、artifact、Compiler骨格の実装を止めない。
 
-P0-1～P0-4及びP1-1～P1-6は解決済みであり、実装開始を止める仕様漏れはない。第4節は決定済み仕様の互換性・品質検証、第5節は実測による調整値であり、未確定の文法、socket又はartifact契約ではない。
+P0-1～P0-4、P1-1～P1-6及びPhase 8再確認の文法・artifact・Audio source境界契約は解決済みであり、配布用workflow実装を止める仕様漏れはない。第4節は決定済み仕様の互換性・品質検証、第5節は実測による調整値である。

@@ -34,8 +34,8 @@ def valid_timeline() -> TimelineArtifact:
         source_audio_duration_ms=20_000,
         plan_duration_ms=20_042,
         timing_profile=(
-            "context-loop-0.6.6@"
-            "136db5dbbf25405063a96e898ae880e8785b7f29"
+            "context-loop-0.6.9@"
+            "9860a063784c8c23b58e00107f2180e0df3c43d9"
         ),
         lyrics=(
             LyricSegment(

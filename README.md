@@ -6,7 +6,9 @@ EMDは**Easy MarkDown**の略です。Extended Markdownではありません。�
 
 ## 現在の状態
 
-2026-09-16時点で**Phase 0～7を実装済み**です。ComfyUI非依存のartifact型、canonical JSON、LLM/Vision行protocol、厳密EMD parser、翻訳保護span、Ref2VA六セクションrenderer、Context Loop Plan serializer、versioned H3 Timing Profile、GGUF scanner・ComfyUI `folder_paths` adapter・lifecycle・context予算を検証しています。Phase 3のImage to Subject EMD、Phase 4のDirection Enhancer、Phase 5のLyric Segmentation、Phase 6のTimeline Plannerに加え、Phase 7では一対一の`TRANSLATION`行protocol、context内の有限翻訳batch、`already_english`時のGGUF非読込、必要Picture/Audio参照artifact及び`MVDirectorEMDCompiler` wrapperを追加しました。Fake backendと純粋関数による自動テストは済んでいますが、実GGUF・実ボーカル・実Whisper checkpointでの品質測定とH3レンダリングはまだ実施していません。旧プロジェクトやComfyUIの実行側は変更していません。
+2026-09-16時点で**Phase 0～7とPhase 8の公開ノード層を実装済み**です。ComfyUI非依存のartifact型、canonical JSON、LLM/Vision行protocol、厳密EMD parser、翻訳保護span、Ref2VA六セクションrenderer、Context Loop Plan serializer、GGUF実行基盤に加え、4コア、support 2個、utility 5個の計11ノードを`MVDirector...`名前空間へ登録しました。Phase 8ではPair専用PCM末尾paddingと参照vocalのsource Scene→Plan frame配置、固定H3 Timing Profile、正の32-bit Seed、String／Connected Combo、ブラウザ埋め込みUTF-8 `.txt`入力とfrontend操作を追加し、SRT単独・Compiler単独・`auto_h3`参照接続の3 workflow fixtureを検証しています。配布用の3方式×Plan/Compiler・動画生成の計6 workflow、実GGUF・実ボーカル・実Whisper checkpointでの品質測定、H3レンダリングはまだ実施していません。
+
+実行基準はComfyUI v0.36.0 commit `ee71d5c4993f29086b27fde1629a945ae48425bf`とContext Loop 0.6.9 commit `9860a063784c8c23b58e00107f2180e0df3c43d9`です。開発リポジトリは`C:\Software\ComfyUI\custom_nodes\ComfyUI-MV-Director`のdirectory junctionから直接参照するため、リポジトリ内の変更は追加コピーなしでComfyUI側へ反映されます。
 
 開発方針は「互換性ではなく、必要な実装資産だけを再利用する」です。旧workflow、node ID、入力形式、出力schema及び修復経路との互換性は持たせません。一方、PCM padding、GGUF探索、model lifecycle、音声区間処理など、新仕様でも責務が変わらない有限な処理は選別して再利用します。旧実装に存在するという理由だけで、flag、fallback、validator又は補助nodeを新プロジェクトへ持ち込みません。
 
@@ -35,7 +37,7 @@ EMDは**Easy MarkDown**の略です。Extended Markdownではありません。�
 - Compilerでは従来どおり、ComfyUIの`models/LLM/GGUF`と追加`LLM` pathで見つかった任意のGGUFを`model_name` comboから選択できます。特定modelを組込みません。
 - CompilerはRef2VA専用です。完全EMD文字列と選択GGUFだけで単独コンパイルでき、Vision、Enhancer、Plannerのcustom socketや画像・音声tensorを必須入力にしません。`人物N`等の内部IDと`<Subject N>`は必須ですが、`<Picture N>`関連は任意です。Pictureなしでは文章定義だけのH3内蔵概念としてRef2VAを出力し、`required_references`は実際に記述されたPicture/Audioだけ、又は空配列になります。T2VA、I2VA等は同じCompilerへmode追加せず、必要になった時に別Compilerとして設計します。
 - Lyric SegmentationはMV用Template EMDを作る段階で、基準Context Loop profileに合わせて24fpsとH3の`17k+5`格子へSceneを割り当て、raw `length`を`` `H3長` ``として確定します。Compilerはその整数を再計算・補正せず、Plan JSONの`length`へそのまま写します。SRTと歌詞alignmentは元音源の絶対msを保持します。
-- Compilerは各SceneにContext Loop 0.6.6互換の完全なRef2VA六セクションを英語で出力します。Shotは先頭を`[Shot 1]`、2番目以降を`[Shot N] At MM:SS.mmm,`とします。EMDの構造、Scene/Shot順、情報量、binding、directiveはas-isで保持し、必須欄はLLMではなく固定テンプレートで機械的に満たします。
+- Compilerは各SceneにContext Loop 0.6.9互換の完全なRef2VA六セクションを英語で出力します。Shotは先頭を`[Shot 1]`、2番目以降を`[Shot N] At MM:SS.mmm,`とします。EMDの構造、Scene/Shot順、情報量、binding、directiveはas-isで保持し、必須欄はLLMではなく固定テンプレートで機械的に満たします。
 - 音響は説明文を解釈せず、予約directiveだけをCompilerが固定変換します。リップシンクは`lip_sync_mode`の`使用しない`、`Context Loop`、`Audio参照`、`歌詞`をPlannerのコンボで切り替え、EMDでは``リップシンク <方式>``へ統一します。歌詞annotationは全方式で完成EMDに保持し、人物動作の材料として使います。`歌詞`の時だけ対応Shotへ対象と原文を持つdirectiveを機械挿入します。`Context Loop`と`Audio参照`は歌詞annotationのあるSceneだけを有効化し、`Audio参照`動画生成WFはLyric Segmentationのsource Scene境界で元vocalを連続sliceして一個の`<Audio 1>`へ渡します。Compilerはannotationをpromptへ出さず、PCMも扱わず、明示directiveだけを固定promptへ写して翻訳LLMへ渡しません。完成動画へ残す音声はEMDやPlannerではなく、対応する動画生成WFのChain Policyが決定します。歌詞方式はH3へShot区間内の歌唱口形を促す粗い時間誘導であり、音素単位の完全同期は保証しません。`無音`は非MV利用のための将来互換directiveとしてoff値とsilence prompt要素だけを出し、PCMゲートは初期MVスコープへ含めません。
 - `「...」`の内容は変更せず`<d>[Japanese]...</d>`へ包みます。作者がShot本文へ直接書いた`<d>...</d>`又は`<d>[English]...</d>`は翻訳・言語推定・二重包装をせず、そのままH3へ渡します。追加発声禁止は`明示台詞のみ`が書かれた場合だけ出力します。
 - LLM生成の成功結果は入力・モデル・生成条件・プロンプト版で固定できます。固定後はContext Loop/H3側のseedだけを変えて比較できます。
@@ -77,4 +79,4 @@ Copyright © 2026 `wsoldwolf`
 
 ## 次の作業
 
-次はPhase 8のsupport／utility nodeと六つのworkflowを整備します。その後、Context Loop 0.6.6のcommit `136db5dbbf25405063a96e898ae880e8785b7f29`との互換試験、実ボーカルによるWhisper/VAD境界、4B/8Bの英訳品質及び8GB VRAM環境での全体成立性を測ります。
+次はPhase 8の配布用6 workflowを整備します。Audio参照方式はAudio Pad Pairの`reference_alignment=source_scenes_to_plan`と追加`reference_audio_b`を使い、元vocalのScene source区間をH3のPlan frame windowへPCM無音だけで配置します。その後、ComfyUI v0.36.0 commit `ee71d5c4993f29086b27fde1629a945ae48425bf`及びContext Loop 0.6.9 commit `9860a063784c8c23b58e00107f2180e0df3c43d9`との互換試験、実ボーカルによるWhisper/VAD境界、4B/8Bの英訳品質及び8GB VRAM環境での全体成立性を測ります。

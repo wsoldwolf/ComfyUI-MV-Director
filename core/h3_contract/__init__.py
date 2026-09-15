@@ -1,11 +1,23 @@
-"""Pinned external H3/Context Loop contracts."""
+"""Pinned external ComfyUI and H3/Context Loop contracts."""
 
-from .context_loop_0_6_6 import CONTRACT_ID, CONTEXT_LOOP_0_6_6, ContextLoopContract
+from .context_loop_0_6_9 import (
+    COMFYUI_BASELINE_COMMIT,
+    COMFYUI_BASELINE_VERSION,
+    CONTEXT_LOOP_0_6_9,
+    CONTEXT_LOOP_BASELINE_COMMIT,
+    CONTEXT_LOOP_BASELINE_VERSION,
+    CONTRACT_ID,
+    ContextLoopContract,
+)
 from .timing import DEFAULT_H3_TIMING_PROFILE, H3TimingProfile, TIMING_SCHEMA
 
 __all__ = [
+    "COMFYUI_BASELINE_COMMIT",
+    "COMFYUI_BASELINE_VERSION",
     "CONTRACT_ID",
-    "CONTEXT_LOOP_0_6_6",
+    "CONTEXT_LOOP_0_6_9",
+    "CONTEXT_LOOP_BASELINE_COMMIT",
+    "CONTEXT_LOOP_BASELINE_VERSION",
     "ContextLoopContract",
     "DEFAULT_H3_TIMING_PROFILE",
     "H3TimingProfile",

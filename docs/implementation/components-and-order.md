@@ -63,7 +63,7 @@ ComfyUI-MV-Director/
 │  ├─ emd/
 │  ├─ h3_contract/
 │  │  ├─ base.py
-│  │  ├─ context_loop_0_6_6.py
+│  │  ├─ context_loop_0_6_9.py
 │  │  └─ prompt_schema_ref2va.py
 │  ├─ inference/
 │  │  └─ line_records.py
@@ -119,7 +119,7 @@ ComfyUI-MV-Director/
 - Planner入力の作者台詞placeholder、原位置からの作者原文一回出力、既知／未知／重複placeholder echo削除、LLM生成`「...」`／`<d>...</d>`削除、引用出現時のretryなしfixture
 - `MVD_LLM_RECORDS_V1`の`TYPE<TAB>SLOT<TAB>TEXT` parser fixture。並べ替え、前置き、Markdown fence、未知type、重複、欠落slotを含め、有効recordの部分回収とslot side tableの対応を固定する
 - `MVD_DIRECTION_V1.provenance`の固定record ID、source、position、target、disposition、reason及びhash fixture。semanticな採用理由を推測しない
-- Context Loop 0.6.6 commit `136db5dbbf25405063a96e898ae880e8785b7f29`が受理する`prompt_prefix`先頭連結、Ref2VA六セクション、正規Shot構文、Planの最小valid fixture
+- Context Loop 0.6.9 commit `9860a063784c8c23b58e00107f2180e0df3c43d9`が受理する`prompt_prefix`先頭連結、Ref2VA六セクション、正規Shot構文、Planの最小valid fixture
 
 完了条件:
 
@@ -271,7 +271,7 @@ ComfyUI-MV-Director/
 3. H3 Timing Profile、32-bit Seed、String Combo、Connected Combo、Load Text Fileをutility nodeとして登録する
 4. SRT単独、Ref2VA Compiler単独、Image to Subject EMD参照付き自動MVのworkflow fixtureを作る
 5. 同一IMAGEをImage to Subject EMDとH3へ分岐し、`auto_h3`のPicture番号を検証する
-6. 基準Context Loop 0.6.6のGeneration Profile、Plan `plan_json_input`、H3 Audio Tracks、Source Timelineへ接続する
+6. 基準Context Loop 0.6.9のGeneration Profile、Plan `plan_json_input`、H3 Audio Tracks、Source Timelineへ接続する
 7. Audio参照WFでは`MVD_TIMELINE_V1`のScene source境界から連続vocal sliceを作り、区間内の無音を保った一個のnative `<Audio 1>`へ接続する
 
 完了条件:

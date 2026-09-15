@@ -7,7 +7,7 @@ import math
 
 from ..artifacts.base import canonical_json
 
-from .context_loop_0_6_6 import CONTRACT_ID
+from .context_loop_0_6_9 import CONTRACT_ID
 
 
 TIMING_SCHEMA = "MVD_H3_TIMING_PROFILE_V1"

@@ -66,6 +66,12 @@ Direction artifactは新しい公開node又はユーザー記述形式ではな�
 
 出力は`plan_json: STRING`、`required_references: MV_DIRECTOR_REQUIRED_REFERENCES`、`status: STRING`の順とする。文法不正は行番号を持つ`EMDParseError`として停止し、空Plan又は補正文を返さない。日本語翻訳応答は`TRANSLATION<TAB>SLOT<TAB>TEXT`だけを受理し、contextに収まる最大の連続unit群へ有限分割する。欠落、重複、未知行又は破損行はretryせず停止する。
 
+### 1.7 Audio Pad Pairの参照vocal出力
+
+必須入力`reference_alignment`は`off`（既定）又は`source_scenes_to_plan`とする。前者は通常の末尾paddingだけを行う。後者は任意socketの`MV_DIRECTOR_TIMELINE`を必須化し、元vocalの各source SceneをH3の累積delivered frame位置へ無変換コピーして、量子化余剰を各Scene末尾のPCM無音にする。
+
+出力順は`padded_audio_a`、`padded_audio_b`、`status`、`reference_audio_b`とし、既存三出力のslotを動かさない。通常のPair二出力は常に末尾paddingだけであり、Scene alignmentは追加された参照専用出力へだけ適用する。Audio参照workflowは`reference_audio_b`をH3 Audio Tracks／Source Timelineへ、`padded_audio_a`を完成動画のfull mixへ使う。Lyric Segmentationにはpadding／alignment前の元vocalを接続する。
+
 ## 2. 初期実装で登録しないノード
 
 | 旧又は候補ノード | 判断 | 代替 |

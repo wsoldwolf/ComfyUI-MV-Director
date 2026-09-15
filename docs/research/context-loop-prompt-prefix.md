@@ -1,7 +1,7 @@
 # Context Loop `prompt_prefix`調査
 
 調査日: 2026-09-15<br>
-対象: Context Loop 0.6.6、commit `136db5dbbf25405063a96e898ae880e8785b7f29`
+対象: Context Loop 0.6.9、commit `9860a063784c8c23b58e00107f2180e0df3c43d9`
 
 ## 結論
 

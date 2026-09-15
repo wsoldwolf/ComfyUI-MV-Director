@@ -1,16 +1,15 @@
 # 設計引き継ぎ
 
 作成日: 2026-09-15<br>
-状態: 調査・初期方針。実装、実モデル推論、H3レンダリング完了を意味しない。
+状態: Phase 0～8公開ノード層を実装済み。実モデル推論とH3レンダリング完了を意味しない。
 
 ## 1. 作業境界
 
-今回変更したのは新プロジェクト`E:\ComfyUI\projects\ComfyUI-MV-Director`内の仕様文書とproject instructionだけです。次は実施していません。
+新プロジェクト`E:\ComfyUI\projects\ComfyUI-MV-Director`内へ仕様、コア実装、公開ノード、fixture及びテストを配置しています。実行環境では`C:\Software\ComfyUI\custom_nodes\ComfyUI-MV-Director`を同リポジトリへのdirectory junctionとし、変更を自動反映します。次は実施していません。
 
 - 旧プロジェクトの変更、stash適用、checkout、commit、push
-- `C:\Software\ComfyUI\custom_nodes`以下の変更
 - commit、push、tagの作成
-- 新コアノードの実装、ローカルLLM推論、H3レンダリング
+- ローカルLLM実推論、H3レンダリング
 
 調査開始時は空でしたが、2026-09-15にユーザーがGitリポジトリを初期化し、`origin`を`D:\Git\ComfyUI-MV-Director.git`へ設定しました。本プロジェクトでCodexが今後commitを作成した場合は、同じ作業内でそのcommitを`origin`へpushします。
 
@@ -37,7 +36,7 @@
 4. stash第3親の`docs/report/v0.4.0-local-llm-design-discussion.md`
 5. stash第3親の`docs/spec/planner_context_budget_spec.md`
 6. 旧Enhancer、Planner、Compiler、Vision、Vocal、GGUF、cache、utilityの仕様・コード・テスト・同梱workflow
-7. 現在インストール済みContext Loop 0.6.6、commit `136db5dbbf25405063a96e898ae880e8785b7f29`の`docs/AUDIO_AND_CONTINUITY.md`、`H3_CHAIN_FORMAT_GUIDE.md`、Plan parser及び`web/h3_prompt_schema_core.mjs`
+7. 現在インストール済みContext Loop 0.6.9、commit `9860a063784c8c23b58e00107f2180e0df3c43d9`の`docs/AUDIO_AND_CONTINUITY.md`、`H3_CHAIN_FORMAT_GUIDE.md`、Plan parser及び`web/h3_prompt_schema_core.mjs`
 
 stash番号は将来変わり得るため、後続調査では上記object IDを使うことを推奨します。
 
@@ -95,15 +94,15 @@ stash番号は将来変わり得るため、後続調査では上記object IDを
 
 ### 4.4 Context Loopの音声契約
 
-基準Context Loop 0.6.6では、最終音声`source` / `generated` / `none`はChain Policy全体の一択です。Sceneごとに上書きできるのはgeneration-timeの`source_reference`、`generated_continuity`、`source_audio_target`です。Sceneでlip-syncをoffにしても、global final audioがsourceなら完成動画のフルミックスは残ります。
+基準Context Loop 0.6.9では、最終音声`source` / `generated` / `none`はChain Policy全体の一択です。Sceneごとに上書きできるのはgeneration-timeの`source_reference`、`generated_continuity`、`source_audio_target`です。Sceneでlip-syncをoffにしても、global final audioがsourceなら完成動画のフルミックスは残ります。
 
 Context LoopのScene overrideだけではglobal final audioを変えられませんが、Compilerにその整合性を背負わせません。`## 音響`を省略したSceneでは音声keyを出さずChain Policyを継承します。`無音`と明記した場合だけ、generation-timeの3軸を`off`にし、silence prompt要素を出します。MV用途では即時の真の無音を要件にせず、PCM gateは初期スコープへ含めません。
 
 Context LoopのH3 Audio Tracksはfull mixがあればそれを最終音声に使い、vocal stemを重ねません。vocalはlocked generation target / lip-sync駆動用です。両者は`MVDirectorAudioPadPair`へ同時入力し、同起点・同尺にします。単体Audio Padは使用しません。Planner解析とLip-Sync Optionsにはpadding前の元vocalを渡します。
 
-EMDはEasy MarkDownの略であり、Extended Markdownではありません。文書順は`# サブジェクト`、任意の`# 保持分析`、任意の`# 共通プロンプト`、1個以上の`# シーン`です。共通プロンプト直下の`## スタイル`、`## モーション`、`## カメラ`、`## その他`もすべて任意です。Context Loop 0.6.6ではPlan `prompt_prefix`が各Scene promptより前へ空行二つで機械連結されるため、Compilerは見出しを捨て、存在する本文をStyle、Motion、Camera、Otherの固定順で平坦化して`prompt_prefix`へ一回だけ写します。Styleが存在すれば先頭で、全区分がなければfieldを出しません。Enhancerは四方向を分離して返し、入力Subjectを読み取り専用contextとして扱います。concept EMDとuser requestが同時に空でも既定profileだけで動作します。Subject定義には参照画像の元媒体を固定条件として書きません。prefixだけで十分かScene内にもStyle文を反復するかはH3実出力のA/B試験で決め、Compilerの意味推測で複製しません。
+EMDはEasy MarkDownの略であり、Extended Markdownではありません。文書順は`# サブジェクト`、任意の`# 保持分析`、任意の`# 共通プロンプト`、1個以上の`# シーン`です。共通プロンプト直下の`## スタイル`、`## モーション`、`## カメラ`、`## その他`もすべて任意です。Context Loop 0.6.9ではPlan `prompt_prefix`が各Scene promptより前へ空行二つで機械連結されるため、Compilerは見出しを捨て、存在する本文をStyle、Motion、Camera、Otherの固定順で平坦化して`prompt_prefix`へ一回だけ写します。Styleが存在すれば先頭で、全区分がなければfieldを出しません。Enhancerは四方向を分離して返し、入力Subjectを読み取り専用contextとして扱います。concept EMDとuser requestが同時に空でも既定profileだけで動作します。Subject定義には参照画像の元媒体を固定条件として書きません。prefixだけで十分かScene内にもStyle文を反復するかはH3実出力のA/B試験で決め、Compilerの意味推測で複製しません。
 
-現行の`MiniMaxH3LipSyncOptions`はvoice AUDIOから`H3_LIP_SYNC_OPTIONS`を生成する外部経路です。この経路を使用すると、8GB VRAM環境では下流の追加モデル読み込み・初期化で停止する事例があります。本プロジェクトはこの外部nodeを修正又は移植せず、EMD Compilerの機械変換だけで成立する二つの代替を持ちます。``リップシンク Audio参照``は対象概念と`H3音声N`を固定英文と`<Audio N>`へ変換します。Audio参照動画生成WFは事前分割ファイルを要求せず、Lyric SegmentationのScene source境界で元vocalを連続sliceし、区間内の無音を保った一個の`<Audio 1>`として供給します。歌詞の場合はLyric Segmentationが空白・改行でatomic segmentへ分け、Template EMD、timeline、SRTを同じsegment列から作り、対応Shotの直前へ歌詞annotationを構造配置します。Plannerは時刻包含を再計算せず、そのShotへ対象と原文を持つ``リップシンク 歌詞``を出します。Compilerはannotationを参照せず、所属Shotの開始位置とこの明示directiveだけを対象付き`<d>[Japanese]...</d>`へ変換します。これはH3へShot区間内の歌唱口形を促すもので、音素単位の完全同期ではありません。どちらも翻訳LLMと`H3_LIP_SYNC_OPTIONS`を使いません。
+現行の`MiniMaxH3LipSyncOptions`はvoice AUDIOから`H3_LIP_SYNC_OPTIONS`を生成する外部経路です。この経路を使用すると、8GB VRAM環境では下流の追加モデル読み込み・初期化で停止する事例があります。本プロジェクトはこの外部nodeを修正又は移植せず、EMD Compilerの機械変換だけで成立する二つの代替を持ちます。``リップシンク Audio参照``は対象概念と`H3音声N`を固定英文と`<Audio N>`へ変換します。Audio参照動画生成WFは事前分割ファイルを要求せず、Audio Pad Pairの`source_scenes_to_plan` modeがLyric SegmentationのScene source境界から参照専用trackを作ります。各source SceneをH3の累積delivered frame位置へコピーし、量子化余剰だけをScene末尾PCM無音にするため、Context LoopがPlan frame windowで切り出しても区間内の無音を保った一個の`<Audio 1>`を供給できます。歌詞の場合はLyric Segmentationが空白・改行でatomic segmentへ分け、Template EMD、timeline、SRTを同じsegment列から作り、対応Shotの直前へ歌詞annotationを構造配置します。Plannerは時刻包含を再計算せず、そのShotへ対象と原文を持つ``リップシンク 歌詞``を出します。Compilerはannotationを参照せず、所属Shotの開始位置とこの明示directiveだけを対象付き`<d>[Japanese]...</d>`へ変換します。これはH3へShot区間内の歌唱口形を促すもので、音素単位の完全同期ではありません。どちらも翻訳LLMと`H3_LIP_SYNC_OPTIONS`を使いません。
 
 Shot本文の`「...」`は内容を変えず`<d>[Japanese]...</d>`へ包むだけにします。作者が既に書いた`<d>...</d>`又は`<d>[English]...</d>`はopaque spanとして翻訳せず、そのままH3へ渡します。話者やsource audioとの一致は監査しません。追加発声禁止が必要な作者は`明示台詞のみ`を明記し、Compilerはその場合だけ対応prompt要素を出します。歌詞annotationは直接台詞へ変換しません。
 

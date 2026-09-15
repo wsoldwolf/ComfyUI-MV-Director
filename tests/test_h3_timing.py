@@ -1,9 +1,32 @@
 import unittest
 
-from core.h3_contract import CONTRACT_ID, H3TimingProfile
+from core.h3_contract import (
+    COMFYUI_BASELINE_COMMIT,
+    COMFYUI_BASELINE_VERSION,
+    CONTEXT_LOOP_BASELINE_COMMIT,
+    CONTEXT_LOOP_BASELINE_VERSION,
+    CONTRACT_ID,
+    H3TimingProfile,
+)
 
 
 class H3TimingProfileTests(unittest.TestCase):
+    def test_runtime_baselines_are_pinned(self) -> None:
+        self.assertEqual(COMFYUI_BASELINE_VERSION, "0.36.0")
+        self.assertEqual(
+            COMFYUI_BASELINE_COMMIT,
+            "ee71d5c4993f29086b27fde1629a945ae48425bf",
+        )
+        self.assertEqual(CONTEXT_LOOP_BASELINE_VERSION, "0.6.9")
+        self.assertEqual(
+            CONTEXT_LOOP_BASELINE_COMMIT,
+            "9860a063784c8c23b58e00107f2180e0df3c43d9",
+        )
+        self.assertEqual(
+            CONTRACT_ID,
+            "context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9",
+        )
+
     def test_default_profile_matches_pinned_context_loop_contract(self) -> None:
         profile = H3TimingProfile()
         self.assertEqual(profile.contract, CONTRACT_ID)

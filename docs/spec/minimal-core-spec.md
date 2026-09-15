@@ -40,7 +40,7 @@
 - audio timeline engine: 上記support node内部でVAD、Whisper一回、歌詞整列、Scene/Shot枠生成を行う純粋な層。
 - GGUF backend: モデル探索、ロード、token計測、中断、解放を共通化する。
 - PromptTranslator: prompt本文の日本語から英語への一方向変換だけを行う交換可能なinterface。初期実装はローカル4B又は8Bを想定するが、LLM固有の契約にはしない。
-- Audio Pad Pair: full mixとvocal stemを同じ基準尺へ末尾無音補完する公開support node。単体Audio Padは公開しない。
+- Audio Pad Pair: full mixとvocal stemを同じ基準尺へ末尾無音補完し、明示mode時だけsource SceneをPlan frame位置へPCM無音で配置した参照専用vocalも返す公開support node。単体Audio Padは公開しない。
 - H3 Timing Profile: Context Loop基準contract、24fps、anchor mode、visual/audio context lengthを一つの`MV_DIRECTOR_H3_TIMING_PROFILE`へまとめ、Lyric SegmentationとCompilerへ共有する公開utility node。
 - 32-bit Seed: GGUF系とH3系へ同じ再現可能な符号付き32-bit正整数seedを分岐する公開utility node。旧実装の有限なrandom/fixed/一回保持処理だけを再利用する。
 - String Combo: 文字列候補を通常の接続可能なSTRINGとして選択・出力する公開utility node。
@@ -86,7 +86,7 @@ Compilerはbinding manifest又は実画像tensorを入力に要求しない。�
 
 ### 2.5 Context Loop基準contract
 
-初期実装は、2026-09-15時点で利用するContext Loop `0.6.6`、commit `136db5dbbf25405063a96e898ae880e8785b7f29`のPlan parser、Ref2VA prompt schema、参照socket及びtiming規則を基準にする。開発中のContext Loop tipへ追従し続けず、まずこのcommitに対して実装する。実装完了後に同commitとの契約テストを行い、その後の更新はadapter追加又は契約更新として別に検証する。
+初期実装は、2026-09-16時点で利用するComfyUI `0.36.0`、commit `ee71d5c4993f29086b27fde1629a945ae48425bf`とContext Loop `0.6.9`、commit `9860a063784c8c23b58e00107f2180e0df3c43d9`のPlan parser、Ref2VA prompt schema、参照socket及びtiming規則を基準にする。開発中のtipへ追従し続けず、まずこの組合せに対して実装する。実装完了後に同commitとの契約テストを行い、その後の更新はadapter追加又は契約更新として別に検証する。
 
 ### 2.6 LLM行指向出力protocol
 
@@ -196,7 +196,7 @@ CompilerのPromptTranslatorは別node又はmodel socketにせず、Compiler内�
 ```json
 {
   "schema": "MVD_H3_TIMING_PROFILE_V1",
-  "contract": "context-loop-0.6.6@136db5dbbf25405063a96e898ae880e8785b7f29",
+  "contract": "context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9",
   "fps": 24,
   "anchor_mode": "head",
   "first_scene_context_length": 0,
@@ -469,7 +469,7 @@ Sceneはplan上の`[start_ms, end_ms)`を半開区間で隙間なく一回だけ
   "boundary_method": "energy_vad_sample_refined",
   "source_audio_duration_ms": 20000,
   "plan_duration_ms": 20042,
-  "timing_profile": "context-loop-0.6.6@136db5dbbf25405063a96e898ae880e8785b7f29",
+  "timing_profile": "context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9",
   "lyrics": [
     {"segment_id": "lyric_0001", "text": "千年鳥居をくぐるそなたよ", "section": "VERSE1", "source_line": 1, "source_start": 0, "source_end": 12, "start_ms": 12300, "end_ms": 15800, "scene_number": 2, "shot_index": 2}
   ],
@@ -615,6 +615,9 @@ Timeline PlannerはMV専用である。完成動画にどの音声を残すか�
 - 共通基準尺は二入力尺、任意の`MVD_TIMELINE_V1.plan_duration_ms`又は明示H3 frame targetの最大値に`extra_padding_ms`を加えてsample数へ変換する。浮動小数秒を基準値にしない。
 - 短い側だけを各sample rateで無音補完し、`pad_position=end`を既定にする。
 - `padded_audio_a`と`padded_audio_b`はH3 Audio Tracksへ渡す。Lyric SegmentationのVAD / WhisperとH3 Lip-Sync Optionsにはpadding前の元vocalを渡す。
+- 既存二出力と`status`の後ろへ参照専用`reference_audio_b: AUDIO`を追加する。`reference_alignment=off`（既定）では`padded_audio_b`と同じ値を返し、通常Pairの意味を変えない。
+- `reference_alignment=source_scenes_to_plan`では`MVD_TIMELINE_V1`を必須とし、padding前`audio_b`の各`source_start_ms`～`source_end_ms`を順番のまま取り出して、累積`delivered_frames`を24fpsでsample位置へ変換したPlan区間の先頭へ配置する。各Sceneの量子化余剰はScene末尾PCM無音とし、Scene内の無音を保持する。
+- Scene alignmentでもresample、mix又は音声内容のtruncateを行わない。source Sceneが対応Plan delivered区間へ収まらない、source区間が非連続、又はtimelineがない場合は明示エラーにする。`reference_audio_b`だけをAudio参照workflowのH3 Audio Tracks／Source Timelineへ渡し、最終full mixには使わない。
 - 単体Audio Padの公開classは再利用しない。入力検証とPCM paddingに必要な処理だけをPair module内のprivate helperへ抽出する。
 
 ## 8. EMD（Easy MarkDown）`MVD_EMD_V1`
@@ -886,9 +889,9 @@ CompilerはRef2VA専用のEMD parser、限定翻訳orchestrator、H3 prompt rend
 
 Context Loop Plan JSONにはScene長として`length`だけを出し、`duration_seconds`又は`duration_ms`は出力しない。値はLyric Segmentation又はEMD作者が確定した`` `H3長` ``をそのまま使う。Compiler artifactにはコピー元の行、値及びtiming profile IDを残すが、量子化計算を再実行しない。
 
-この例の`00:05.000`は、EMDの絶対Shot時刻からScene STARTを引いた値である。先頭Shotは時刻句を付けず`[Shot 1]`、2番目以降だけ`[Shot N] At MM:SS.mmm,`とする。これはContext Loop 0.6.6のRef2VA prompt構文であり、Planのms scheduling fieldではない。
+この例の`00:05.000`は、EMDの絶対Shot時刻からScene STARTを引いた値である。先頭Shotは時刻句を付けず`[Shot 1]`、2番目以降だけ`[Shot N] At MM:SS.mmm,`とする。これはContext Loop 0.6.9のRef2VA prompt構文であり、Planのms scheduling fieldではない。
 
-Plan `prompt_prefix`には任意の`# 共通プロンプト`の存在する本文だけを`スタイル → モーション → カメラ → その他`の順で一回出し、`##`見出しは出さない。スタイルが存在すればその先頭本文が配列の先頭要素になり、全区分がなければfieldを出さない。各Sceneの`prompt`には完全なRef2VA六セクションを出す。Context Loop 0.6.6は実行時に`prompt_prefix`、空行二つ、Scene promptの順で機械連結する。`subject_definitions`では使用する各`<Picture N>`と`<Subject N>`をそれぞれ行頭から一回ずつ定義し、`retention_analysis`にも両方のmarkerを出す。Subject定義と保持分析は各Sceneへ決定的に再掲するが、共通プロンプト本文をScene promptへ暗黙複製しない。annotationとprovenanceは含めない。
+Plan `prompt_prefix`には任意の`# 共通プロンプト`の存在する本文だけを`スタイル → モーション → カメラ → その他`の順で一回出し、`##`見出しは出さない。スタイルが存在すればその先頭本文が配列の先頭要素になり、全区分がなければfieldを出さない。各Sceneの`prompt`には完全なRef2VA六セクションを出す。Context Loop 0.6.9は実行時に`prompt_prefix`、空行二つ、Scene promptの順で機械連結する。`subject_definitions`では使用する各`<Picture N>`と`<Subject N>`をそれぞれ行頭から一回ずつ定義し、`retention_analysis`にも両方のmarkerを出す。Subject定義と保持分析は各Sceneへ決定的に再掲するが、共通プロンプト本文をScene promptへ暗黙複製しない。annotationとprovenanceは含めない。
 
 `prompt_prefix`は文字列又は文字列配列をContext Loopが受理するが、本Compilerは編集差分を読みやすくするため文字列配列だけを出力する。Context Loopの動的`{A|B}`解決はScene promptへだけ適用され、prefixには適用されないため、本Compilerもprefixへ動的候補を生成しない。prefix変更は全Sceneの完全prompt hashを変え、異なるprefixで生成したcheckpoint revision同士は一つの出力へ混在できない。
 
@@ -1046,7 +1049,7 @@ Compiler wrapperは単純な構文・翻訳・直列化境界を保つため独�
 - 同一Sceneのリップシンク駆動方式は一つに限定され、後二方式では`H3_LIP_SYNC_OPTIONS`を要求しない。
 - `model_name` comboから任意の利用可能なGGUFを選択でき、`ja_to_en`ではそのGGUFを内部PromptTranslator adapterで使う。`already_english`ではGGUFをloadしない。
 - CompilerはIMAGE、AUDIO、上流node又はworkflow graphなしで単独実行できる。
-- `MVDirectorAudioPadPair`だけが公開登録され、単体Audio Pad nodeは存在しない。Pairはfull mixとvocalを共通尺へ末尾補完し、混合又は再同期しない。
+- `MVDirectorAudioPadPair`だけが公開登録され、単体Audio Pad nodeは存在しない。通常のPair二出力はfull mixとvocalを共通尺へ末尾補完し、混合又は再同期しない。明示modeの参照専用追加出力だけがsource SceneをPlan frame位置へPCM無音で配置する。
 - プレフィクスなしの日本語`subject_hint`と`additional_instruction`を外部STRINGから入力でき、`lock_identity`時だけ前者がuser authorityとしてEMDへ残る。
 - Image to Subject EMDのprofile、hint policy、Picture mode、concept/subject/picture index、cache、解析解像度及びruntime設定を外部socketから上書きできる。
 - `auto_h3`が同一IMAGEの`ref_image_N`接続を`<Picture N+1>`へ解決し、異なる番号への分岐を曖昧エラーにする。

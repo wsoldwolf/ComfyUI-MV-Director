@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Any, Iterator
 
 from ..artifacts.base import canonical_json, sha256_text
-from ..h3_contract import CONTEXT_LOOP_0_6_6, ContextLoopContract
+from ..h3_contract import CONTEXT_LOOP_0_6_9, ContextLoopContract
 
 
 class PictureBindingError(ValueError):
@@ -125,7 +125,7 @@ def resolve_picture_binding(
     prompt: Any,
     unique_id: Any,
     image_output_index: int = 2,
-    contract: ContextLoopContract = CONTEXT_LOOP_0_6_6,
+    contract: ContextLoopContract = CONTEXT_LOOP_0_6_9,
 ) -> PictureBinding:
     if mode not in {"auto_h3", "manual", "none"}:
         raise PictureBindingError("unknown picture_reference_mode", status="invalid")

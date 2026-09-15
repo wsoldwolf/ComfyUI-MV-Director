@@ -86,7 +86,7 @@ class ContractFixtureTests(unittest.TestCase):
     def test_context_loop_fixture_has_six_sections_and_raw_length_only(self) -> None:
         payload = json.loads(
             (
-                FIXTURES / "h3" / "context_loop_0_6_6_minimal_plan.json"
+                FIXTURES / "h3" / "context_loop_0_6_9_minimal_plan.json"
             ).read_text(encoding="utf-8")
         )
         self.assertIn("prompt_prefix", payload)
