@@ -5,8 +5,8 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from core.artifacts.base import normalize_newlines
-from core.h3_contract import DEFAULT_H3_TIMING_PROFILE, H3TimingProfile
+from ..artifacts.base import normalize_newlines
+from ..h3_contract import DEFAULT_H3_TIMING_PROFILE, H3TimingProfile
 
 from .ast import (
     AudioDirective,

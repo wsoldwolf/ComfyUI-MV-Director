@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 
-from core.artifacts.base import canonical_json
+from ..artifacts.base import canonical_json
 
 from .context_loop_0_6_6 import CONTRACT_ID
 
@@ -80,4 +80,3 @@ class H3TimingProfile:
 
 
 DEFAULT_H3_TIMING_PROFILE = H3TimingProfile()
-

@@ -5,14 +5,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from core.artifacts.base import canonical_json
-from core.artifacts.references import (
+from ..artifacts.base import canonical_json
+from ..artifacts.references import (
     RequiredReference,
     RequiredReferencesArtifact,
 )
-from core.emd import EMDDocument, parse_emd
-from core.emd.ast import AudioDirective, Scene, Shot, Subject
-from core.h3_contract import DEFAULT_H3_TIMING_PROFILE, H3TimingProfile
+from ..emd import EMDDocument, parse_emd
+from ..emd.ast import AudioDirective, Scene, Shot, Subject
+from ..h3_contract import DEFAULT_H3_TIMING_PROFILE, H3TimingProfile
 
 from .protection import protect_unit
 from .translator import PromptTranslator, translate_exact

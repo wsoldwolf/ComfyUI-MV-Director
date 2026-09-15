@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from core.artifacts.base import normalize_newlines
-from core.artifacts.observations import (
+from ..artifacts.base import normalize_newlines
+from ..artifacts.observations import (
     FEATURE_CATEGORIES,
     HINT_STATUSES,
     VISIBILITIES,
@@ -241,4 +241,3 @@ def parse_vision_observations(
     content: str, *, allow_missing_end: bool = True
 ) -> VisionParseResult:
     return _VisionParser(content, allow_missing_end).parse()
-

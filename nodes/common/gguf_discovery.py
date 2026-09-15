@@ -8,12 +8,20 @@ import os
 from pathlib import Path
 from typing import Any
 
-from core.inference import (
-    GGUFModel,
-    ModelSelectionError,
-    discover_gguf_models,
-    resolve_model_selection,
-)
+try:
+    from ...core.inference import (
+        GGUFModel,
+        ModelSelectionError,
+        discover_gguf_models,
+        resolve_model_selection,
+    )
+except ImportError:  # Standalone repository tests.
+    from core.inference import (
+        GGUFModel,
+        ModelSelectionError,
+        discover_gguf_models,
+        resolve_model_selection,
+    )
 
 
 NO_GGUF_MODELS = "(no GGUF models found)"
@@ -99,4 +107,3 @@ def resolve_comfy_gguf_model(
         suffix = f": {locations}" if locations else ""
         raise ModelSelectionError(f"no GGUF models were found{suffix}")
     return resolve_model_selection(selection_id, roots)
-

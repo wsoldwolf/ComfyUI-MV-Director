@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from core.emd.ast import Subject
+from ..emd.ast import Subject
 
 from .errors import CompilerError
 

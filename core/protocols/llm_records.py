@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Mapping
 
-from core.artifacts.base import normalize_newlines, sha256_text
+from ..artifacts.base import normalize_newlines, sha256_text
 
 
 PROTOCOL_ID = "MVD_LLM_RECORDS_V1"
@@ -177,4 +177,3 @@ def parse_llm_records(
 
     missing = tuple(sorted(required - seen))
     return LLMRecordParseResult(tuple(records), tuple(issues), missing)
-

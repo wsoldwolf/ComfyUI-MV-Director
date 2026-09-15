@@ -8,7 +8,7 @@ import tempfile
 from pathlib import Path
 from typing import Any, Mapping
 
-from core.artifacts.base import canonical_json, sha256_text
+from ..artifacts.base import canonical_json, sha256_text
 
 
 def build_cache_key(
@@ -65,4 +65,3 @@ class SuccessCache:
         if len(key) != 64 or any(character not in "0123456789abcdef" for character in key):
             raise ValueError("cache key must be lowercase SHA-256 hex")
         return self.root / key[:2] / f"{key}.json"
-

@@ -5,8 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Iterator
 
-from core.artifacts.base import canonical_json, sha256_text
-from core.h3_contract import CONTEXT_LOOP_0_6_6, ContextLoopContract
+from ..artifacts.base import canonical_json, sha256_text
+from ..h3_contract import CONTEXT_LOOP_0_6_6, ContextLoopContract
 
 
 class PictureBindingError(ValueError):
@@ -147,4 +147,3 @@ def resolve_picture_binding(
             f"image output is connected to different H3 Picture numbers: {details}"
         )
     return PictureBinding("auto_h3", indices[0] if indices else None, targets)
-

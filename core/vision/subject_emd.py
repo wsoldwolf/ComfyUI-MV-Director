@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from core.artifacts.base import normalize_newlines
-from core.artifacts.observations import ObservationsArtifact
+from ..artifacts.base import normalize_newlines
+from ..artifacts.observations import ObservationsArtifact
 
 
 class SubjectEMDError(ValueError):
@@ -92,4 +92,3 @@ def render_subject_emd(
         raise SubjectEMDError("observations contain no stable Subject description")
     lines.extend(f"* {description}" for description in descriptions)
     return SubjectEMDResult("\n".join(lines) + "\n", included_hint, omitted_uncertain)
-
