@@ -44,6 +44,7 @@ class WorkflowFixtureTests(unittest.TestCase):
         self.assertNotIn("MVDirectorImageToSubjectEMD", types)
         self.assertNotIn("MVDirectorTimelinePlanner", types)
         self.assertEqual(nodes[3]["type"], "MVDirectorEMDCompiler")
+        self.assertEqual(nodes[3]["widgets_values"][-1], "randomize")
         self.assertIn([4, 3, 0, 5, 1, "STRING"], workflow["links"])
         encoded, basename, metadata = nodes[1]["widgets_values"]
         emd = decode_embedded_text(encoded, basename, metadata)
@@ -55,6 +56,7 @@ class WorkflowFixtureTests(unittest.TestCase):
         workflow = load_fixture("image_subject_auto_h3.json")
         nodes = node_map(workflow)
         self.assertEqual(nodes[2]["type"], "MVDirectorImageToSubjectEMD")
+        self.assertEqual(nodes[2]["widgets_values"][-2:], ["randomize", "reuse"])
         self.assertEqual(nodes[3]["type"], "MiniMaxH3ReferenceToVideo")
         self.assertIn([1, 1, 0, 2, 0, "IMAGE"], workflow["links"])
         self.assertIn([2, 2, 2, 3, 0, "IMAGE"], workflow["links"])

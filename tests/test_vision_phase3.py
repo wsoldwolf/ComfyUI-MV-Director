@@ -252,6 +252,10 @@ class VisionPhase3Tests(unittest.TestCase):
         self.assertIn("MVDirectorImageToSubjectEMD", NODE_CLASS_MAPPINGS)
         inputs = NODE_CLASS_MAPPINGS["MVDirectorImageToSubjectEMD"].INPUT_TYPES()
         self.assertIn("model_name", inputs["required"])
+        self.assertEqual(
+            inputs["required"]["seed"][1]["control_after_generate"],
+            "randomize",
+        )
         self.assertEqual(inputs["hidden"], {"prompt": "PROMPT", "unique_id": "UNIQUE_ID"})
 
 

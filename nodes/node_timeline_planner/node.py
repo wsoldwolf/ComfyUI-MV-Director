@@ -172,7 +172,15 @@ class MVDirectorTimelinePlanner:
                 "kv_cache_type": (["q8_0", "f16"], {"default": "q8_0"}),
                 "op_offload": ("BOOLEAN", {"default": True}),
                 "keep_model_loaded": ("BOOLEAN", {"default": False}),
-                "seed": ("INT", {"default": 1, "min": 1, "max": 2147483647}),
+                "seed": (
+                    "INT",
+                    {
+                        "default": 1,
+                        "min": 1,
+                        "max": 2147483647,
+                        "control_after_generate": "randomize",
+                    },
+                ),
                 "scenes_per_batch": ("INT", {"default": 3, "min": 1, "max": 6}),
                 "cache_mode": (list(CACHE_MODES), {"default": "use"}),
             },

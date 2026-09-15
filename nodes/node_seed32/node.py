@@ -21,7 +21,15 @@ class MVDirectorSeed32:
         return {
             "required": {
                 "mode": (["fixed", "random"], {"default": "fixed"}),
-                "seed": ("INT", {"default": -1, "min": -1, "max": MAX_SEED}),
+                "seed": (
+                    "INT",
+                    {
+                        "default": -1,
+                        "min": -1,
+                        "max": MAX_SEED,
+                        "control_after_generate": False,
+                    },
+                ),
             }
         }
 

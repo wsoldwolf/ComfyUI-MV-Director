@@ -129,7 +129,15 @@ class MVDirectorImageToSubjectEMD:
                 "kv_cache_type": (["q8_0", "q4_0", "f16"], {"default": "q8_0"}),
                 "op_offload": ("BOOLEAN", {"default": True}),
                 "keep_model_loaded": ("BOOLEAN", {"default": False}),
-                "seed": ("INT", {"default": 1, "min": 1, "max": 2147483647}),
+                "seed": (
+                    "INT",
+                    {
+                        "default": 1,
+                        "min": 1,
+                        "max": 2147483647,
+                        "control_after_generate": "randomize",
+                    },
+                ),
                 "cache_mode": (list(CACHE_MODES), {"default": "reuse"}),
             },
             "hidden": {"prompt": "PROMPT", "unique_id": "UNIQUE_ID"},

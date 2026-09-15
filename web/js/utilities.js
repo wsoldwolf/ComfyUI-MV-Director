@@ -8,8 +8,21 @@ function widget(node, name) {
 
 function hideSerializedWidget(item) {
   if (!item) return;
+  item.hidden = true;
   item.type = "hidden";
   item.computeSize = () => [0, -4];
+  item.draw = () => {};
+  for (const element of [item.element, item.inputEl]) {
+    element?.style?.setProperty?.("display", "none", "important");
+  }
+}
+
+function normalizeTextFileNodeSize(node) {
+  queueMicrotask(() => {
+    const width = Math.max(Number(node.size?.[0]) || 0, 320);
+    const height = Number(node.size?.[1]) || 0;
+    if (height < 110 || height > 260) node.setSize([width, 180]);
+  });
 }
 
 function parseStringList(value) {
@@ -196,13 +209,18 @@ app.registerExtension({
           if (event?.dataTransfer?.types?.includes("Files")) return true;
           return originalOver?.call(this, event) ?? false;
         };
+        normalizeTextFileNodeSize(this);
         return result;
       };
       nodeType.prototype.onConfigure = function () {
         const result = originalConfigure?.apply(this, arguments);
+        hideSerializedWidget(widget(this, "file_data_base64"));
+        hideSerializedWidget(widget(this, "basename"));
+        hideSerializedWidget(widget(this, "browser_metadata_json"));
         const display = widget(this, "selected_file");
         const basename = widget(this, "basename")?.value;
         if (display && basename) display.value = basename;
+        normalizeTextFileNodeSize(this);
         return result;
       };
     }

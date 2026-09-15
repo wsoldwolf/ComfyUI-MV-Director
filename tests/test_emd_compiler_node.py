@@ -96,6 +96,10 @@ class EMDCompilerNodeTests(unittest.TestCase):
         self.assertTrue(inputs["required"]["emd_text"][1]["forceInput"])
         self.assertEqual(inputs["required"]["translation_mode"][1]["default"], "ja_to_en")
         self.assertEqual(inputs["required"]["n_ctx"][1]["default"], 32768)
+        self.assertEqual(
+            inputs["required"]["seed"][1]["control_after_generate"],
+            "randomize",
+        )
         self.assertIn("h3_timing_profile", inputs["optional"])
         self.assertNotIn("cache_mode", inputs["required"])
 

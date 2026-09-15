@@ -154,6 +154,10 @@ class DirectionEnhancerTests(unittest.TestCase):
         inputs = NODE_CLASS_MAPPINGS["MVDirectorDirectionEnhancer"].INPUT_TYPES()
         self.assertIn("style_profile", inputs["required"])
         self.assertIn("n_ctx", inputs["required"])
+        self.assertEqual(
+            inputs["required"]["seed"][1]["control_after_generate"],
+            "randomize",
+        )
         self.assertIn("concept_emd", inputs["optional"])
         self.assertIn("observations_json", inputs["optional"])
 

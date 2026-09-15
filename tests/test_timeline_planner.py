@@ -301,6 +301,10 @@ class TimelinePlannerNodeTests(unittest.TestCase):
         inputs = cls.INPUT_TYPES()
         self.assertTrue(inputs["required"]["template_emd"][1]["forceInput"])
         self.assertEqual(inputs["required"]["lip_sync_mode"][1]["default"], "lyrics")
+        self.assertEqual(
+            inputs["required"]["seed"][1]["control_after_generate"],
+            "randomize",
+        )
         self.assertIn("model_name_override", inputs["optional"])
         self.assertIn("direction", inputs["optional"])
 

@@ -162,6 +162,9 @@ class PublicNodeTests(unittest.TestCase):
 
     def test_seed32_modes_stay_in_shared_range(self) -> None:
         node = MVDirectorSeed32()
+        self.assertFalse(
+            node.INPUT_TYPES()["required"]["seed"][1]["control_after_generate"]
+        )
         self.assertEqual(node.make_seed("fixed", 123), (123,))
         generated = node.make_seed("random", -1)[0]
         self.assertGreaterEqual(generated, 1)

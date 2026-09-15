@@ -39,6 +39,13 @@ class PlainLyricsTests(unittest.TestCase):
     def test_empty_sections_are_valid(self) -> None:
         self.assertEqual(parse_plain_lyrics("[INTRO]\n\n[VERSE1]\n"), ())
 
+    def test_section_headings_are_case_insensitive_and_canonicalized(self) -> None:
+        segments = parse_plain_lyrics("[Chorus]\n千年鳥居\n[bridge_A]\n月明かり\n")
+        self.assertEqual(
+            [(item.text, item.section) for item in segments],
+            [("千年鳥居", "CHORUS"), ("月明かり", "BRIDGE_A")],
+        )
+
     def test_rejects_non_plain_metadata(self) -> None:
         invalid = (
             "歌詞\n[VERSE1]\n歌詞",
@@ -46,6 +53,7 @@ class PlainLyricsTests(unittest.TestCase):
             "[VERSE1]\n[00:01.00]歌詞",
             "[VERSE1]\n00:00:01,000 --> 00:00:02,000",
             "[VERSE1]\n// comment",
+            "[ＣHORUS]\n歌詞",
         )
         for value in invalid:
             with self.subTest(value=value), self.assertRaises(LyricSegmentationError):

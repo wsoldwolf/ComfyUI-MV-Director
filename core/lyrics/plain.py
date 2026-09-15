@@ -10,7 +10,10 @@ from ..artifacts.base import normalize_newlines
 from .errors import LyricSegmentationError
 
 
-_SECTION_RE = re.compile(r"\[([A-Z][A-Z0-9_-]*)\]\Z")
+_SECTION_RE = re.compile(
+    r"\[([A-Z][A-Z0-9_-]*)\]\Z",
+    re.IGNORECASE | re.ASCII,
+)
 _ATOMIC_RE = re.compile(r"[^ \t\u3000]+")
 _LRC_RE = re.compile(r"\[[0-9]{1,3}:[0-5][0-9](?:[.:][0-9]{1,3})?\]")
 _SRT_TIME_RE = re.compile(
@@ -68,11 +71,12 @@ def parse_plain_lyrics(text: str) -> tuple[SourceLyricSegment, ...]:
         saw_nonempty = True
         section_match = _SECTION_RE.fullmatch(line)
         if section_match:
-            current_section = section_match.group(1)
+            current_section = section_match.group(1).upper()
             continue
         if current_section is None:
             raise LyricSegmentationError(
-                f"lyrics line {line_number}: first nonempty line must be a section heading"
+                f"lyrics line {line_number}: first nonempty line must be a section "
+                "heading such as [VERSE1] or [Chorus]"
             )
         if (
             line != line.strip()

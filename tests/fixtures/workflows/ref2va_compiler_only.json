@@ -50,7 +50,7 @@
         {"name": "status", "type": "STRING", "links": null}
       ],
       "properties": {"Node name for S&R": "MVDirectorEMDCompiler"},
-      "widgets_values": ["already_english", "[select a GGUF model]", "auto", 20, 4096, 0.0, 0.9, 1.05, -1, 256, 32768, true, "q8_0", true, false, 1]
+      "widgets_values": ["already_english", "[select a GGUF model]", "auto", 20, 4096, 0.0, 0.9, 1.05, -1, 256, 32768, true, "q8_0", true, false, 1, "randomize"]
     },
     {
       "id": 4,

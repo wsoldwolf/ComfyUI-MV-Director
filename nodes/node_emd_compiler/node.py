@@ -82,7 +82,15 @@ class MVDirectorEMDCompiler:
                 "kv_cache_type": (["q8_0", "q4_0", "f16"], {"default": "q8_0"}),
                 "op_offload": ("BOOLEAN", {"default": True}),
                 "keep_model_loaded": ("BOOLEAN", {"default": False}),
-                "seed": ("INT", {"default": 1, "min": 1, "max": 2147483647}),
+                "seed": (
+                    "INT",
+                    {
+                        "default": 1,
+                        "min": 1,
+                        "max": 2147483647,
+                        "control_after_generate": "randomize",
+                    },
+                ),
             },
             "optional": {
                 "h3_timing_profile": ("MV_DIRECTOR_H3_TIMING_PROFILE",),

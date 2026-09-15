@@ -427,8 +427,8 @@ Template EMDはPlannerの標準入力である。Plannerはこの文字列のann
 ...
 ```
 
-- 最初の非空行はsection見出しとする。見出しは行全体が`[A-Z][A-Z0-9_-]*`を角括弧で囲んだ形に完全一致し、前後空白を許さない。
-- `VERSE1`、`CHORUS`、`BRIDGE_A`等を使用できる。未知名と同名sectionの再登場を許し、出現順を保持して自動統合しない。
+- 最初の非空行はsection見出しとする。見出しは行全体が`[A-Za-z][A-Za-z0-9_-]*`を角括弧で囲んだ形に完全一致し、前後空白を許さない。大文字小文字は区別せず、内部では大文字へ正規化する。
+- `[VERSE1]`、`[Chorus]`、`[bridge_A]`等を使用できる。未知名と同名sectionの再登場を許し、出現順を保持して自動統合しない。
 - 空行は読みやすさのための区切りとして無視する。空sectionも許可する。
 - section外の歌詞本文、comment構文、LRC timestamp、SRT番号・時刻行、inline metadataは受理しない。
 - 通常の歌詞行は原文を保持したまま、ASCII空白、tab又は全角空白の一個以上のrunでatomic segmentへ分ける。連続空白から空segmentを作らない。

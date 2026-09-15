@@ -54,7 +54,7 @@ Direction artifactはユーザーが記述する別形式ではなく、Enhancer
 
 ### P1-2. Lyric Segmentationの入力文法とbackend（解決済み）
 
-入力はUTF-8 plain lyrics `.txt`だけとし、最初の非空行から`[VERSE1]`等の大文字ASCII section見出しを要求する。空行を無視し、本文行を空白runでatomic segmentへ分割する。LRC、SRT、VTT又はinline timestampを受理せず、SRTは出力専用とする。初期backendは旧実装の`openai-whisper`とローカル`.pt` discovery/runtimeを抽出し、lazy import、word timestamp、no-downloadを維持する。VADは元sample rate・全channel最大RMS、Whisperだけfloat32平均mono・16kHzとする。
+入力はUTF-8 plain lyrics `.txt`だけとし、最初の非空行から`[VERSE1]`や`[Chorus]`等のASCII section見出しを要求する。見出しは大文字小文字を区別せず、内部では大文字へ正規化する。空行を無視し、本文行を空白runでatomic segmentへ分割する。LRC、SRT、VTT又はinline timestampを受理せず、SRTは出力専用とする。初期backendは旧実装の`openai-whisper`とローカル`.pt` discovery/runtimeを抽出し、lazy import、word timestamp、no-downloadを維持する。VADは元sample rate・全channel最大RMS、Whisperだけfloat32平均mono・16kHzとする。
 
 ### P1-3. Vision出力の最小protocol（解決済み）
 

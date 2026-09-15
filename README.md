@@ -6,7 +6,7 @@ EMDは**Easy MarkDown**の略です。Extended Markdownではありません。�
 
 ## 現在の状態
 
-2026-09-16時点で**Phase 0～7とPhase 8の公開ノード層を実装済み**です。ComfyUI非依存のartifact型、canonical JSON、LLM/Vision行protocol、厳密EMD parser、翻訳保護span、Ref2VA六セクションrenderer、Context Loop Plan serializer、GGUF実行基盤に加え、4コア、support 2個、utility 5個の計11ノードを`MVDirector...`名前空間へ登録しました。Phase 8ではPair専用PCM末尾paddingと参照vocalのsource Scene→Plan frame配置、固定H3 Timing Profile、正の32-bit Seed、String／Connected Combo、ブラウザ埋め込みUTF-8 `.txt`入力とfrontend操作を追加し、SRT単独・Compiler単独・`auto_h3`参照接続の3 workflow fixtureを検証しています。配布用の3方式×Plan/Compiler・動画生成の計6 workflow、実GGUF・実ボーカル・実Whisper checkpointでの品質測定、H3レンダリングはまだ実施していません。
+2026-09-16時点で**Phase 0～8と配布用workflow 6本を実装済み**です。ComfyUI非依存のartifact型、canonical JSON、LLM/Vision行protocol、厳密EMD parser、翻訳保護span、Ref2VA六セクションrenderer、Context Loop Plan serializer、GGUF実行基盤に加え、4コア、support 2個、utility 5個の計11ノードを`MVDirector...`名前空間へ登録しました。Phase 8ではPair専用PCM末尾paddingと参照vocalのsource Scene→Plan frame配置、固定H3 Timing Profile、正の32-bit Seed、String／Connected Combo、ブラウザ埋め込みUTF-8 `.txt`入力とfrontend操作を追加しました。Context Loop標準、Audio参照、歌詞の各方式についてPlan/Compilerと動画生成を分離した6 workflowを`workflows/`へ配置しています。実GGUF・実ボーカル・実Whisper checkpointでの品質測定とH3レンダリングはまだ実施していません。
 
 実行基準はComfyUI v0.36.0 commit `ee71d5c4993f29086b27fde1629a945ae48425bf`とContext Loop 0.6.9 commit `9860a063784c8c23b58e00107f2180e0df3c43d9`です。開発リポジトリは`C:\Software\ComfyUI\custom_nodes\ComfyUI-MV-Director`のdirectory junctionから直接参照するため、リポジトリ内の変更は追加コピーなしでComfyUI側へ反映されます。
 
@@ -68,6 +68,7 @@ EMDは**Easy MarkDown**の略です。Extended Markdownではありません。�
 - [公開ノード一覧と配置](docs/implementation/public-nodes-and-layout.md)
 - [`prompt_prefix`調査](docs/research/context-loop-prompt-prefix.md)
 - [実装前仕様漏れ監査](docs/research/spec-gap-audit-2026-09-16.md)
+- [配布用workflow 6本](workflows/README.md)
 
 ## ライセンス
 
@@ -79,4 +80,4 @@ Copyright © 2026 `wsoldwolf`
 
 ## 次の作業
 
-次はPhase 8の配布用6 workflowを整備します。Audio参照方式はAudio Pad Pairの`reference_alignment=source_scenes_to_plan`と追加`reference_audio_b`を使い、元vocalのScene source区間をH3のPlan frame windowへPCM無音だけで配置します。その後、ComfyUI v0.36.0 commit `ee71d5c4993f29086b27fde1629a945ae48425bf`及びContext Loop 0.6.9 commit `9860a063784c8c23b58e00107f2180e0df3c43d9`との互換試験、実ボーカルによるWhisper/VAD境界、4B/8Bの英訳品質及び8GB VRAM環境での全体成立性を測ります。
+次は6 workflowを実環境で順番に読み込み、ComfyUI v0.36.0 commit `ee71d5c4993f29086b27fde1629a945ae48425bf`及びContext Loop 0.6.9 commit `9860a063784c8c23b58e00107f2180e0df3c43d9`との互換試験を行います。その後、実ボーカルによるWhisper/VAD境界、4B/8Bの英訳品質、各音声方式及び8GB VRAM環境での全体成立性を測ります。
