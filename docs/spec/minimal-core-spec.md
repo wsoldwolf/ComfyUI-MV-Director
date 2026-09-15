@@ -471,7 +471,7 @@ Sceneはplan上の`[start_ms, end_ms)`を半開区間で隙間なく一回だけ
   "plan_duration_ms": 20042,
   "timing_profile": "context-loop-0.6.6@136db5dbbf25405063a96e898ae880e8785b7f29",
   "lyrics": [
-    {"segment_id": "lyric_0001", "text": "千年鳥居をくぐるそなたよ", "source_line": 1, "source_start": 0, "source_end": 12, "start_ms": 12300, "end_ms": 15800, "scene_number": 2, "shot_index": 2}
+    {"segment_id": "lyric_0001", "text": "千年鳥居をくぐるそなたよ", "section": "VERSE1", "source_line": 1, "source_start": 0, "source_end": 12, "start_ms": 12300, "end_ms": 15800, "scene_number": 2, "shot_index": 2}
   ],
   "scenes": [
     {

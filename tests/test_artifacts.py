@@ -41,6 +41,7 @@ def valid_timeline() -> TimelineArtifact:
             LyricSegment(
                 segment_id="lyric_0001",
                 text="千年鳥居をくぐるそなたよ",
+                section="VERSE1",
                 source_line=2,
                 source_start=0,
                 source_end=12,
@@ -208,4 +209,3 @@ class ArtifactTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

@@ -20,15 +20,20 @@ Copyright © 2026 wsoldwolf
 - `assets/bgm/short_bgm_millennium_torii.mp3`
 - `assets/bgm/short_bgm_millennium_torii_vocal.mp3`
 - `assets/bgm/short_bgm_millennium_torii_lyrics.txt`
+- `assets/bgm/nameless_heart.mp3`
+- `assets/bgm/nameless_heart_vocal.mp3`
+- `assets/bgm/nameless_heart_lyrics.txt`
 
 ## 参照画像
 
 以下のファイルは`wsoldwolf`がWAI Illustrious及びAnimaを使用して生成したものです。画像認識、Subject EMD生成、参照バインディング及びRef2VA workflowの検証素材として提供します。
 
-- `assets/image/image00001.jpg`
 - `assets/image/image00002.jpg`
 - `assets/image/image00003.jpg`
 - `assets/image/image00004.jpg`
+- `assets/image/image00005.jpg`
+- `assets/image/image00006.jpg`
+- `assets/image/image00007.jpg`
 
 ## 適用範囲
 

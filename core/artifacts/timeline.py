@@ -159,6 +159,7 @@ class TimelineScene:
 class LyricSegment:
     segment_id: str
     text: str
+    section: str
     source_line: int
     source_start: int
     source_end: int
@@ -170,6 +171,7 @@ class LyricSegment:
     def validate(self, path: str = "lyrics[]") -> None:
         require_string(self.segment_id, schema=SCHEMA, path=f"{path}.segment_id")
         require_string(self.text, schema=SCHEMA, path=f"{path}.text")
+        require_string(self.section, schema=SCHEMA, path=f"{path}.section")
         for field_name, minimum in (
             ("source_line", 1),
             ("source_start", 0),
@@ -199,6 +201,7 @@ class LyricSegment:
         return {
             "segment_id": self.segment_id,
             "text": self.text,
+            "section": self.section,
             "source_line": self.source_line,
             "source_start": self.source_start,
             "source_end": self.source_end,
@@ -217,6 +220,7 @@ class LyricSegment:
             required={
                 "segment_id",
                 "text",
+                "section",
                 "source_line",
                 "source_start",
                 "source_end",
@@ -235,6 +239,7 @@ class LyricSegment:
 class UnplacedLyric:
     segment_id: str
     text: str
+    section: str
     source_line: int
     source_start: int
     source_end: int
@@ -243,6 +248,7 @@ class UnplacedLyric:
     def validate(self, path: str = "unplaced_lyrics[]") -> None:
         require_string(self.segment_id, schema=SCHEMA, path=f"{path}.segment_id")
         require_string(self.text, schema=SCHEMA, path=f"{path}.text")
+        require_string(self.section, schema=SCHEMA, path=f"{path}.section")
         require_integer(
             self.source_line, schema=SCHEMA, path=f"{path}.source_line", minimum=1
         )
@@ -263,6 +269,7 @@ class UnplacedLyric:
         return {
             "segment_id": self.segment_id,
             "text": self.text,
+            "section": self.section,
             "source_line": self.source_line,
             "source_start": self.source_start,
             "source_end": self.source_end,
@@ -278,6 +285,7 @@ class UnplacedLyric:
             required={
                 "segment_id",
                 "text",
+                "section",
                 "source_line",
                 "source_start",
                 "source_end",
@@ -464,4 +472,3 @@ class TimelineArtifact:
         )
         artifact.validate()
         return artifact
-

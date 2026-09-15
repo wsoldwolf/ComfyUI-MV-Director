@@ -13,6 +13,11 @@ from .vision_discovery import (
     resolve_comfy_vision_model,
     vision_model_choices,
 )
+from .whisper_discovery import (
+    discover_comfy_whisper_models,
+    resolve_comfy_whisper_model,
+    whisper_model_choices,
+)
 
 __all__ = [
     "NO_GGUF_MODELS",
@@ -20,8 +25,11 @@ __all__ = [
     "collect_comfy_gguf_roots",
     "discover_comfy_gguf_models",
     "discover_comfy_vision_models",
+    "discover_comfy_whisper_models",
     "gguf_model_choices",
     "resolve_comfy_gguf_model",
     "resolve_comfy_vision_model",
+    "resolve_comfy_whisper_model",
     "vision_model_choices",
+    "whisper_model_choices",
 ]
