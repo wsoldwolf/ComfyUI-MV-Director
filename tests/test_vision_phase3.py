@@ -248,10 +248,8 @@ class VisionPhase3Tests(unittest.TestCase):
             self.assertTrue(first.closed)
             self.assertTrue(FakeHandler.instances[0].closed)
 
-    def test_public_mapping_contains_only_implemented_node(self) -> None:
-        self.assertEqual(
-            set(NODE_CLASS_MAPPINGS), {"MVDirectorImageToSubjectEMD"}
-        )
+    def test_public_mapping_contains_image_node(self) -> None:
+        self.assertIn("MVDirectorImageToSubjectEMD", NODE_CLASS_MAPPINGS)
         inputs = NODE_CLASS_MAPPINGS["MVDirectorImageToSubjectEMD"].INPUT_TYPES()
         self.assertIn("model_name", inputs["required"])
         self.assertEqual(inputs["hidden"], {"prompt": "PROMPT", "unique_id": "UNIQUE_ID"})

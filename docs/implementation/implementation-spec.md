@@ -4,7 +4,7 @@
 作成日: 2026-09-16<br>
 対象: Phase 0以降のPython実装
 
-実装状態（2026-09-16）: Phase 0とPhase 1はFake backendによる純Pythonテストまで完了。Phase 2は純PythonのGGUF scannerに加え、`nodes/common/`のComfyUI `folder_paths` root adapter、runtime設定、lazy llama.cpp lifecycle、serialized prompt token計測、stream中断、context予算、cache key及び成功専用file cacheまでFake backendで実装済み。Phase 3は画像fingerprint、Vision model/mmproj pair探索、固定行prompt、MTMD lifecycle、Vision行parser、観測provenance、Subject EMD renderer、Context Loop adapter、`auto_h3` graph binding、成功cache及び`MVDirectorImageToSubjectEMD` wrapperまでFake backendで実装済み。実Vision modelとComfyUI画面上の試験は未実施。
+実装状態（2026-09-16）: Phase 0～4をFake backendによる純Pythonテストまで実装済み。Phase 2はGGUF scanner、ComfyUI `folder_paths` adapter、runtime、context予算及び成功cacheを持つ。Phase 3は画像fingerprint、Vision model/mmproj pair、MTMD lifecycle、観測provenance、Subject EMD、`auto_h3` binding及び`MVDirectorImageToSubjectEMD` wrapperを持つ。Phase 4は固定演出profile、authority順付きpayload、`STYLE` / `MOTION` / `CAMERA` / `OTHER`行処理、欠落slotだけの一回局所retry、Direction provenance、EMD preview、context予算、成功cache及び`MVDirectorDirectionEnhancer` wrapperを持つ。実modelとComfyUI画面上の試験は未実施。
 
 ## 1. 目的
 

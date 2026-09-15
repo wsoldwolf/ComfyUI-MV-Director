@@ -6,7 +6,7 @@ EMDは**Easy MarkDown**の略です。Extended Markdownではありません。�
 
 ## 現在の状態
 
-2026-09-16時点で**Phase 0～3をFake backendで実装済み**です。ComfyUI非依存のartifact型、canonical JSON、LLM/Vision行protocol、厳密EMD parser、翻訳保護span、Ref2VA六セクションrenderer、Context Loop Plan serializer、versioned H3 Timing Profile、GGUF scanner・ComfyUI `folder_paths` adapter・lifecycle・context予算・成功専用cacheを検証しています。Phase 3では画像fingerprint、Vision model/mmproj pair探索、MTMD lifecycle、provenance、Subject EMD renderer、`auto_h3` Picture配線解決及び`MVDirectorImageToSubjectEMD` wrapperを追加しました。実Vision GGUFでの推論、Whisper解析及びH3レンダリングはまだ実施していません。旧プロジェクトやComfyUIの実行側は変更していません。
+2026-09-16時点で**Phase 0～4をFake backendで実装済み**です。ComfyUI非依存のartifact型、canonical JSON、LLM/Vision行protocol、厳密EMD parser、翻訳保護span、Ref2VA六セクションrenderer、Context Loop Plan serializer、versioned H3 Timing Profile、GGUF scanner・ComfyUI `folder_paths` adapter・lifecycle・context予算・成功専用cacheを検証しています。Phase 3のImage to Subject EMDに加え、Phase 4では固定Style／Motion／Camera profile、権限順付き統合payload、欠落slotだけの一回局所retry、Direction artifact、provenance、EMD preview及び`MVDirectorDirectionEnhancer` wrapperを追加しました。実GGUF/Vision推論、Whisper解析及びH3レンダリングはまだ実施していません。旧プロジェクトやComfyUIの実行側は変更していません。
 
 開発方針は「互換性ではなく、必要な実装資産だけを再利用する」です。旧workflow、node ID、入力形式、出力schema及び修復経路との互換性は持たせません。一方、PCM padding、GGUF探索、model lifecycle、音声区間処理など、新仕様でも責務が変わらない有限な処理は選別して再利用します。旧実装に存在するという理由だけで、flag、fallback、validator又は補助nodeを新プロジェクトへ持ち込みません。
 
@@ -77,4 +77,4 @@ Copyright © 2026 `wsoldwolf`
 
 ## 次の作業
 
-次はPhase 3を実ComfyUI上のVision GGUF一組で確認した後、Phase 4のDirection Enhancer coreと薄いwrapperを実装します。その後にLyric Segmentation、Plannerへ進み、Context Loop 0.6.6のcommit `136db5dbbf25405063a96e898ae880e8785b7f29`との互換試験、4B/8Bの英訳品質及び8GB VRAM環境での全体成立性を測ります。
+次はPhase 5のLyric Segmentationを、plain lyricsのatomic分割、Whisper alignment境界、20ms VADとsample-domain refinement、H3 timing量子化、Template EMD及びSRT serializerの順で実装します。その後にPlannerへ進み、Context Loop 0.6.6のcommit `136db5dbbf25405063a96e898ae880e8785b7f29`との互換試験、4B/8Bの英訳品質及び8GB VRAM環境での全体成立性を測ります。
