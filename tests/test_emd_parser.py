@@ -1,0 +1,133 @@
+from pathlib import Path
+import unittest
+
+from core.emd import EMDParseError, parse_emd, parse_time_ms
+
+
+FIXTURES = Path(__file__).parent / "fixtures" / "emd"
+
+
+class EMDParserTests(unittest.TestCase):
+    def test_canonical_ref2va_document(self) -> None:
+        document = parse_emd(
+            (FIXTURES / "canonical_ref2va.emd").read_text(encoding="utf-8")
+        )
+
+        self.assertEqual(len(document.subjects), 1)
+        self.assertEqual(document.subjects[0].concept_id, "人物1")
+        self.assertIsNone(document.subjects[0].picture_ref)
+        self.assertEqual(
+            tuple(name for name, _ in document.common_prompt),
+            ("スタイル", "モーション", "カメラ"),
+        )
+        scene = document.scenes[0]
+        self.assertEqual((scene.start_ms, scene.end_ms), (0, 10_125))
+        self.assertEqual(scene.h3_length, 243)
+        self.assertEqual(tuple(shot.start_ms for shot in scene.shots), (0, 5_000))
+        self.assertEqual(scene.shots[0].lyric_annotations[0].section, "VERSE1")
+        self.assertEqual(
+            scene.shots[1].lyric_lip_sync,
+            (("人物1", "千年鳥居をくぐるそなたよ"),),
+        )
+
+    def test_missing_scene_annotation_is_rejected(self) -> None:
+        source = (FIXTURES / "invalid_missing_scene_annotation.emd").read_text(
+            encoding="utf-8"
+        )
+        with self.assertRaisesRegex(EMDParseError, "Scene annotation is required"):
+            parse_emd(source)
+
+    def test_conflicting_lip_sync_is_rejected(self) -> None:
+        source = (FIXTURES / "invalid_conflicting_lip_sync.emd").read_text(
+            encoding="utf-8"
+        )
+        with self.assertRaisesRegex(EMDParseError, "lip-sync modes are exclusive"):
+            parse_emd(source)
+
+    def test_picture_reference_is_optional(self) -> None:
+        source = """# サブジェクト
+* `場所1`
+* `H3サブジェクト` `<Subject 2>`
+* 石造りの回廊。
+
+> `シーン` 1
+# シーン 00:00.000 --> 00:01.000
+* `H3長` 22
+## ショット 00:00.000
+* `場所1`を固定カメラで映す。
+"""
+        document = parse_emd(source)
+        self.assertIsNone(document.subjects[0].picture_ref)
+        self.assertEqual(document.subjects[0].concept_type, "environment")
+
+    def test_raw_h3_length_must_match_grid(self) -> None:
+        source = """# サブジェクト
+* `人物1`
+* `H3サブジェクト` `<Subject 1>`
+* 人物。
+> `シーン` 1
+# シーン 00:00.000 --> 00:01.000
+* `H3長` 23
+## ショット 00:00.000
+* 歩く。
+"""
+        with self.assertRaisesRegex(EMDParseError, r"17k\+5"):
+            parse_emd(source)
+
+    def test_common_prompt_order_is_strict(self) -> None:
+        source = """# サブジェクト
+* `人物1`
+* `H3サブジェクト` `<Subject 1>`
+* 人物。
+# 共通プロンプト
+## カメラ
+* 固定する。
+## スタイル
+* 実写。
+> `シーン` 1
+# シーン 00:00.000 --> 00:01.000
+* `H3長` 22
+## ショット 00:00.000
+* 歩く。
+"""
+        with self.assertRaisesRegex(EMDParseError, "subsection order"):
+            parse_emd(source)
+
+    def test_explicit_dialogue_tags_are_validated(self) -> None:
+        valid = """# サブジェクト
+* `人物1`
+* `H3サブジェクト` `<Subject 1>`
+* 人物。
+> `シーン` 1
+# シーン 00:00.000 --> 00:01.000
+* `H3長` 22
+## ショット 00:00.000
+* <d>[English]Hello.</d> と発話する。
+"""
+        parse_emd(valid)
+        with self.assertRaisesRegex(EMDParseError, "unclosed <d> tag"):
+            parse_emd(valid.replace("</d>", ""))
+
+    def test_time_parser_returns_integer_milliseconds(self) -> None:
+        self.assertEqual(parse_time_ms("02:03.456"), 123_456)
+        with self.assertRaises(EMDParseError):
+            parse_time_ms("00:60.000")
+
+    def test_scene_annotation_must_be_physically_adjacent(self) -> None:
+        source = """# サブジェクト
+* `人物1`
+* `H3サブジェクト` `<Subject 1>`
+* 人物。
+> `シーン` 1
+
+# シーン 00:00.000 --> 00:01.000
+* `H3長` 22
+## ショット 00:00.000
+* 歩く。
+"""
+        with self.assertRaisesRegex(EMDParseError, "physical line"):
+            parse_emd(source)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,0 +1,10 @@
+The following records describe the shots.
+```text
+ACTION	1	人物は足を踏み出す。
+ACTION	2	人物は手を胸元へ戻す。	髪が遅れて追従する。
+ACTION	2	重複した行。
+CAMERA	1	型が違う行。
+ACTION	x	数値でないslot。
+ACTION	9	未知slot。
+ACTION	3	   
+```

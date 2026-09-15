@@ -81,6 +81,7 @@ Picture関連を持つ`MVD_EMD_FRAGMENT_V1`は次の形を取る。`picture_refe
 | 内部ID | `` `(人物|場所|物品)N` `` | `N=1..16` |
 | H3 Subject | `<Subject N>` | `N=1..4` |
 | H3 Picture | `<Picture N>` | `N=1..9` |
+| H3 Video | `<Video N>` | `N=1..9`。V1 Compilerでは翻訳保護だけを行う |
 | H3 Audio論理ID | `` `H3音声N` `` | `N=1..3` |
 | H3 raw length | ASCII十進整数 | Timing Profileの範囲と格子に一致 |
 
@@ -450,12 +451,14 @@ Audio参照動画生成WFは、Lyric Segmentationが`MVD_TIMELINE_V1`へ保存�
 
 次は翻訳から保護する。
 
-- 内部ID、`<Subject N>`、`<Picture N>`、`H3音声N`
+- 内部ID、`<Subject N>`、`<Picture N>`、`<Video N>`、`<Audio N>`、`H3音声N`
 - 見出し、時刻、`H3長`
 - annotationと音響directive
 - `「...」`、作者が明示した`<d>...</d>`及び``リップシンク 歌詞``の原文
 
 `as is`とは、構造、情報量、行順、Scene/Shot対応を変えないことを意味する。英訳そのものは行うが、補強、要約、創作、並べ替え又は意味修復は行わない。
+
+`<Video N>`はShot等の自由描写に書けるopaqueなH3参照tokenとして、一文字も翻訳せず同じ位置へ復元する。V1のRef2VA CompilerはVideo接続の探索、`required_references`生成、番号の実配線検証又はVideo駆動directiveへの変換を行わない。従ってここで定める`N=1..9`は翻訳保護文法の範囲であり、接続先Context Loop/H3 nodeが実際に公開するVideo slot数の保証ではない。
 
 ### 13.2 Ref2VA六セクション
 

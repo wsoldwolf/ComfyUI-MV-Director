@@ -806,7 +806,7 @@ CompilerはRef2VA専用のEMD parser、限定翻訳orchestrator、H3 prompt rend
 1. EMDの`# サブジェクト`、必須Scene番号annotation、Scene、Shot、`` `H3長` ``及び予約directiveを構文解析する。
 2. Subject/Picture関連、概念ID、`「...」`、明示`<d>...</d>`、annotation、音響directive、Shotの``リップシンク 歌詞``を翻訳対象から分離する。
 3. `# サブジェクト`の説明、任意の`# 共通プロンプト`の四区分本文、`# 保持分析`及びShot本文だけを、区分を保持したtranslation unitとして英訳する。
-4. EMD内部IDを対応する`<Subject N>`へ固定変換し、実際に記述された`<Picture N>`と`<Audio N>`だけの必要slot一覧を作る。
+4. EMD内部IDを対応する`<Subject N>`へ固定変換し、実際に記述された`<Picture N>`と`<Audio N>`だけの必要slot一覧を作る。自由描写中の`<Video N>`は翻訳保護してas-isで渡すが、V1では必要slot一覧を生成しない。
 5. 各Shotの``リップシンク 歌詞``を、そのShot開始位置、対象token、原文`<d>[Japanese]...</d>`を持つ固定prompt要素へ写す。
 6. 通常の`「...」`の内容を変えず`<d>[Japanese]...</d>`へ包む。
 7. 明示された音響directiveだけを固定対応表でScene JSON要素と固定prompt要素へ写す。音声参照tagと歌詞原文は翻訳unitへ入れない。

@@ -1,0 +1,37 @@
+{
+  "schema": "MVD_DIRECTION_V1",
+  "style_direction": [
+    "実写映画として描写する。"
+  ],
+  "motion_direction": [
+    "接地と重心移動を明瞭にする。"
+  ],
+  "camera_direction": [
+    "前景と背景の視差を使う。"
+  ],
+  "other_direction": [],
+  "provenance": [
+    {
+      "record_id": "src_0001",
+      "record_kind": "input",
+      "source": "user",
+      "source_ref": "user_request",
+      "source_position": 0,
+      "target": null,
+      "disposition": "supplied",
+      "reason": "direct_input",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "record_id": "out_style_0001",
+      "record_kind": "output",
+      "source": "generated",
+      "source_ref": "STYLE:1",
+      "source_position": 2,
+      "target": "style_direction[0]",
+      "disposition": "accepted",
+      "reason": "valid_line_record",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    }
+  ]
+}

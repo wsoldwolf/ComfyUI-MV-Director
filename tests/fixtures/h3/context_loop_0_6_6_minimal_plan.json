@@ -1,0 +1,37 @@
+{
+  "prompt_prefix": [
+    "Render every scene as photorealistic live-action cinema."
+  ],
+  "defaults": {
+    "steps": 20
+  },
+  "shots": [
+    {
+      "id": "scene_0001",
+      "length": 243,
+      "prompt": [
+        "subject_definitions:",
+        "<Subject 1> is the person described here: a protagonist with long black hair and white-and-vermilion clothing.",
+        "",
+        "summary:",
+        "[reference generation] A moonlit shrine approach.",
+        "",
+        "retention_analysis:",
+        "<Subject 1>: fully_preserved - preserve the described identity and attributes across shots.",
+        "",
+        "detailed_description:",
+        "A moonlit shrine approach.",
+        "[Shot 1] <Subject 1> walks toward the torii gate.",
+        "[Shot 2] At 00:05.000, <Subject 1> stops and faces forward.",
+        "",
+        "overall_soundscape:",
+        "No scene-specific soundscape instruction is provided.",
+        "",
+        "non_diegetic_music:",
+        "No additional non-diegetic music is requested."
+      ],
+      "context_length": 0,
+      "audio_context_length": 0
+    }
+  ]
+}

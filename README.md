@@ -6,7 +6,7 @@ EMDは**Easy MarkDown**の略です。Extended Markdownではありません。�
 
 ## 現在の状態
 
-2026-09-16時点では**設計引き継ぎと初期仕様の段階**です。新コアノード、実モデル推論、H3レンダリングはまだ実装・実施していません。旧プロジェクトやComfyUIの実行側も変更していません。
+2026-09-16時点で**Phase 0・1とPhase 2の共通基盤をFake backendで完了し、Phase 3のVision coreを実装中**です。ComfyUI非依存のartifact型、canonical JSON、LLM/Vision行protocol、厳密EMD parser、翻訳保護span、Ref2VA六セクションrenderer、Context Loop Plan serializer、versioned H3 Timing Profile、GGUF探索・lifecycle・context予算・成功専用cache、Subject EMD renderer及び`auto_h3` Picture配線解決を検証しています。公開ComfyUIノード、実GGUF/Vision推論、Whisper解析及びH3レンダリングはまだ実装・実施していません。旧プロジェクトやComfyUIの実行側も変更していません。
 
 開発方針は「互換性ではなく、必要な実装資産だけを再利用する」です。旧workflow、node ID、入力形式、出力schema及び修復経路との互換性は持たせません。一方、PCM padding、GGUF探索、model lifecycle、音声区間処理など、新仕様でも責務が変わらない有限な処理は選別して再利用します。旧実装に存在するという理由だけで、flag、fallback、validator又は補助nodeを新プロジェクトへ持ち込みません。
 
@@ -60,6 +60,8 @@ EMDは**Easy MarkDown**の略です。Extended Markdownではありません。�
 - [設計引き継ぎ](docs/handoff.md)
 - [最小コア仕様](docs/spec/minimal-core-spec.md)
 - [EMD（Easy MarkDown）仕様書](docs/spec/emd-spec.md)
+- [プロトコル仕様](docs/spec/protocol-spec.md)
+- [実装仕様](docs/implementation/implementation-spec.md)
 - [既存部品の移植可否と実装順序](docs/implementation/components-and-order.md)
 - [公開ノード一覧と配置](docs/implementation/public-nodes-and-layout.md)
 - [`prompt_prefix`調査](docs/research/context-loop-prompt-prefix.md)
@@ -75,4 +77,4 @@ Copyright © 2026 `wsoldwolf`
 
 ## 次の作業
 
-次の実装回では、まず`nodes/`配下の独自node type、`# サブジェクト`と`<Picture N>`関連を読むEMDパーサー、Ref2VA六セクションrenderer、PromptTranslator interface、`` `H3長` ``を無変換で渡す単独CompilerをFake backendで通します。実装基準は現在動作確認に使うContext Loop 0.6.6のcommit `136db5dbbf25405063a96e898ae880e8785b7f29`とし、実装後に当該commitとの互換性テストを行います。その後に4B/8Bの英訳品質とImage to Subject EMDを接続し、8GB VRAM環境で全体の成立性を測ります。
+次はImage to Subject EMDの画像fingerprint、binding artifact、Vision model adapter及び薄いComfyUI wrapperを実装します。公開`nodes/` wrapperと実GGUF接続はcore契約が固まってから追加し、Context Loop 0.6.6のcommit `136db5dbbf25405063a96e898ae880e8785b7f29`との互換試験を行います。その後にEnhancer、Lyric Segmentation、Plannerへ進み、最後に4B/8Bの英訳品質と8GB VRAM環境での全体成立性を測ります。
