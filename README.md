@@ -6,7 +6,7 @@ EMDは**Easy MarkDown**の略です。Extended Markdownではありません。�
 
 ## 現在の状態
 
-2026-09-16時点で**Phase 0・1とPhase 2の共通基盤をFake backendで完了し、Phase 3のVision coreを実装中**です。ComfyUI非依存のartifact型、canonical JSON、LLM/Vision行protocol、厳密EMD parser、翻訳保護span、Ref2VA六セクションrenderer、Context Loop Plan serializer、versioned H3 Timing Profile、GGUF探索・lifecycle・context予算・成功専用cache、Subject EMD renderer及び`auto_h3` Picture配線解決を検証しています。公開ComfyUIノード、実GGUF/Vision推論、Whisper解析及びH3レンダリングはまだ実装・実施していません。旧プロジェクトやComfyUIの実行側も変更していません。
+2026-09-16時点で**Phase 0・1とPhase 2の共通基盤をFake backendで完了し、Phase 3のVision coreを実装中**です。ComfyUI非依存のartifact型、canonical JSON、LLM/Vision行protocol、厳密EMD parser、翻訳保護span、Ref2VA六セクションrenderer、Context Loop Plan serializer、versioned H3 Timing Profile、GGUF scanner・ComfyUI `folder_paths` root adapter・lifecycle・context予算・成功専用cache、Subject EMD renderer及び`auto_h3` Picture配線解決を検証しています。公開ComfyUIノードとその`model_name` combo、実GGUF/Vision推論、Whisper解析及びH3レンダリングはまだ実装・実施していません。旧プロジェクトやComfyUIの実行側も変更していません。
 
 開発方針は「互換性ではなく、必要な実装資産だけを再利用する」です。旧workflow、node ID、入力形式、出力schema及び修復経路との互換性は持たせません。一方、PCM padding、GGUF探索、model lifecycle、音声区間処理など、新仕様でも責務が変わらない有限な処理は選別して再利用します。旧実装に存在するという理由だけで、flag、fallback、validator又は補助nodeを新プロジェクトへ持ち込みません。
 

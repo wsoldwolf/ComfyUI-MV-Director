@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping
@@ -34,7 +35,8 @@ def _inside(path: Path, root: Path) -> bool:
 def discover_gguf_models(roots: Mapping[str, str | Path]) -> tuple[GGUFModel, ...]:
     candidates: list[tuple[str, str, Path, int, int]] = []
     seen_roots: set[Path] = set()
-    for root_id in sorted(roots):
+    seen_paths: set[str] = set()
+    for root_id in roots:
         if not root_id or "::" in root_id:
             raise ValueError("root IDs must be non-empty and must not contain '::'")
         root = Path(roots[root_id]).resolve()
@@ -47,6 +49,10 @@ def discover_gguf_models(roots: Mapping[str, str | Path]) -> tuple[GGUFModel, ..
             resolved = candidate.resolve()
             if not resolved.is_file() or not _inside(resolved, root):
                 continue
+            path_key = os.path.normcase(str(resolved))
+            if path_key in seen_paths:
+                continue
+            seen_paths.add(path_key)
             relative = resolved.relative_to(root).as_posix()
             stat = resolved.stat()
             candidates.append(
@@ -55,10 +61,15 @@ def discover_gguf_models(roots: Mapping[str, str | Path]) -> tuple[GGUFModel, ..
 
     counts: dict[str, int] = {}
     for _, relative, _, _, _ in candidates:
-        counts[relative] = counts.get(relative, 0) + 1
+        relative_key = relative.casefold()
+        counts[relative_key] = counts.get(relative_key, 0) + 1
     models: list[GGUFModel] = []
     for root_id, relative, path, size, mtime_ns in candidates:
-        selection_id = f"{root_id}::{relative}" if counts[relative] > 1 else relative
+        selection_id = (
+            f"{root_id}::{relative}"
+            if counts[relative.casefold()] > 1
+            else relative
+        )
         signature = f"{root_id}\0{relative}\0{size}\0{mtime_ns}"
         models.append(
             GGUFModel(
@@ -91,4 +102,3 @@ def resolve_model_selection(
             "model selection is missing, stale, or ambiguous; refresh the model list"
         )
     return matches[0]
-

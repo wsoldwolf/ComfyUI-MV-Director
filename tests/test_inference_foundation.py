@@ -50,6 +50,18 @@ class InferenceFoundationTests(unittest.TestCase):
             with self.assertRaises(ModelSelectionError):
                 resolve_model_selection("same.gguf", roots)
 
+    def test_overlapping_roots_do_not_duplicate_the_same_file(self) -> None:
+        with TemporaryDirectory() as temporary:
+            parent = Path(temporary) / "LLM"
+            child = parent / "GGUF"
+            child.mkdir(parents=True)
+            model_path = child / "model.gguf"
+            model_path.write_bytes(b"model")
+            models = discover_gguf_models({"child": child, "parent": parent})
+            self.assertEqual(len(models), 1)
+            self.assertEqual(models[0].selection_id, "model.gguf")
+            self.assertEqual(models[0].path, model_path.resolve())
+
     def test_absolute_model_selection_is_rejected(self) -> None:
         with self.assertRaisesRegex(ModelSelectionError, "absolute"):
             resolve_model_selection(str(Path.cwd().resolve() / "model.gguf"), {})
