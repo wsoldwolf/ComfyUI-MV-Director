@@ -5,7 +5,7 @@
 
 ## 結論
 
-Planの正しいkey名は`prompt_prefix`である。JSON object内のproperty順には依存せず、Context Loopが各Sceneのpromptより前へ機械的に連結する。MV DirectorではEMDの`# 共通プロンプト`をこのfieldへ一対一で写す。
+Planの正しいkey名は`prompt_prefix`である。JSON object内のproperty順には依存せず、Context Loopが各Sceneのpromptより前へ機械的に連結する。MV Directorでは任意のEMD `# 共通プロンプト`をStyle、Motion、Camera、Otherへ構造分離し、見出しを除いた存在する本文をこの順でfieldへ平坦化する。全区分がなければfieldを出力しない。
 
 ```text
 final prompt = prompt_prefix + "\n\n" + scene_prompt
@@ -85,6 +85,10 @@ EMDはEasy MarkDownであり、次の四部構造を持つ。
 # サブジェクト
 # 保持分析
 # 共通プロンプト
+## スタイル
+## モーション
+## カメラ
+## その他
 # シーン ...
 ```
 
@@ -92,12 +96,15 @@ Compilerの写像は次で固定する。
 
 | EMD | Context Loop Plan |
 |---|---|
-| `# 共通プロンプト` | `prompt_prefix`。翻訳後の行数と順序を維持 |
+| `# 共通プロンプト / ## スタイル` | 存在すれば`prompt_prefix`の先頭。翻訳後の行数と区分内順序を維持 |
+| `# 共通プロンプト / ## モーション` | Style本文の後。省略可能 |
+| `# 共通プロンプト / ## カメラ` | Motion本文の後。省略可能 |
+| `# 共通プロンプト / ## その他` | 前三区分以外のフリーフォーム本文。最後。省略可能 |
 | `# サブジェクト` | 各Scene `subject_definitions:`へ再掲 |
 | `# 保持分析` | 各Scene `retention_analysis:`へ再掲 |
 | `# シーン` | 各`shots[n].prompt`の六セクションとScene設定 |
 
-共通プロンプトの先頭list itemを目標画風のauthorityとする。Subject固有の保持条件は`# サブジェクト`又は`# 保持分析`へ置き、prefixから先に未定義`<Subject N>`を参照する必要を減らす。
+`## スタイル`を使う場合は先頭list itemを目標画風のauthorityとする。CompilerはEMD subsection見出しを`prompt_prefix`へ出さず、存在する本文をStyle、Motion、Camera、Otherの順に連結するため、Styleがあればその最初の本文が完成promptの先頭になる。これはH3の画風変換に関するプロジェクト側の観察を固定契約にしたもので、Context Loop parserが意味上Style又はprefix自体を要求しているという意味ではない。Subject固有の保持条件は`# サブジェクト`又は`# 保持分析`へ置き、prefixから先に未定義`<Subject N>`を参照する必要を減らす。
 
 ## 7. 実装後のH3試験
 
