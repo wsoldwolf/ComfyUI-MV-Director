@@ -60,6 +60,14 @@ EMDは**Easy MarkDown**の略です。Extended Markdownではありません。�
 - [公開ノード一覧と配置](docs/implementation/public-nodes-and-layout.md)
 - [`prompt_prefix`調査](docs/research/context-loop-prompt-prefix.md)
 
+## ライセンス
+
+Copyright © 2026 `wsoldwolf`
+
+ソースコードと文書は、別途明記された場合を除き[GNU General Public License v3.0 only](LICENSE)（`GPL-3.0-only`）で公開します。
+
+`assets/`に収録した検証用楽曲、歌詞、ボーカルステム及び参照画像はソフトウェアライセンスの対象外です。現在収録している素材は[CC BY-NC 4.0](ASSET_LICENSES.md)で公開し、対象ファイル、生成元及び帰属条件は同文書に明記します。将来追加される素材へこの条件は自動適用されません。
+
 ## 次の作業
 
 次の実装回では、まず`nodes/`配下の独自node type、`# サブジェクト`と`<Picture N>`関連を読むEMDパーサー、Ref2VA六セクションrenderer、PromptTranslator interface、`` `H3長` ``を無変換で渡す単独CompilerをFake backendで通します。実装基準は現在動作確認に使うContext Loop 0.6.6のcommit `136db5dbbf25405063a96e898ae880e8785b7f29`とし、実装後に当該commitとの互換性テストを行います。その後に4B/8Bの英訳品質とImage to Subject EMDを接続し、8GB VRAM環境で全体の成立性を測ります。
