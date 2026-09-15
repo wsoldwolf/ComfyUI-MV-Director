@@ -1,7 +1,7 @@
 # 既存部品の移植可否と実装順序
 
 作成日: 2026-09-15<br>
-状態: 初期調査に基づく選定。Phase 0～6を新規実装し、次はPhase 7 Compiler node wrapperへ進む。旧コードの直接コピーは行わず、有限な挙動だけを新名前空間へ再実装している。Phase 5はFake Whisper、Phase 6はFake Planner backendと純粋関数で検証済みで、実checkpoint及び実GGUFによる品質測定は統合試験で行う。
+状態: 初期調査に基づく選定。Phase 0～7を新規実装し、次はPhase 8 support／utility nodeとworkflowへ進む。旧コードの直接コピーは行わず、有限な挙動だけを新名前空間へ再実装している。Phase 5はFake Whisper、Phase 6はFake Planner backend、Phase 7はFake translation backendと純粋関数で検証済みで、実checkpoint及び実GGUFによる品質測定は統合試験で行う。
 
 ## 1. 判定基準
 

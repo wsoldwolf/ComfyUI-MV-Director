@@ -207,6 +207,9 @@ issue reasonは`field_count`、`unknown_type`、`invalid_slot`、`unknown_slot`�
 | song-direction | `DIRECTION` | slot 1 |
 | actions | `ACTION` | side tableの全slot |
 | cameras | `CAMERA` | side tableの全slot |
+| translation-ja-en | `TRANSLATION` | batch内の全slot |
+
+Compilerの`translation-ja-en`は描写文の一対一翻訳だけを返し、欠落、重複、未知行又は破損行があれば修復・retryせず停止する。slotは各有限batch内で1から振り直し、Pythonが元のtranslation unit順へ戻す。入力JSONはPython所有であり、LLMへJSON出力を要求しない。
 
 ### 9.3 Compiler翻訳保護token
 

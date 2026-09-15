@@ -133,7 +133,7 @@ Timeline PlannerはMV専用とし、外部接続可能な`lip_sync_mode`（`off`
 
 ### 4.7 GGUF選択と4B baseline
 
-PromptTranslatorを第5の公開nodeにはせず、Compiler内部adapterとして扱う。旧実装と同じくComfyUIの`models/LLM/GGUF`と追加`LLM` rootから利用可能なGGUFを列挙し、Compilerの`model_name` comboで選択する。modelはハードコードせず、選択pathとruntime設定をcache signatureへ含める。
+PromptTranslatorを第5の公開nodeにはせず、Compiler内部adapterとして扱う。旧実装と同じくComfyUIの`models/LLM/GGUF`と追加`LLM` rootから利用可能なGGUFを列挙し、Compilerの`model_name` comboで選択する。modelはハードコードせず、実GGUF比較では選択pathのfingerprintとruntime設定を試験記録へ含める。Compiler wrapper自身には独立cacheを設けない。
 
 8GB VRAM向け初回baselineは4B `Q5_K_M`、`n_ctx=32768`、Q8 KV cache、Flash Attention、実行後unloadとする。提示されたMungert版はQ5_K_Mが約2.89GBだが、model cardに元model、license、評価の記入がないため組込み既定にはしない。利用者が配置したGGUFの一候補として扱い、公式Qwen版と同じ翻訳fixtureで比較する。
 

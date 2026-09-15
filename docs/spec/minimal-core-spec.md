@@ -995,7 +995,7 @@ serialized_input_tokens + reserved_output_tokens + safety_margin <= effective_co
 
 失敗、途中切れ、未完了batchを成功cacheへ入れない。上流keyが変わった下流だけを無効化する。
 
-Compiler成功時は`plan_json`、`required_references`、入力EMD hash、H3 timing profile ID、translator model fingerprint、chat format、量子化、system prompt version、seed及びsampling設定をimmutable artifactとして保存する。同じEMDでも翻訳条件が異なる結果を同じ成功cacheとして扱わない。
+Compiler wrapperは単純な構文・翻訳・直列化境界を保つため独自の成功cacheを持たない。成功時は`plan_json`と`required_references`をその実行の成果として返し、永続化はworkflow又は既存の出力保存nodeへ委ねる。実GGUF比較では入力EMD hash、H3 timing profile ID、translator model fingerprint、chat format、量子化、system prompt version、seed及びsampling設定を外部の試験記録へ残し、異なる翻訳条件の結果を同一runとして扱わない。
 
 ## 12. エラー分類
 
