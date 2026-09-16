@@ -11,6 +11,7 @@ from .node_seed32 import MVDirectorSeed32
 from .node_string_combo import MVDirectorStringCombo
 from .node_connected_combo import MVDirectorConnectedCombo
 from .node_load_text_file import MVDirectorLoadTextFile
+from .common.node_logging import instrument_node_class
 
 
 NODE_CLASS_MAPPINGS = {
@@ -40,5 +41,11 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "MVDirectorConnectedCombo": "MV Director - Connected Combo",
     "MVDirectorLoadTextFile": "MV Director - Load Text File",
 }
+
+for _node_name, _node_class in NODE_CLASS_MAPPINGS.items():
+    instrument_node_class(
+        _node_class,
+        NODE_DISPLAY_NAME_MAPPINGS.get(_node_name, _node_name),
+    )
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]

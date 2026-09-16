@@ -3,6 +3,12 @@
 作成日: 2026-09-15<br>
 状態: 初期実装で登録する公開surfaceを固定する。
 
+全公開`MVDirector*` nodeは`mv_director.nodes` loggerへ表示名付きの
+lifecycle logを出す。開始及び正常完了はINFO、下流を止める未完了はWARNING、
+送出する例外はERRORとする。正常完了の`completed`行は実行ごとに一行だけ
+ComfyUI標準の`color=cyan`で表示する。完了logには処理時間と、存在する場合は公開statusを含めるが、
+prompt、歌詞、画像又は音声payloadは記録しない。
+
 ## 1. 公開ノード
 
 初期実装で登録するnode typeは次の11個だけとする。
