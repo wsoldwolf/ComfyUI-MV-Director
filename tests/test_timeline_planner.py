@@ -84,6 +84,27 @@ class DialogueOnlyPlannerBackend(FakePlannerBackend):
         )
 
 
+class SmallModelFormattingBackend(FakePlannerBackend):
+    def complete_planner(self, *, task, system_prompt, payload, config, interrupt_callback=None):
+        value = json.loads(payload)
+        self.calls.append((task, value))
+        record_type = {
+            "lyric-notes": "NOTE",
+            "song-direction": "DIRECTION",
+            "actions": "ACTION",
+            "cameras": "CAMERA",
+        }[task]
+        if task == "lyric-notes":
+            return "<think>protocolを確認する。</think>\n歌詞本文\tTAB\t1\tTAB\t有効な記述1"
+        if task == "song-direction":
+            return "<think></think>\nDIRECTION\tTAB\tslot 1\tTAB\t有効な全曲方針"
+        records = [
+            f"{record_type}<TAB>{item['slot']}<TAB>有効な記述{item['slot']}"
+            for item in value["slots"]
+        ]
+        return "<think>protocolを確認する。</think>\n" + "<TAB>".join(records)
+
+
 def runtime() -> LlamaRuntimeConfig:
     return LlamaRuntimeConfig(max_tokens=512, n_ctx=4096)
 
@@ -98,6 +119,24 @@ def prompts() -> dict[str, str]:
 
 
 class TimelinePlannerCoreTests(unittest.TestCase):
+    def test_qwen4b_thinking_literal_tabs_and_joined_records_are_normalized(self) -> None:
+        result = plan_timeline(
+            SmallModelFormattingBackend(),
+            template_emd=TEMPLATE,
+            concept_emd=CONCEPT,
+            direction=None,
+            lip_sync_mode="off",
+            lip_sync_target="人物1",
+            lip_sync_audio_slot=1,
+            scenes_per_batch=3,
+            system_prompts=prompts(),
+            runtime_config=runtime(),
+        )
+        self.assertTrue(result.complete)
+        self.assertEqual(result.emd.schema, "MVD_EMD_V1")
+        self.assertFalse(result.missing)
+        self.assertIn("有効な記述2", result.emd.text)
+
     def test_four_tasks_render_valid_emd_and_filter_generated_dialogue(self) -> None:
         backend = FakePlannerBackend()
         result = plan_timeline(

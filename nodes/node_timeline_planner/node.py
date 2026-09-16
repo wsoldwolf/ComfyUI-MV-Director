@@ -106,7 +106,8 @@ class _LlamaPlannerBackend:
         config: LlamaRuntimeConfig,
         interrupt_callback: Any = None,
     ) -> str:
-        count = self.lifecycle.count_serialized_prompt(system_prompt + "\n" + payload)
+        model_payload = f"/no_think\n{payload}"
+        count = self.lifecycle.count_serialized_prompt(system_prompt + "\n" + model_payload)
         build_context_budget(
             count.count,
             config.max_tokens,
@@ -116,7 +117,7 @@ class _LlamaPlannerBackend:
         response = self.lifecycle.complete_chat(
             [
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": payload},
+                {"role": "user", "content": model_payload},
             ],
             config,
             interrupt_callback=interrupt_callback,
@@ -218,7 +219,7 @@ class MVDirectorTimelinePlanner:
         direction: DirectionArtifact | None = None,
         model_name_override: str = "",
         save_debug_output: bool = False,
-    ) -> tuple[str, EMDTextArtifact, str]:
+    ) -> Any:
         with self._lock:
             if cache_mode not in CACHE_MODES:
                 raise ValueError("cache_mode must be use, refresh, or off")
@@ -329,4 +330,18 @@ class MVDirectorTimelinePlanner:
                     },
                 )
                 status += f"; debug={debug_path or 'unavailable'}"
+            if content is None:
+                message = (
+                    "Timeline Planner did not produce a complete EMD; "
+                    f"{status}. Compiler execution was blocked."
+                )
+                try:
+                    from comfy_execution.graph import ExecutionBlocker  # type: ignore
+                except Exception as exc:
+                    raise RuntimeError(message) from exc
+                blocker = ExecutionBlocker(message)
+                return {
+                    "ui": {"status": [status]},
+                    "result": (blocker, blocker, status),
+                }
             return emd.text, emd, status

@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
 from typing import Any, Mapping, Protocol
 
-from ..artifacts import DirectionArtifact, EMDTextArtifact, canonical_json
+from ..artifacts import DirectionArtifact, EMDTextArtifact, canonical_json, normalize_newlines
 from ..inference import LlamaRuntimeConfig
 from ..protocols import LLMRecordIssue, parse_llm_records
 from .dialogue import DialogueFilter, DialogueProtector
@@ -14,7 +15,7 @@ from .renderer import render_completed_emd
 from .template import PlannerTemplate, normalize_concept_emd, parse_template_emd
 
 
-PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v1"
+PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v2"
 TASKS = ("lyric-notes", "song-direction", "actions", "cameras")
 
 
@@ -88,6 +89,46 @@ def _chunks(values: list[Any], size: int):
         yield values[index : index + size]
 
 
+def _normalize_small_model_response(response: str, record_type: str) -> str:
+    """Normalize observed Qwen3-4B protocol spelling without changing slots."""
+
+    normalized = normalize_newlines(response)
+    normalized = re.sub(r"<think>.*?</think>", "", normalized, flags=re.DOTALL)
+    labelled_slot_line = re.compile(
+        rf"^{re.escape(record_type)}\t(?:TAB\t)?slot\s+([0-9]+)\t(?:TAB\t)?(.+)$",
+        flags=re.MULTILINE | re.IGNORECASE,
+    )
+    normalized = labelled_slot_line.sub(
+        lambda match: f"{record_type}\t{match.group(1)}\t{match.group(2)}",
+        normalized,
+    )
+    labelled_tab_line = re.compile(
+        r"^[^\n\t]*\tTAB\t([0-9]+)\tTAB\t(.+)$",
+        flags=re.MULTILINE,
+    )
+    normalized = labelled_tab_line.sub(
+        lambda match: f"{record_type}\t{match.group(1)}\t{match.group(2)}",
+        normalized,
+    )
+    literal_marker = re.compile(
+        rf"(^|<TAB>){re.escape(record_type)}<TAB>([0-9]+)<TAB>",
+        flags=re.MULTILINE,
+    )
+    normalized = literal_marker.sub(
+        lambda match: (
+            ("" if match.group(1) == "" else "\n")
+            + f"{record_type}\t{match.group(2)}\t"
+        ),
+        normalized,
+    )
+    normalized = re.sub(
+        rf"\t{re.escape(record_type)}\t([0-9]+)\t",
+        rf"\n{record_type}\t\1\t",
+        normalized,
+    )
+    return normalized
+
+
 def _request_entities(
     backend: TimelinePlannerBackend,
     *,
@@ -113,7 +154,11 @@ def _request_entities(
     )
     allowed = {record_type: frozenset(slot_entities)}
     required = frozenset((record_type, slot) for slot in slot_entities)
-    parsed = parse_llm_records(response, allowed_slots=allowed, required=required)
+    parsed = parse_llm_records(
+        _normalize_small_model_response(response, record_type),
+        allowed_slots=allowed,
+        required=required,
+    )
     records = {record.slot: record.text for record in parsed.records}
     issues = list(parsed.issues)
     retried_scenes: list[int] = []
@@ -142,7 +187,9 @@ def _request_entities(
         retry_allowed = {record_type: frozenset(scene_slots)}
         retry_required = frozenset((record_type, slot) for slot in scene_slots)
         retry = parse_llm_records(
-            retry_response, allowed_slots=retry_allowed, required=retry_required
+            _normalize_small_model_response(retry_response, record_type),
+            allowed_slots=retry_allowed,
+            required=retry_required,
         )
         issues.extend(retry.issues)
         records.update({record.slot: record.text for record in retry.records})

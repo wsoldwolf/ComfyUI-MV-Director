@@ -604,9 +604,10 @@ Timeline PlannerはMV専用である。完成動画にどの音声を残すか�
 - 各taskの許可type、短いslot集合、重複及び欠落recordだけを検証する。実Scene/Shot IDと時刻はLLM応答に含めない。
 - batch応答の一Sceneだけが構造不正なら、そのSceneだけ一回再生成する。
 - LLM応答中の引用台詞、発話表現又はdialogue tagは品質・protocol retryの理由にせず、7.5.1のfilterで一回だけ機械削除する。
+- Qwen3-4Bへは各Planner taskのuser message先頭で`/no_think`を指定する。Plannerに限り、閉じた`<think>...</think>`、separatorとして出力された文字列`<TAB>`、`slot N`表記、及び同じ既知typeが一物理行へ連結された応答をparser前に決定論的に正規化する。slot番号はScene/Shot対応を所有するため変更しない。
 - 品質が弱い、表現が好みでない、意味が疑わしいという理由で自動再試行しない。
 - 同じ対象を上位taskへ戻す入れ子retryを作らない。
-- 一回の局所retryでも有効にならなければ未完了artifactを返し、H3 Planとしては出力しない。
+- 一回の局所retryでも有効にならなければ内部では未完了artifactとmissing slotを保持する。ComfyUI nodeの`emd_text`及び`emd`出力は`ExecutionBlocker`として下流を停止し、Template EMDをCompilerへ誤入力しない。statusにはmissing slotを残す。
 
 ### 7.7 Audio Pad Pair
 
