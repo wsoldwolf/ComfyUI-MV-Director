@@ -46,8 +46,11 @@ class Ref2VACompilerTests(unittest.TestCase):
             plan["prompt_prefix"],
             [
                 "EN:実写映画として描写する。",
+                "EN:深い森の神社を背景にする。",
+                "EN:夜の月光に統一する。",
                 "EN:接地と重心移動が読める連続動作にする。",
                 "EN:前景と背景の視差を使う。",
+                "EN:画面内に文字を出さない。",
             ],
         )
         scene = plan["shots"][0]

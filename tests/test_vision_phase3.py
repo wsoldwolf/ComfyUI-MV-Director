@@ -248,6 +248,33 @@ class VisionPhase3Tests(unittest.TestCase):
         self.assertIn("FORMAT RETRY", backend.calls[1]["request"])
         self.assertTrue(any("format-only retry" in item for item in warnings))
 
+    def test_empty_assessed_hint_reason_does_not_retry(self) -> None:
+        response = FIXTURE.read_text(encoding="utf-8").replace(
+            "HINT_REASON\t短く丸い淡い金色の眉が部分的に確認できる。",
+            "HINT_REASON\t",
+        )
+        backend = FakeObserver(response)
+        prepared = PreparedVisionImage(
+            "data:image/png;base64,AAAA", "e" * 64, 1, 1, 1, 1, 3, 1
+        )
+        observations, warnings = observe_image(
+            backend,
+            prepared=prepared,
+            request=VisionObservationRequest(
+                subject_hint="狼娘。狼耳と狼の尻尾を持つ。"
+            ),
+            model_identity={},
+            system_prompt="fixed prompt",
+            runtime_config=LlamaRuntimeConfig(),
+        )
+        self.assertEqual(len(backend.calls), 1)
+        self.assertEqual(observations.hint_status, "consistent")
+        self.assertEqual(observations.hint_reason, "")
+        self.assertIn(
+            "accepted empty HINT_REASON for consistent HINT_STATUS",
+            warnings,
+        )
+
     def test_format_retry_stops_after_second_invalid_response(self) -> None:
         backend = SequenceObserver("broken", "still broken")
         prepared = PreparedVisionImage(

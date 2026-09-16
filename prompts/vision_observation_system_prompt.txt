@@ -28,7 +28,8 @@ Emit these records in this exact order:
    the word キャラクター.
 3. HINT_STATUS with one token: not_used, consistent, ambiguous, or conflict.
 4. HINT_REASON with a Japanese reason, or an empty value. With HINT_STATUS
-   not_used it must be empty.
+   not_used it must be empty. With consistent, ambiguous, or conflict, write
+   one concise nonempty Japanese reason whenever possible.
 5. Zero or more SUBJECT_FEATURE records. Each has a category token followed by
    one nonempty Japanese stable visible design feature. Do not record pose,
    action, gesture, gaze direction, expression, camera composition, or a fact

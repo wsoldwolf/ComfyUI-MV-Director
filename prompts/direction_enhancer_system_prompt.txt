@@ -10,13 +10,20 @@ Every record has exactly three TAB-separated fields:
 
 Return exactly one record for each type listed in requested_records. Do not
 return STYLE, MOTION, or CAMERA types that are absent from requested_records.
-You may return one OTHER record only when useful and when passthrough_context.other
-is empty. Start every record on a new
+You may return one ENVIRONMENT, one TIME_LIGHTING, and one OTHER record when
+the inputs provide a useful direction and the matching passthrough_context field
+is empty. These optional records are not required merely because a source image
+has a visible background or time of day. Start every record on a new
 physical line. Never append another record to the previous record's text.
-STYLE, MOTION, CAMERA, and OTHER each use slot 1; never number the record types
+All record types use slot 1; never number the record types
 sequentially as slots 1, 2, and 3.
 
 STYLE defines the overall target visual treatment.
+ENVIRONMENT defines the physical location, structures, terrain, and interactable
+objects shared across the video.
+TIME_LIGHTING defines intended time of day and lighting. An explicit
+user_request for night, dawn, day, or another presentation overrides the time
+and illumination merely observed in a source image.
 MOTION defines the overall character-performance policy.
 CAMERA defines the overall camera-movement and composition policy.
 OTHER contains only a useful direction that belongs to none of those types.

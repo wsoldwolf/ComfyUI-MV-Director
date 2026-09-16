@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import logging
+import sys
+import types
 import unittest
+from unittest.mock import patch
 
 from core.h3_contract import DEFAULT_H3_TIMING_PROFILE
 from core.lyrics import (
@@ -9,6 +13,7 @@ from core.lyrics import (
     VoicedInterval,
     WhisperWord,
     align_lyrics,
+    build_whisper_initial_prompt,
     build_timeline,
     coarse_voiced_ranges,
     extract_whisper_words,
@@ -16,6 +21,7 @@ from core.lyrics import (
     refine_voiced_ranges,
     render_srt,
     render_template_emd,
+    match_similarity,
 )
 
 
@@ -71,6 +77,246 @@ class PlainLyricsTests(unittest.TestCase):
 
 
 class AlignmentTests(unittest.TestCase):
+    def test_levenshtein_similarity_matches_prototype_formula(self) -> None:
+        self.assertEqual(match_similarity("kitten", "sitting"), 4 / 7)
+        self.assertEqual(match_similarity("同一", "同一"), 1.0)
+
+    def test_neighbor_bounded_alignment_recovers_near_match(self) -> None:
+        lyrics = parse_plain_lyrics("[VERSE]\n開始 abcdefghij 終了\n")
+        words = (
+            WhisperWord("開始", "開始", 1000, 1400, 1),
+            WhisperWord("abcdeXXXXX", "abcdeXXXXX", 1500, 2000, 2),
+            WhisperWord("終了", "終了", 2100, 2500, 3),
+        )
+        resolved, unplaced = align_lyrics(
+            lyrics,
+            words,
+            voiced_intervals=(),
+            sample_rate=16000,
+            audio_duration_ms=4000,
+        )
+        self.assertFalse(unplaced)
+        self.assertEqual(
+            [(item.source.text, item.start_ms) for item in resolved],
+            [("開始", 1000), ("abcdefghij", 1500), ("終了", 2100)],
+        )
+
+    def test_repeated_lyric_uses_following_lines_to_select_occurrence(self) -> None:
+        lyrics = parse_plain_lyrics(
+            "[CHORUS]\n開始\n繰り返し\n前半確認\n途中\n繰り返し\n後半確認\n"
+        )
+        words = (
+            WhisperWord("開始", "開始", 1000, 1500, 1),
+            WhisperWord("繰り返し", "繰り返し", 2000, 2500, 2),
+            WhisperWord("前半確認", "前半確認", 2600, 3200, 3),
+            WhisperWord("途中", "途中", 4000, 4500, 4),
+            WhisperWord("繰り返し", "繰り返し", 10000, 10500, 5),
+            WhisperWord("後半確認", "後半確認", 10600, 11200, 6),
+        )
+        resolved, unplaced = align_lyrics(
+            lyrics,
+            words,
+            voiced_intervals=(),
+            sample_rate=16000,
+            audio_duration_ms=20000,
+        )
+        self.assertFalse(unplaced)
+        repetitions = [
+            item.start_ms for item in resolved if item.source.text == "繰り返し"
+        ]
+        self.assertEqual(repetitions, [2000, 10000])
+
+    def test_candidate_that_better_matches_next_lyric_is_not_consumed(self) -> None:
+        lyrics = parse_plain_lyrics(
+            "[VERSE]\n開始\n灰を越える\n年を越える\n終了\n"
+        )
+        words = (
+            WhisperWord("開始", "開始", 1000, 1500, 1),
+            WhisperWord("年を越える", "年を越える", 2000, 2800, 2),
+            WhisperWord("終了", "終了", 3000, 3500, 3),
+        )
+        resolved, unplaced = align_lyrics(
+            lyrics,
+            words,
+            voiced_intervals=(),
+            sample_rate=16000,
+            audio_duration_ms=5000,
+        )
+        self.assertEqual([item.text for item in unplaced], ["灰を越える"])
+        self.assertEqual(
+            [item.source.text for item in resolved],
+            ["開始", "年を越える", "終了"],
+        )
+
+    def test_unique_supported_line_can_resynchronize_after_long_gap(self) -> None:
+        lyrics = parse_plain_lyrics(
+            "[VERSE]\n開始\n存在しない歌詞\n唯一無二の固有帰還地点\n後続歌詞が順序を確認する\n"
+        )
+        words = (
+            WhisperWord("開始", "開始", 1000, 2000, 1),
+            WhisperWord("無関係", "無関係", 2100, 2800, 2),
+            WhisperWord(
+                "唯一無二の固有帰還地点",
+                "唯一無二の固有帰還地点",
+                30000,
+                31000,
+                3,
+            ),
+            WhisperWord(
+                "後続歌詞が順序を確認する",
+                "後続歌詞が順序を確認する",
+                31100,
+                32500,
+                4,
+            ),
+        )
+        resolved, unplaced = align_lyrics(
+            lyrics,
+            words,
+            voiced_intervals=(),
+            sample_rate=16000,
+            audio_duration_ms=40000,
+        )
+        self.assertEqual([item.text for item in unplaced], ["存在しない歌詞"])
+        self.assertEqual(
+            [item.source.text for item in resolved],
+            ["開始", "唯一無二の固有帰還地点", "後続歌詞が順序を確認する"],
+        )
+        self.assertEqual(resolved[1].start_ms, 30000)
+
+    def test_words_outside_vad_are_not_alignment_evidence(self) -> None:
+        lyrics = parse_plain_lyrics("[OUTRO]\n幻覚された歌詞\n")
+        words = (
+            WhisperWord(
+                "幻覚された歌詞",
+                "幻覚された歌詞",
+                123000,
+                124000,
+                1,
+            ),
+        )
+        resolved, unplaced = align_lyrics(
+            lyrics,
+            words,
+            voiced_intervals=(VoicedInterval(0, 32000),),
+            sample_rate=16000,
+            audio_duration_ms=125000,
+        )
+        self.assertFalse(resolved)
+        self.assertEqual([item.text for item in unplaced], ["幻覚された歌詞"])
+
+    def test_whisper_initial_prompt_preserves_source_lines_and_limits_size(self) -> None:
+        lyrics = parse_plain_lyrics(
+            "[VERSE1]\n朝 露\n森の奥へ\n月明かり\n"
+        )
+        prompt = build_whisper_initial_prompt(
+            lyrics,
+            max_lines=2,
+            max_characters=20,
+        )
+        self.assertEqual(prompt, "朝　露\n森の奥へ")
+
+    def test_fuzzy_alignment_uses_real_whisper_word_timestamps(self) -> None:
+        lyrics = parse_plain_lyrics("[VERSE1]\n千年鳥居をくぐる\n")
+        words = (
+            WhisperWord("千年", "千年", 1200, 1800, 1),
+            WhisperWord("鳥居を", "鳥居を", 1900, 2600, 2),
+            WhisperWord("くぐれ", "くぐれ", 2700, 3300, 3),
+        )
+        resolved, unplaced = align_lyrics(
+            lyrics,
+            words,
+            voiced_intervals=(),
+            sample_rate=16000,
+            audio_duration_ms=5000,
+        )
+        self.assertFalse(unplaced)
+        self.assertEqual(
+            [(item.start_ms, item.end_ms) for item in resolved],
+            [(1200, 3300)],
+        )
+
+    def test_physical_line_match_recovers_atomic_halves_from_one_whisper_word(self) -> None:
+        lyrics = parse_plain_lyrics(
+            "[INTRO]\n遠い鈴の音　暁を裂いて\n次の行\n"
+        )
+        words = (
+            WhisperWord(
+                "遠い鈴の音暁を裂いて",
+                "遠い鈴の音暁を裂いて",
+                1000,
+                3000,
+                1,
+            ),
+            WhisperWord("次の行", "次の行", 3200, 3800, 2),
+        )
+        resolved, unplaced = align_lyrics(
+            lyrics,
+            words,
+            voiced_intervals=(),
+            sample_rate=16000,
+            audio_duration_ms=5000,
+        )
+        self.assertFalse(unplaced)
+        self.assertEqual(
+            [
+                (item.source.text, item.start_ms, item.end_ms)
+                for item in resolved
+            ],
+            [
+                ("遠い鈴の音", 1000, 2000),
+                ("暁を裂いて", 2000, 3000),
+                ("次の行", 3200, 3800),
+            ],
+        )
+
+    def test_neighbor_bounded_physical_line_recovers_whisper_misrecognition(self) -> None:
+        lyrics = parse_plain_lyrics(
+            "[PRE-CHORUS]\n前の行\n答えを問うても　御神木は\n次の行\n"
+        )
+        words = (
+            WhisperWord("前の行", "前の行", 1000, 1600, 1),
+            WhisperWord("答えを問う", "答えを問う", 1800, 2600, 2),
+            WhisperWord("手戻し僕は", "手戻し僕は", 2600, 3400, 3),
+            WhisperWord("次の行", "次の行", 3600, 4200, 4),
+        )
+        resolved, unplaced = align_lyrics(
+            lyrics,
+            words,
+            voiced_intervals=(),
+            sample_rate=16000,
+            audio_duration_ms=5000,
+        )
+        self.assertFalse(unplaced)
+        self.assertEqual(
+            [item.source.text for item in resolved],
+            ["前の行", "答えを問うても", "御神木は", "次の行"],
+        )
+        self.assertTrue(
+            all(
+                left.end_ms <= right.start_ms
+                for left, right in zip(resolved, resolved[1:])
+            )
+        )
+
+    def test_alignment_does_not_jump_beyond_anchored_search_window(self) -> None:
+        lyrics = parse_plain_lyrics("[VERSE1]\n朝 遠い歌詞\n")
+        words = (
+            WhisperWord("朝", "朝", 100, 400, 1),
+            WhisperWord("遠い", "遠い", 25000, 25500, 2),
+            WhisperWord("歌詞", "歌詞", 25600, 26200, 3),
+        )
+        resolved, unplaced = align_lyrics(
+            lyrics,
+            words,
+            voiced_intervals=(),
+            sample_rate=16000,
+            audio_duration_ms=30000,
+            anchored_search_ms=20000,
+        )
+        self.assertEqual([item.source.text for item in resolved], ["朝"])
+        self.assertEqual([item.text for item in unplaced], ["遠い歌詞"])
+
     def test_ordered_alignment_preserves_word_end_not_next_word_start(self) -> None:
         lyrics = parse_plain_lyrics("[VERSE1]\nほげ ふが\n")
         words = (
@@ -214,6 +460,50 @@ class PublicNodeTests(unittest.TestCase):
             cls.RETURN_TYPES,
             ("STRING", "STRING", "MV_DIRECTOR_TIMELINE", "STRING"),
         )
+
+    def test_unplaced_lyrics_emit_error_and_block_all_data_outputs(self) -> None:
+        from nodes.node_lyric_segmentation.node import _block_unplaced
+
+        source = parse_plain_lyrics("[BRIDGE]\n音源にない歌詞\n")
+        timeline = build_timeline(
+            (),
+            source,
+            source_audio_duration_ms=1000,
+            max_scene_duration_ms=10000,
+            timing_profile=DEFAULT_H3_TIMING_PROFILE,
+        )
+
+        class FakeExecutionBlocker:
+            def __init__(self, message: str) -> None:
+                self.message = message
+
+        package = types.ModuleType("comfy_execution")
+        graph = types.ModuleType("comfy_execution.graph")
+        graph.ExecutionBlocker = FakeExecutionBlocker
+        package.graph = graph
+        with (
+            patch.dict(
+                sys.modules,
+                {
+                    "comfy_execution": package,
+                    "comfy_execution.graph": graph,
+                },
+            ),
+            self.assertLogs("mv_director.lyrics", level=logging.ERROR) as captured,
+        ):
+            result = _block_unplaced(timeline, cache="miss")
+
+        self.assertEqual(
+            result["ui"]["status"][0],
+            "complete=no; reason=unplaced_lyrics; "
+            "unplaced_sections=BRIDGE:1; resolved=0; unplaced=1; "
+            "source_ms=1000; plan_ms=1625; scenes=1; cache=miss",
+        )
+        self.assertTrue(
+            all(isinstance(item, FakeExecutionBlocker) for item in result["result"][:3])
+        )
+        self.assertIn("音源にない歌詞", result["result"][0].message)
+        self.assertIn("MV Director - Lyric Segmentation", captured.output[0])
 
 
 if __name__ == "__main__":

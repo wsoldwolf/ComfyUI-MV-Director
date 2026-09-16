@@ -8,9 +8,11 @@ from dataclasses import dataclass
 from ..artifacts import normalize_newlines
 
 
-_COMMON = ("スタイル", "モーション", "カメラ", "その他")
+_COMMON = ("スタイル", "環境", "時間・照明", "モーション", "カメラ", "その他")
 _FIELD = {
     "スタイル": "style",
+    "環境": "environment",
+    "時間・照明": "time_lighting",
     "モーション": "motion",
     "カメラ": "camera",
     "その他": "other",
@@ -29,6 +31,8 @@ class DirectionPassthroughError(ValueError):
 class DirectionPassthrough:
     retention: tuple[str, ...] = ()
     style: tuple[str, ...] = ()
+    environment: tuple[str, ...] = ()
+    time_lighting: tuple[str, ...] = ()
     motion: tuple[str, ...] = ()
     camera: tuple[str, ...] = ()
     other: tuple[str, ...] = ()
@@ -36,7 +40,15 @@ class DirectionPassthrough:
     @property
     def empty(self) -> bool:
         return not any(
-            (self.retention, self.style, self.motion, self.camera, self.other)
+            (
+                self.retention,
+                self.style,
+                self.environment,
+                self.time_lighting,
+                self.motion,
+                self.camera,
+                self.other,
+            )
         )
 
 

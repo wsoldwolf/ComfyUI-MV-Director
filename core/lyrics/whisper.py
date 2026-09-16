@@ -61,7 +61,14 @@ class WhisperLifecycle:
             self._signature = signature
             return model
 
-    def transcribe(self, audio: Any, *, language: str, device: str) -> dict[str, Any]:
+    def transcribe(
+        self,
+        audio: Any,
+        *,
+        language: str,
+        device: str,
+        initial_prompt: str = "",
+    ) -> dict[str, Any]:
         with self._lock:
             if self._model is None:
                 raise LyricSegmentationError("Whisper model is not loaded")
@@ -75,6 +82,8 @@ class WhisperLifecycle:
                     language=language,
                     fp16=device == "cuda",
                     verbose=None,
+                    initial_prompt=initial_prompt or None,
+                    condition_on_previous_text=True,
                 )
             except Exception as exc:
                 raise LyricSegmentationError("OpenAI Whisper transcription failed") from exc

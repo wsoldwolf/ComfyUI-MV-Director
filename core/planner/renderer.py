@@ -69,6 +69,8 @@ def render_completed_emd(
         )
     common = (
         ("スタイル", direction.style_direction),
+        ("環境", direction.environment_direction),
+        ("時間・照明", direction.time_lighting_direction),
         ("モーション", direction.motion_direction),
         ("カメラ", direction.camera_direction),
         ("その他", direction.other_direction),

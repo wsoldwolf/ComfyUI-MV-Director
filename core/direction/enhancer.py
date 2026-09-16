@@ -26,17 +26,21 @@ from .profiles import (
 from .passthrough import DirectionPassthrough, parse_direction_passthrough
 
 
-DIRECTION_PROMPT_VERSION = "mvd-direction-enhancer-v13"
+DIRECTION_PROMPT_VERSION = "mvd-direction-enhancer-v14"
 PASSTHROUGH_PROFILE = "passthrough"
 RETENTION_POLICIES = ("profile", "compiler_default", "passthrough")
 _ALLOWED = {
     "STYLE": frozenset({1}),
+    "ENVIRONMENT": frozenset({1}),
+    "TIME_LIGHTING": frozenset({1}),
     "MOTION": frozenset({1}),
     "CAMERA": frozenset({1}),
     "OTHER": frozenset({1}),
 }
 _FIELD_BY_TYPE = {
     "STYLE": "style_direction",
+    "ENVIRONMENT": "environment_direction",
+    "TIME_LIGHTING": "time_lighting_direction",
     "MOTION": "motion_direction",
     "CAMERA": "camera_direction",
     "OTHER": "other_direction",
@@ -198,6 +202,8 @@ def build_direction_payload(value: DirectionEnhancerInput) -> str:
         "profiles": {},
         "passthrough_context": {
             "style": list(value.passthrough.style),
+            "environment": list(value.passthrough.environment),
+            "time_lighting": list(value.passthrough.time_lighting),
             "motion": list(value.passthrough.motion),
             "camera": list(value.passthrough.camera),
             "other": list(value.passthrough.other),
@@ -346,6 +352,8 @@ def render_direction_emd_preview(direction: DirectionArtifact) -> str:
     direction.validate()
     sections = (
         ("スタイル", direction.style_direction),
+        ("環境", direction.environment_direction),
+        ("時間・照明", direction.time_lighting_direction),
         ("モーション", direction.motion_direction),
         ("カメラ", direction.camera_direction),
         ("その他", direction.other_direction),
@@ -382,6 +390,10 @@ def enhance_direction(
     requested = value.requested_record_types
     required = frozenset((record_type, 1) for record_type in requested)
     allowed_types = set(requested)
+    if not passthrough.environment:
+        allowed_types.add("ENVIRONMENT")
+    if not passthrough.time_lighting:
+        allowed_types.add("TIME_LIGHTING")
     if not passthrough.other:
         allowed_types.add("OTHER")
     allowed = {
@@ -442,6 +454,8 @@ def enhance_direction(
     records = _merge_records(first_records, retry_records, retried_missing)
     values: dict[str, list[str]] = {
         "style_direction": list(passthrough.style),
+        "environment_direction": list(passthrough.environment),
+        "time_lighting_direction": list(passthrough.time_lighting),
         "motion_direction": list(passthrough.motion),
         "camera_direction": list(passthrough.camera),
         "other_direction": list(passthrough.other),
@@ -451,6 +465,8 @@ def enhance_direction(
     output_counts = {field: 0 for field in values}
     for field, passthrough_values in (
         ("style_direction", passthrough.style),
+        ("environment_direction", passthrough.environment),
+        ("time_lighting_direction", passthrough.time_lighting),
         ("motion_direction", passthrough.motion),
         ("camera_direction", passthrough.camera),
         ("other_direction", passthrough.other),
@@ -531,6 +547,8 @@ def enhance_direction(
         )
     direction = DirectionArtifact(
         style_direction=tuple(values["style_direction"]),
+        environment_direction=tuple(values["environment_direction"]),
+        time_lighting_direction=tuple(values["time_lighting_direction"]),
         motion_direction=tuple(values["motion_direction"]),
         camera_direction=tuple(values["camera_direction"]),
         other_direction=tuple(values["other_direction"]),

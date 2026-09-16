@@ -1,4 +1,4 @@
-"""MVD_DIRECTION_V2."""
+"""MVD_DIRECTION_V3."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from .base import (
 from .errors import ArtifactValidationError
 
 
-SCHEMA = "MVD_DIRECTION_V2"
+SCHEMA = "MVD_DIRECTION_V3"
 _HASH_RE = re.compile(r"[0-9a-f]{64}\Z")
 _RECORD_KINDS = {"input", "output", "discard"}
 _SOURCES = {"user", "vision", "profile", "generated"}
@@ -32,7 +32,8 @@ _REASONS = {
     "passthrough_enforced",
 }
 _TARGET_RE = re.compile(
-    r"(?:style_direction|motion_direction|camera_direction|other_direction|retention_lines)\[[0-9]+\]\Z"
+    r"(?:style_direction|environment_direction|time_lighting_direction|"
+    r"motion_direction|camera_direction|other_direction|retention_lines)\[[0-9]+\]\Z"
 )
 _RETENTION_POLICIES = {"compiler_default", "profile", "passthrough"}
 
@@ -152,6 +153,8 @@ class ProvenanceRecord:
 @dataclass(frozen=True, slots=True)
 class DirectionArtifact:
     style_direction: tuple[str, ...] = ()
+    environment_direction: tuple[str, ...] = ()
+    time_lighting_direction: tuple[str, ...] = ()
     motion_direction: tuple[str, ...] = ()
     camera_direction: tuple[str, ...] = ()
     other_direction: tuple[str, ...] = ()
@@ -168,6 +171,8 @@ class DirectionArtifact:
             raise ArtifactValidationError(SCHEMA, "schema", "schema mismatch")
         for field_name in (
             "style_direction",
+            "environment_direction",
+            "time_lighting_direction",
             "motion_direction",
             "camera_direction",
             "other_direction",
@@ -222,6 +227,8 @@ class DirectionArtifact:
         return {
             "schema": self.schema,
             "style_direction": list(self.style_direction),
+            "environment_direction": list(self.environment_direction),
+            "time_lighting_direction": list(self.time_lighting_direction),
             "motion_direction": list(self.motion_direction),
             "camera_direction": list(self.camera_direction),
             "other_direction": list(self.other_direction),
@@ -245,6 +252,8 @@ class DirectionArtifact:
             required={
                 "schema",
                 "style_direction",
+                "environment_direction",
+                "time_lighting_direction",
                 "motion_direction",
                 "camera_direction",
                 "other_direction",
@@ -262,6 +271,8 @@ class DirectionArtifact:
         directions: dict[str, tuple[str, ...]] = {}
         for field_name in (
             "style_direction",
+            "environment_direction",
+            "time_lighting_direction",
             "motion_direction",
             "camera_direction",
             "other_direction",
@@ -276,6 +287,8 @@ class DirectionArtifact:
         )
         artifact = cls(
             style_direction=directions["style_direction"],
+            environment_direction=directions["environment_direction"],
+            time_lighting_direction=directions["time_lighting_direction"],
             motion_direction=directions["motion_direction"],
             camera_direction=directions["camera_direction"],
             other_direction=directions["other_direction"],

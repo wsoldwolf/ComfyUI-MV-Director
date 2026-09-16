@@ -1,6 +1,13 @@
 """Pure Lyric Segmentation components."""
 
-from .alignment import AlignedLyric, WhisperWord, align_lyrics, extract_whisper_words
+from .alignment import (
+    AlignedLyric,
+    WhisperWord,
+    align_lyrics,
+    build_whisper_initial_prompt,
+    extract_whisper_words,
+    match_similarity,
+)
 from .errors import LyricSegmentationError
 from .plain import SourceLyricSegment, normalize_match_text, parse_plain_lyrics
 from .render import format_emd_time, format_srt_time, render_srt, render_template_emd
@@ -26,10 +33,12 @@ __all__ = [
     "align_lyrics",
     "analyze_waveform",
     "build_timeline",
+    "build_whisper_initial_prompt",
     "coarse_voiced_ranges",
     "extract_whisper_words",
     "format_emd_time",
     "format_srt_time",
+    "match_similarity",
     "normalize_match_text",
     "parse_plain_lyrics",
     "prepare_whisper_audio",

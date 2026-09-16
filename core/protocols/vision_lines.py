@@ -191,7 +191,9 @@ class _VisionParser:
         if hint_status == "not_used" and hint_reason:
             raise VisionProtocolError("not_used HINT_STATUS must have no reason")
         if hint_status != "not_used" and not hint_reason:
-            raise VisionProtocolError(f"{hint_status} HINT_STATUS requires a reason")
+            self.warnings.append(
+                f"accepted empty HINT_REASON for {hint_status} HINT_STATUS"
+            )
 
         features: list[SubjectFeature] = []
         while (line := self.current()) is not None and _record_name(line) == "SUBJECT_FEATURE":

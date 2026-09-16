@@ -26,9 +26,9 @@ EMDは**Easy MarkDown**の略です。Extended Markdownではありません。�
 
 - Whisperが歌詞の語句・行の位置候補を検出し、20msの粗いVAD区間から波形上の開始・終了をsample-domainで再探索します。確定sample indexを整数msへ変換してtimelineへ保持し、整数秒へ丸めません。これは1ms単位の決定値ですが、音響的な正解はVAD thresholdと入力品質に依存します。
 - EMDの各Sceneはデバッグ用の``> `シーン` N``を直前に必須とし、`# シーン 00:10.000 --> 00:20.000`、Shotは`## ショット 00:15.000`のように、H3 delivered frame累積から得たPlan基準の絶対時刻で記述します。「秒」表記と省略時刻は使いません。歌詞とSRTだけは元音源基準の絶対msを保持し、MV経路のTemplate EMDでは各SceneへContext Loop互換の`` `H3長` ``も記録します。
-- Lyric Segmentationは歌詞の物理改行と空白区切りをatomic segmentとしてWhisper/VADで整列し、その同じsegment列からTemplate EMD、typed timeline、SRTを作ります。各segmentの所属Scene／Shotもここで確定し、歌詞annotationを対応Shot見出しの直前へ置きます。歌詞時刻は元音源基準、Shot見出しはH3 Plan基準なので、PlannerとCompilerは数値包含で再対応付けせず、歌詞も再分割しません。CompilerはH3へ出す時だけScene開始を引いてShot相対時刻へ変換し、EMDの絶対msは変更しません。
+- Lyric Segmentationは歌詞の物理改行と空白区切りをatomic segmentとしてWhisper/VADで整列し、その同じsegment列からTemplate EMD、typed timeline、SRTを作ります。Whisperが一物理行を一続きの語として認識してatomic segmentを取りこぼした場合は、前後の確定アンカー内で物理行全体を再照合し、実在するword timestampの区間を元のatomic segmentへ再分配します。各segmentの所属Scene／Shotもここで確定し、歌詞annotationを対応Shot見出しの直前へ置きます。歌詞時刻は元音源基準、Shot見出しはH3 Plan基準なので、PlannerとCompilerは数値包含で再対応付けせず、歌詞も再分割しません。CompilerはH3へ出す時だけScene開始を引いてShot相対時刻へ変換し、EMDの絶対msは変更しません。
 - 人物動作とカメラは別のLLMタスクにし、同じShot枠へPythonが合成します。人物動作の固定文をカメラ生成に再出力させません。
-- Timeline Plannerは`n_ctx`、`n_batch`、GPU layer、Flash Attention、KV cache等のllama.cpp調整値を旧ノード同様に公開します。Direction artifactはEnhancerから四方向を型付きで渡す任意の内部socket値で、利用者向けには同内容のEMD previewも出力します。
+- Timeline Plannerは`n_ctx`、`n_batch`、GPU layer、Flash Attention、KV cache等のllama.cpp調整値を旧ノード同様に公開します。Direction artifactはEnhancerからスタイル、環境、時間・照明、モーション、カメラ、その他の六方向を型付きで渡す任意の内部socket値で、利用者向けには同内容のEMD previewも出力します。
 - EnhancerとPlannerのLLMにはJSONやEMDを返させません。応答は`TYPE<TAB>SLOT<TAB>TEXT`の一行一recordに限定し、短いslotと実Scene/Shot ID・時刻の対応、typed artifact、EMD及び最終JSONはPythonが組み立てます。4Bが括弧、引用符又はJSON escapeを維持することへ依存しません。
 - Plannerへ渡る作者由来の`「...」`と明示`<d>...</d>`は先にplaceholderへ退避します。LLMが新しい引用台詞又はplaceholderを生成してもretryせず、そのspanを機械削除します。原文はSubject、Direction又は作者Shot本文の決定論的位置から一度だけ出力し、歌詞リップシンクはfilter後にPythonが挿入します。
 - EMDは人間が読める日本語のEasy MarkDown中間言語です。`# サブジェクト`直下の各list itemを行順で`<Subject 1..4>`へ割り当て、行頭の``画像N``、``動画N``、``音声N``を任意のH3参照へ変換します。任意の`# 共通プロンプト`はスタイル、モーション、カメラ、その他を構造的に分離し、Compilerは見出しを除いた存在する本文をこの固定順でPlanの`prompt_prefix`へ出力します。スタイルがあれば必ず先頭です。

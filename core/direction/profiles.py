@@ -8,6 +8,11 @@ STYLE_PROFILES = {
         "参照画像の顔・体格・衣装・配色を同じ設計で保ち、整理された線、"
         "明瞭な色面、セル影、繊細な光で手描き2Dアニメとして描く。"
     ),
+    "anime_mv": (
+        "参照画像から人物の識別要素、髪型、髪色、瞳色、衣装、配色、装飾及び身体的特徴を保持する。"
+        "参照画像の線質、塗り、陰影、ブラシ表現及び画面構成は継承せず、映画的な手描きセルアニメーションとして再設計する。"
+        "整理された強弱のある輪郭線、明瞭な色面、制御されたセル影、背景と統合された撮影処理及びアニメ映画的な照明で描く。"
+    ),
     "reference_cinematic": (
         "参照画像の人物設計を保ち、自然な皮膚・布・材質、映画照明、"
         "レンズによる奥行きで実写映画として描く。"
@@ -35,7 +40,7 @@ STYLE_PROFILES = {
 # This profile controls a medium conversion.  Its STYLE output is kept
 # deterministic so a small LLM cannot reintroduce source-medium vocabulary or
 # invert the selected target medium while paraphrasing it.
-LOCKED_STYLE_PROFILES = frozenset({"illust_to_photoreal"})
+LOCKED_STYLE_PROFILES = frozenset({"anime_mv", "illust_to_photoreal"})
 
 STYLE_RETENTION_POLICIES = {
     "illust_to_photoreal": (
@@ -66,6 +71,12 @@ MOTION_PROFILES = {
         "大きく読めるキーポーズとポーズ間の移行を使い、身体と口形のタイミングを"
         "別々に保つ。"
     ),
+    "anime_mv": (
+        "手描きセルアニメーションとして、二コマ打ち又は三コマ打ち、明瞭なキーポーズ、"
+        "ポーズ・トゥ・ポーズ、短いポーズ保持及び必要部分だけの中割りを使う。各Shot固有の"
+        "仕草は予備動作、主動作、反動、収束が読める身体演技とし、髪、衣装及び可動する"
+        "身体付属物は主動作より少し遅れて追従する。リップシンクと身体のコマ打ちは独立させる。"
+    ),
 }
 
 CAMERA_PROFILES = {
@@ -81,19 +92,25 @@ CAMERA_PROFILES = {
         "楽曲強度に合わせて移動量と構図保持を変え、Scene間で角度、高さ、距離、"
         "移動方向を展開する。"
     ),
-    "arc_closeup": (
-        "大半のShotで、被写体を中心に前方斜めから側面へ回り込む緩やかなarcを使い、"
-        "Sceneごとに時計回り・反時計回り、半径、高さを変える。歌唱の要点や表情の変化を"
-        "扱うShotでは顔のclose-upを選び、目線と口元を画面内に保ちながら小さなarcで"
-        "立体感を出す。その他のShotではmedium又は全身のarcで動作と背景視差を見せる。"
+    "anime_mv": (
+        "アニメMVのcutごとに歌詞、身体演技及び感情へ適した画角、視点及び撮影方法を選ぶ。"
+        "establishing、full、medium、close-up、detail、over-shoulder及び後方三分の四の構図を"
+        "使い分け、static、pan、tilt、push、pull、truck、pedestal、tracking又はarcはShotの"
+        "目的が必要とする場合だけ使う。連続Shotで同じ画角、方向又は移動形式を反復せず、"
+        "移動が不要なら静止構図とcutを選ぶ。arc又はclose-upを全体へ一律に要求しない。"
     ),
 }
 
 DIRECTION_PRESETS = {
     "anime_emotional": (
         "reference_anime",
-        "expressive_mv",
-        "cinematic_depth",
+        "anime_mv",
+        "anime_mv",
+    ),
+    "cinematic_anime_mv": (
+        "anime_mv",
+        "anime_mv",
+        "anime_mv",
     ),
     "cinematic_performance": (
         "reference_cinematic",

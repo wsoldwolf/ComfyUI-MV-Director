@@ -122,7 +122,9 @@ class MVDirectorDirectionEnhancer:
     RETURN_NAMES = ("direction", "direction_emd_preview", "status")
     FUNCTION = "enhance"
     CATEGORY = "MV Director/Core"
-    DESCRIPTION = "Style、Motion、Camera、Otherの全体方針を一回で統合します。"
+    DESCRIPTION = (
+        "Style、Environment、Time/Lighting、Motion、Camera、Otherの全体方針を統合します。"
+    )
 
     def __init__(self) -> None:
         self._lifecycle = LlamaCppLifecycle()

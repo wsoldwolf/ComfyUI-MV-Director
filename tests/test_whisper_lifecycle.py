@@ -40,7 +40,12 @@ class WhisperLifecycleTests(unittest.TestCase):
             ):
                 first = lifecycle.ensure_loaded(path, device="cpu")
                 second = lifecycle.ensure_loaded(path, device="cpu")
-                result = lifecycle.transcribe("audio", language="ja", device="cpu")
+                result = lifecycle.transcribe(
+                    "audio",
+                    language="ja",
+                    device="cpu",
+                    initial_prompt="冒頭歌詞",
+                )
                 lifecycle.clear()
             self.assertIs(first, second)
             self.assertEqual(len(module.loads), 1)
@@ -55,6 +60,8 @@ class WhisperLifecycleTests(unittest.TestCase):
                     "language": "ja",
                     "fp16": False,
                     "verbose": None,
+                    "initial_prompt": "冒頭歌詞",
+                    "condition_on_previous_text": True,
                 },
             )
 

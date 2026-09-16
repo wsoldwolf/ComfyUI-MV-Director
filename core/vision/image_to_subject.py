@@ -19,7 +19,7 @@ from .image_data import PreparedVisionImage
 from .subject_emd import SubjectEMDResult, render_subject_emd
 
 
-VISION_PROMPT_VERSION = "mvd-vision-observation-v7"
+VISION_PROMPT_VERSION = "mvd-vision-observation-v8"
 ANALYSIS_PROFILES = ("general", "subject_only", "scene_only")
 HINT_MODES = ("observe_only", "assist", "lock_identity")
 HINT_CONFLICT_POLICIES = ("warn", "strict")
@@ -101,7 +101,8 @@ def build_vision_request(
                 "SUBJECT_HINT_DATA (user-provided context, not visual evidence):",
                 request.effective_subject_hint,
                 "Assess this hint against visible evidence. HINT_STATUS must be "
-                "consistent, ambiguous, or conflict; never not_used.",
+                "consistent, ambiguous, or conflict; never not_used. "
+                "HINT_REASON should contain one concise Japanese reason.",
             ]
         )
     else:

@@ -18,6 +18,11 @@ from core.planner import (
     plan_timeline,
     render_planner_content,
 )
+from core.planner.layout import (
+    apply_shot_layouts,
+    build_layout_candidates,
+    parse_layout_selection,
+)
 
 
 TEMPLATE = """> `シーン` 1
@@ -55,8 +60,9 @@ class FakePlannerBackend:
         value = json.loads(payload)
         self.calls.append((task, value))
         record_type = {
-            "lyric-notes": "NOTE",
+            "visual-beats": "BEAT",
             "song-direction": "DIRECTION",
+            "shot-layout": "LAYOUT",
             "actions": "ACTION",
             "cameras": "CAMERA",
         }[task]
@@ -66,12 +72,19 @@ class FakePlannerBackend:
             if task == "actions" and slot == 2 and self.miss_action_slot_two > 0:
                 self.miss_action_slot_two -= 1
                 continue
-            text = {
-                "lyric-notes": f"歌詞の感情と鳥居のモチーフ {slot}",
-                "song-direction": "夜から朝へ進み、鳥居を反復する。",
-                "actions": f"サブジェクト1が重心を移しながら歩く。{slot} 「生成台詞」",
-                "cameras": f"カメラは前景の鳥居から人物へ緩やかに寄る。{slot}",
-            }[task]
+            if task == "shot-layout":
+                text = ",".join(
+                    candidate["id"]
+                    for candidate in item["candidates"]
+                    if candidate["source"] in {"scene_start", "existing_shot"}
+                )
+            else:
+                text = {
+                    "visual-beats": f"鳥居へ歩み寄り、触れて振り返る視覚動作 {slot}",
+                    "song-direction": "夜から朝へ進み、鳥居を反復する。",
+                    "actions": f"サブジェクト1が重心を移しながら歩く。{slot} 「生成台詞」",
+                    "cameras": f"カメラは前景の鳥居から人物へ緩やかに寄る。{slot}",
+                }[task]
             rows.append(f"{record_type}\t{slot}\t{text}")
         return "\n".join(rows)
 
@@ -81,14 +94,54 @@ class DialogueOnlyPlannerBackend(FakePlannerBackend):
         value = json.loads(payload)
         self.calls.append((task, value))
         record_type = {
-            "lyric-notes": "NOTE",
+            "visual-beats": "BEAT",
             "song-direction": "DIRECTION",
+            "shot-layout": "LAYOUT",
             "actions": "ACTION",
             "cameras": "CAMERA",
         }[task]
+        if task == "shot-layout":
+            return "\n".join(
+                f"LAYOUT\t{item['slot']}\t"
+                + ",".join(
+                    candidate["id"]
+                    for candidate in item["candidates"]
+                    if candidate["source"] in {"scene_start", "existing_shot"}
+                )
+                for item in value["slots"]
+            )
+        if task not in {"actions", "cameras"}:
+            text = "有効な視覚計画"
+            return "\n".join(
+                f"{record_type}\t{item['slot']}\t{text}" for item in value["slots"]
+            )
         return "\n".join(
             f"{record_type}\t{item['slot']}\t「生成台詞だけ」" for item in value["slots"]
         )
+
+
+class NewCutPlannerBackend(FakePlannerBackend):
+    def complete_planner(self, *, task, system_prompt, payload, config, interrupt_callback=None):
+        if task != "shot-layout":
+            return super().complete_planner(
+                task=task,
+                system_prompt=system_prompt,
+                payload=payload,
+                config=config,
+                interrupt_callback=interrupt_callback,
+            )
+        value = json.loads(payload)
+        self.calls.append((task, value))
+        rows = []
+        for item in value["slots"]:
+            balanced = [
+                candidate["id"]
+                for candidate in item["candidates"]
+                if candidate["source"] == "balanced"
+            ]
+            selected = ["B0", balanced[0], balanced[-1]]
+            rows.append(f"LAYOUT\t{item['slot']}\t{','.join(selected)}")
+        return "\n".join(rows)
 
 
 class PassthroughTranslator:
@@ -101,15 +154,23 @@ class SmallModelFormattingBackend(FakePlannerBackend):
         value = json.loads(payload)
         self.calls.append((task, value))
         record_type = {
-            "lyric-notes": "NOTE",
+            "visual-beats": "BEAT",
             "song-direction": "DIRECTION",
+            "shot-layout": "LAYOUT",
             "actions": "ACTION",
             "cameras": "CAMERA",
         }[task]
-        if task == "lyric-notes":
+        if task == "visual-beats":
             return "<think>protocolを確認する。</think>\n歌詞本文\tTAB\t1\tTAB\t有効な記述1"
         if task == "song-direction":
             return "<think></think>\nDIRECTION\tTAB\tslot1\tTAB\t有効な全曲方針"
+        if task == "shot-layout":
+            selected = ",".join(
+                candidate["id"]
+                for candidate in value["slots"][0]["candidates"]
+                if candidate["source"] in {"scene_start", "existing_shot"}
+            )
+            return f"<think></think>\nLAYOUT\tTAB\tslot1\tTAB\t{selected}"
         records = [
             f"{record_type}<TAB>{item['slot']}<TAB>有効な記述{item['slot']}"
             for item in value["slots"]
@@ -123,14 +184,136 @@ def runtime() -> LlamaRuntimeConfig:
 
 def prompts() -> dict[str, str]:
     return {
-        "lyric-notes": "notes",
+        "visual-beats": "beats",
         "song-direction": "direction",
+        "shot-layout": "layout",
         "actions": "actions",
         "cameras": "cameras",
     }
 
 
 class TimelinePlannerCoreTests(unittest.TestCase):
+    def test_every_layout_candidate_combination_is_duration_safe(self) -> None:
+        scene = parse_template_emd(TEMPLATE).scenes[0]
+        candidates = build_layout_candidates(scene)
+        starts = [candidate.start_ms for candidate in candidates]
+        self.assertTrue(
+            all(
+                right - left >= 1500
+                for left, right in zip(starts, starts[1:])
+            )
+        )
+        self.assertGreaterEqual(scene.end_ms - starts[-1], 1500)
+
+    def test_layout_can_add_python_owned_cut_candidates(self) -> None:
+        template = parse_template_emd(TEMPLATE)
+        scene = template.scenes[0]
+        candidates = build_layout_candidates(scene)
+        balanced = next(
+            candidate for candidate in candidates if candidate.source == "balanced"
+        )
+        starts = parse_layout_selection(
+            f"B0,{balanced.candidate_id}",
+            candidates,
+            scene_end_ms=scene.end_ms,
+        )
+        planned = apply_shot_layouts(template, {1: starts})
+
+        self.assertEqual(
+            tuple(shot.start_ms for shot in planned.scenes[0].shots),
+            starts,
+        )
+        self.assertEqual(len(planned.scenes[0].shots), 2)
+
+    def test_single_shot_is_valid_when_scene_is_shorter_than_cut_minimum(self) -> None:
+        template = parse_template_emd(
+            """> `シーン` 1
+# シーン 00:00.000 --> 00:01.000
+* `H3長` 22
+## ショット 00:00.000
+* 未計画
+"""
+        )
+        scene = template.scenes[0]
+        candidates = build_layout_candidates(scene)
+        starts = parse_layout_selection(
+            "B0",
+            candidates,
+            scene_end_ms=scene.end_ms,
+        )
+        planned = apply_shot_layouts(template, {1: starts})
+        self.assertEqual(len(planned.scenes[0].shots), 1)
+
+    def test_planner_expands_selected_cut_candidates_before_action_and_camera(self) -> None:
+        backend = NewCutPlannerBackend()
+        result = plan_timeline(
+            backend,
+            template_emd=TEMPLATE,
+            concept_emd=CONCEPT,
+            direction=None,
+            lip_sync_mode="off",
+            lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1,
+            scenes_per_batch=3,
+            system_prompts=prompts(),
+            runtime_config=runtime(),
+        )
+
+        self.assertTrue(result.complete)
+        document = parse_emd(result.emd.text)
+        self.assertEqual(len(document.scenes[0].shots), 3)
+        action_payload = next(
+            payload for task, payload in backend.calls if task == "actions"
+        )
+        camera_payload = next(
+            payload for task, payload in backend.calls if task == "cameras"
+        )
+        self.assertEqual(len(action_payload["slots"]), 3)
+        self.assertEqual(len(camera_payload["slots"]), 3)
+
+    def test_invalid_layout_falls_back_to_one_shot_without_blocking(self) -> None:
+        class InvalidLayoutBackend(FakePlannerBackend):
+            def complete_planner(
+                self,
+                *,
+                task,
+                system_prompt,
+                payload,
+                config,
+                interrupt_callback=None,
+            ):
+                if task != "shot-layout":
+                    return super().complete_planner(
+                        task=task,
+                        system_prompt=system_prompt,
+                        payload=payload,
+                        config=config,
+                        interrupt_callback=interrupt_callback,
+                    )
+                value = json.loads(payload)
+                self.calls.append((task, value))
+                return "\n".join(
+                    f"LAYOUT\t{item['slot']}\tB0,B999"
+                    for item in value["slots"]
+                )
+
+        result = plan_timeline(
+            InvalidLayoutBackend(),
+            template_emd=TEMPLATE,
+            concept_emd=CONCEPT,
+            direction=None,
+            lip_sync_mode="off",
+            lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1,
+            scenes_per_batch=3,
+            system_prompts=prompts(),
+            runtime_config=runtime(),
+        )
+
+        self.assertTrue(result.complete)
+        self.assertEqual(result.content.layout_fallback_scenes, (1,))
+        self.assertEqual(len(parse_emd(result.emd.text).scenes[0].shots), 1)
+
     def test_action_prompt_does_not_animate_appearance_attributes(self) -> None:
         prompt = (
             Path(__file__).parents[1]
@@ -140,22 +323,23 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertIn("Never turn a stable appearance attribute into an action", prompt)
         self.assertIn("eye color", prompt)
 
-    def test_camera_prompt_distributes_arc_and_closeup_variants(self) -> None:
+    def test_camera_prompt_keeps_arc_and_closeup_shot_local(self) -> None:
         prompt = (
             Path(__file__).parents[1]
             / "prompts"
             / "timeline_planner_cameras_system_prompt.txt"
         ).read_text(encoding="utf-8")
-        self.assertIn("vary movement direction, radius, height, distance", prompt)
-        self.assertIn("use an arc in most supplied slots", prompt)
-        self.assertIn("face close-up arc", prompt)
-        self.assertIn("without inventing cuts", prompt)
+        self.assertIn("recent_camera_history", prompt)
+        self.assertIn("Use an arc only when", prompt)
+        self.assertIn("use a close-up only", prompt)
+        self.assertIn("Never impose either choice on the whole Scene", prompt)
 
     def test_passthrough_retention_is_rendered_exactly(self) -> None:
         template = parse_template_emd(TEMPLATE)
         content = PlannerContent(
-            lyric_notes=(),
+            visual_beats=(),
             song_direction="",
+            shot_layouts=((1, (0, 5000)),),
             actions=((1, 1, "動作1"), (1, 2, "動作2")),
             cameras=((1, 1, "カメラ1"), (1, 2, "カメラ2")),
             issue_count=0,
@@ -189,8 +373,9 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         template = parse_template_emd(TEMPLATE + INSTRUMENTAL_TAIL)
         concept = normalize_concept_emd(CONCEPT)
         content = PlannerContent(
-            lyric_notes=((1, "note"),),
+            visual_beats=((1, "note"),),
             song_direction="direction",
+            shot_layouts=((1, (0, 5000)), (2, (10125,))),
             actions=((1, 1, "動作1"), (1, 2, "動作2"), (2, 1, "余韻の動作")),
             cameras=((1, 1, "カメラ1"), (1, 2, "カメラ2"), (2, 1, "余韻のカメラ")),
             issue_count=0,
@@ -257,7 +442,7 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertFalse(result.missing)
         self.assertIn("有効な記述2", result.emd.text)
 
-    def test_four_tasks_render_valid_emd_and_filter_generated_dialogue(self) -> None:
+    def test_five_tasks_render_valid_emd_and_filter_generated_dialogue(self) -> None:
         backend = FakePlannerBackend()
         result = plan_timeline(
             backend,
@@ -278,7 +463,7 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertTrue(result.complete)
         self.assertEqual(result.emd.schema, "MVD_EMD_V1")
         self.assertEqual([task for task, _ in backend.calls], [
-            "lyric-notes", "song-direction", "actions", "cameras"
+            "visual-beats", "song-direction", "shot-layout", "actions", "cameras"
         ])
         text = result.emd.text
         self.assertNotIn("生成台詞", text)
@@ -289,9 +474,17 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertEqual(document.scenes[0].shots[0].lyric_annotations[0].text, "千年鳥居をくぐるそなたよ")
         song_payload = backend.calls[1][1]
         self.assertNotIn("千年鳥居", json.dumps(song_payload, ensure_ascii=False))
-        camera_payload = backend.calls[3][1]
+        layout_payload = backend.calls[2][1]
+        self.assertEqual(layout_payload["slots"][0]["candidates"][0]["id"], "B0")
+        self.assertEqual(
+            layout_payload["slots"][0]["lyric_groups"][0]["lyrics"][0]["text"],
+            "千年鳥居をくぐるそなたよ",
+        )
+        camera_payload = backend.calls[4][1]
         self.assertIn("locked_action", camera_payload["slots"][0])
-        action_payload = backend.calls[2][1]
+        self.assertIn("recent_camera_history", camera_payload)
+        action_payload = backend.calls[3][1]
+        self.assertIn("visual_beat", action_payload["slots"][0])
         self.assertNotIn("lip_sync_mode", action_payload)
         self.assertNotIn("lip_sync_audio_slot", action_payload)
         self.assertEqual(action_payload["primary_action_concept"], "サブジェクト1")
@@ -320,6 +513,61 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertEqual([task for task, _ in backend.calls].count("actions"), 2)
         self.assertEqual(result.content.retried_scenes, (1,))
 
+    def test_later_batches_receive_recent_history_and_timeline_position(self) -> None:
+        backend = FakePlannerBackend()
+        result = plan_timeline(
+            backend,
+            template_emd=TEMPLATE + INSTRUMENTAL_TAIL,
+            concept_emd=CONCEPT,
+            direction=None,
+            lip_sync_mode="off",
+            lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1,
+            scenes_per_batch=1,
+            system_prompts=prompts(),
+            runtime_config=runtime(),
+        )
+        self.assertTrue(result.complete)
+
+        visual_calls = [
+            payload for task, payload in backend.calls if task == "visual-beats"
+        ]
+        self.assertEqual(len(visual_calls), 2)
+        self.assertEqual(
+            visual_calls[0]["slots"][0]["timeline_position"],
+            "opening",
+        )
+        self.assertTrue(
+            visual_calls[0]["slots"][0]["has_resolved_lyrics"]
+        )
+        self.assertEqual(
+            visual_calls[1]["slots"][0]["timeline_position"],
+            "closing",
+        )
+        self.assertFalse(
+            visual_calls[1]["slots"][0]["has_resolved_lyrics"]
+        )
+        self.assertEqual(
+            visual_calls[1]["recent_visual_beat_history"],
+            ["鳥居へ歩み寄り、触れて振り返る視覚動作 1"],
+        )
+
+        action_calls = [
+            payload for task, payload in backend.calls if task == "actions"
+        ]
+        self.assertEqual(len(action_calls), 2)
+        self.assertEqual(len(action_calls[1]["recent_action_history"]), 2)
+        final_action = action_calls[1]["slots"][0]
+        self.assertEqual(final_action["scene_shot_count"], 1)
+        self.assertEqual(final_action["shot_end_ms"], 11833)
+        self.assertEqual(final_action["shot_duration_ms"], 1708)
+
+        camera_calls = [
+            payload for task, payload in backend.calls if task == "cameras"
+        ]
+        self.assertEqual(len(camera_calls), 2)
+        self.assertEqual(len(camera_calls[1]["recent_camera_history"]), 2)
+
     def test_missing_after_retry_returns_template_artifact(self) -> None:
         backend = FakePlannerBackend(miss_action_slot_two=2)
         result = plan_timeline(
@@ -343,8 +591,9 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         template = parse_template_emd(TEMPLATE + INSTRUMENTAL_TAIL)
         concept = normalize_concept_emd(CONCEPT)
         content = PlannerContent(
-            lyric_notes=((1, "note"),),
+            visual_beats=((1, "note"),),
             song_direction="direction",
+            shot_layouts=((1, (0, 5000)), (2, (10125,))),
             actions=((1, 1, "動作1"), (1, 2, "動作2"), (2, 1, "余韻の動作")),
             cameras=((1, 1, "カメラ1"), (1, 2, "カメラ2"), (2, 1, "余韻のカメラ")),
             issue_count=0,
@@ -422,13 +671,22 @@ class TimelinePlannerCoreTests(unittest.TestCase):
                 value = json.loads(payload)
                 self.calls.append((task, value))
                 record_type = {
-                    "lyric-notes": "NOTE",
+                    "visual-beats": "BEAT",
                     "song-direction": "DIRECTION",
+                    "shot-layout": "LAYOUT",
                     "actions": "ACTION",
                     "cameras": "CAMERA",
                 }[task]
                 rows = []
                 for item in value["slots"]:
+                    if task == "shot-layout":
+                        selected = ",".join(
+                            candidate["id"]
+                            for candidate in item["candidates"]
+                            if candidate["source"] in {"scene_start", "existing_shot"}
+                        )
+                        rows.append(f"LAYOUT\t{item['slot']}\t{selected}")
+                        continue
                     echo = " __MVD_LOCKED_DIALOGUE_0001__" if task == "actions" else ""
                     rows.append(f"{record_type}\t{item['slot']}\t有効な記述{echo}")
                 return "\n".join(rows)

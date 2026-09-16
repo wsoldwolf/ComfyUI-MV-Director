@@ -26,7 +26,7 @@ V1は後方互換を要求しない。未知schema、旧`CL...` schema又はvers
 | `MVD_OBSERVATIONS_V1` | `ObservationsArtifact` | Visionの検証済み観察 |
 | `MVD_EMD_FRAGMENT_V1` | `EMDTextArtifact` | Subjectだけの編集可能EMD |
 | `MVD_REFERENCE_BINDINGS_V1` | `ReferenceBindingsArtifact` | IMAGEとPictureの物理束縛 |
-| `MVD_DIRECTION_V2` | `DirectionArtifact` | 四方向、profile ID、保持方針とprovenance |
+| `MVD_DIRECTION_V3` | `DirectionArtifact` | 六方向、profile ID、保持方針とprovenance |
 | `MVD_TIMELINE_V1` | `TimelineArtifact` | source音声、歌詞、Scene、Shot |
 | `MVD_EMD_TEMPLATE_V1` | `EMDTextArtifact` | 時間枠と歌詞annotation |
 | `MVD_EMD_V1` | `EMDTextArtifact` | 完成EMD |
@@ -44,8 +44,10 @@ V1は後方互換を要求しない。未知schema、旧`CL...` schema又はvers
 
 ```json
 {
-  "schema": "MVD_DIRECTION_V2",
+  "schema": "MVD_DIRECTION_V3",
   "style_direction": ["..."],
+  "environment_direction": ["..."],
+  "time_lighting_direction": ["..."],
   "motion_direction": ["..."],
   "camera_direction": ["..."],
   "other_direction": [],
@@ -58,7 +60,7 @@ V1は後方互換を要求しない。未知schema、旧`CL...` schema又はvers
 }
 ```
 
-四方向は空文字列を含まない文字列配列で、順序を保持する。`retention_policy`は`profile` / `compiler_default` / `passthrough`のいずれかとする。`retention_lines`は`passthrough`時だけ非空で、各要素は先頭の`* `を除いたEMD保持record `` `サブジェクトN`: `fully_preserved|partially_preserved` 説明``である。三profile IDはPlannerがテキスト一致推測をせず機械policyを適用するために保存する。provenance recordは次の固定shapeを使う。
+六方向は空文字列を含まない文字列配列で、順序を保持する。`environment_direction`は物理的な場所、構造、地形及び接触可能な物体、`time_lighting_direction`は完成映像の時刻・照明を表す。明示的なユーザー指定は参照画像で観測した昼夜又は照明より上位である。`retention_policy`は`profile` / `compiler_default` / `passthrough`のいずれかとする。`retention_lines`は`passthrough`時だけ非空で、各要素は先頭の`* `を除いたEMD保持record `` `サブジェクトN`: `fully_preserved|partially_preserved` 説明``である。三profile IDはPlannerがテキスト一致推測をせず機械policyを適用するために保存する。provenance recordは次の固定shapeを使う。
 
 ```json
 {
@@ -163,6 +165,8 @@ semanticな採用、上書き又は破棄理由を生成しない。
 
 `MVD_TIMELINE_V1`は`timebase=source_audio`、`time_unit=ms`を固定し、少なくとも解析条件、`source_audio_duration_ms`、`plan_duration_ms`、`timing_profile`、`lyrics`、`scenes`、`unplaced_lyrics`を持つ。
 
+`unplaced_lyrics`は診断用にschemaへ保持するが、公開Lyric Segmentation nodeの成功出力では空配列でなければならない。一件以上あれば`complete=no; reason=unplaced_lyrics`としてTemplate EMD、SRT及びtyped timelineをすべて`ExecutionBlocker`へ置換し、不完全artifactを成功cache又はPlannerへ渡さない。
+
 Sceneは`scene_number`、Plan基準`start_ms/end_ms`、source基準`source_start_ms/source_end_ms`、`raw_length`、`delivered_frames`、`context_length`、`shots`を持つ。ShotはPlan基準`start_ms/end_ms`を持つ。
 
 歌詞は`segment_id`、`text`、`section`、source位置、`start_ms/end_ms`、確定済み`scene_number/shot_index`を持つ。Plannerは数値包含で所属先を再計算しない。
@@ -186,7 +190,7 @@ RECORD_TYPE<TAB>SLOT<TAB>TEXT
 - 壊れた一行のために他の有効recordを捨てない。
 - required key不足だけを`missing`へ返す。parserはretryを実行しない。
 
-Direction Enhancerだけは、Qwen3-4Bで実測した二つの表記揺れをparser投入前に機械正規化する。独立行の`<think>` / `</think>`を除去し、TABの直後へ連結された既知の`STYLE` / `MOTION` / `CAMERA` / `OTHER` recordを物理行へ分離する。また同taskでは各typeの有効slotが常に1だけなので、既知typeの正のslot番号を1へ正規化する。nodeはuser messageの先頭へ`/no_think`も付与する。この前処理はDirection Enhancer専用であり、共通parser、Planner及びCompilerの未知slot拒否規則は変更しない。本文の意味修復や欠落recordの合成は行わない。
+Direction Enhancerだけは、Qwen3-4Bで実測した二つの表記揺れをparser投入前に機械正規化する。独立行の`<think>` / `</think>`を除去し、TABの直後へ連結された既知の`STYLE` / `ENVIRONMENT` / `TIME_LIGHTING` / `MOTION` / `CAMERA` / `OTHER` recordを物理行へ分離する。また同taskでは各typeの有効slotが常に1だけなので、既知typeの正のslot番号を1へ正規化する。nodeはuser messageの先頭へ`/no_think`も付与する。この前処理はDirection Enhancer専用であり、共通parser、Planner及びCompilerの未知slot拒否規則は変更しない。本文の意味修復や欠落recordの合成は行わない。
 
 ### 9.1 parse結果
 
@@ -209,12 +213,15 @@ issue reasonは`field_count`、`unknown_type`、`invalid_slot`、`unknown_slot`�
 
 | task | 許可type | required |
 |---|---|---|
-| Enhancer | `STYLE`、`MOTION`、`CAMERA`、任意`OTHER` | 先頭三typeのslot 1 |
-| lyric-notes | `NOTE` | side tableの全slot |
+| Enhancer | `STYLE`、`MOTION`、`CAMERA`、任意`ENVIRONMENT`、`TIME_LIGHTING`、`OTHER` | profile所有typeのslot 1 |
+| visual-beats | `BEAT` | side tableの全Scene slot |
 | song-direction | `DIRECTION` | slot 1 |
+| shot-layout | `LAYOUT` | side tableの全Scene slot |
 | actions | `ACTION` | side tableの全slot |
 | cameras | `CAMERA` | side tableの全slot |
 | translation-ja-en | `TRANSLATION` | batch内の全slot |
+
+Visual BeatはSceneごとの原文歌詞、opening/middle/closing位置、歌詞解決有無及び直近4件の採用beatから具体名詞、物理動詞、接触対象、可視結果及び感情変化を一行へ固定する。`LAYOUT`のTEXTはPythonが提示した境界IDだけを時系列順のcomma区切りで持ち、必ず`B0`から始める。LLMは時刻を生成しない。Pythonは候補同士も1500 ms以上離れた相互互換集合を作り、選択IDを絶対msへ機械変換する。1 Sceneあたり最大4 Shot、複数Shot時は各Shot 1500 ms以上とする。Scene全体が1500 ms未満の場合は`B0`だけの一Shotを許す。未知ID、重複、順序違反又は上限違反が残るSceneはLLMを再試行せず`B0`だけへ機械fallbackし、statusへScene番号を残す。ActionはShot終了・長さ・Scene内Shot数と直近6件の採用action、Cameraは確定actionと直近6件の採用cameraをrequest side tableから受ける。これらの履歴は反復回避用で、LLM応答へ再出力しない。Action及びCameraのcreative textはslot対応後に意味修復せずEMDへ置く。
 
 Compilerの`translation-ja-en`は描写文の一対一翻訳だけを返し、欠落、重複、未知行又は破損行があれば修復・retryせず停止する。slotは各有限batch内で1から振り直し、Pythonが元のtranslation unit順へ戻す。入力JSONはPython所有であり、各slotの原文fieldは`japanese_text`、固定instructionはそのfieldを英訳することを明記する。LLMへJSON出力を要求しない。Qwen3-4Bへはuser message先頭で`/no_think`を指定する。Compiler翻訳に限り、閉じた`<think>...</think>`、文字列`<TAB>`又はTABで囲まれた`TAB`ラベル、`slot N`表記、及び一物理行へ連結された既知`TRANSLATION` recordをparser前に決定論的に正規化する。実測形式の先頭に英訳文が複製されていても、数値slot後の英訳文だけを採用する。slot番号、protected token又は英訳本文の意味は修復しない。採用本文に日本語scriptが残るか本文がslot番号そのものなら、英訳として出力せずretryなしで停止する。
 
@@ -229,6 +236,8 @@ Compilerが翻訳backendへ自由描写を渡す前に、内部ID、`<Subject 1.
 protocol IDは`MVD_VISION_OBSERVATION_LINES_V2`。record順、category、visibility、空を許すfield及び終端warningは最小コア仕様5.2を正本とする。Phase 0ではIDとfixtureだけを固定し、parser実装はPhase 3で行う。
 
 LLM行protocolとVision行protocolを同じparserへ無理に統合しない。前者は部分回収、後者は固定順の完全な観察recordを要求する。
+
+`HINT_STATUS`が`consistent`、`ambiguous`又は`conflict`で、固定行`HINT_REASON`の値だけが空の場合は、statusを保持したままwarningとして受理する。理由本文をPythonで合成せず、この欠落だけをformat retry条件にしない。`not_used`は空理由だけを受理する。
 
 ## 11. protocol変更
 

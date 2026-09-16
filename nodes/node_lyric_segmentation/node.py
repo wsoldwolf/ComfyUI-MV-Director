@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 import math
 from pathlib import Path
 import threading
@@ -18,6 +19,7 @@ try:
         align_lyrics,
         analyze_waveform,
         build_timeline,
+        build_whisper_initial_prompt,
         extract_whisper_words,
         parse_plain_lyrics,
         prepare_whisper_audio,
@@ -35,6 +37,7 @@ except ImportError:  # Standalone repository tests.
         align_lyrics,
         analyze_waveform,
         build_timeline,
+        build_whisper_initial_prompt,
         extract_whisper_words,
         parse_plain_lyrics,
         prepare_whisper_audio,
@@ -50,6 +53,7 @@ from ..common.whisper_discovery import (
 
 
 CACHE_MODES = ("reuse", "refresh", "disabled")
+_LOGGER = logging.getLogger("mv_director.lyrics")
 
 
 def _cache() -> SuccessCache | None:
@@ -82,6 +86,48 @@ def _status(timeline: TimelineArtifact, *, cache: str) -> str:
         f"plan_ms={timeline.plan_duration_ms}; "
         f"scenes={len(timeline.scenes)}; cache={cache}"
     )
+
+
+def _block_unplaced(
+    timeline: TimelineArtifact,
+    *,
+    cache: str,
+) -> dict[str, Any]:
+    section_counts: dict[str, int] = {}
+    for item in timeline.unplaced_lyrics:
+        section = item.section or "(none)"
+        section_counts[section] = section_counts.get(section, 0) + 1
+    section_summary = ",".join(
+        f"{section}:{count}" for section, count in section_counts.items()
+    )
+    status = (
+        f"complete=no; reason=unplaced_lyrics; "
+        f"unplaced_sections={section_summary}; {_status(timeline, cache=cache)}"
+    )
+    preview = ", ".join(
+        f"{item.segment_id}:{item.text}"
+        for item in timeline.unplaced_lyrics[:5]
+    )
+    if len(timeline.unplaced_lyrics) > 5:
+        preview += f", ... (+{len(timeline.unplaced_lyrics) - 5})"
+    message = (
+        "Lyric Segmentation did not place every lyric segment; "
+        f"unplaced={len(timeline.unplaced_lyrics)}; "
+        f"sections={section_summary}; items={preview}. "
+        "The Template EMD, SRT, and timeline outputs were blocked. "
+        "Use vocal audio containing every supplied lyric, or remove lyrics "
+        "that are not sung in this audio."
+    )
+    _LOGGER.error("[MV Director - Lyric Segmentation] %s", message)
+    try:
+        from comfy_execution.graph import ExecutionBlocker  # type: ignore
+    except Exception as exc:
+        raise RuntimeError(message) from exc
+    blocker = ExecutionBlocker(message)
+    return {
+        "ui": {"status": [status]},
+        "result": (blocker, blocker, blocker, status),
+    }
 
 
 class MVDirectorLyricSegmentation:
@@ -125,7 +171,7 @@ class MVDirectorLyricSegmentation:
         cache_mode: str,
         keep_whisper_loaded: bool,
         h3_timing_profile: H3TimingProfile | None = None,
-    ) -> tuple[str, str, TimelineArtifact, str]:
+    ) -> tuple[str, str, TimelineArtifact, str] | dict[str, Any]:
         with self._lock:
             if cache_mode not in CACHE_MODES:
                 raise ValueError("cache_mode must be reuse, refresh, or disabled")
@@ -162,6 +208,8 @@ class MVDirectorLyricSegmentation:
                 status = _status(timeline, cache="hit")
                 if not keep_whisper_loaded:
                     self._whisper.clear()
+                if timeline.unplaced_lyrics:
+                    return _block_unplaced(timeline, cache="hit")
                 return template, srt, timeline, status
 
             try:
@@ -179,7 +227,10 @@ class MVDirectorLyricSegmentation:
                         total_samples=total_samples,
                     )
                     transcription = self._whisper.transcribe(
-                        whisper_audio, language=language, device=device
+                        whisper_audio,
+                        language=language,
+                        device=device,
+                        initial_prompt=build_whisper_initial_prompt(lyrics),
                     )
                     words = extract_whisper_words(
                         transcription, audio_duration_ms=duration_ms
@@ -200,6 +251,8 @@ class MVDirectorLyricSegmentation:
                     max_scene_duration_ms=max_scene_duration_ms,
                     timing_profile=profile,
                 )
+                if timeline.unplaced_lyrics:
+                    return _block_unplaced(timeline, cache="miss")
                 template = render_template_emd(timeline).text
                 srt = render_srt(timeline, offset_ms=srt_time_offset_ms)
                 status = _status(timeline, cache="miss")

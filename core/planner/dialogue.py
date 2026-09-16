@@ -70,6 +70,12 @@ class DialogueFilter:
         self._used: set[str] = set()
         self.removed_count = 0
 
+    def add_records(self, records: tuple[ProtectedDialogue, ...]) -> None:
+        """Register placeholders created after an intermediate planning stage."""
+
+        for record in records:
+            self._by_id[record.placeholder] = record
+
     @property
     def unused_ids(self) -> tuple[str, ...]:
         return tuple(key for key in self._by_id if key not in self._used)

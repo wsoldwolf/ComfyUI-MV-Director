@@ -53,8 +53,9 @@ CACHE_MODES = ("reuse", "refresh", "disabled")
 CHAT_FORMATS = ("auto", "qwen", "gemma")
 LIP_SYNC_MODES = ("off", "context_loop", "audio_reference", "lyrics")
 _PROMPT_FILES = {
-    "lyric-notes": "timeline_planner_lyric_notes_system_prompt.txt",
+    "visual-beats": "timeline_planner_visual_beats_system_prompt.txt",
     "song-direction": "timeline_planner_song_direction_system_prompt.txt",
+    "shot-layout": "timeline_planner_shot_layout_system_prompt.txt",
     "actions": "timeline_planner_actions_system_prompt.txt",
     "cameras": "timeline_planner_cameras_system_prompt.txt",
 }
@@ -319,9 +320,20 @@ class MVDirectorTimelinePlanner:
                     lip_sync_target=lip_sync_target,
                     lip_sync_audio_slot=lip_sync_audio_slot,
                 )
+                planned_shot_count = sum(
+                    len(starts) for _, starts in content.shot_layouts
+                )
+                fallback_label = (
+                    "none"
+                    if not content.layout_fallback_scenes
+                    else ",".join(
+                        str(scene) for scene in content.layout_fallback_scenes
+                    )
+                )
                 status = (
-                    f"complete=yes; scenes={len(template.scenes)}; shots={len(template.shot_keys)}; "
+                    f"complete=yes; scenes={len(template.scenes)}; shots={planned_shot_count}; "
                     f"issues={content.issue_count}; retries={len(content.retried_scenes)}; "
+                    f"layout_fallback_scenes={fallback_label}; "
                     f"removed_dialogue={content.removed_generated_dialogue_count}; "
                     f"unused_protected={len(content.unused_protected_dialogue_ids)}; cache={cache_status}"
                 )

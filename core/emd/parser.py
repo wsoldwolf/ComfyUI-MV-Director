@@ -54,7 +54,14 @@ _RETENTION_RE = re.compile(
 )
 _RESERVED_LIST_RE = re.compile(r"\* `[^`]+`(?:\s|\Z)")
 _D_TAG_RE = re.compile(r"</?d(?:\[[^\]\r\n]+\])?>")
-_COMMON_SECTIONS = ("スタイル", "モーション", "カメラ", "その他")
+_COMMON_SECTIONS = (
+    "スタイル",
+    "環境",
+    "時間・照明",
+    "モーション",
+    "カメラ",
+    "その他",
+)
 
 
 def parse_time_ms(value: str, *, line_number: int = 0) -> int:

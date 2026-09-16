@@ -350,6 +350,7 @@ class DirectionEnhancerTests(unittest.TestCase):
             set(STYLE_PROFILES),
             {
                 "reference_anime",
+                "anime_mv",
                 "reference_cinematic",
                 "illust_to_photoreal",
                 "reference_painterly",
@@ -357,17 +358,34 @@ class DirectionEnhancerTests(unittest.TestCase):
         )
         self.assertEqual(
             set(MOTION_PROFILES),
-            {"natural_performance", "expressive_mv", "limited_animation"},
+            {"natural_performance", "expressive_mv", "limited_animation", "anime_mv"},
         )
         self.assertEqual(
             set(CAMERA_PROFILES),
-            {"readable_depth", "cinematic_depth", "rhythmic_mv", "arc_closeup"},
+            {"readable_depth", "cinematic_depth", "rhythmic_mv", "anime_mv"},
         )
-        arc = CAMERA_PROFILES["arc_closeup"]
-        self.assertIn("arc", arc)
-        self.assertIn("close-up", arc)
-        self.assertIn("時計回り・反時計回り", arc)
-        self.assertEqual(len(DIRECTION_PRESETS), 3)
+        camera = CAMERA_PROFILES["anime_mv"]
+        self.assertIn("arc又はclose-upを全体へ一律に要求しない", camera)
+        self.assertIn("二コマ打ち又は三コマ打ち", MOTION_PROFILES["anime_mv"])
+        self.assertIn("reference_anime", STYLE_PROFILES)
+        self.assertGreaterEqual(len(DIRECTION_PRESETS), 4)
+
+    def test_environment_and_time_lighting_records_are_separate(self) -> None:
+        backend = FakeDirectionBackend(
+            VALID
+            + "\nENVIRONMENT\t1\t苔むした大樹と石段がある森。"
+            + "\nTIME_LIGHTING\t1\t深夜。青白い月光で照らす。"
+        )
+        result = enhance_direction(
+            backend,
+            value=DirectionEnhancerInput(user_request="昼の画像を深夜として描く。"),
+            system_prompt="fixed",
+            runtime_config=LlamaRuntimeConfig(),
+        )
+        self.assertEqual(result.direction.environment_direction, ("苔むした大樹と石段がある森。",))
+        self.assertEqual(result.direction.time_lighting_direction, ("深夜。青白い月光で照らす。",))
+        self.assertIn("## 環境", result.direction_emd_preview)
+        self.assertIn("## 時間・照明", result.direction_emd_preview)
 
     def test_public_node_mapping_and_socket_surface(self) -> None:
         self.assertIn("MVDirectorDirectionEnhancer", NODE_CLASS_MAPPINGS)

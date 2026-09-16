@@ -1,7 +1,13 @@
 {
-  "schema": "MVD_DIRECTION_V2",
+  "schema": "MVD_DIRECTION_V3",
   "style_direction": [
     "実写映画として描写する。"
+  ],
+  "environment_direction": [
+    "石段と鳥居のある森。"
+  ],
+  "time_lighting_direction": [
+    "深夜の月光。"
   ],
   "motion_direction": [
     "接地と重心移動を明瞭にする。"

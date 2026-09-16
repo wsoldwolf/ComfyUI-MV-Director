@@ -100,7 +100,7 @@ class ArtifactTests(unittest.TestCase):
 
     def test_direction_fixture_round_trips_canonically(self) -> None:
         payload = json.loads(
-            (FIXTURES / "artifacts" / "direction_v2.json").read_text(
+            (FIXTURES / "artifacts" / "direction_v3.json").read_text(
                 encoding="utf-8"
             )
         )
@@ -110,7 +110,7 @@ class ArtifactTests(unittest.TestCase):
 
     def test_duplicate_provenance_id_is_rejected(self) -> None:
         payload = json.loads(
-            (FIXTURES / "artifacts" / "direction_v2.json").read_text(
+            (FIXTURES / "artifacts" / "direction_v3.json").read_text(
                 encoding="utf-8"
             )
         )

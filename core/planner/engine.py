@@ -11,12 +11,17 @@ from ..inference import LlamaRuntimeConfig
 from ..protocols import LLMRecordIssue, parse_llm_records
 from .dialogue import DialogueFilter, DialogueProtector
 from .errors import TimelinePlannerError
+from .layout import (
+    apply_shot_layouts,
+    build_layout_candidates,
+    parse_layout_selection,
+)
 from .renderer import render_completed_emd
 from .template import PlannerTemplate, normalize_concept_emd, parse_template_emd
 
 
-PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v3"
-TASKS = ("lyric-notes", "song-direction", "actions", "cameras")
+PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v6"
+TASKS = ("visual-beats", "song-direction", "shot-layout", "actions", "cameras")
 
 
 class TimelinePlannerBackend(Protocol):
@@ -34,38 +39,53 @@ class TimelinePlannerBackend(Protocol):
 
 @dataclass(frozen=True, slots=True)
 class PlannerContent:
-    lyric_notes: tuple[tuple[int, str], ...]
+    visual_beats: tuple[tuple[int, str], ...]
     song_direction: str
+    shot_layouts: tuple[tuple[int, tuple[int, ...]], ...]
     actions: tuple[tuple[int, int, str], ...]
     cameras: tuple[tuple[int, int, str], ...]
     issue_count: int
     retried_scenes: tuple[int, ...]
     removed_generated_dialogue_count: int
     unused_protected_dialogue_ids: tuple[str, ...]
+    layout_fallback_scenes: tuple[int, ...] = ()
 
     def to_dict(self) -> dict[str, object]:
         return {
-            "lyric_notes": [list(value) for value in self.lyric_notes],
+            "visual_beats": [list(value) for value in self.visual_beats],
             "song_direction": self.song_direction,
+            "shot_layouts": [
+                [scene, list(starts)] for scene, starts in self.shot_layouts
+            ],
             "actions": [list(value) for value in self.actions],
             "cameras": [list(value) for value in self.cameras],
             "issue_count": self.issue_count,
             "retried_scenes": list(self.retried_scenes),
             "removed_generated_dialogue_count": self.removed_generated_dialogue_count,
             "unused_protected_dialogue_ids": list(self.unused_protected_dialogue_ids),
+            "layout_fallback_scenes": list(self.layout_fallback_scenes),
         }
 
     @classmethod
     def from_dict(cls, value: Mapping[str, Any]) -> "PlannerContent":
         return cls(
-            lyric_notes=tuple((int(row[0]), str(row[1])) for row in value["lyric_notes"]),
+            visual_beats=tuple(
+                (int(row[0]), str(row[1])) for row in value["visual_beats"]
+            ),
             song_direction=str(value["song_direction"]),
+            shot_layouts=tuple(
+                (int(row[0]), tuple(int(item) for item in row[1]))
+                for row in value["shot_layouts"]
+            ),
             actions=tuple((int(row[0]), int(row[1]), str(row[2])) for row in value["actions"]),
             cameras=tuple((int(row[0]), int(row[1]), str(row[2])) for row in value["cameras"]),
             issue_count=int(value["issue_count"]),
             retried_scenes=tuple(int(item) for item in value["retried_scenes"]),
             removed_generated_dialogue_count=int(value["removed_generated_dialogue_count"]),
             unused_protected_dialogue_ids=tuple(str(item) for item in value["unused_protected_dialogue_ids"]),
+            layout_fallback_scenes=tuple(
+                int(item) for item in value["layout_fallback_scenes"]
+            ),
         )
 
 
@@ -204,16 +224,18 @@ def _request_entities(
     return values, issues, tuple(retried_scenes), unresolved
 
 
-def _protected_context(
+def _shot_context(
     template: PlannerTemplate,
-    concept_emd: str,
-    direction: DirectionArtifact,
-) -> tuple[DialogueProtector, str, dict[tuple[int, int], dict[str, object]], dict[str, list[str]]]:
-    protector = DialogueProtector()
-    protected_concept = protector.protect(concept_emd, source_ref="concept_emd")
+    protector: DialogueProtector,
+) -> dict[tuple[int, int], dict[str, object]]:
     shots: dict[tuple[int, int], dict[str, object]] = {}
     for scene in template.scenes:
         for shot_index, shot in enumerate(scene.shots, 1):
+            shot_end_ms = (
+                scene.shots[shot_index].start_ms
+                if shot_index < len(scene.shots)
+                else scene.end_ms
+            )
             lyrics = [
                 {
                     "section": lyric.section or "",
@@ -235,12 +257,34 @@ def _protected_context(
             shots[(scene.scene_number, shot_index)] = {
                 "scene_number": scene.scene_number,
                 "shot_index": shot_index,
+                "scene_shot_count": len(scene.shots),
                 "shot_start_ms": shot.start_ms,
+                "shot_end_ms": shot_end_ms,
+                "shot_duration_ms": shot_end_ms - shot.start_ms,
                 "lyrics": lyrics,
                 "author_body": author_body,
             }
+    return shots
+
+
+def _protected_context(
+    template: PlannerTemplate,
+    concept_emd: str,
+    direction: DirectionArtifact,
+) -> tuple[DialogueProtector, str, dict[tuple[int, int], dict[str, object]], dict[str, list[str]]]:
+    protector = DialogueProtector()
+    protected_concept = protector.protect(concept_emd, source_ref="concept_emd")
+    shots = _shot_context(template, protector)
     directions = {
         "style": [protector.protect(value, source_ref="direction:style") for value in direction.style_direction],
+        "environment": [
+            protector.protect(value, source_ref="direction:environment")
+            for value in direction.environment_direction
+        ],
+        "time_lighting": [
+            protector.protect(value, source_ref="direction:time_lighting")
+            for value in direction.time_lighting_direction
+        ],
         "motion": [protector.protect(value, source_ref="direction:motion") for value in direction.motion_direction],
         "camera": [protector.protect(value, source_ref="direction:camera") for value in direction.camera_direction],
         "other": [protector.protect(value, source_ref="direction:other") for value in direction.other_direction],
@@ -263,7 +307,7 @@ def generate_planner_content(
     if not 1 <= scenes_per_batch <= 6:
         raise TimelinePlannerError("scenes_per_batch must be in 1..6")
     if set(system_prompts) != set(TASKS) or any(not value.strip() for value in system_prompts.values()):
-        raise TimelinePlannerError("all four Planner system prompts are required")
+        raise TimelinePlannerError("all five Planner system prompts are required")
     direction.validate()
     runtime_config.validate()
     protector, protected_concept, shot_context, directions = _protected_context(
@@ -273,8 +317,11 @@ def generate_planner_content(
     all_issues: list[LLMRecordIssue] = []
     all_retries: set[int] = set()
 
-    note_values: dict[tuple[int, ...], str] = {}
-    for scene_batch in _chunks(list(template.scenes), 6):
+    beat_values: dict[tuple[int, ...], str] = {}
+    previous_beat = ""
+    recent_beat_history: list[str] = []
+    total_scenes = len(template.scenes)
+    for scene_batch in _chunks(list(template.scenes), scenes_per_batch):
         entities = []
         for scene in scene_batch:
             scene_lyrics = [
@@ -287,16 +334,37 @@ def generate_planner_content(
                 _Entity(
                     scene.scene_number,
                     (scene.scene_number,),
-                    {"scene_number": scene.scene_number, "lyrics": scene_lyrics},
+                    {
+                        "scene_number": scene.scene_number,
+                        "total_scene_count": total_scenes,
+                        "timeline_position": (
+                            "opening"
+                            if scene.scene_number <= max(1, total_scenes // 4)
+                            else "closing"
+                            if scene.scene_number > max(1, total_scenes * 3 // 4)
+                            else "middle"
+                        ),
+                        "has_resolved_lyrics": bool(scene_lyrics),
+                        "lyrics": scene_lyrics,
+                        "previous_batch_beat": previous_beat,
+                    },
                 )
             )
         values, issues, retries, missing = _request_entities(
             backend,
-            task="lyric-notes",
-            record_type="NOTE",
+            task="visual-beats",
+            record_type="BEAT",
             entities=entities,
-            shared={},
-            system_prompt=system_prompts["lyric-notes"],
+            shared={
+                "concept_emd": protected_concept,
+                "direction": {
+                    "environment": directions["environment"],
+                    "time_lighting": directions["time_lighting"],
+                    "other": directions["other"],
+                },
+                "recent_visual_beat_history": recent_beat_history[-4:],
+            },
+            system_prompt=system_prompts["visual-beats"],
             runtime_config=runtime_config,
             interrupt_callback=interrupt_callback,
         )
@@ -304,10 +372,19 @@ def generate_planner_content(
         all_retries.update(retries)
         if missing:
             return None, missing
-        note_values.update({key: dialogue_filter.filter(text) for key, text in values.items()})
+        beat_values.update(
+            {key: dialogue_filter.filter(text) for key, text in values.items()}
+        )
+        recent_beat_history.extend(
+            beat_values[(scene.scene_number,)] for scene in scene_batch
+        )
+        if scene_batch:
+            previous_beat = beat_values.get(
+                (scene_batch[-1].scene_number,), previous_beat
+            )
 
-    direction_entity = _Entity(0, (1,), {"notes": [
-        {"scene_number": key[0], "text": value} for key, value in sorted(note_values.items())
+    direction_entity = _Entity(0, (1,), {"visual_beats": [
+        {"scene_number": key[0], "text": value} for key, value in sorted(beat_values.items())
     ]})
     song_values, issues, retries, missing = _request_entities(
         backend,
@@ -325,16 +402,79 @@ def generate_planner_content(
         return None, missing
     song_direction = dialogue_filter.filter(song_values[(1,)])
 
+    candidate_map = {
+        scene.scene_number: build_layout_candidates(scene)
+        for scene in template.scenes
+    }
+    layout_entities = [
+        _Entity(
+            scene.scene_number,
+            (scene.scene_number,),
+            {
+                "scene_number": scene.scene_number,
+                "scene_start_ms": scene.start_ms,
+                "scene_end_ms": scene.end_ms,
+                "visual_beat": beat_values[(scene.scene_number,)],
+                "lyric_groups": [
+                    {
+                        "shot_index": shot_index,
+                        "lyrics": shot_context[
+                            (scene.scene_number, shot_index)
+                        ]["lyrics"],
+                    }
+                    for shot_index, _ in enumerate(scene.shots, 1)
+                ],
+                "candidates": [
+                    candidate.to_dict()
+                    for candidate in candidate_map[scene.scene_number]
+                ],
+            },
+        )
+        for scene in template.scenes
+    ]
+    layout_texts, issues, retries, missing = _request_entities(
+        backend,
+        task="shot-layout",
+        record_type="LAYOUT",
+        entities=layout_entities,
+        shared={"song_direction": song_direction},
+        system_prompt=system_prompts["shot-layout"],
+        runtime_config=runtime_config,
+        interrupt_callback=interrupt_callback,
+    )
+    all_issues.extend(issues)
+    all_retries.update(retries)
+    if missing:
+        return None, missing
+    layouts: dict[int, tuple[int, ...]] = {}
+    layout_fallback_scenes: list[int] = []
+    for scene in template.scenes:
+        try:
+            layouts[scene.scene_number] = parse_layout_selection(
+                layout_texts[(scene.scene_number,)],
+                candidate_map[scene.scene_number],
+                scene_end_ms=scene.end_ms,
+            )
+        except TimelinePlannerError:
+            layouts[scene.scene_number] = (scene.start_ms,)
+            layout_fallback_scenes.append(scene.scene_number)
+    planned_template = apply_shot_layouts(template, layouts)
+    shot_context = _shot_context(planned_template, protector)
+    dialogue_filter.add_records(protector.records)
+
     action_values: dict[tuple[int, ...], str] = {}
     previous_action = ""
-    for scene_batch in _chunks(list(template.scenes), scenes_per_batch):
+    recent_action_history: list[str] = []
+    for scene_batch in _chunks(list(planned_template.scenes), scenes_per_batch):
         keys = [
-            key for key in template.shot_keys if key[0] in {scene.scene_number for scene in scene_batch}
+            key for key in planned_template.shot_keys
+            if key[0] in {scene.scene_number for scene in scene_batch}
         ]
         entities = []
         prior_key: tuple[int, int] | None = None
         for key in keys:
             context = dict(shot_context[key])
+            context["visual_beat"] = beat_values[(key[0],)]
             context["previous_shot"] = (
                 None
                 if prior_key is None
@@ -351,9 +491,15 @@ def generate_planner_content(
             entities=entities,
             shared={
                 "concept_emd": protected_concept,
-                "direction": {"motion": directions["motion"], "other": directions["other"]},
+                "direction": {
+                    "environment": directions["environment"],
+                    "time_lighting": directions["time_lighting"],
+                    "motion": directions["motion"],
+                    "other": directions["other"],
+                },
                 "song_direction": song_direction,
                 "primary_action_concept": lip_sync_target,
+                "recent_action_history": recent_action_history[-6:],
             },
             system_prompt=system_prompts["actions"],
             runtime_config=runtime_config,
@@ -365,13 +511,18 @@ def generate_planner_content(
             return None, missing
         for key, text in values.items():
             action_values[key] = dialogue_filter.filter(text)
+        recent_action_history.extend(
+            action_values[key] for key in keys if key in action_values
+        )
         if keys:
             previous_action = action_values.get(keys[-1], previous_action)
 
     camera_values: dict[tuple[int, ...], str] = {}
-    for scene_batch in _chunks(list(template.scenes), scenes_per_batch):
+    recent_camera_history: list[str] = []
+    for scene_batch in _chunks(list(planned_template.scenes), scenes_per_batch):
         keys = [
-            key for key in template.shot_keys if key[0] in {scene.scene_number for scene in scene_batch}
+            key for key in planned_template.shot_keys
+            if key[0] in {scene.scene_number for scene in scene_batch}
         ]
         entities = [
             _Entity(
@@ -379,6 +530,7 @@ def generate_planner_content(
                 key,
                 {
                     **shot_context[key],
+                    "visual_beat": beat_values[(key[0],)],
                     "locked_action": action_values[key],
                 },
             )
@@ -389,7 +541,11 @@ def generate_planner_content(
             task="cameras",
             record_type="CAMERA",
             entities=entities,
-            shared={"direction": {"camera": directions["camera"]}},
+            shared={
+                "direction": {"camera": directions["camera"]},
+                "song_direction": song_direction,
+                "recent_camera_history": recent_camera_history[-6:],
+            },
             system_prompt=system_prompts["cameras"],
             runtime_config=runtime_config,
             interrupt_callback=interrupt_callback,
@@ -398,11 +554,16 @@ def generate_planner_content(
         all_retries.update(retries)
         if missing:
             return None, missing
-        camera_values.update({key: dialogue_filter.filter(text) for key, text in values.items()})
+        camera_values.update(
+            {key: dialogue_filter.filter(text) for key, text in values.items()}
+        )
+        recent_camera_history.extend(
+            camera_values[key] for key in keys if key in camera_values
+        )
 
     empty_shots = [
         key
-        for key in template.shot_keys
+        for key in planned_template.shot_keys
         if not action_values.get(key, "")
         and not camera_values.get(key, "")
         and not shot_context[key]["author_body"]
@@ -411,14 +572,18 @@ def generate_planner_content(
         return None, tuple(("FILTERED", scene, shot) for scene, shot in empty_shots)
 
     content = PlannerContent(
-        lyric_notes=tuple((key[0], value) for key, value in sorted(note_values.items())),
+        visual_beats=tuple(
+            (key[0], value) for key, value in sorted(beat_values.items())
+        ),
         song_direction=song_direction,
+        shot_layouts=tuple(sorted(layouts.items())),
         actions=tuple((key[0], key[1], value) for key, value in sorted(action_values.items())),
         cameras=tuple((key[0], key[1], value) for key, value in sorted(camera_values.items())),
-        issue_count=len(all_issues),
+        issue_count=len(all_issues) + len(layout_fallback_scenes),
         retried_scenes=tuple(sorted(all_retries)),
         removed_generated_dialogue_count=dialogue_filter.removed_count,
         unused_protected_dialogue_ids=dialogue_filter.unused_ids,
+        layout_fallback_scenes=tuple(layout_fallback_scenes),
     )
     return content, ()
 
@@ -433,9 +598,13 @@ def render_planner_content(
     lip_sync_target: str,
     lip_sync_audio_slot: int,
 ) -> EMDTextArtifact:
+    planned_template = apply_shot_layouts(
+        template,
+        {scene: starts for scene, starts in content.shot_layouts},
+    )
     return render_completed_emd(
         concept_emd=concept_emd,
-        template=template,
+        template=planned_template,
         direction=direction,
         actions={(scene, shot): text for scene, shot, text in content.actions},
         cameras={(scene, shot): text for scene, shot, text in content.cameras},

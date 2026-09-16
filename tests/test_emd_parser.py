@@ -19,7 +19,14 @@ class EMDParserTests(unittest.TestCase):
         self.assertEqual(document.subjects[0].references, ())
         self.assertEqual(
             tuple(name for name, _ in document.common_prompt),
-            ("スタイル", "モーション", "カメラ"),
+            (
+                "スタイル",
+                "環境",
+                "時間・照明",
+                "モーション",
+                "カメラ",
+                "その他",
+            ),
         )
         scene = document.scenes[0]
         self.assertEqual((scene.start_ms, scene.end_ms), (0, 10_125))

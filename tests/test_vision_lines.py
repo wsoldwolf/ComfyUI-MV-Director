@@ -31,6 +31,19 @@ class VisionLineProtocolTests(unittest.TestCase):
         self.assertEqual(observations.scene_elements, ("朱塗りの鳥居",))
         self.assertEqual(result.warnings, ())
 
+    def test_empty_reason_for_assessed_hint_is_nonfatal(self) -> None:
+        source = FIXTURE.read_text(encoding="utf-8").replace(
+            "HINT_REASON\t短く丸い淡い金色の眉が部分的に確認できる。",
+            "HINT_REASON\t",
+        )
+        result = parse_vision_observations(source)
+        self.assertEqual(result.observations.hint_status, "consistent")
+        self.assertEqual(result.observations.hint_reason, "")
+        self.assertIn(
+            "accepted empty HINT_REASON for consistent HINT_STATUS",
+            result.warnings,
+        )
+
     def test_system_prompt_keeps_subject_class_physical_and_features_stable(self) -> None:
         prompt = (
             Path(__file__).parents[1]
