@@ -28,6 +28,37 @@ class VisionLineProtocolTests(unittest.TestCase):
         self.assertEqual(feature.visibility, "clear")
         self.assertTrue(any("missing END" in item for item in result.warnings))
 
+    def test_missing_protocol_header_is_restored_only_before_overview(self) -> None:
+        source = FIXTURE.read_text(encoding="utf-8").replace(
+            "MVD_VISION_OBSERVATION_LINES_V2\n", "", 1
+        )
+        result = parse_vision_observations(source)
+        self.assertEqual(result.observations.primary_subject, "長い黒髪の人物")
+        self.assertTrue(any("normalized missing" in item for item in result.warnings))
+
+    def test_colon_form_overview_is_normalized_without_relaxing_other_records(self) -> None:
+        source = FIXTURE.read_text(encoding="utf-8").replace(
+            "OVERVIEW\t夜の神社に人物が立っている。",
+            "Overview: 夜の神社に人物が立っている。",
+        )
+        result = parse_vision_observations(source)
+        self.assertEqual(result.observations.overview, "夜の神社に人物が立っている。")
+        self.assertTrue(any("colon-form OVERVIEW" in item for item in result.warnings))
+
+    def test_fixed_record_names_accept_case_and_separator_normalization(self) -> None:
+        source = (
+            FIXTURE.read_text(encoding="utf-8")
+            .replace("OVERVIEW\t", "Overview\t", 1)
+            .replace("PRIMARY_SUBJECT\t", "Primary Subject\t", 1)
+            .replace("STYLE_MEDIUM\t", "Style-Medium\t", 1)
+        )
+        result = parse_vision_observations(source)
+        self.assertEqual(result.observations.primary_subject, "長い黒髪の人物")
+        self.assertGreaterEqual(
+            len([item for item in result.warnings if "normalized record name" in item]),
+            3,
+        )
+
     def test_missing_visibility_defaults_to_partial(self) -> None:
         source = FIXTURE.read_text(encoding="utf-8").replace(
             "短く丸い淡い金色の眉\tpartial", "短く丸い淡い金色の眉"
@@ -81,7 +112,7 @@ class VisionLineProtocolTests(unittest.TestCase):
     def test_strict_hint_conflict_stops_rendering(self) -> None:
         observations = parse_vision_observations(
             FIXTURE.read_text(encoding="utf-8").replace(
-                "HINT_ASSESSMENT\tconsistent", "HINT_ASSESSMENT\tconflict"
+                "HINT_STATUS\tconsistent", "HINT_STATUS\tconflict"
             )
         ).observations
         with self.assertRaisesRegex(SubjectEMDError, "conflict"):

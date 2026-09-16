@@ -1,7 +1,8 @@
-MVD_VISION_OBSERVATION_LINES_V1
+MVD_VISION_OBSERVATION_LINES_V2
 OVERVIEW	夜の神社に人物が立っている。
 PRIMARY_SUBJECT	長い黒髪の人物
-HINT_ASSESSMENT	consistent	短く丸い淡い金色の眉が部分的に確認できる。
+HINT_STATUS	consistent
+HINT_REASON	短く丸い淡い金色の眉が部分的に確認できる。
 SUBJECT_FEATURE	hair	腰まで届く長い黒髪	clear
 SUBJECT_FEATURE	eyebrows	短く丸い淡い金色の眉	partial
 SUBJECT_POSE	正面を向いて立っている。
@@ -9,13 +10,13 @@ SCENE_SETTING	夜の神社の参道
 SCENE_ELEMENT	朱塗りの鳥居
 LIGHTING	青白い月光
 TIME_WEATHER	晴れた夜
-COMPOSITION	shot_size	全身
-COMPOSITION	viewpoint	正面
-COMPOSITION	subject_placement	中央
-COMPOSITION	depth	前景から遠景まで見える
-STYLE	medium	イラスト
-STYLE	rendering	セル塗り
-STYLE	palette	白、朱色、濃紺
+SHOT_SIZE	全身
+VIEWPOINT	正面
+SUBJECT_PLACEMENT	中央
+DEPTH	前景から遠景まで見える
+STYLE_MEDIUM	イラスト
+STYLE_RENDERING	セル塗り
+STYLE_PALETTE	白、朱色、濃紺
 VISIBLE_TEXT	奉納
 UNCERTAINTY	人物の背面は見えない。
 END_MVD_VISION_OBSERVATION

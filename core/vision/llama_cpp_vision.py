@@ -2,14 +2,56 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 import gc
 import importlib
+import os
 from pathlib import Path
-from typing import Any, Callable, Iterable
+import sys
+import threading
+from typing import Any, Callable, Iterable, Iterator
 
 from ..inference import InferenceBackendError, LlamaRuntimeConfig
 
 from .model_discovery import VisionModelPair
+
+
+_NATIVE_OUTPUT_LOCK = threading.RLock()
+
+
+def _flush_standard_streams() -> None:
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.flush()
+        except (AttributeError, OSError, ValueError):
+            pass
+
+
+@contextmanager
+def _suppress_native_output() -> Iterator[None]:
+    """Temporarily suppress MTMD's direct writes to process stdout/stderr."""
+
+    with _NATIVE_OUTPUT_LOCK:
+        saved: list[tuple[int, int]] = []
+        try:
+            _flush_standard_streams()
+            for descriptor in (1, 2):
+                saved.append((descriptor, os.dup(descriptor)))
+        except OSError:
+            for _, duplicate in saved:
+                os.close(duplicate)
+            yield
+            return
+        try:
+            with open(os.devnull, "w", encoding="utf-8") as sink:
+                os.dup2(sink.fileno(), 1)
+                os.dup2(sink.fileno(), 2)
+                yield
+        finally:
+            _flush_standard_streams()
+            for descriptor, duplicate in saved:
+                os.dup2(duplicate, descriptor)
+                os.close(duplicate)
 
 
 class LlamaCppVisionLifecycle:
@@ -86,24 +128,25 @@ class LlamaCppVisionLifecycle:
         self.clear()
         handler = None
         try:
-            handler = handler_class(
-                clip_model_path=str(pair.projector_path.resolve(strict=True)),
-                verbose=False,
-                use_gpu=config.gpu_layers != 0,
-            )
-            model = llama_class(
-                model_path=str(pair.model_path.resolve(strict=True)),
-                n_ctx=config.n_ctx,
-                n_gpu_layers=config.gpu_layers,
-                n_batch=config.n_batch,
-                flash_attn=config.flash_attn,
-                type_k=getattr(module, kv_name),
-                type_v=getattr(module, kv_name),
-                offload_kqv=True,
-                op_offload=config.op_offload,
-                chat_handler=handler,
-                verbose=False,
-            )
+            with _suppress_native_output():
+                handler = handler_class(
+                    clip_model_path=str(pair.projector_path.resolve(strict=True)),
+                    verbose=False,
+                    use_gpu=config.gpu_layers != 0,
+                )
+                model = llama_class(
+                    model_path=str(pair.model_path.resolve(strict=True)),
+                    n_ctx=config.n_ctx,
+                    n_gpu_layers=config.gpu_layers,
+                    n_batch=config.n_batch,
+                    flash_attn=config.flash_attn,
+                    type_k=getattr(module, kv_name),
+                    type_v=getattr(module, kv_name),
+                    offload_kqv=True,
+                    op_offload=config.op_offload,
+                    chat_handler=handler,
+                    verbose=False,
+                )
         except BaseException:
             self._close(handler)
             self.clear()
@@ -129,10 +172,11 @@ class LlamaCppVisionLifecycle:
         self._model = None
         self._handler = None
         self._signature = None
-        if model is not None:
-            self._close(model)
-        if handler is not None:
-            self._close(handler)
+        with _suppress_native_output():
+            if model is not None:
+                self._close(model)
+            if handler is not None:
+                self._close(handler)
         gc.collect()
 
     @staticmethod
@@ -193,13 +237,14 @@ class LlamaCppVisionLifecycle:
                 ],
             },
         ]
-        stream = completion(
-            messages=messages,
-            max_tokens=config.max_tokens,
-            temperature=config.temperature,
-            top_p=config.top_p,
-            repeat_penalty=config.repetition_penalty,
-            seed=config.seed,
-            stream=True,
-        )
-        return self._collect(stream, interrupt_callback)
+        with _suppress_native_output():
+            stream = completion(
+                messages=messages,
+                max_tokens=config.max_tokens,
+                temperature=config.temperature,
+                top_p=config.top_p,
+                repeat_penalty=config.repetition_penalty,
+                seed=config.seed,
+                stream=True,
+            )
+            return self._collect(stream, interrupt_callback)

@@ -58,6 +58,24 @@ class DirectionEnhancerTests(unittest.TestCase):
         self.assertEqual(len(input_records), 3)
         self.assertTrue(all(item.source == "profile" for item in input_records))
 
+    def test_normalizes_observed_qwen4b_record_formatting(self) -> None:
+        backend = FakeDirectionBackend(
+            "<think>\n</think>\n"
+            "STYLE\t1\t画風。\tMOTION\t2\t動作。\tCAMERA\t3\tカメラ。"
+        )
+        result = enhance_direction(
+            backend,
+            value=DirectionEnhancerInput(),
+            system_prompt="fixed",
+            runtime_config=LlamaRuntimeConfig(),
+        )
+        self.assertEqual(len(backend.calls), 1)
+        self.assertEqual(result.direction.style_direction, ("画風。",))
+        self.assertEqual(result.direction.motion_direction, ("動作。",))
+        self.assertEqual(result.direction.camera_direction, ("カメラ。",))
+        self.assertFalse(result.issues)
+        self.assertFalse(result.retried_missing)
+
     def test_payload_keeps_authority_order_and_read_only_concept(self) -> None:
         concept = "# サブジェクト\n* `人物1`\n* `H3サブジェクト` `<Subject 1>`\n* 金色の眉。\n"
         value = DirectionEnhancerInput(

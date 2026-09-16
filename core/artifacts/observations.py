@@ -15,7 +15,7 @@ from .errors import ArtifactValidationError
 
 
 SCHEMA = "MVD_OBSERVATIONS_V1"
-PROTOCOL = "MVD_VISION_OBSERVATION_LINES_V1"
+PROTOCOL = "MVD_VISION_OBSERVATION_LINES_V2"
 HINT_STATUSES = {"not_used", "consistent", "ambiguous", "conflict"}
 VISIBILITIES = {"clear", "partial", "uncertain"}
 FEATURE_CATEGORIES = {

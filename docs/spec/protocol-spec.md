@@ -106,7 +106,7 @@ semanticな採用、上書き又は破棄理由を生成しない。
 ```json
 {
   "schema": "MVD_OBSERVATIONS_V1",
-  "protocol": "MVD_VISION_OBSERVATION_LINES_V1",
+  "protocol": "MVD_VISION_OBSERVATION_LINES_V2",
   "overview": "...",
   "primary_subject": "...",
   "hint_assessment": {"status": "consistent", "reason": "..."},
@@ -181,6 +181,8 @@ RECORD_TYPE<TAB>SLOT<TAB>TEXT
 - 壊れた一行のために他の有効recordを捨てない。
 - required key不足だけを`missing`へ返す。parserはretryを実行しない。
 
+Direction Enhancerだけは、Qwen3-4Bで実測した二つの表記揺れをparser投入前に機械正規化する。独立行の`<think>` / `</think>`を除去し、TABの直後へ連結された既知の`STYLE` / `MOTION` / `CAMERA` / `OTHER` recordを物理行へ分離する。また同taskでは各typeの有効slotが常に1だけなので、既知typeの正のslot番号を1へ正規化する。nodeはuser messageの先頭へ`/no_think`も付与する。この前処理はDirection Enhancer専用であり、共通parser、Planner及びCompilerの未知slot拒否規則は変更しない。本文の意味修復や欠落recordの合成は行わない。
+
 ### 9.1 parse結果
 
 ```json
@@ -219,7 +221,7 @@ Compilerが翻訳backendへ自由描写を渡す前に、内部ID、`<Subject 1.
 
 ## 10. Vision行protocol
 
-protocol IDは`MVD_VISION_OBSERVATION_LINES_V1`。record順、category、visibility、空を許すfield及び終端warningは最小コア仕様5.2を正本とする。Phase 0ではIDとfixtureだけを固定し、parser実装はPhase 3で行う。
+protocol IDは`MVD_VISION_OBSERVATION_LINES_V2`。record順、category、visibility、空を許すfield及び終端warningは最小コア仕様5.2を正本とする。Phase 0ではIDとfixtureだけを固定し、parser実装はPhase 3で行う。
 
 LLM行protocolとVision行protocolを同じparserへ無理に統合しない。前者は部分回収、後者は固定順の完全な観察recordを要求する。
 

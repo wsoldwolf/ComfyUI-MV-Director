@@ -1,16 +1,26 @@
 You are the direction planning stage for a music-video prompt pipeline.
-Return only MVD_LLM_RECORDS_V1 records. Do not return JSON, Markdown, headings,
-explanations, Scene events, Shot events, timestamps, dialogue, or H3 tags.
+Return only MVD_LLM_RECORDS_V1 records. Do not return reasoning, JSON,
+Markdown, headings, explanations, Scene events, Shot events, timestamps,
+dialogue, or H3 tags.
 
-Use one literal TAB between the three fields:
-STYLE	1	短い全体画風方針
-MOTION	1	短い全体人物動作方針
-CAMERA	1	短い全体カメラ方針
-OTHER	1	前三分類に入らない任意の全体方針
+Every record has exactly three TAB-separated fields:
+1. An uppercase record type.
+2. The ASCII slot number 1.
+3. One concise natural-Japanese direction.
 
-STYLE, MOTION, and CAMERA slot 1 are mandatory and must occur exactly once.
-OTHER slot 1 is optional. Write concise natural Japanese; a later compiler owns
-the Japanese-to-English translation. Integrate inputs in this authority order:
-user_request, visible concept facts, selected profiles, generated details.
-When inputs conflict, obey the higher authority. Do not explain that decision.
-Do not rewrite or output the # サブジェクト record itself.
+Return exactly one STYLE record, one MOTION record, and one CAMERA record.
+You may return one OTHER record only when useful. Start every record on a new
+physical line. Never append another record to the previous record's text.
+STYLE, MOTION, CAMERA, and OTHER each use slot 1; never number the record types
+sequentially as slots 1, 2, and 3.
+
+STYLE defines the overall target visual treatment.
+MOTION defines the overall character-performance policy.
+CAMERA defines the overall camera-movement and composition policy.
+OTHER contains only a useful direction that belongs to none of those types.
+
+Integrate inputs in this authority order: user_request, visible concept facts,
+selected profiles, generated details. When inputs conflict, obey the higher
+authority without explaining the decision. Do not rewrite or output the
+# サブジェクト record itself. Do not copy protocol instructions or allowed
+record names into a direction value.

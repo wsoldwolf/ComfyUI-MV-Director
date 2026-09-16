@@ -58,7 +58,7 @@ Direction artifactはユーザーが記述する別形式ではなく、Enhancer
 
 ### P1-3. Vision出力の最小protocol（解決済み）
 
-旧`cl-vision-observation-line-v2`のrecord構成とtyped observationを、新ID `MVD_VISION_OBSERVATION_LINES_V1`と`MVD_OBSERVATIONS_V1`へ改名して引き継ぐ。旧category、visibility、hint assessment及び一意な決定論的列補正は再利用する。旧ID、旧Markdown renderer、画像なしLLM repair、英日翻訳repair、再観測retry及び互換hint parserは移植しない。新Python rendererだけがconcept typeとPicture/Subject bindingからEMDを作る。
+旧`cl-vision-observation-line-v2`のrecord構成とtyped observationを、新ID `MVD_VISION_OBSERVATION_LINES_V2`と`MVD_OBSERVATIONS_V1`へ改名して引き継ぐ。旧category、visibility、hint assessment及び一意な決定論的列補正は再利用する。旧ID、旧Markdown renderer、画像なしLLM repair、英日翻訳repair、再観測retry及び互換hint parserは移植しない。新Python rendererだけがconcept typeとPicture/Subject bindingからEMDを作る。
 
 ### P1-4. provenance record（解決済み）
 

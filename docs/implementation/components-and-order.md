@@ -28,7 +28,7 @@
 | `common/gguf/discovery.py` | 抽出 | 全text node共通のGGUF探索とcombo | `models/LLM/GGUF`と追加`LLM` root、再帰探索、mmproj除外、相対ID、重複root表示、実path再解決を維持する。特定modelへ固定しない |
 | `common/gguf/runtime.py` | 抽出 | text model lifecycle | load signature、解放、中断bridge、Qwen3 non-thinking処理を候補にする。旧`count_input_tokens()`の近似は予算確認に使わず、最終chat serialization計測を追加する |
 | Vision `discovery.py` / `runtime.py` | 抽出 | observerのmodel+mmproj解決 | MTMDとprojector処理は再利用価値がある。旧観察repair、英語残存で全体再試行する経路は切り離す |
-| Vision line protocol / observation schema | 改名して抽出 | `MVD_VISION_OBSERVATION_LINES_V1`、`MVD_OBSERVATIONS_V1` | 旧record順、category、visibility、hint assessment及び決定論的な列補正を再利用する。旧ID、LLM repair、再観測retry、旧profile出力は持ち込まない |
+| Vision line protocol / observation schema | 改名して抽出 | `MVD_VISION_OBSERVATION_LINES_V2`、`MVD_OBSERVATIONS_V1` | 旧record順、category、visibility、hint assessment及び決定論的な列補正を再利用する。旧ID、LLM repair、再観測retry、旧profile出力は持ち込まない |
 | Vision renderer | 新設 | Image to Subject EMDの可視事実、uncertainty、Subject/Picture関連 | 旧Markdownを移植せず、新しい`# サブジェクト`へperson/object/location別に写す。pose、composition、source style、visible textを恒常Subject条件へ入れない |
 | Vision `cache.py` | 抽出 | 成功観察cache | pixel、model、projector、推論条件、prompt版を含むkeyと原子的保存は有用。保存先schemaと型を新規化する |
 | Vocal Whisper discovery/runtime | 抽出 | ローカルword timestamps | 遅延import、ローカルcheckpoint限定、自動download禁止を維持する |
@@ -165,7 +165,7 @@ ComfyUI-MV-Director/
 ### Phase 3: Image to Subject EMD
 
 1. Vision観察の最小schemaとimage fingerprint
-   - `MVD_VISION_OBSERVATION_LINES_V1`の固定行parserと`MVD_OBSERVATIONS_V1`
+   - `MVD_VISION_OBSERVATION_LINES_V2`の固定行parserと`MVD_OBSERVATIONS_V1`
 2. `subject_hint`と`additional_instruction`の独立STRING socket
 3. `analysis_profile`、`hint_mode`、`hint_conflict`、`picture_reference_mode`、concept/subject/picture indexの外部override
 4. プレフィクスなし日本語自然文の透過入力。名前付きプレフィクスの検出・除去は行わない

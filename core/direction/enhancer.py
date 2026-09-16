@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from typing import Any, Protocol
 
@@ -19,7 +20,7 @@ from ..protocols import LLMRecord, LLMRecordIssue, parse_llm_records
 from .profiles import CAMERA_PROFILES, MOTION_PROFILES, STYLE_PROFILES
 
 
-DIRECTION_PROMPT_VERSION = "mvd-direction-enhancer-v1"
+DIRECTION_PROMPT_VERSION = "mvd-direction-enhancer-v2"
 _ALLOWED = {
     "STYLE": frozenset({1}),
     "MOTION": frozenset({1}),
@@ -33,6 +34,7 @@ _FIELD_BY_TYPE = {
     "CAMERA": "camera_direction",
     "OTHER": "other_direction",
 }
+_DIRECTION_RECORD_TYPES = tuple(_ALLOWED)
 
 
 class DirectionEnhancerError(ValueError):
@@ -212,6 +214,27 @@ def _retry_payload(
     )
 
 
+def _normalize_small_model_response(response: str) -> str:
+    """Normalize two observed Qwen3-4B formatting slips for this task only."""
+
+    normalized = normalize_newlines(response)
+    for record_type in _DIRECTION_RECORD_TYPES:
+        normalized = re.sub(
+            rf"\t{record_type}\t([0-9]+)\t",
+            rf"\n{record_type}\t\1\t",
+            normalized,
+        )
+    lines = []
+    record_pattern = re.compile(
+        rf"^({'|'.join(_DIRECTION_RECORD_TYPES)})\t[0-9]+\t"
+    )
+    for line in normalized.split("\n"):
+        if line.strip() in {"<think>", "</think>"}:
+            continue
+        lines.append(record_pattern.sub(r"\1\t1\t", line, count=1))
+    return "\n".join(lines)
+
+
 def _merge_records(
     first: tuple[LLMRecord, ...],
     retry: tuple[LLMRecord, ...],
@@ -261,7 +284,9 @@ def enhance_direction(
         interrupt_callback=interrupt_callback,
     )
     first = parse_llm_records(
-        first_response, allowed_slots=_ALLOWED, required=_REQUIRED
+        _normalize_small_model_response(first_response),
+        allowed_slots=_ALLOWED,
+        required=_REQUIRED,
     )
     all_issues = list(first.issues)
     retried_missing = first.missing
@@ -275,7 +300,7 @@ def enhance_direction(
             interrupt_callback=interrupt_callback,
         )
         retry_result = parse_llm_records(
-            retry_response,
+            _normalize_small_model_response(retry_response),
             allowed_slots={
                 record_type: frozenset({slot})
                 for record_type, slot in first.missing

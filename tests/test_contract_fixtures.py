@@ -50,18 +50,19 @@ class ContractFixtureTests(unittest.TestCase):
         ).read_text(encoding="utf-8").splitlines()
         self.assertEqual(lines[0], VISION_PROTOCOL_ID)
         self.assertEqual(lines[-1], VISION_END_MARKER)
-        composition = [
-            line.split("\t", 2)[1]
-            for line in lines
-            if line.startswith("COMPOSITION\t")
-        ]
-        style = [
-            line.split("\t", 2)[1]
-            for line in lines
-            if line.startswith("STYLE\t")
-        ]
-        self.assertEqual(tuple(composition), VISION_COMPOSITION_KEYS)
-        self.assertEqual(tuple(style), VISION_STYLE_KEYS)
+        record_types = tuple(line.split("\t", 1)[0] for line in lines)
+        self.assertEqual(
+            tuple(key for key in VISION_COMPOSITION_KEYS if key.upper() in record_types),
+            VISION_COMPOSITION_KEYS,
+        )
+        self.assertEqual(
+            tuple(
+                key
+                for key in VISION_STYLE_KEYS
+                if f"STYLE_{key.upper()}" in record_types
+            ),
+            VISION_STYLE_KEYS,
+        )
         self.assertFalse(any("cl-vision" in line for line in lines))
 
     def test_canonical_emd_has_required_scene_annotation_and_absolute_times(self) -> None:

@@ -60,7 +60,7 @@ stash番号は将来変わり得るため、後続調査では上記object IDを
 
 旧Visionの自然言語入力は`subject_hint`と`additional_instruction`であった。前者は人物の意味・同一性を補助又は固定し、後者は眉、瞳、衣装等の観察焦点を指定した。新Image to Subject EMDでは意味のある各項目を外部socket化し、`concept_type`、`concept_index`、意味上の`subject_index`、物理入力の`picture_index`を分離する。Picture制御は`auto_h3`、`manual`、`none`とする。
 
-旧Visionの`cl-vision-observation-line-v2`はJSONではなく、固定順TAB区切りrecordからPythonがtyped observationを作る構造であり、新実装にも適合する。record構成、category、visibility、hint assessmentと一意な列補正だけを`MVD_VISION_OBSERVATION_LINES_V1`／`MVD_OBSERVATIONS_V1`へ改名して抽出する。旧Markdown renderer、画像なしLLM repair、英日翻訳repair、再観測retry及び旧ID互換は移植しない。新rendererはperson/object/location別の`# サブジェクト`だけを作り、pose、構図、照明、source style及びvisible textを恒常条件へ入れない。
+旧Visionの`cl-vision-observation-line-v2`はJSONではなく、固定順TAB区切りrecordからPythonがtyped observationを作る構造であり、新実装にも適合する。record構成、category、visibility、hint assessmentと一意な列補正だけを`MVD_VISION_OBSERVATION_LINES_V2`／`MVD_OBSERVATIONS_V1`へ改名して抽出する。旧Markdown renderer、画像なしLLM repair、英日翻訳repair、再観測retry及び旧ID互換は移植しない。新rendererはperson/object/location別の`# サブジェクト`だけを作り、pose、構図、照明、source style及びvisible textを恒常条件へ入れない。
 
 ## 4. コードから確認した事実
 

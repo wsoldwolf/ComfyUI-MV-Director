@@ -184,8 +184,11 @@ class VisionPhase3Tests(unittest.TestCase):
 
     def test_observe_only_does_not_send_or_render_hint(self) -> None:
         response = FIXTURE.read_text(encoding="utf-8").replace(
-            "HINT_ASSESSMENT\tconsistent\t短く丸い淡い金色の眉が部分的に確認できる。",
-            "HINT_ASSESSMENT\tnot_used\t",
+            "HINT_STATUS\tconsistent",
+            "HINT_STATUS\tnot_used",
+        ).replace(
+            "HINT_REASON\t短く丸い淡い金色の眉が部分的に確認できる。",
+            "HINT_REASON\t",
         )
         backend = FakeObserver(response)
         prepared = PreparedVisionImage(

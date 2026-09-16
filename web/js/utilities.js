@@ -25,6 +25,19 @@ function normalizeTextFileNodeSize(node) {
   });
 }
 
+function syncSelectedFileDisplay(node) {
+  const update = () => {
+    const display = widget(node, "selected_file");
+    if (!display) return;
+    const basename = String(widget(node, "basename")?.value ?? "").trim();
+    display.value = basename || "No file selected";
+    node.setDirtyCanvas(true, true);
+  };
+  update();
+  queueMicrotask(update);
+  setTimeout(update, 0);
+}
+
 function parseStringList(value) {
   const result = [];
   let current = "";
@@ -96,8 +109,7 @@ async function embedTextFile(node, file) {
     size: file.size,
     type: file.type || "text/plain",
   });
-  const display = widget(node, "selected_file");
-  if (display) display.value = file.name;
+  syncSelectedFileDisplay(node);
   node.setDirtyCanvas(true, true);
 }
 
@@ -185,7 +197,9 @@ app.registerExtension({
         hideSerializedWidget(widget(this, "basename"));
         hideSerializedWidget(widget(this, "browser_metadata_json"));
         const display = this.addWidget("text", "selected_file", "No file selected", () => {}, { serialize: false });
-        display.disabled = true;
+        display.serialize = false;
+        display.options ??= {};
+        display.options.serialize = false;
         this.addWidget("button", "select .txt file", null, () => {
           const input = document.createElement("input");
           input.type = "file";
@@ -209,6 +223,7 @@ app.registerExtension({
           if (event?.dataTransfer?.types?.includes("Files")) return true;
           return originalOver?.call(this, event) ?? false;
         };
+        syncSelectedFileDisplay(this);
         normalizeTextFileNodeSize(this);
         return result;
       };
@@ -217,9 +232,7 @@ app.registerExtension({
         hideSerializedWidget(widget(this, "file_data_base64"));
         hideSerializedWidget(widget(this, "basename"));
         hideSerializedWidget(widget(this, "browser_metadata_json"));
-        const display = widget(this, "selected_file");
-        const basename = widget(this, "basename")?.value;
-        if (display && basename) display.value = basename;
+        syncSelectedFileDisplay(this);
         normalizeTextFileNodeSize(this);
         return result;
       };

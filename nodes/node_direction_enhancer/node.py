@@ -91,7 +91,8 @@ class _LlamaDirectionBackend:
         config: LlamaRuntimeConfig,
         interrupt_callback: Any = None,
     ) -> str:
-        serialized = f"{system_prompt}\n{payload}"
+        model_payload = f"/no_think\n{payload}"
+        serialized = f"{system_prompt}\n{model_payload}"
         count = self.lifecycle.count_serialized_prompt(serialized)
         effective = self.lifecycle.effective_n_ctx or config.n_ctx
         build_context_budget(
@@ -103,7 +104,7 @@ class _LlamaDirectionBackend:
         return self.lifecycle.complete_chat(
             [
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": payload},
+                {"role": "user", "content": model_payload},
             ],
             config,
             interrupt_callback=interrupt_callback,

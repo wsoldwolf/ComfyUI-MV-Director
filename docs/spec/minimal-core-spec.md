@@ -266,34 +266,35 @@ Sceneごとに`@tag`を有効化してnative番号を詰め直すTagged Referenc
 
 ### 5.2 Vision観測protocol
 
-旧`cl-vision-observation-line-v2`の実績あるrecord構成を、新名前空間`MVD_VISION_OBSERVATION_LINES_V1`として引き継ぐ。Vision modelへJSON、Markdown、EMD、`<Picture N>`又は`<Subject N>`を生成させない。正規応答は次の順序固定TAB区切り行とする。
+旧`cl-vision-observation-line-v2`の実績あるrecord構成を、新名前空間`MVD_VISION_OBSERVATION_LINES_V2`として引き継ぐ。Vision modelへJSON、Markdown、EMD、`<Picture N>`又は`<Subject N>`を生成させない。正規応答は次の順序固定TAB区切り行とする。
 
 ```text
-MVD_VISION_OBSERVATION_LINES_V1
+MVD_VISION_OBSERVATION_LINES_V2
 OVERVIEW\t日本語の概要
 PRIMARY_SUBJECT\t日本語の単数名詞句又は空
-HINT_ASSESSMENT\tnot_used|consistent|ambiguous|conflict\t日本語の根拠又は空
-SUBJECT_FEATURE\tface|hair|eyes|eyebrows|ears|body|clothing|accessory|tail|distinctive_feature\t日本語の可視特徴\tclear|partial|uncertain
+HINT_STATUS\tnot_used|consistent|ambiguous|conflict
+HINT_REASON\t日本語の根拠又は空
+SUBJECT_FEATURE\tface|hair|eyes|eyebrows|ears|body|clothing|accessory|tail|distinctive_feature\t日本語の可視特徴
 SUBJECT_POSE\t日本語の姿勢又は空
 SCENE_SETTING\t日本語の場所・環境又は空
 SCENE_ELEMENT\t日本語の背景要素
 LIGHTING\t日本語の照明又は空
 TIME_WEATHER\t日本語の時間帯・天候又は空
-COMPOSITION\tshot_size\t日本語値又は空
-COMPOSITION\tviewpoint\t日本語値又は空
-COMPOSITION\tsubject_placement\t日本語値又は空
-COMPOSITION\tdepth\t日本語値又は空
-STYLE\tmedium\t日本語値又は空
-STYLE\trendering\t日本語値又は空
-STYLE\tpalette\t日本語値又は空
+SHOT_SIZE\t日本語値又は空
+VIEWPOINT\t日本語値又は空
+SUBJECT_PLACEMENT\t日本語値又は空
+DEPTH\t日本語値又は空
+STYLE_MEDIUM\t日本語値又は空
+STYLE_RENDERING\t日本語値又は空
+STYLE_PALETTE\t日本語値又は空
 VISIBLE_TEXT\t画像内で実際に読めた文字
 UNCERTAINTY\t確認できない事項
 END_MVD_VISION_OBSERVATION
 ```
 
-`SUBJECT_FEATURE`、`SCENE_ELEMENT`、`VISIBLE_TEXT`、`UNCERTAINTY`は0件以上、それ以外は各固定数を要求する。`SUBJECT_FEATURE`の同一category反復を許す。人体分類に当てはまらない物品の形、色、数、材質、模様又は状態は`distinctive_feature`を使い、modelに新categoryを作らせない。`visibility`は校正済み確率ではなく、`clear`、`partial`、`uncertain`の三値表示だけとする。
+`SUBJECT_FEATURE`、`SCENE_ELEMENT`、`VISIBLE_TEXT`、`UNCERTAINTY`は0件以上、それ以外は各固定数を要求する。`SUBJECT_FEATURE`の同一category反復を許す。人体分類に当てはまらない物品の形、色、数、材質、模様又は状態は`distinctive_feature`を使い、modelに新categoryを作らせない。4B modelが説明文とenumの列順を反転させることを避けるため、model出力ではvisibility列を要求せず、Pythonが保守的な`partial`を割り当てる。明示visibilityを含む内部fixtureは`clear`、`partial`、`uncertain`の三値だけを受理する。
 
-Python parserは旧実装から、CRLF正規化、空値`SUBJECT_POSE`、`visible`から`clear`、visibility欠落時の保守的`partial`、自然文中へ混入した追加TAB断片の順序保持結合、全必須recordが揃う場合だけの終端marker欠落warningを再利用する。未知record、未知category、未知enum、固定順違反、code fence、参照tag、NUL又は必須record欠落は推測修復せず停止する。画像なしLLM修復、英日翻訳repair、画像全体の再観測retry及び旧`subject_hint:`互換正規化は移植しない。
+Python parserは旧実装から、CRLF正規化、空値`SUBJECT_POSE`、`visible`から`clear`、visibility欠落時の保守的`partial`、自然文中へ混入した追加TAB断片の順序保持結合、全必須recordが揃う場合だけの終端marker欠落warningを再利用する。最初のrecordが正規の`OVERVIEW`である場合だけprotocol ID欠落を決定論的に補い、4B modelで実測した`Overview: value`又は`OVERVIEW: value`だけを`OVERVIEW<TAB>value`へ正規化する。固定順で期待するrecord名はASCIIの大文字小文字を無視し、空白又はhyphenをunderscoreへ正規化するが、未知recordや順序違反は受理しない。未知category、未知enum、その他の固定順違反、code fence、参照tag、NUL又は必須record欠落は推測修復せず停止する。画像なしLLM修復、英日翻訳repair、画像全体の再観測retry及び旧`subject_hint:`互換正規化は移植しない。
 
 検証済みrecordからPythonが`MVD_OBSERVATIONS_V1`を構築し、`observations_json`を生成する。旧構造の`overview`、`primary_subject`、`hint_assessment`、`scene`、`composition`、`style`、`visible_text`、`uncertainties`を維持するが、schema IDとprotocol IDは新名称だけを使う。生model応答をJSONとしてparseしない。
 
@@ -386,6 +387,7 @@ provenance recordのfieldと値域は固定する。`record_id`はPythonが文�
 ### 6.3 実行規則
 
 - 一回のLLM統合で`STYLE`、`MOTION`、`CAMERA`と任意の`OTHER` recordを出力する。必須recordの欠落だけ同じ対象を一回再生成できる。
+- Qwen3-4Bには`/no_think`を明示する。Direction Enhancerに限り、独立したthink tag、TABで一行へ連結された既知record、及び各typeを1、2、3と連番にした正のslotをparser前に決定論的に正規化する。四typeはすべてslot 1だけを持つためslotは1へ戻す。共通行parser、Planner及びCompilerのslot検証は緩和しない。
 - 意味監査、別LLMによる採点、自動意味修復は行わない。
 - user、vision、profileを別々に機械連結した巨大promptのまま下流へ送らず、統合結果とprovenanceを保存する。
 - userの原文もartifactへ保持するが、LLMへ同じ文章の厳密な再出力を要求しない。
