@@ -17,8 +17,9 @@ from ..protocols import parse_llm_records
 from .errors import CompilerError
 
 
-TRANSLATION_PROMPT_VERSION = "mvd-prompt-translation-ja-en-v2"
+TRANSLATION_PROMPT_VERSION = "mvd-prompt-translation-ja-en-v3"
 TRANSLATION_RECORD_TYPE = "TRANSLATION"
+_JAPANESE_SCRIPT_RE = re.compile(r"[\u3040-\u30ff\u3400-\u9fff]")
 
 
 def _normalize_small_model_response(response: str) -> str:
@@ -94,8 +95,13 @@ class LlamaPromptTranslator:
             {
                 "protocol": "MVD_LLM_RECORDS_V1",
                 "task": "translation-ja-en",
+                "instruction": (
+                    "Translate each slots[].japanese_text value into English. "
+                    "The output text field must be English, never the slot number "
+                    "or the Japanese source."
+                ),
                 "slots": [
-                    {"slot": index, "text": text}
+                    {"slot": index, "japanese_text": text}
                     for index, text in enumerate(units, 1)
                 ],
             }
@@ -171,6 +177,16 @@ class LlamaPromptTranslator:
                 f"issues={reasons}; missing_slots={missing}"
             )
         by_slot = {record.slot: record.text for record in parsed.records}
+        non_english = [
+            slot
+            for slot, text in by_slot.items()
+            if _JAPANESE_SCRIPT_RE.search(text) or text.strip() == str(slot)
+        ]
+        if non_english:
+            labels = ",".join(str(slot) for slot in sorted(non_english))
+            raise CompilerError(
+                "translation response is not English for slots: " + labels
+            )
         self.batch_count += 1
         if count.estimated:
             self.estimated_token_batches += 1

@@ -25,10 +25,17 @@ ENGLISH_EMD = """# サブジェクト
 
 
 class FakeLifecycle:
-    def __init__(self, *, invalid_response: bool = False, small_model_format: bool = False) -> None:
+    def __init__(
+        self,
+        *,
+        invalid_response: bool = False,
+        small_model_format: bool = False,
+        japanese_response: bool = False,
+    ) -> None:
         self.effective_n_ctx = 1120
         self.invalid_response = invalid_response
         self.small_model_format = small_model_format
+        self.japanese_response = japanese_response
         self.chat_calls: list[dict[str, object]] = []
         self.ensure_calls = 0
         self.clear_calls = 0
@@ -44,7 +51,7 @@ class FakeLifecycle:
         self.chat_calls.append(payload)
         if self.small_model_format:
             rows = [
-                f"EN:{item['text']}<TAB>{item['slot']}<TAB>EN:{item['text']}"
+                f"source<TAB>{item['slot']}<TAB>English {item['slot']}"
                 for item in payload["slots"]
             ]
             return (
@@ -52,10 +59,21 @@ class FakeLifecycle:
                 "TRANSLATION<TAB>SLOT<TAB>ENGLISH_TEXT\n"
                 + "\n".join(rows)
             )
-        rows = [
-            f"TRANSLATION\t{item['slot']}\tEN:{item['text']}"
-            for item in reversed(payload["slots"])
-        ]
+        if self.japanese_response:
+            return "\n".join(
+                f"TRANSLATION\t{item['slot']}\t{item['japanese_text']}"
+                for item in payload["slots"]
+            )
+        rows = []
+        for item in reversed(payload["slots"]):
+            protected = (
+                " ⟪MVD_PROTECTED_0000⟫"
+                if "⟪MVD_PROTECTED_0000⟫" in item["japanese_text"]
+                else ""
+            )
+            rows.append(
+                f"TRANSLATION\t{item['slot']}\tEnglish {item['slot']}{protected}"
+            )
         if self.invalid_response:
             rows.append("extra commentary")
         return "\n".join(rows)
@@ -68,6 +86,17 @@ class FakeLifecycle:
 
 
 class LlamaPromptTranslatorTests(unittest.TestCase):
+    def test_japanese_echo_is_rejected_without_retry(self) -> None:
+        lifecycle = FakeLifecycle(japanese_response=True)
+        translator = LlamaPromptTranslator(
+            lifecycle,
+            system_prompt="translate",
+            runtime_config=LlamaRuntimeConfig(max_tokens=32, n_ctx=1100),
+        )
+        with self.assertRaisesRegex(CompilerError, "not English"):
+            translator.translate(("少女",))
+        self.assertEqual(len(lifecycle.chat_calls), 1)
+
     def test_qwen4b_thinking_header_and_literal_tabs_are_normalized(self) -> None:
         lifecycle = FakeLifecycle(small_model_format=True)
         translator = LlamaPromptTranslator(
@@ -76,7 +105,7 @@ class LlamaPromptTranslatorTests(unittest.TestCase):
             runtime_config=LlamaRuntimeConfig(max_tokens=32, n_ctx=1100),
         )
         translated = translator.translate(("一", "二"))
-        self.assertEqual(translated, ("EN:一", "EN:二"))
+        self.assertEqual(translated, ("English 1", "English 2"))
         self.assertEqual(translator.batch_count, 1)
 
     def test_finite_batches_preserve_original_unit_order(self) -> None:
@@ -89,7 +118,7 @@ class LlamaPromptTranslatorTests(unittest.TestCase):
         translated = translator.translate(("一 ⟪MVD_PROTECTED_0000⟫", "二", "三"))
         self.assertEqual(
             translated,
-            ("EN:一 ⟪MVD_PROTECTED_0000⟫", "EN:二", "EN:三"),
+            ("English 1 ⟪MVD_PROTECTED_0000⟫", "English 2", "English 1"),
         )
         self.assertEqual(translator.batch_count, 2)
         self.assertEqual(len(lifecycle.chat_calls), 2)
@@ -191,8 +220,8 @@ class EMDCompilerNodeTests(unittest.TestCase):
                 1,
             )
         prompt = "\n".join(json.loads(plan_json)["shots"][0]["prompt"])
-        self.assertIn("EN:白いコートを着た人物。", prompt)
-        self.assertIn("EN:前へ歩く。", prompt)
+        self.assertIn("English 1", prompt)
+        self.assertIn("English 2", prompt)
         self.assertEqual(references.references, ())
         self.assertIn("mode=ja_to_en", status)
         self.assertEqual(lifecycle.ensure_calls, 1)
