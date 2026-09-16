@@ -158,7 +158,7 @@ class MVDirectorTimelinePlanner:
             "required": {
                 "template_emd": ("STRING", {"default": "", "multiline": True, "forceInput": True}),
                 "lip_sync_mode": (list(LIP_SYNC_MODES), {"default": "lyrics"}),
-                "lip_sync_target": ("STRING", {"default": "人物1"}),
+                "lip_sync_target": ("STRING", {"default": "サブジェクト1"}),
                 "lip_sync_audio_slot": ("INT", {"default": 1, "min": 1, "max": 3}),
                 "model_name": (models, {"default": models[0]}),
                 "chat_format": (list(CHAT_FORMATS), {"default": "auto"}),

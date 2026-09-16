@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 import unittest
 
 from core.compiler import CompilerError, compile_ref2va
@@ -24,6 +25,18 @@ class ReferenceMutatingTranslator:
 
 
 class Ref2VACompilerTests(unittest.TestCase):
+    def test_plan_json_is_pretty_printed_deterministically(self) -> None:
+        source = (FIXTURES / "canonical_ref2va.emd").read_text(encoding="utf-8")
+        result = compile_ref2va(source, EchoTranslator())
+
+        rendered = result.plan_json()
+        self.assertTrue(rendered.endswith("\n"))
+        self.assertTrue(rendered.startswith('{\n  "defaults": {\n'))
+        self.assertIn('\n  "shots": [\n    {\n', rendered)
+        self.assertIn("実写映画として描写する。", rendered)
+        self.assertNotIn("\\u5b9f", rendered)
+        self.assertEqual(json.loads(rendered), result.plan)
+
     def test_canonical_document_compiles_to_six_sections(self) -> None:
         source = (FIXTURES / "canonical_ref2va.emd").read_text(encoding="utf-8")
         result = compile_ref2va(source, EchoTranslator())
@@ -68,25 +81,27 @@ class Ref2VACompilerTests(unittest.TestCase):
         self.assertNotIn("VERSE1", "\n".join(scene["prompt"]))
         self.assertEqual(result.required_references.references, ())
 
-    def test_picture_and_audio_reference_require_slots(self) -> None:
+    def test_subject_media_and_lip_sync_audio_require_slots(self) -> None:
         source = """# サブジェクト
-* `人物1`
-* `H3サブジェクト` `<Subject 1>`
-* `参照画像` `<Picture 3>`
-* 主人公。
+* `画像3` `動画1` `音声3` 主人公。
 > `シーン` 1
 # シーン 00:00.000 --> 00:01.000
 * `H3長` 22
 ## ショット 00:00.000
-* `人物1`は歌う。
+* `サブジェクト1`は歌う。
 ## 音響
-* `リップシンク` `Audio参照` `人物1` `H3音声2`
+* `リップシンク` `Audio参照` `サブジェクト1` `音声2`
 """
         result = compile_ref2va(source, EchoTranslator())
         references = result.required_references.to_dict()["references"]
         self.assertEqual(
             [item["required_input"] for item in references],
-            ["ref_images.ref_image_2", "ref_audios.ref_audio_1"],
+            [
+                "ref_images.ref_image_2",
+                "ref_videos.ref_video_0",
+                "ref_audios.ref_audio_2",
+                "ref_audios.ref_audio_1",
+            ],
         )
         prompt = result.plan["shots"][0]["prompt"]
         self.assertIn(
@@ -97,8 +112,6 @@ class Ref2VACompilerTests(unittest.TestCase):
 
     def test_silence_is_an_explicit_flag(self) -> None:
         source = """# サブジェクト
-* `人物1`
-* `H3サブジェクト` `<Subject 1>`
 * 人物。
 > `シーン` 1
 # シーン 00:00.000 --> 00:01.000
@@ -119,14 +132,12 @@ class Ref2VACompilerTests(unittest.TestCase):
 
     def test_dialogue_and_explicit_d_spans_are_not_translated(self) -> None:
         source = """# サブジェクト
-* `人物1`
-* `H3サブジェクト` `<Subject 1>`
 * 人物。
 > `シーン` 1
 # シーン 00:00.000 --> 00:01.000
 * `H3長` 22
 ## ショット 00:00.000
-* `人物1`は「こんにちは」と言い、<d>[English]Goodbye.</d> と続ける。
+* `サブジェクト1`は「こんにちは」と言い、<d>[English]Goodbye.</d> と続ける。
 """
         prompt = compile_ref2va(source, EchoTranslator()).plan["shots"][0]["prompt"]
         text = "\n".join(prompt)
@@ -141,14 +152,12 @@ class Ref2VACompilerTests(unittest.TestCase):
 
     def test_video_reference_is_an_opaque_translation_span(self) -> None:
         source = """# サブジェクト
-* `人物1`
-* `H3サブジェクト` `<Subject 1>`
 * 人物。
 > `シーン` 1
 # シーン 00:00.000 --> 00:01.000
 * `H3長` 22
 ## ショット 00:00.000
-* `人物1`は<Video 1>の動作とカメラ軌道を使う。
+* `サブジェクト1`は`動画1`の動作とカメラ軌道を使う。
 """
         result = compile_ref2va(source, ReferenceMutatingTranslator())
         prompt = "\n".join(result.plan["shots"][0]["prompt"])
@@ -158,18 +167,16 @@ class Ref2VACompilerTests(unittest.TestCase):
 
     def test_context_loop_mode_sets_only_its_fixed_fields(self) -> None:
         source = """# サブジェクト
-* `人物1`
-* `H3サブジェクト` `<Subject 1>`
 * 人物。
 # 保持分析
-* `人物1`: 顔と衣装を保持する。
+* `サブジェクト1`: 顔と衣装を保持する。
 > `シーン` 1
 # シーン 00:00.000 --> 00:01.000
 * `H3長` 22
 ## ショット 00:00.000
-* `人物1`は歌う。
+* `サブジェクト1`は歌う。
 ## 音響
-* `リップシンク` `Context Loop` `人物1`
+* `リップシンク` `Context Loop` `サブジェクト1`
 * `明示台詞のみ`
 """
         scene = compile_ref2va(source, EchoTranslator()).plan["shots"][0]
@@ -183,8 +190,6 @@ class Ref2VACompilerTests(unittest.TestCase):
 
     def test_later_scene_uses_configured_context_length(self) -> None:
         source = """# サブジェクト
-* `人物1`
-* `H3サブジェクト` `<Subject 1>`
 * 人物。
 > `シーン` 1
 # シーン 00:00.000 --> 00:01.000

@@ -84,9 +84,9 @@ def valid_timeline() -> TimelineArtifact:
 class ArtifactTests(unittest.TestCase):
     def test_emd_text_normalizes_newlines_and_hashes_normalized_text(self) -> None:
         artifact = EMDTextArtifact.create(
-            "MVD_EMD_FRAGMENT_V1", "# サブジェクト\r\n* `人物1`\r"
+            "MVD_EMD_FRAGMENT_V1", "# サブジェクト\r\n* 主人公。\r"
         )
-        self.assertEqual(artifact.text, "# サブジェクト\n* `人物1`\n")
+        self.assertEqual(artifact.text, "# サブジェクト\n* 主人公。\n")
         self.assertEqual(len(artifact.sha256), 64)
         self.assertEqual(
             EMDTextArtifact.from_dict(artifact.to_dict()).to_json(),
@@ -127,7 +127,7 @@ class ArtifactTests(unittest.TestCase):
 
     def test_reference_slots_must_match_tags(self) -> None:
         reference = RequiredReference(
-            concept_id="人物1",
+            concept_id="サブジェクト1",
             subject_ref="<Subject 1>",
             h3_ref="<Picture 1>",
             required_input="ref_images.ref_image_0",
@@ -144,7 +144,7 @@ class ArtifactTests(unittest.TestCase):
 
     def test_reference_binding_round_trip(self) -> None:
         binding = ReferenceBinding(
-            concept_id="人物1",
+            concept_id="サブジェクト1",
             subject_ref="<Subject 1>",
             picture_ref="<Picture 1>",
             target_node_id="42",

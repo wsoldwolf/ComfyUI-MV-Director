@@ -277,7 +277,7 @@ ComfyUI-MV-Director/
 完了条件:
 
 - 旧custom nodeと旧workflowを上書きせず、`MVDirector...` type名だけでloadできる。
-- Image to Subject EMDを削除しても、`人物N`等と`<Subject N>`を手書きした完全Ref2VA EMDからCompiler単独workflowがload・compileできる。Picture関連は任意とする。
+- Image to Subject EMDを削除しても、1行＝1 Subjectの`# サブジェクト`を手書きした完全Ref2VA EMDからCompiler単独workflowがload・compileできる。media bindingは任意とする。
 - full mixとvocalが同起点・同尺で、vocalを最終mixへ重ねない。
 - 公開Audio padding nodeがPairだけで、単体Audio Padのtype IDが登録されていない。
 - Lyric SegmentationだけのworkflowでSRTを保存できる。
@@ -320,7 +320,7 @@ H3を動かす前に、短尺と通常尺で次を測る。
 ## 6. 次に試す具体的な順番
 
 1. Subject/Picture関連と`` `H3長` ``を持つ手書き日本語Ref2VA EMDをFake PromptTranslator付きCompiler単独で英語Planへ変換する。
-2. `参照画像`行だけを省略した同EMDをRef2VAとしてcompileし、必要参照一覧が空になることを検証する。
+2. Subject行から``画像N`` tokenだけを省略した同EMDをRef2VAとしてcompileし、必要参照一覧が空になることを検証する。
 3. 20秒のsynthetic timelineで、Context Loop格子化後のScene/Shot/`` `H3長` ``/annotation/保護台詞をunit testする。
 4. Image to Subject EMDの`none`、`auto_h3`、`manual`を同じ画像で比較する。
 5. 旧短尺asset相当の歌詞とボーカルでWhisper一回のalignmentと未解決保持を測る。

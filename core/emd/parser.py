@@ -20,10 +20,7 @@ from .errors import EMDParseError
 
 
 _TIME_RE = re.compile(r"([0-9]{2,}):([0-5][0-9])\.([0-9]{3})\Z")
-_SUBJECT_START_RE = re.compile(r"\* `(人物|場所|物品)([1-9]|1[0-6])`\Z")
-_SUBJECT_REF_RE = re.compile(r"\* `H3サブジェクト` `<Subject ([1-4])>`\Z")
-_PICTURE_REF_RE = re.compile(r"\* `参照画像` `<Picture ([1-9])>`\Z")
-_NAME_RE = re.compile(r"\* `名称` (.+)\Z")
+_SUBJECT_MEDIA_RE = re.compile(r"`(画像([1-9])|動画([1-3])|音声([1-3]))`")
 _SCENE_ANNOTATION_RE = re.compile(r"> `シーン` ([1-9][0-9]*)\Z")
 _SCENE_RE = re.compile(
     r"# シーン ([0-9]{2,}:[0-5][0-9]\.[0-9]{3}) --> "
@@ -35,25 +32,27 @@ _ANNOTATION_RE = re.compile(
     r"> `(セクション|歌詞開始|歌詞終了|歌詞)`(?: (.*))?\Z"
 )
 _CONTEXT_LIP_RE = re.compile(
-    r"\* `リップシンク` `Context Loop` `((?:人物|場所|物品)(?:[1-9]|1[0-6]))`\Z"
+    r"\* `リップシンク` `Context Loop` `(サブジェクト[1-4])`\Z"
 )
 _AUDIO_LIP_RE = re.compile(
     r"\* `リップシンク` `Audio参照` "
-    r"`((?:人物|場所|物品)(?:[1-9]|1[0-6]))` `H3音声([1-3])`\Z"
+    r"`(サブジェクト[1-4])` `音声([1-3])`\Z"
 )
 _LYRIC_LIP_RE = re.compile(
     r"\* `リップシンク` `歌詞` "
-    r"`((?:人物|場所|物品)(?:[1-9]|1[0-6]))` 「(.+)」\Z"
+    r"`(サブジェクト[1-4])` 「(.+)」\Z"
 )
 _SIMPLE_AUDIO_RE = re.compile(r"\* `(明示台詞のみ|無音)`\Z")
-_CONCEPT_TOKEN_RE = re.compile(r"`((?:人物|場所|物品)(?:[1-9]|1[0-6]))`")
+_CONCEPT_TOKEN_RE = re.compile(r"`(サブジェクト[1-4])`")
+_SHOT_CONCEPT_START_RE = re.compile(
+    r"\* `サブジェクト[1-4]`(?:\s|\Z)"
+)
 _RETENTION_RE = re.compile(
-    r"\* `((?:人物|場所|物品)(?:[1-9]|1[0-6]))`:\s*(.+)\Z"
+    r"\* `(サブジェクト[1-4])`:\s*(.+)\Z"
 )
 _RESERVED_LIST_RE = re.compile(r"\* `[^`]+`(?:\s|\Z)")
 _D_TAG_RE = re.compile(r"</?d(?:\[[^\]\r\n]+\])?>")
 _COMMON_SECTIONS = ("スタイル", "モーション", "カメラ", "その他")
-_CONCEPT_TYPES = {"人物": "person", "場所": "environment", "物品": "object"}
 
 
 def parse_time_ms(value: str, *, line_number: int = 0) -> int:
@@ -172,67 +171,47 @@ class _Parser:
 
     def parse_subjects(self) -> tuple[Subject, ...]:
         subjects: list[Subject] = []
-        concept_ids: set[str] = set()
-        subject_refs: set[str] = set()
         while (line := self.current()) is not None:
-            match = _SUBJECT_START_RE.fullmatch(line.text)
-            if match is None:
+            if not line.text.startswith("* "):
                 break
+            if len(subjects) >= 4:
+                raise EMDParseError(line.number, "# サブジェクト supports at most 4 lines")
             start = self.take()
-            prefix, number = match.groups()
-            concept_id = f"{prefix}{number}"
-            if concept_id in concept_ids:
-                raise EMDParseError(start.number, f"duplicate concept ID {concept_id}")
-            binding_line = self.take()
-            binding = _SUBJECT_REF_RE.fullmatch(binding_line.text)
-            if binding is None:
-                raise EMDParseError(
-                    binding_line.number, "H3サブジェクト must follow concept ID"
-                )
-            subject_ref = f"<Subject {binding.group(1)}>"
-            if subject_ref in subject_refs:
-                raise EMDParseError(
-                    binding_line.number, f"duplicate Subject reference {subject_ref}"
-                )
-            picture_ref: str | None = None
-            line = self.current()
-            if line and (picture := _PICTURE_REF_RE.fullmatch(line.text)):
-                self.take()
-                picture_ref = f"<Picture {picture.group(1)}>"
-            name: str | None = None
-            line = self.current()
-            if line and (name_match := _NAME_RE.fullmatch(line.text)):
-                self.take()
-                name = name_match.group(1)
-            descriptions: list[str] = []
-            while (line := self.current()) is not None:
-                if (
-                    _SUBJECT_START_RE.fullmatch(line.text)
-                    or line.text.startswith("# ")
-                    or _SCENE_ANNOTATION_RE.fullmatch(line.text)
-                ):
+            content = start.text[2:].strip()
+            references: list[str] = []
+            position = 0
+            while True:
+                match = _SUBJECT_MEDIA_RE.match(content, position)
+                if match is None or match.start() != position:
                     break
-                if not line.text.startswith("* "):
-                    raise EMDParseError(line.number, "invalid Subject description line")
-                if line.text.startswith("* `"):
-                    raise EMDParseError(line.number, "unknown Subject reserved label")
-                descriptions.append(line.text[2:])
-                self.take()
-            if not descriptions:
-                raise EMDParseError(start.number, "Subject requires a description")
+                token = match.group(1)
+                if token.startswith("画像"):
+                    reference = f"<Picture {match.group(2)}>"
+                elif token.startswith("動画"):
+                    reference = f"<Video {match.group(3)}>"
+                else:
+                    reference = f"<Audio {match.group(4)}>"
+                if reference in references:
+                    raise EMDParseError(start.number, "duplicate Subject media reference")
+                references.append(reference)
+                position = match.end()
+                while position < len(content) and content[position] == " ":
+                    position += 1
+            description = content[position:].strip()
+            if "`" in description:
+                raise EMDParseError(start.number, "unknown Subject reserved token")
+            if not description:
+                raise EMDParseError(start.number, "Subject line requires a description")
+            index = len(subjects) + 1
             subjects.append(
                 Subject(
-                    concept_id=concept_id,
-                    concept_type=_CONCEPT_TYPES[prefix],
-                    subject_ref=subject_ref,
-                    picture_ref=picture_ref,
-                    name=name,
-                    descriptions=tuple(descriptions),
+                    concept_id=f"サブジェクト{index}",
+                    subject_ref=f"<Subject {index}>",
+                    description=description,
+                    references=tuple(references),
                     line_number=start.number,
                 )
             )
-            concept_ids.add(concept_id)
-            subject_refs.add(subject_ref)
         if not subjects:
             line = self.current()
             raise EMDParseError(
@@ -392,7 +371,10 @@ class _Parser:
                         self.take()
                         continue
                     if body_line.text.startswith("* "):
-                        if _RESERVED_LIST_RE.match(body_line.text):
+                        if (
+                            _RESERVED_LIST_RE.match(body_line.text)
+                            and not _SHOT_CONCEPT_START_RE.match(body_line.text)
+                        ):
                             raise EMDParseError(
                                 body_line.number, "unknown Shot reserved directive"
                             )

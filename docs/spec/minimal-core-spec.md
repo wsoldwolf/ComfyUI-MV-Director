@@ -243,12 +243,10 @@ Sceneごとに`@tag`を有効化してnative番号を詰め直すTagged Referenc
 - `hint_conflict`: `warn`（既定）、`strict`を選ぶ外部接続可能な制御socket。
 - `picture_reference_mode`: `auto_h3`（既定）、`manual`、`none`を選ぶ外部接続可能な制御socket。
 - `concept_type`: EMD内部IDの`person`、`location`、`object`を選ぶ外部接続可能なsocket。
-- `concept_index`: EMDの`人物N`、`場所N`又は`物品N`へ使う1～16の外部接続可能な整数socket。
-- `subject_index`: Ref2VA prompt内の意味上の`<Subject N>`へ使う1～4の外部接続可能な整数socket。
 - `picture_index`: `manual`時だけ物理入力`<Picture N>`へ使う1～9の外部接続可能な整数socket。
 - Vision model、projector、seed、生成設定。
 
-旧ノードには上記のほか、画像選択、`image_override`、`cache_mode`、`picture_reference_mode`、`picture_index`、`subject_index`、`analysis_max_edge`とGGUF runtime設定があった。新ノードでは外部IMAGEを`image`へ統一し、概念番号、意味上のSubject番号、物理Picture番号を別socketにする。`cache_mode`、解析解像度、model/runtime設定も外部接続可能にする。
+旧ノードには上記のほか、画像選択、`image_override`、`cache_mode`、`picture_reference_mode`、`picture_index`、`subject_index`、`analysis_max_edge`とGGUF runtime設定があった。新ノードでは外部IMAGEを`image`へ統一する。EMD Subject番号はfragment内の行順から導出するため、`concept_index`又は`subject_index` socketを公開しない。`cache_mode`、解析解像度、model/runtime設定は外部接続可能にする。
 
 旧`analysis_profile`の`planner_brief`はprimary出力が直接EMD fragmentになったため不要であり、`structured_json`は常時返す`observations_json`へ統合する。旧出力形式を選ぶための二値は新profileへ残さない。
 
@@ -308,7 +306,7 @@ Python parserは旧実装から、CRLF正規化、空値`SUBJECT_POSE`、`visibl
 
 ### 5.3 出力
 
-- `emd_fragment`: 通常のSTRINGでも保存・編集できる`MVD_EMD_FRAGMENT_V1`。`# サブジェクト`を持ち、binding成功時は同じ項目内へ`<Subject N>`と`<Picture N>`の関係を書く。
+- `emd_fragment`: 通常のSTRINGでも保存・編集できる`MVD_EMD_FRAGMENT_V1`。`# サブジェクト`と一つのSubject行を持ち、binding成功時はdescriptionの前へ``画像N``を書く。完全EMDへ組み込まれた位置からSubject番号を導出する。
 - `reference_bindings`: optional `MV_DIRECTOR_REFERENCE_BINDINGS`。`MVD_REFERENCE_BINDINGS_V1`としてserializeでき、概念ID、`subject_ref`、`picture_ref`、接続先signature、入力image fingerprintを持つ。
 - `image`: H3へ分岐できる、入力と同一のIMAGE tensor。modeにかかわらず常にpass-throughする。
 - `observations_json`: 可視事実、uncertainty、provenanceを持つdebug/再利用用出力。下流必須にしない。
@@ -533,8 +531,8 @@ Sceneはplan上の`[start_ms, end_ms)`を半開区間で隙間なく一回だけ
 | 2 | `concept_emd` | `STRING` forceInput | 任意 | 空 | 一個のSubject EMD断片。Pictureなしも可 |
 | 3 | `direction` | `MV_DIRECTOR_DIRECTION` | 任意 | 空の四方向 | Enhancerの`MVD_DIRECTION_V1`。ユーザー編集対象ではない |
 | 4 | `lip_sync_mode` | STRING COMBO | 必須widget／外部接続可 | `lyrics` | `off` / `context_loop` / `audio_reference` / `lyrics` |
-| 5 | `lip_sync_target` | `STRING` | 必須widget／外部接続可 | `人物1` | 口形対象の内部ID |
-| 6 | `lip_sync_audio_slot` | `INT` 1..3 | 必須widget／外部接続可 | 1 | Audio参照時の`H3音声N` |
+| 5 | `lip_sync_target` | `STRING` | 必須widget／外部接続可 | `サブジェクト1` | 口形対象の派生内部ID |
+| 6 | `lip_sync_audio_slot` | `INT` 1..3 | 必須widget／外部接続可 | 1 | Audio参照時の`音声N` |
 | 7 | `model_name` | GGUF COMBO | 必須 | 探索結果先頭 | 使用する任意GGUF |
 | 8 | `model_name_override` | `STRING` forceInput | 任意 | 空 | Connected Combo等からの非空上書き |
 | 9 | `chat_format` | COMBO | 必須 | `auto` | `auto` / `qwen` / `gemma` |
@@ -584,12 +582,12 @@ Plannerの順序は次で固定する。
 - このfilterによる削除、空item又は未使用placeholderはLLM retry条件にしない。`removed_generated_dialogue_count`と`unused_protected_dialogue_ids`をstatusへ残す。削除後の成果と原位置に保持した作者本文をPython rendererへ渡す。
 - Plannerが`lip_sync_mode=lyrics`で歌詞から作る``リップシンク 歌詞`` directiveはLLM応答ではないためfilter後にPythonが挿入する。作者由来の復元台詞と同様、生成台詞として削除しない。他のmodeではこのdirectiveを挿入しないが、歌詞annotation自体は削除しない。
 
-Plannerには外部接続可能な`lip_sync_mode`（`off`、`context_loop`、`audio_reference`、`lyrics`。既定`lyrics`）、`lip_sync_target`（既定`人物1`）、`lip_sync_audio_slot`（1～3、`audio_reference`時だけ使用）を設ける。これらはLLM promptへ渡さず、Python rendererだけが次のように使う。
+Plannerには外部接続可能な`lip_sync_mode`（`off`、`context_loop`、`audio_reference`、`lyrics`。既定`lyrics`）、`lip_sync_target`（既定`サブジェクト1`）、`lip_sync_audio_slot`（1～3、`audio_reference`時だけ使用）を設ける。これらはLLM promptへ渡さず、Python rendererだけが次のように使う。
 
 - `off`: リップシンクdirectiveを出さない。
-- `context_loop`: Lyric Segmentationが一個以上の`歌詞`annotationを構造配置したSceneへ``* `リップシンク` `Context Loop` `人物1` ``を出す。
-- `audio_reference`: Lyric Segmentationが一個以上の`歌詞`annotationを構造配置したSceneへ``* `リップシンク` `Audio参照` `人物1` `H3音声1` ``を出す。対象とslotは入力値を使う。
-- `lyrics`: Plannerが各Shot見出しの直前に置かれた解決済み`歌詞` annotationを文書順に読み、同じShotへ一segmentごとの``* `リップシンク` `歌詞` `人物1` 「原文」``を出す。歌詞のないShotへは出さない。
+- `context_loop`: Lyric Segmentationが一個以上の`歌詞`annotationを構造配置したSceneへ``* `リップシンク` `Context Loop` `サブジェクト1` ``を出す。
+- `audio_reference`: Lyric Segmentationが一個以上の`歌詞`annotationを構造配置したSceneへ``* `リップシンク` `Audio参照` `サブジェクト1` `音声1` ``を出す。対象とslotは入力値を使う。
+- `lyrics`: Plannerが各Shot見出しの直前に置かれた解決済み`歌詞` annotationを文書順に読み、同じShotへ一segmentごとの``* `リップシンク` `歌詞` `サブジェクト1` 「原文」``を出す。歌詞のないShotへは出さない。
 
 歌詞annotationは四つのmodeすべてで同じcanonical表記のまま完成EMDへ保持する。選択歌詞はmodeにかかわらず人物動作・演出推論へ使用でき、`lip_sync_mode`は口形を駆動する実行方式だけを切り替える。従って`context_loop`又は`audio_reference`を選んだ時の「歌詞を破棄する」とは、``リップシンク 歌詞``をmaterializeしないという意味であり、annotation、SRT又は`MVD_TIMELINE_V1`から歌詞を物理削除する意味ではない。Compilerは全modeで歌詞annotationを読み飛ばすため、保持してもH3 promptへ重複転記されない。
 
@@ -631,67 +629,43 @@ EMDのcanonical構文、文書種別、valid/invalid例及びCompiler固定写�
 
 ### 8.1 基本構造
 
-これは新表記であり、旧ノードには未実装である。
+`# サブジェクト`直下では、一つのlist itemが一つのH3 Subjectを定義する。文書順から`サブジェクト1..4`及び`<Subject 1..4>`を導出し、明示的な`人物N`、`場所N`、`物品N`、`H3サブジェクト`又は`名称`行は持たない。
 
 ```markdown
 # サブジェクト
-* `人物1`
-* `H3サブジェクト` `<Subject 1>`
-* `参照画像` `<Picture 1>`
-* `名称` 主人公
-* 長い黒髪と淡い金色の短く丸い眉を持ち、白と朱色の衣装を着た人物。
+* `画像1` 狐耳の少女。長い金髪、赤い瞳、白と赤の着物風衣装を持つ。
+* 夜の神社。朱塗りの鳥居と石畳がある。
 
 # 保持分析
-* `人物1`: 顔立ち、髪、衣装、配色、身体付属物の数と形を保持する。
+* `サブジェクト1`: 顔立ち、髪、狐耳、尾、衣装と配色を保持する。
 
 # 共通プロンプト
 ## スタイル
-* 実写映画として描画し、自然な肌、物理的な布、現実的な月光、映画的なレンズの奥行きを保つ。
+* 参照設計を保ちながら実写映画として描写する。
 ## モーション
-* 接地と重心を保ち、髪と衣装が身体へ一歩遅れて追従する連続動作として描く。
+* 接地と重心移動が読める連続動作にする。
 ## カメラ
-* 顔と全身動作を読める距離を保ち、前景・中景・遠景の視差を使う。
-## その他
-* 全Sceneを通して夜から夜明けへの色温度変化を保つ。
+* 顔と全身動作を読める距離を保つ。
 
 > `シーン` 1
 # シーン 00:00.000 --> 00:10.125
 * `H3長` 243
-* 夜の神社の石畳の参道。月光が人物と朱塗りの鳥居を照らす。
-> `セクション` サビ
-> `歌詞開始` 00:02.300
-> `歌詞終了` 00:05.800
-> `歌詞` 千年鳥居をくぐるそなたよ
 ## ショット 00:00.000
-* `人物1`は石畳を踏みしめ、鳥居の奥へ視線と身体を向ける。
-* カメラは低い斜め前方から始まり、石灯籠を前景にして人物の側面へ移動する。
-## ショット 00:05.000
-* `人物1`は鳥居へ歩み寄り、袖と髪が一歩遅れて追従する。
-* カメラは歩行を横から追い、鳥居と社殿の奥行きを広げる。
-## 音響
-* `リップシンク` `Context Loop` `人物1`
+* `サブジェクト1`は石畳を踏みしめ、鳥居の奥へ進む。
 ```
 
-これはPicture関連を持つCompiler入力例である。`# サブジェクト`内で意味上の`<Subject N>`と物理入力の`<Picture N>`を関連付け、別の`# H3参照束縛`章は作らない。Pictureを使わない場合は`参照画像`行だけを省略する。
+文書順は`# サブジェクト`、任意の`# 保持分析`、任意の`# 共通プロンプト`、一個以上のSceneとする。共通プロンプトの存在する本文は`スタイル → モーション → カメラ → その他`の順で`prompt_prefix`へ写す。
 
-文書順は`# サブジェクト`、任意の`# 保持分析`、任意の`# 共通プロンプト`、1個以上のSceneとする。共通プロンプト直下の`## スタイル`、`## モーション`、`## カメラ`、`## その他`はすべて省略可能で、存在する場合だけこの相対順に置く。`MVD_EMD_FRAGMENT_V1`は`# サブジェクト`だけを持てる。Compilerが受理する`MVD_EMD_V1`は一件以上のSubject recordと1個以上のSceneを必須とするが、Picture関連は0件でもよい。生成EMDでは全Sceneの絶対開始・終了時刻、各Sceneの`` `H3長` ``及び全Shotの絶対開始時刻を必須にする。
+### 8.2 サブジェクトとmedia binding
 
-`# 共通プロンプト`の四区分は作品全体で共有する任意のH3 promptである。Compilerは各区分を別に構文解析・翻訳し、見出しを除いた存在する本文だけを`スタイル → モーション → カメラ → その他`の固定順で平坦化してContext Loop Planの`prompt_prefix`へ一回だけ写す。全区分が省略されていれば`prompt_prefix`を出力しない。JSON propertyの記述位置ではなく`prompt_prefix`というkeyが先頭連結を指示する。スタイルが存在する場合、その最初のlist itemは生成先の目標画風を短い肯定文で記述し、元参照画像の媒体表現を生成先の固定条件にしない。`subject_definitions:`等のContext Loopセクション見出し、Shot marker又は動的`{A|B}`候補は共通プロンプトへ入れない。
-
-### 8.2 サブジェクトとPicture関連
-
-- EMD内部IDは`` `人物1` ``～`` `人物16` ``、`` `場所1` ``～`` `場所16` ``、`` `物品1` ``～`` `物品16` ``。これは作品内の同一性を表す。
-- ``* `人物N` ``、``* `場所N` ``又は``* `物品N` ``がSubject recordの開始であり、次の内部ID開始行又はtop-level見出しまでを同じrecordとする。内部IDに`##`見出しは使用しない。
-- 各Subject recordは``* `H3サブジェクト` `<Subject N>` ``を一件必須とし、直後へ``* `参照画像` `<Picture N>` ``を任意で一件だけ置ける。`<Subject N>`はprompt内の意味上の主体、`<Picture N>`はH3へ接続する物理画像であり、同じslot体系ではない。
-- 完全EMD内の`<Subject N>`は1～4で一意とする。同じ`<Picture N>`を複数Subjectから参照することは許可する。初期の自動MV経路は一個だけを生成するが、Compiler単独経路はこの範囲内の複数Subject/Pictureを処理する。
-- `<Subject N>`は人物型に限定せず、`` `人物N` ``は`person`、`` `場所N` ``は`environment`、`` `物品N` ``は`object`として固定文型へ写す。場所は建築・地形・空間配置、物品は形状・材質・部品構成を主な保持対象とする。Picture関連がなければSubject説明だけをH3内蔵概念として使い、存在しない画像条件を補わない。
-- Image to Subject EMDの`auto_h3`はIMAGE出力の接続先`ref_image_0..8`から`<Picture 1..9>`を決める。`subject_index`は接続先から推測せず、独立入力として保持する。
-- backtickを含む完全なinline-code tokenだけをEMD内部IDとして認識する。通常本文中の「人物1」はIDではない。
-- Compilerは本文中の内部IDを対応する`<Subject N>`へ固定変換する。Picture関連があるrecordだけ`subject_definitions`へ`<Picture N>`との関係を出し、ないrecordは翻訳済みSubject説明だけで定義する。Picture内容又は実配線を推測しない。
-- `<Subject N>`と`<Picture N>`を使用できるのは上記二つの予約行だけとし、自由文へ直接書かれた最終tagは構文エラーにする。旧`` `対象N` ``、`` `画像N` ``、`` `H3対象N` ``、`` `H3画像N` ``のalias又は読み替えは実装しない。
-- `<Subject N>`の欠落、番号範囲、予約行の順序又は重複だけを文法エラーにする。`参照画像`行の省略はエラーにせず、画像の意味又はSubjectとPictureの内容的一致も監査しない。
-- Compilerは`required_references`として実際に記述されたPictureと対応内部IDだけを返す。PictureとAudio参照が共になければ空配列を返す。`<Subject N>`を`ref_image_N`へ変換しない。実画像tensorとの接続確認は`MVD_REFERENCE_BINDINGS_V1`又はworkflow validatorが行う。
-
+- Subjectは1～4行。各行は空でない自然言語descriptionを持つ。
+- 行順だけで`サブジェクトN`と`<Subject N>`を決定する。
+- descriptionより前へ``画像1..9``、``動画1..3``、``音声1..3``を0個以上置ける。
+- Compilerはこれらをそれぞれ`<Picture N>`、`<Video N>`、`<Audio N>`とrequired referenceへ固定変換する。
+- media tokenのないSubjectは文章定義だけのH3内蔵概念として有効。
+- Shot、保持分析及びlip-syncからの参照は、定義済みの``サブジェクト1..4``だけを使う。
+- Image to Subject EMDの`auto_h3`は接続先`ref_image_0..8`から``画像1..9``を出す。Subject番号を選ぶsocketは持たない。
+- Compilerは意味分類、参照内容又は実配線を検査しない。
 ### 8.3 SceneとShot時刻
 
 - 各Scene見出しの直前の物理行へ``> `シーン` N``を必須とする。`N`は1からScene順に1ずつ増やし、重複、欠番、逆順又は0を許可しない。Compilerは番号を推測又は補正せず、Plan Scene `id`へ`scene_NNNN`として写す。
@@ -741,11 +715,11 @@ annotationはPythonが工程間で保持し、必要なPlanner taskだけへ渡�
 > `歌詞終了` 00:15.800
 > `歌詞` 千年鳥居をくぐるそなたよ
 ## ショット 00:10.000
-* `人物1`は鳥居の奥へ視線を向ける。
-* `リップシンク` `歌詞` `人物1` 「千年鳥居をくぐるそなたよ」
+* `サブジェクト1`は鳥居の奥へ視線を向ける。
+* `リップシンク` `歌詞` `サブジェクト1` 「千年鳥居をくぐるそなたよ」
 ## ショット 00:15.000
-* `人物1`は石畳を進む。
-* `リップシンク` `歌詞` `人物1` 「月明かりの道を」
+* `サブジェクト1`は石畳を進む。
+* `リップシンク` `歌詞` `サブジェクト1` 「月明かりの道を」
 ```
 
 Plannerは各Shot見出しの直前に構造配置された解決済み歌詞を、そのShotへ割り当て済みとして扱う。同じShotに複数segmentが入る場合は一行ずつ文書順に出す。CompilerはShot見出しの絶対開始時刻からScene相対開始時刻を機械算出し、各directive内の対象・歌詞原文だけを固定promptへ展開する。`歌詞` annotationを検索、時刻対応付け又は補完しない。
@@ -758,14 +732,14 @@ Plannerは各Shot見出しの直前に構造配置された解決済み歌詞を
 
 ```markdown
 ## 音響
-* `リップシンク` `Context Loop` `人物1`
+* `リップシンク` `Context Loop` `サブジェクト1`
 ```
 
 Lip-Sync Optionsの追加モデルを使わず、H3音声参照で駆動する場合:
 
 ```markdown
 ## 音響
-* `リップシンク` `Audio参照` `人物1` `H3音声1`
+* `リップシンク` `Audio参照` `サブジェクト1` `音声1`
 ```
 
 生成条件を無音にする場合:
@@ -778,11 +752,11 @@ Lip-Sync Optionsの追加モデルを使わず、H3音声参照で駆動する�
 `## 音響`の省略はエラーでも無音でもなく、Scene固有の音声要素を出力しないことを意味する。下流のChain Policyをそのまま継承する。Compilerは接続音声を調査せず、次の予約directiveだけを機械的に写像する。
 
 - `リップシンク` + `Context Loop` + 一つの概念ID
-- `リップシンク` + `Audio参照` + 一つの概念ID + 一つの`H3音声N`
+- `リップシンク` + `Audio参照` + 一つの派生Subject ID + 一つの`音声N`
 - `明示台詞のみ`
 - `無音`
 
-``リップシンク Context Loop``、``リップシンク Audio参照``、同じScene内の一つ以上のShot ``リップシンク 歌詞``は相互排他とする。Shotの歌詞方式は同じ方式のlist directiveとして複数行を許す。Audio参照方式の`H3音声N`はこのdirective内でだけ直接指定でき、Compilerの`required_references`へ音声slotとして追加する。Compilerは音声tensorを要求せず、接続確認もしない。
+``リップシンク Context Loop``、``リップシンク Audio参照``、同じScene内の一つ以上のShot ``リップシンク 歌詞``は相互排他とする。Shotの歌詞方式は同じ方式のlist directiveとして複数行を許す。Audio参照方式の`音声N`はこのdirective内でだけ直接指定でき、Compilerの`required_references`へ音声slotとして追加する。Compilerは音声tensorを要求せず、接続確認もしない。
 
 未知directive、値の個数が違う行、同一directiveの重複を文法エラーにする。`無音`は同じJSON keyへの相反する値を避けるため、同一Scene内では他の音響directive又はShotの``リップシンク 歌詞``と併記できない。これは音響内容の意味監査ではなく、直列化を一意にする最小文法である。実際の音声接続、対象人物、区間内容はCompilerが推測又は監査しない。
 
@@ -906,8 +880,8 @@ Context Loopのstrict Ref2VA analyzerは、prefix内の通常Style文を六セ�
 {
   "schema": "MVD_REQUIRED_REFERENCES_V1",
   "references": [
-    {"concept_id": "人物1", "subject_ref": "<Subject 1>", "h3_ref": "<Picture 1>", "required_input": "ref_images.ref_image_0", "purpose": "visual_identity"},
-    {"concept_id": "人物1", "h3_ref": "<Audio 1>", "required_input": "ref_audios.ref_audio_0", "purpose": "lip_sync_audio_reference"}
+    {"concept_id": "サブジェクト1", "subject_ref": "<Subject 1>", "h3_ref": "<Picture 1>", "required_input": "ref_images.ref_image_0", "purpose": "visual_identity"},
+    {"concept_id": "サブジェクト1", "subject_ref": "<Subject 1>", "h3_ref": "<Audio 1>", "required_input": "ref_audios.ref_audio_0", "purpose": "lip_sync_audio_reference"}
   ]
 }
 ```
@@ -921,9 +895,9 @@ Compilerは音響又は歌詞の意味を推測しない。EMDに書かれた予
 | EMD | Scene JSON / promptへの出力 |
 |---|---|
 | `## 音響`なし | Scene固有の音声keyを出さずChain Policyを継承する。六セクションを満たす固定no-op文だけを音響欄へ出す |
-| ``* `リップシンク` `Context Loop` `人物1` `` | `source_reference: "off"`、`generated_continuity: "off"`、`source_audio_target: "locked"`を出し、対象tokenを通常規則で写して標準lip-sync用固定prompt要素を一つ追加。vocal、Generation Profile、任意`H3_LIP_SYNC_OPTIONS`及び最終音声Chain Policyは対応する動画生成WFの責務 |
-| ``* `リップシンク` `Audio参照` `人物1` `H3音声1` `` | 対象tokenと`<Audio 1>`を固定写像し、`{TARGET} performs visible lip movements synchronized to {AUDIO_TAG}.`を一つ追加。音声slotを`required_references`へ追加 |
-| Shot内の``* `リップシンク` `歌詞` `人物1` 「千年鳥居をくぐるそなたよ」`` | directive内の対象と歌詞原文を当該Shot本文へ固定追加する。先頭は`[Shot 1]`、後続は`[Shot {N}] At {START},`を使い、Sceneのannotationは参照しない |
+| ``* `リップシンク` `Context Loop` `サブジェクト1` `` | `source_reference: "off"`、`generated_continuity: "off"`、`source_audio_target: "locked"`を出し、対象tokenを通常規則で写して標準lip-sync用固定prompt要素を一つ追加。vocal、Generation Profile、任意`H3_LIP_SYNC_OPTIONS`及び最終音声Chain Policyは対応する動画生成WFの責務 |
+| ``* `リップシンク` `Audio参照` `サブジェクト1` `音声1` `` | 対象tokenと`<Audio 1>`を固定写像し、`{TARGET} performs visible lip movements synchronized to {AUDIO_TAG}.`を一つ追加。音声slotを`required_references`へ追加 |
+| Shot内の``* `リップシンク` `歌詞` `サブジェクト1` 「千年鳥居をくぐるそなたよ」`` | directive内の対象と歌詞原文を当該Shot本文へ固定追加する。先頭は`[Shot 1]`、後続は`[Shot {N}] At {START},`を使い、Sceneのannotationは参照しない |
 | ``* `明示台詞のみ` `` | 明示された`<d>...</d>`以外の発声を追加しない固定prompt要素を一つ追加 |
 | ``* `無音` `` | `source_reference: "off"`、`generated_continuity: "off"`、`source_audio_target: "off"`と`Complete silence. No speech, music, ambience, or sound effects.`を追加 |
 
@@ -937,7 +911,7 @@ Audio参照動画生成WFは入力vocalを事前にファイル分割しない�
 
 Compilerが停止するのは次だけとする。
 
-- 必須`# サブジェクト`、Subject record内の`H3サブジェクト`、Scene番号annotation、Scene又は`` `H3長` ``がなく、Ref2VA EMDとしてparseできない。Picture関連の欠如だけでは停止しない。
+- 必須`# サブジェクト`、1～4行のSubject description、Scene番号annotation、Scene又は`` `H3長` ``がなく、Ref2VA EMDとしてparseできない。media bindingの欠如だけでは停止しない。
 - 存在する`# 共通プロンプト`のsubsectionが重複、空、未知又は`スタイル → モーション → カメラ → その他`の相対順に一致しない。
 - Scene番号annotationが見出しの直前にない、1から連番でない、重複、欠番、逆順又は0である。
 - Scene絶対範囲又はShot絶対時刻の構文・順序が壊れている。
@@ -1001,7 +975,7 @@ serialized_input_tokens + reserved_output_tokens + safety_margin <= effective_co
 
 失敗、途中切れ、未完了batchを成功cacheへ入れない。上流keyが変わった下流だけを無効化する。
 
-Compiler wrapperは単純な構文・翻訳・直列化境界を保つため独自の成功cacheを持たない。成功時は`plan_json`と`required_references`をその実行の成果として返し、永続化はworkflow又は既存の出力保存nodeへ委ねる。実GGUF比較では入力EMD hash、H3 timing profile ID、translator model fingerprint、chat format、量子化、system prompt version、seed及びsampling設定を外部の試験記録へ残し、異なる翻訳条件の結果を同一runとして扱わない。
+Compiler wrapperは単純な構文・翻訳・直列化境界を保つため独自の成功cacheを持たない。成功時は`plan_json`と`required_references`をその実行の成果として返し、永続化はworkflow又は既存の出力保存nodeへ委ねる。`plan_json`は人間の比較とデバッグを容易にするため、Unicodeをescapeせず、keyを決定論的にsortし、2 space indent、LF改行及び末尾LFを持つpretty-printed JSONとして直列化する。JSONの空白は意味を持たず、Context Loopへ渡す値の構造はcompact JSONと同一とする。実GGUF比較では入力EMD hash、H3 timing profile ID、translator model fingerprint、chat format、量子化、system prompt version、seed及びsampling設定を外部の試験記録へ残し、異なる翻訳条件の結果を同一runとして扱わない。
 
 ## 12. エラー分類
 

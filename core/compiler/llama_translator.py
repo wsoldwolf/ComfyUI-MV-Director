@@ -19,6 +19,7 @@ from .errors import CompilerError
 
 TRANSLATION_PROMPT_VERSION = "mvd-prompt-translation-ja-en-v3"
 TRANSLATION_RECORD_TYPE = "TRANSLATION"
+TRANSLATION_MAX_BATCH_UNITS = 7
 _JAPANESE_SCRIPT_RE = re.compile(r"[\u3040-\u30ff\u3400-\u9fff]")
 
 
@@ -125,7 +126,7 @@ class LlamaPromptTranslator:
 
     def _largest_batch(self, remaining: Sequence[str]) -> int:
         accepted = 0
-        for size in range(1, len(remaining) + 1):
+        for size in range(1, min(len(remaining), TRANSLATION_MAX_BATCH_UNITS) + 1):
             if not self._check_budget(remaining[:size]):
                 break
             accepted = size

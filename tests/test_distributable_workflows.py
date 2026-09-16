@@ -118,7 +118,7 @@ class DistributableWorkflowTests(unittest.TestCase):
                 ],
             )
             seed_controls = {
-                "MVDirectorImageToSubjectEMD": (23, 24),
+                "MVDirectorImageToSubjectEMD": (21, 22),
                 "MVDirectorDirectionEnhancer": (17, 18),
                 "MVDirectorTimelinePlanner": (16, 17),
             }

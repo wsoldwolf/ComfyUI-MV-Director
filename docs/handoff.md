@@ -58,7 +58,7 @@ stash番号は将来変わり得るため、後続調査では上記object IDを
 
 統合workflowの配線も確認しました。同一のIMAGE出力が`CLImageAnalyzerVisionGGUF`と`MiniMaxH3ReferenceToVideo.ref_image_0`の両方へ接続されており、画像観察とH3参照を同じ入力へ固定できる構成です。新workflowではImage to Subject EMDの`auto_h3`がhidden実行graphを読み、同じIMAGE出力の`ref_image_0..8`接続から`<Picture 1..9>`を確定する。異なるPicture番号への分岐は曖昧エラーとし、解決結果をbinding fingerprintへ含める。これは配線の根拠であり、映像品質の実測結果ではない。
 
-旧Visionの自然言語入力は`subject_hint`と`additional_instruction`であった。前者は人物の意味・同一性を補助又は固定し、後者は眉、瞳、衣装等の観察焦点を指定した。新Image to Subject EMDでは意味のある各項目を外部socket化し、`concept_type`、`concept_index`、意味上の`subject_index`、物理入力の`picture_index`を分離する。Picture制御は`auto_h3`、`manual`、`none`とする。
+旧Visionの自然言語入力は`subject_hint`と`additional_instruction`であった。前者は人物の意味・同一性を補助又は固定し、後者は眉、瞳、衣装等の観察焦点を指定した。新Image to Subject EMDでは`concept_type`と物理入力の`picture_index`を外部socket化する。Subject番号は完全EMDへ配置された行順から導出するため、`concept_index`又は`subject_index` socketを持たない。Picture制御は`auto_h3`、`manual`、`none`とする。
 
 旧Visionの`cl-vision-observation-line-v2`はJSONではなく、固定順TAB区切りrecordからPythonがtyped observationを作る構造であり、新実装にも適合する。record構成、category、visibility、hint assessmentと一意な列補正だけを`MVD_VISION_OBSERVATION_LINES_V2`／`MVD_OBSERVATIONS_V1`へ改名して抽出する。旧Markdown renderer、画像なしLLM repair、英日翻訳repair、再観測retry及び旧ID互換は移植しない。新rendererはperson/object/location別の`# サブジェクト`だけを作り、pose、構図、照明、source style及びvisible textを恒常条件へ入れない。
 
@@ -102,7 +102,7 @@ Context LoopのH3 Audio Tracksはfull mixがあればそれを最終音声に使
 
 EMDはEasy MarkDownの略であり、Extended Markdownではありません。文書順は`# サブジェクト`、任意の`# 保持分析`、任意の`# 共通プロンプト`、1個以上の`# シーン`です。共通プロンプト直下の`## スタイル`、`## モーション`、`## カメラ`、`## その他`もすべて任意です。Context Loop 0.6.9ではPlan `prompt_prefix`が各Scene promptより前へ空行二つで機械連結されるため、Compilerは見出しを捨て、存在する本文をStyle、Motion、Camera、Otherの固定順で平坦化して`prompt_prefix`へ一回だけ写します。Styleが存在すれば先頭で、全区分がなければfieldを出しません。Enhancerは四方向を分離して返し、入力Subjectを読み取り専用contextとして扱います。concept EMDとuser requestが同時に空でも既定profileだけで動作します。Subject定義には参照画像の元媒体を固定条件として書きません。prefixだけで十分かScene内にもStyle文を反復するかはH3実出力のA/B試験で決め、Compilerの意味推測で複製しません。
 
-現行の`MiniMaxH3LipSyncOptions`はvoice AUDIOから`H3_LIP_SYNC_OPTIONS`を生成する外部経路です。この経路を使用すると、8GB VRAM環境では下流の追加モデル読み込み・初期化で停止する事例があります。本プロジェクトはこの外部nodeを修正又は移植せず、EMD Compilerの機械変換だけで成立する二つの代替を持ちます。``リップシンク Audio参照``は対象概念と`H3音声N`を固定英文と`<Audio N>`へ変換します。Audio参照動画生成WFは事前分割ファイルを要求せず、Audio Pad Pairの`source_scenes_to_plan` modeがLyric SegmentationのScene source境界から参照専用trackを作ります。各source SceneをH3の累積delivered frame位置へコピーし、量子化余剰だけをScene末尾PCM無音にするため、Context LoopがPlan frame windowで切り出しても区間内の無音を保った一個の`<Audio 1>`を供給できます。歌詞の場合はLyric Segmentationが空白・改行でatomic segmentへ分け、Template EMD、timeline、SRTを同じsegment列から作り、対応Shotの直前へ歌詞annotationを構造配置します。Plannerは時刻包含を再計算せず、そのShotへ対象と原文を持つ``リップシンク 歌詞``を出します。Compilerはannotationを参照せず、所属Shotの開始位置とこの明示directiveだけを対象付き`<d>[Japanese]...</d>`へ変換します。これはH3へShot区間内の歌唱口形を促すもので、音素単位の完全同期ではありません。どちらも翻訳LLMと`H3_LIP_SYNC_OPTIONS`を使いません。
+現行の`MiniMaxH3LipSyncOptions`はvoice AUDIOから`H3_LIP_SYNC_OPTIONS`を生成する外部経路です。この経路を使用すると、8GB VRAM環境では下流の追加モデル読み込み・初期化で停止する事例があります。本プロジェクトはこの外部nodeを修正又は移植せず、EMD Compilerの機械変換だけで成立する二つの代替を持ちます。``リップシンク Audio参照``は対象Subjectと``音声N``を固定英文と`<Audio N>`へ変換します。Audio参照動画生成WFは事前分割ファイルを要求せず、Audio Pad Pairの`source_scenes_to_plan` modeがLyric SegmentationのScene source境界から参照専用trackを作ります。各source SceneをH3の累積delivered frame位置へコピーし、量子化余剰だけをScene末尾PCM無音にするため、Context LoopがPlan frame windowで切り出しても区間内の無音を保った一個の`<Audio 1>`を供給できます。歌詞の場合はLyric Segmentationが空白・改行でatomic segmentへ分け、Template EMD、timeline、SRTを同じsegment列から作り、対応Shotの直前へ歌詞annotationを構造配置します。Plannerは時刻包含を再計算せず、そのShotへ対象と原文を持つ``リップシンク 歌詞``を出します。Compilerはannotationを参照せず、所属Shotの開始位置とこの明示directiveだけを対象付き`<d>[Japanese]...</d>`へ変換します。これはH3へShot区間内の歌唱口形を促すもので、音素単位の完全同期ではありません。どちらも翻訳LLMと`H3_LIP_SYNC_OPTIONS`を使いません。
 
 Shot本文の`「...」`は内容を変えず`<d>[Japanese]...</d>`へ包むだけにします。作者が既に書いた`<d>...</d>`又は`<d>[English]...</d>`はopaque spanとして翻訳せず、そのままH3へ渡します。話者やsource audioとの一致は監査しません。追加発声禁止が必要な作者は`明示台詞のみ`を明記し、Compilerはその場合だけ対応prompt要素を出します。歌詞annotationは直接台詞へ変換しません。
 
@@ -120,11 +120,11 @@ Plannerでは作者由来の`「...」`と明示`<d>...</d>`をLLM前に`__MVD_L
 
 ### 4.6 4コアと疎結合境界
 
-画像認識から編集可能な`# サブジェクト`断片を出す`MVDirectorImageToSubjectEMD`を第4コアとする。Subject recordは`# サブジェクト`直下の単独内部ID directiveから開始し、内部IDを`##`見出しにしない。`<Subject N>`は人物に限らない意味上の主体、`<Picture N>`は物理画像slotとして同じrecordで関連付ける。`人物N`、`場所N`、`物品N`はそれぞれperson、environment、objectの固定文型へ写す。`auto_h3`は同一IMAGE pass-throughを通常Ref2VAの`ref_image_N`へ直接接続したgraphからPicture番号を取得し、ノード内へ`<Picture N+1>`を読み取り専用表示する。`manual`と`none`も持つ。初期の自動MV経路は一個のImage to Subject EMDだけをEnhancerとPlannerへ分岐し、両ノードとも複数断片を統合しない。
+画像認識から編集可能な`# サブジェクト`断片を出す`MVDirectorImageToSubjectEMD`を第4コアとする。一つのlist itemが一つのSubjectであり、完全EMD内の行順から`サブジェクトN`と`<Subject N>`を導出する。画像bindingは行頭の``画像N``で表す。`auto_h3`は同一IMAGE pass-throughを通常Ref2VAの`ref_image_N`へ直接接続したgraphからPicture番号を取得し、ノード内へ`<Picture N+1>`を読み取り専用表示する。`manual`と`none`も持つ。初期の自動MV経路は一個のImage to Subject EMDだけをEnhancerとPlannerへ分岐し、両ノードとも複数断片を統合しない。
 
 初期H3 adapterは通常Ref2VAへの固定番号直接接続だけを対象とし、`ref_images.ref_image_N`を`<Picture N+1>`、`ref_audios.ref_audio_N`を`<Audio N+1>`へ写す。Tagged Referenceの`@tag`再番号付けは扱わず、必要なら将来のversioned adapterとする。
 
-Compilerは完全Ref2VA EMD文字列、H3 Timing Profile、翻訳mode、選択GGUFとruntime設定だけで単独実行できるものとする。日本語prompt本文だけを英訳し、各Sceneへ正規Ref2VA六セクションを出す。EMDにない六セクション必須欄はLLMに補わせず、Scene本文の一行コピーと固定の保持・音響no-op文で機械的に満たす。先頭Shotは`[Shot 1]`、後続は`[Shot N] At MM:SS.mmm,`とする。IMAGE、AUDIO又はworkflow graphは要求しない。`人物N`等と`<Subject N>`は必須だがPicture関連は任意で、なければ文章定義だけのH3内蔵概念としてRef2VAを出力し、T2VAへfallbackしない。
+Compilerは完全Ref2VA EMD文字列、H3 Timing Profile、翻訳mode、選択GGUFとruntime設定だけで単独実行できるものとする。日本語prompt本文だけを英訳し、各Sceneへ正規Ref2VA六セクションを出す。EMDにない六セクション必須欄はLLMに補わせず、Scene本文の一行コピーと固定の保持・音響no-op文で機械的に満たす。先頭Shotは`[Shot 1]`、後続は`[Shot N] At MM:SS.mmm,`とする。IMAGE、AUDIO又はworkflow graphは要求しない。一つ以上のSubject descriptionは必須だがmedia bindingは任意で、なければ文章定義だけのH3内蔵概念としてRef2VAを出力し、T2VAへfallbackしない。
 
 Timeline PlannerはMV専用とし、外部接続可能な`lip_sync_mode`（`off`、`context_loop`、`audio_reference`、`lyrics`。既定`lyrics`）で口形方式だけを切り替える。EMDは``リップシンク Context Loop``、``リップシンク Audio参照``、``リップシンク 歌詞``へ統一し、`off`ではdirectiveを出さない。歌詞annotationは全modeで完成EMDへ保持し、人物動作・演出にも使う。mode切替は口形directiveのmaterializeだけを変え、歌詞を物理削除しない。
 
@@ -156,7 +156,7 @@ PromptTranslatorを第5の公開nodeにはせず、Compiler内部adapterとし�
 | `「...」`又は明示`<d>...</d>`を通常promptと一緒に英訳・source audio検証する | 日本語括弧は`<d>[Japanese]...`へ包み、既存d-tagは言語labelを含めそのまま保護し、周囲の描写文だけを英訳する | H3向け英語promptと作者指定の発話を両立する |
 | Vision観察をEnhancerの補助入力に留める | Image to Subject EMDを第4コアにし、サブジェクトEMDをprimary出力にする | 画像認識結果を人間が確認・編集・再利用できるようにする |
 | `subject_hint:`形式の文字列を利用者へ要求又は互換解釈する | `subject_hint` socket全体を自然言語データとして扱い、プレフィクスなし日本語だけを正式入力にする | 新規プロジェクトのため旧形式parserを持たず、UIラベルと入力データを分離する |
-| EMD内部IDをH3画像番号として扱う | `人物N`等、`<Subject N>`、`<Picture N>`を別fieldとして関連付ける | 作品内ID、意味上の主体、物理入力を混同しない |
+| EMD内部IDをH3画像番号として扱う | 行順由来の`サブジェクトN`／`<Subject N>`と、明示``画像N``／`<Picture N>`を分離する | 意味上の主体と物理入力を混同しない |
 | Compilerが上流artifact又はgraphを要求する | 完全EMD文字列と選択GGUFだけで単独compileし、必要参照一覧を返す | 手書き・外部生成EMDを上流nodeなしで利用可能にする |
 | 単体Audio PadとAudio Pad Pairを両方移植する | `MVDirectorAudioPadPair`だけを再利用し、単体Audio Padは登録しない | full mixとvocalの二本を一つの基準尺で扱う実workflowに限定する |
 | String Combo / Connected Comboを汎用utilityとして削る | 両方を`MVDirector...`名で残す | user-defined候補と、サブグラフ内部comboの外部操作は別々の実用的責務を持つ |

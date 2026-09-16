@@ -77,7 +77,7 @@ class DirectionEnhancerTests(unittest.TestCase):
         self.assertFalse(result.retried_missing)
 
     def test_payload_keeps_authority_order_and_read_only_concept(self) -> None:
-        concept = "# サブジェクト\n* `人物1`\n* `H3サブジェクト` `<Subject 1>`\n* 金色の眉。\n"
+        concept = "# サブジェクト\n* 金色の眉。\n"
         value = DirectionEnhancerInput(
             concept_emd=concept,
             user_request="夜間にする。",
@@ -147,7 +147,7 @@ class DirectionEnhancerTests(unittest.TestCase):
 
     def test_concept_adapter_rejects_complete_emd(self) -> None:
         value = DirectionEnhancerInput(
-            concept_emd="# サブジェクト\n* `人物1`\n# シーン 00:00.000 --> 00:01.000"
+            concept_emd="# サブジェクト\n* 主人公。\n# シーン 00:00.000 --> 00:01.000"
         )
         with self.assertRaisesRegex(DirectionEnhancerError, "one # サブジェクト"):
             value.validate()

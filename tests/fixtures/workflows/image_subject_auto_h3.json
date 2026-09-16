@@ -34,7 +34,7 @@
         {"name": "observations_json", "type": "STRING", "links": null}
       ],
       "properties": {"Node name for S&R": "MVDirectorImageToSubjectEMD"},
-      "widgets_values": ["[select a vision GGUF model]", "general", "", "", "lock_identity", "warn", "auto_h3", "person", 1, 1, 1, 1024, 1024, 0.1, 0.9, 1.05, -1, 512, 16384, true, "q8_0", true, false, 1, "randomize", "reuse"]
+      "widgets_values": ["[select a vision GGUF model]", "general", "", "", "lock_identity", "warn", "auto_h3", "person", 1, 1024, 1024, 0.1, 0.9, 1.05, -1, 512, 16384, true, "q8_0", true, false, 1, "randomize", "reuse"]
     },
     {
       "id": 3,

@@ -10,9 +10,10 @@ from ..emd.ast import Subject
 from .errors import CompilerError
 
 
-_CONCEPT_RE = re.compile(r"`((?:人物|場所|物品)(?:[1-9]|1[0-6]))`")
+_CONCEPT_RE = re.compile(r"`(サブジェクト[1-4])`")
+_MEDIA_RE = re.compile(r"`(画像([1-9])|動画([1-3])|音声([1-3]))`")
 _REFERENCE_RE = re.compile(
-    r"<(?:Subject [1-4]|Picture [1-9]|Video [1-9]|Audio [1-3])>"
+    r"<(?:Subject [1-4]|Picture [1-9]|Video [1-3]|Audio [1-3])>"
 )
 _D_SPAN_RE = re.compile(r"<d(?:\[[^\]\r\n]+\])?>.*?</d>")
 _DIALOGUE_RE = re.compile(r"「([^「」]*)」")
@@ -39,6 +40,16 @@ def protect_unit(text: str, subjects: tuple[Subject, ...]) -> ProtectedUnit:
     subject_refs = {subject.concept_id: subject.subject_ref for subject in subjects}
     text = _CONCEPT_RE.sub(
         lambda match: subject_refs.get(match.group(1), match.group(0)), text
+    )
+    text = _MEDIA_RE.sub(
+        lambda match: (
+            f"<Picture {match.group(2)}>"
+            if match.group(2)
+            else f"<Video {match.group(3)}>"
+            if match.group(3)
+            else f"<Audio {match.group(4)}>"
+        ),
+        text,
     )
     text = _DIALOGUE_RE.sub(lambda match: f"<d>[Japanese]{match.group(1)}</d>", text)
 

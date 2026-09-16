@@ -30,7 +30,7 @@
 
 ### P0-2. Planner単独利用とCompiler-ready EMDの境界（解決済み）
 
-Picture関連がない場合もRef2VA Compilerを動作させる。人間又はPlannerは`# サブジェクト`で``人物N``等の内部IDと`<Subject N>`を必ず定義し、`参照画像`行だけを省略できる。省略したSubjectは文章定義によるH3内蔵概念として扱う。
+Picture関連がない場合もRef2VA Compilerを動作させる。現行仕様では`# サブジェクト`の各list itemを行順に`サブジェクトN`／`<Subject N>`へ割り当て、先頭の任意``画像N``だけをPicture bindingとする。tokenを省略したSubjectは文章定義によるH3内蔵概念として扱う。
 
 Pictureの有無で`compiler_ready`を分けず、一件以上の正しいSubject定義と完成SceneがあればCompiler-readyとする。Picture関連があれば使用分だけ`required_references`へ出し、PictureもAudioもなければ空配列を返す。Pictureを捏造せず、T2VAへfallbackしない。基準Context LoopのRef2VA schemaはPicture必須数を0としており、参照なしSceneも有効である。
 

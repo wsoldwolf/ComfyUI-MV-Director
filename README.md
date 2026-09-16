@@ -31,11 +31,11 @@ EMDは**Easy MarkDown**の略です。Extended Markdownではありません。�
 - Timeline Plannerは`n_ctx`、`n_batch`、GPU layer、Flash Attention、KV cache等のllama.cpp調整値を旧ノード同様に公開します。Direction artifactはEnhancerから四方向を型付きで渡す任意の内部socket値で、利用者向けには同内容のEMD previewも出力します。
 - EnhancerとPlannerのLLMにはJSONやEMDを返させません。応答は`TYPE<TAB>SLOT<TAB>TEXT`の一行一recordに限定し、短いslotと実Scene/Shot ID・時刻の対応、typed artifact、EMD及び最終JSONはPythonが組み立てます。4Bが括弧、引用符又はJSON escapeを維持することへ依存しません。
 - Plannerへ渡る作者由来の`「...」`と明示`<d>...</d>`は先にplaceholderへ退避します。LLMが新しい引用台詞又はplaceholderを生成してもretryせず、そのspanを機械削除します。原文はSubject、Direction又は作者Shot本文の決定論的位置から一度だけ出力し、歌詞リップシンクはfilter後にPythonが挿入します。
-- EMDは人間が読める日本語のEasy MarkDown中間言語です。`# サブジェクト`で作品内IDの`` `人物N` ``、`` `場所N` ``、`` `物品N` ``を定義し、Ref2VAの意味上の`<Subject N>`と物理画像の`<Picture N>`を明示的に関連付けます。`<Subject N>`自体を画像入力slotとして扱いません。任意の`# 共通プロンプト`はスタイル、モーション、カメラ、その他を構造的に分離し、Compilerは見出しを除いた存在する本文をこの固定順でPlanの`prompt_prefix`へ出力します。スタイルがあれば必ず先頭です。
+- EMDは人間が読める日本語のEasy MarkDown中間言語です。`# サブジェクト`直下の各list itemを行順で`<Subject 1..4>`へ割り当て、行頭の``画像N``、``動画N``、``音声N``を任意のH3参照へ変換します。任意の`# 共通プロンプト`はスタイル、モーション、カメラ、その他を構造的に分離し、Compilerは見出しを除いた存在する本文をこの固定順でPlanの`prompt_prefix`へ出力します。スタイルがあれば必ず先頭です。
 - CompilerはEMD parser、限定翻訳orchestrator、JSON serializerです。H3へ渡す日本語の描写文だけを英訳し、補強・要約・並べ替えはしません。
 - 翻訳処理はCompiler内部の交換可能な`PromptTranslator` adapterとし、初期比較候補は4Bと8Bを想定します。既に英語のEMDは明示的なpass-through modeで処理できます。
 - Compilerでは従来どおり、ComfyUIの`models/LLM/GGUF`と追加`LLM` pathで見つかった任意のGGUFを`model_name` comboから選択できます。特定modelを組込みません。
-- CompilerはRef2VA専用です。完全EMD文字列と選択GGUFだけで単独コンパイルでき、Vision、Enhancer、Plannerのcustom socketや画像・音声tensorを必須入力にしません。`人物N`等の内部IDと`<Subject N>`は必須ですが、`<Picture N>`関連は任意です。Pictureなしでは文章定義だけのH3内蔵概念としてRef2VAを出力し、`required_references`は実際に記述されたPicture/Audioだけ、又は空配列になります。T2VA、I2VA等は同じCompilerへmode追加せず、必要になった時に別Compilerとして設計します。
+- CompilerはRef2VA専用です。完全EMD文字列と選択GGUFだけで単独コンパイルでき、Vision、Enhancer、Plannerのcustom socketや画像・音声tensorを必須入力にしません。Subjectは1行以上必要ですが、media bindingは任意です。参照なしでは文章定義だけのH3内蔵概念としてRef2VAを出力し、`required_references`は実際に記述されたPicture/Video/Audioだけ、又は空配列になります。T2VA、I2VA等は同じCompilerへmode追加せず、必要になった時に別Compilerとして設計します。
 - Lyric SegmentationはMV用Template EMDを作る段階で、基準Context Loop profileに合わせて24fpsとH3の`17k+5`格子へSceneを割り当て、raw `length`を`` `H3長` ``として確定します。Compilerはその整数を再計算・補正せず、Plan JSONの`length`へそのまま写します。SRTと歌詞alignmentは元音源の絶対msを保持します。
 - Compilerは各SceneにContext Loop 0.6.9互換の完全なRef2VA六セクションを英語で出力します。Shotは先頭を`[Shot 1]`、2番目以降を`[Shot N] At MM:SS.mmm,`とします。EMDの構造、Scene/Shot順、情報量、binding、directiveはas-isで保持し、必須欄はLLMではなく固定テンプレートで機械的に満たします。
 - 音響は説明文を解釈せず、予約directiveだけをCompilerが固定変換します。リップシンクは`lip_sync_mode`の`使用しない`、`Context Loop`、`Audio参照`、`歌詞`をPlannerのコンボで切り替え、EMDでは``リップシンク <方式>``へ統一します。歌詞annotationは全方式で完成EMDに保持し、人物動作の材料として使います。`歌詞`の時だけ対応Shotへ対象と原文を持つdirectiveを機械挿入します。`Context Loop`と`Audio参照`は歌詞annotationのあるSceneだけを有効化し、`Audio参照`動画生成WFはLyric Segmentationのsource Scene境界で元vocalを連続sliceして一個の`<Audio 1>`へ渡します。Compilerはannotationをpromptへ出さず、PCMも扱わず、明示directiveだけを固定promptへ写して翻訳LLMへ渡しません。完成動画へ残す音声はEMDやPlannerではなく、対応する動画生成WFのChain Policyが決定します。歌詞方式はH3へShot区間内の歌唱口形を促す粗い時間誘導であり、音素単位の完全同期は保証しません。`無音`は非MV利用のための将来互換directiveとしてoff値とsilence prompt要素だけを出し、PCMゲートは初期MVスコープへ含めません。
@@ -44,9 +44,9 @@ EMDは**Easy MarkDown**の略です。Extended Markdownではありません。�
 
 ## 入力と利用者の負担
 
-初期自動MV経路の必須入力は歌詞、ボーカルステム、フルミックスです。参照画像は任意ですが、使わない場合も人間が`# サブジェクト`で`人物N`等と`<Subject N>`を定義します。PlannerはMV専用で、既定では`lip_sync_mode=lyrics`として歌詞方式のリップシンクdirectiveを出します。標準配布は三方式ごとのPlan/Compiler WFと動画生成WFを一対一にした計6 WFで、最終音声方針は後者が所有します。Image to Subject EMDは`picture_reference_mode=none`でも利用でき、Pictureあり又はH3内蔵概念だけの複数Subjectを手書きした完全EMDもCompiler単独経路で処理できます。T2VA、I2VA等は現在のCompilerの責務外です。ユーザー希望は空でも構いません。
+初期自動MV経路の必須入力は歌詞、ボーカルステム、フルミックスです。参照画像は任意です。`# サブジェクト`直下は1 list item＝1 Subjectで、行順から`<Subject 1..4>`を導出します。外部参照は行頭の``画像N``、``動画N``、``音声N``で任意指定し、参照なしの行もH3内蔵概念として有効です。PlannerはMV専用で、既定では`lip_sync_mode=lyrics`として歌詞方式のリップシンクdirectiveを出します。標準配布は三方式ごとのPlan/Compiler WFと動画生成WFを一対一にした計6 WFで、最終音声方針は後者が所有します。T2VA、I2VA等は現在のCompilerの責務外です。ユーザー希望は空でも構いません。
 
-画像に写っていない重要特徴をVisionへ推測させません。Image to Subject EMDには`subject_hint`と`additional_instruction`の独立STRING socketを設け、`analysis_profile`、`hint_mode`、`hint_conflict`、`picture_reference_mode`、`concept_type`、概念番号、Subject番号、Picture番号も外部接続可能にします。名前付きプレフィクスは不要で、`淡い金色の短い丸眉で、狐の尾は一本です。`のような日本語自然文をそのまま入力します。旧`subject_hint:`形式を検出・除去する互換parserは設けません。顔や衣装の重要条件を利用者が明示した場合は、観察結果とprovenanceを分けて全体方針へ統合します。
+画像に写っていない重要特徴をVisionへ推測させません。Image to Subject EMDには`subject_hint`と`additional_instruction`の独立STRING socketを設け、`analysis_profile`、`hint_mode`、`hint_conflict`、`picture_reference_mode`、`concept_type`、Picture番号も外部接続可能にします。Subject番号はfragment内の行順から決まるためsocketを持ちません。名前付きプレフィクスは不要で、`淡い金色の短い丸眉で、狐の尾は一本です。`のような日本語自然文をそのまま入力します。旧`subject_hint:`形式を検出・除去する互換parserは設けません。顔や衣装の重要条件を利用者が明示した場合は、観察結果とprovenanceを分けて全体方針へ統合します。
 
 ## 対象環境
 

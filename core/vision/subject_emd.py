@@ -12,9 +12,6 @@ class SubjectEMDError(ValueError):
     pass
 
 
-_CONCEPT_PREFIX = {"person": "人物", "location": "場所", "object": "物品"}
-
-
 @dataclass(frozen=True, slots=True)
 class SubjectEMDResult:
     emd_fragment: str
@@ -33,20 +30,14 @@ def render_subject_emd(
     observations: ObservationsArtifact,
     *,
     concept_type: str,
-    concept_index: int,
-    subject_index: int,
     picture_index: int | None = None,
     subject_hint: str = "",
     hint_mode: str = "lock_identity",
     hint_conflict: str = "warn",
 ) -> SubjectEMDResult:
     observations.validate()
-    if concept_type not in _CONCEPT_PREFIX:
+    if concept_type not in {"person", "location", "object"}:
         raise SubjectEMDError("concept_type must be person, location, or object")
-    if not 1 <= concept_index <= 16:
-        raise SubjectEMDError("concept_index must be in 1..16")
-    if not 1 <= subject_index <= 4:
-        raise SubjectEMDError("subject_index must be in 1..4")
     if picture_index is not None and not 1 <= picture_index <= 9:
         raise SubjectEMDError("picture_index must be in 1..9")
     if hint_mode not in {"observe_only", "assist", "lock_identity"}:
@@ -56,18 +47,9 @@ def render_subject_emd(
     if hint_conflict == "strict" and observations.hint_status == "conflict":
         raise SubjectEMDError("Vision reported a clear subject_hint conflict")
 
-    concept_id = f"{_CONCEPT_PREFIX[concept_type]}{concept_index}"
-    lines = [
-        "# サブジェクト",
-        f"* `{concept_id}`",
-        f"* `H3サブジェクト` `<Subject {subject_index}>`",
-    ]
-    if picture_index is not None:
-        lines.append(f"* `参照画像` `<Picture {picture_index}>`")
-    if observations.primary_subject:
-        lines.append(f"* `名称` {observations.primary_subject}")
-
     descriptions: list[str] = []
+    if observations.primary_subject:
+        descriptions.append(observations.primary_subject)
     omitted_uncertain = 0
     if concept_type in {"person", "object"}:
         for feature in observations.subject_features:
@@ -90,5 +72,7 @@ def render_subject_emd(
             descriptions.append(fallback)
     if not descriptions:
         raise SubjectEMDError("observations contain no stable Subject description")
-    lines.extend(f"* {description}" for description in descriptions)
+    descriptions = list(dict.fromkeys(value.strip() for value in descriptions if value.strip()))
+    prefix = f"`画像{picture_index}` " if picture_index is not None else ""
+    lines = ["# サブジェクト", f"* {prefix}{' '.join(descriptions)}"]
     return SubjectEMDResult("\n".join(lines) + "\n", included_hint, omitted_uncertain)

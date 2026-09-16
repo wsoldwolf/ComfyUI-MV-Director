@@ -13,7 +13,7 @@
       "inputs": [],
       "outputs": [{"name": "text", "type": "STRING", "links": [1]}],
       "properties": {"Node name for S&R": "MVDirectorLoadTextFile"},
-      "widgets_values": ["IyDjgrXjg5bjgrjjgqfjgq/jg4gKKiBg5Lq654mpMWAKKiBgSDPjgrXjg5bjgrjjgqfjgq/jg4hgIGA8U3ViamVjdCAxPmAKKiBg5ZCN56ewYCBwZXJmb3JtZXIKKiBBbiBhZHVsdCBwZXJmb3JtZXIgaW4gYSBkYXJrIGNvYXQuCgo+IGDjgrfjg7zjg7NgIDEKIyDjgrfjg7zjg7MgMDA6MDAuMDAwIC0tPiAwMDowMC45MTcKKiBgSDPplbdgIDIyCiMjIOOCt+ODp+ODg+ODiCAwMDowMC4wMDAKKiBg5Lq654mpMWDjga9zdGFuZHMgYmVuZWF0aCBhIHNvZnQga2V5IGxpZ2h0Lg==", "compiler_input.txt", "{\"kind\":\"fixture\"}"]
+      "widgets_values": ["IyDjgrXjg5bjgrjjgqfjgq/jg4gKKiBBbiBhZHVsdCBwZXJmb3JtZXIgaW4gYSBkYXJrIGNvYXQuCgo+IGDjgrfjg7zjg7NgIDEKIyDjgrfjg7zjg7MgMDA6MDAuMDAwIC0tPiAwMDowMC45MTcKKiBgSDPplbdgIDIyCiMjIOOCt+ODp+ODg+ODiCAwMDowMC4wMDAKKiBg44K144OW44K444Kn44Kv44OIMWAgc3RhbmRzIGJlbmVhdGggYSBzb2Z0IGtleSBsaWdodC4K", "compiler_input.txt", "{\"kind\":\"fixture\"}"]
     },
     {
       "id": 2,

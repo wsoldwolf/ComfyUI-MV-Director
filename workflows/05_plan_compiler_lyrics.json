@@ -125,8 +125,6 @@
         "manual",
         "person",
         1,
-        1,
-        1,
         1024,
         1024,
         0.1,
@@ -457,7 +455,7 @@
       },
       "widgets_values": [
         "lyrics",
-        "人物1",
+        "サブジェクト1",
         1,
         "Qwen3-4B-abliterated/Qwen3-4B-abliterated-q5_k_m.gguf",
         "auto",

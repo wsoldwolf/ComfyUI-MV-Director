@@ -86,7 +86,7 @@ semanticな採用、上書き又は破棄理由を生成しない。
 
 ```json
 {
-  "concept_id": "人物1",
+  "concept_id": "サブジェクト1",
   "subject_ref": "<Subject 1>",
   "picture_ref": "<Picture 1>",
   "target_node_id": "42",
@@ -142,7 +142,7 @@ semanticな採用、上書き又は破棄理由を生成しない。
   "schema": "MVD_REQUIRED_REFERENCES_V1",
   "references": [
     {
-      "concept_id": "人物1",
+      "concept_id": "サブジェクト1",
       "subject_ref": "<Subject 1>",
       "h3_ref": "<Picture 1>",
       "required_input": "ref_images.ref_image_0",
@@ -152,7 +152,7 @@ semanticな採用、上書き又は破棄理由を生成しない。
 }
 ```
 
-`purpose`は`visual_identity`又は`lip_sync_audio_reference`。Audio参照では`subject_ref`を省略できる。PictureもAudioも不要なら`references`は空配列であり成功である。
+`purpose`は`visual_identity`、`motion_reference`、`subject_audio_reference`又は`lip_sync_audio_reference`。Picture、Video、Audioのいずれも不要なら`references`は空配列であり成功である。
 
 ## 8. Timeline
 

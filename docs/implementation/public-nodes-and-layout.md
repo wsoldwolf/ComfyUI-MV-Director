@@ -64,7 +64,7 @@ Direction artifactは新しい公開node又はユーザー記述形式ではな�
 
 `MVDirectorEMDCompiler`は必須`emd_text`、`translation_mode`、GGUF `model_name`、`chat_format`、`steps`、`max_tokens`、`temperature`、`top_p`、`repetition_penalty`、`gpu_layers`、`n_batch`、`n_ctx`、`flash_attn`、`kv_cache_type`、`op_offload`、`keep_model_loaded`、`seed`と、任意`MV_DIRECTOR_H3_TIMING_PROFILE`を受ける。`translation_mode`は`ja_to_en`を既定とし、`already_english`ではmodel選択値が空又はstaleでもGGUFをresolve又はloadしない。Compiler独自のcache、repair、retry、意味監査又はgraph inspectionは設けない。
 
-出力は`plan_json: STRING`、`required_references: MV_DIRECTOR_REQUIRED_REFERENCES`、`status: STRING`の順とする。文法不正は行番号を持つ`EMDParseError`として停止し、空Plan又は補正文を返さない。日本語翻訳応答は`TRANSLATION<TAB>SLOT<TAB>TEXT`だけを受理し、contextに収まる最大の連続unit群へ有限分割する。欠落、重複、未知行又は破損行はretryせず停止する。
+出力は`plan_json: STRING`、`required_references: MV_DIRECTOR_REQUIRED_REFERENCES`、`status: STRING`の順とする。`plan_json`はUnicode非escape、key sort、2 space indent、LF改行、末尾LFのpretty-printed JSONとする。文法不正は行番号を持つ`EMDParseError`として停止し、空Plan又は補正文を返さない。日本語翻訳応答は`TRANSLATION<TAB>SLOT<TAB>TEXT`だけを受理し、contextに収まり、かつ7 unit以下となる最大の連続unit群へ有限分割する。欠落、重複、未知行又は破損行はretryせず停止する。
 
 ### 1.7 Audio Pad Pairの参照vocal出力
 
@@ -143,4 +143,4 @@ ComfyUI frontend拡張が必要な32-bit Seed、String Combo、Connected Combo�
 
 初期adapterは通常Ref2VAへの固定番号直接接続だけを対象とする。画像は`ref_images.ref_image_N`、音声は`ref_audios.ref_audio_N`へ接続し、Tagged Referenceの`@tag`再番号付けは扱わない。
 
-Compilerはworkflow graphを探索しない。Image to Subject EMD又は人間がEMDへ書いた`<Subject N>`と任意の`<Picture N>`関係だけを処理する。Picture関連がなくてもH3内蔵概念としてコンパイルする。
+Compilerはworkflow graphを探索しない。`# サブジェクト`の各list itemを文書順に`<Subject 1..4>`へ割り当て、行頭の任意``画像N``、``動画N``、``音声N``だけをH3参照へ変換する。media tokenがなくてもH3内蔵概念としてコンパイルする。

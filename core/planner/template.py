@@ -12,9 +12,6 @@ from .errors import TimelinePlannerError
 
 
 DEFAULT_CONCEPT_EMD = """# サブジェクト
-* `人物1`
-* `H3サブジェクト` `<Subject 1>`
-* `名称` 主要人物
 * 詳細未指定の主要人物。
 """
 

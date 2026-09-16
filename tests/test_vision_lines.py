@@ -81,14 +81,12 @@ class VisionLineProtocolTests(unittest.TestCase):
         result = render_subject_emd(
             observations,
             concept_type="person",
-            concept_index=1,
-            subject_index=2,
             picture_index=4,
             subject_hint="狐の尾は一本です。",
         )
-        self.assertIn("* `人物1`", result.emd_fragment)
-        self.assertIn("<Subject 2>", result.emd_fragment)
-        self.assertIn("<Picture 4>", result.emd_fragment)
+        self.assertIn("* `画像4` 長い黒髪の人物", result.emd_fragment)
+        self.assertNotIn("<Subject", result.emd_fragment)
+        self.assertNotIn("<Picture", result.emd_fragment)
         self.assertIn("狐の尾は一本です。", result.emd_fragment)
         for excluded in ("正面を向いて", "全身", "イラスト", "奉納", "青白い月光"):
             self.assertNotIn(excluded, result.emd_fragment)
@@ -100,11 +98,9 @@ class VisionLineProtocolTests(unittest.TestCase):
         result = render_subject_emd(
             observations,
             concept_type="location",
-            concept_index=3,
-            subject_index=1,
             hint_mode="observe_only",
         )
-        self.assertIn("* `場所3`", result.emd_fragment)
+        self.assertTrue(result.emd_fragment.startswith("# サブジェクト\n* "))
         self.assertIn("夜の神社の参道", result.emd_fragment)
         self.assertIn("朱塗りの鳥居", result.emd_fragment)
         self.assertNotIn("<Picture", result.emd_fragment)
@@ -119,8 +115,6 @@ class VisionLineProtocolTests(unittest.TestCase):
             render_subject_emd(
                 observations,
                 concept_type="person",
-                concept_index=1,
-                subject_index=1,
                 hint_conflict="strict",
             )
 

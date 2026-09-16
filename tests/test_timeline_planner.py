@@ -31,11 +31,7 @@ TEMPLATE = """> `シーン` 1
 """
 
 CONCEPT = """# サブジェクト
-* `人物1`
-* `H3サブジェクト` `<Subject 1>`
-* `参照画像` `<Picture 1>`
-* `名称` 主人公
-* 長い黒髪と白い衣装を持つ人物。
+* `画像1` 主人公。長い黒髪と白い衣装を持つ人物。
 """
 
 
@@ -62,7 +58,7 @@ class FakePlannerBackend:
             text = {
                 "lyric-notes": f"歌詞の感情と鳥居のモチーフ {slot}",
                 "song-direction": "夜から朝へ進み、鳥居を反復する。",
-                "actions": f"人物1が重心を移しながら歩く。{slot} 「生成台詞」",
+                "actions": f"サブジェクト1が重心を移しながら歩く。{slot} 「生成台詞」",
                 "cameras": f"カメラは前景の鳥居から人物へ緩やかに寄る。{slot}",
             }[task]
             rows.append(f"{record_type}\t{slot}\t{text}")
@@ -126,7 +122,7 @@ class TimelinePlannerCoreTests(unittest.TestCase):
             concept_emd=CONCEPT,
             direction=None,
             lip_sync_mode="off",
-            lip_sync_target="人物1",
+            lip_sync_target="サブジェクト1",
             lip_sync_audio_slot=1,
             scenes_per_batch=3,
             system_prompts=prompts(),
@@ -149,7 +145,7 @@ class TimelinePlannerCoreTests(unittest.TestCase):
                 camera_direction=("奥行きを保つ。",),
             ),
             lip_sync_mode="lyrics",
-            lip_sync_target="人物1",
+            lip_sync_target="サブジェクト1",
             lip_sync_audio_slot=1,
             scenes_per_batch=3,
             system_prompts=prompts(),
@@ -162,8 +158,8 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         ])
         text = result.emd.text
         self.assertNotIn("生成台詞", text)
-        self.assertIn("* `リップシンク` `歌詞` `人物1` 「千年鳥居をくぐるそなたよ」", text)
-        self.assertLess(text.index("人物1が重心"), text.index("カメラは前景"))
+        self.assertIn("* `リップシンク` `歌詞` `サブジェクト1` 「千年鳥居をくぐるそなたよ」", text)
+        self.assertLess(text.index("サブジェクト1が重心"), text.index("カメラは前景"))
         document = parse_emd(text)
         self.assertEqual(document.scenes[0].h3_length, 243)
         self.assertEqual(document.scenes[0].shots[0].lyric_annotations[0].text, "千年鳥居をくぐるそなたよ")
@@ -174,7 +170,7 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         action_payload = backend.calls[2][1]
         self.assertNotIn("lip_sync_mode", action_payload)
         self.assertNotIn("lip_sync_audio_slot", action_payload)
-        self.assertEqual(action_payload["primary_action_concept"], "人物1")
+        self.assertEqual(action_payload["primary_action_concept"], "サブジェクト1")
         self.assertIsNone(action_payload["slots"][0]["previous_shot"])
         self.assertEqual(
             action_payload["slots"][1]["previous_shot"],
@@ -190,7 +186,7 @@ class TimelinePlannerCoreTests(unittest.TestCase):
             concept_emd=CONCEPT,
             direction=None,
             lip_sync_mode="off",
-            lip_sync_target="人物1",
+            lip_sync_target="サブジェクト1",
             lip_sync_audio_slot=1,
             scenes_per_batch=3,
             system_prompts=prompts(),
@@ -208,7 +204,7 @@ class TimelinePlannerCoreTests(unittest.TestCase):
             concept_emd=CONCEPT,
             direction=None,
             lip_sync_mode="off",
-            lip_sync_target="人物1",
+            lip_sync_target="サブジェクト1",
             lip_sync_audio_slot=1,
             scenes_per_batch=3,
             system_prompts=prompts(),
@@ -240,15 +236,15 @@ class TimelinePlannerCoreTests(unittest.TestCase):
                 template=template,
                 direction=direction,
                 lip_sync_mode=mode,
-                lip_sync_target="人物1",
+                lip_sync_target="サブジェクト1",
                 lip_sync_audio_slot=2,
             ).text
             for mode in ("off", "context_loop", "audio_reference", "lyrics")
         }
         self.assertNotIn("リップシンク", outputs["off"])
         self.assertIn("`Context Loop`", outputs["context_loop"])
-        self.assertIn("`Audio参照` `人物1` `H3音声2`", outputs["audio_reference"])
-        self.assertIn("`歌詞` `人物1`", outputs["lyrics"])
+        self.assertIn("`Audio参照` `サブジェクト1` `音声2`", outputs["audio_reference"])
+        self.assertIn("`歌詞` `サブジェクト1`", outputs["lyrics"])
         for text in outputs.values():
             self.assertIn("> `歌詞` 千年鳥居をくぐるそなたよ", text)
 
@@ -297,7 +293,7 @@ class TimelinePlannerCoreTests(unittest.TestCase):
             concept_emd=CONCEPT,
             direction=None,
             lip_sync_mode="off",
-            lip_sync_target="人物1",
+            lip_sync_target="サブジェクト1",
             lip_sync_audio_slot=1,
             scenes_per_batch=3,
             system_prompts=prompts(),
@@ -315,7 +311,7 @@ class TimelinePlannerCoreTests(unittest.TestCase):
             concept_emd=CONCEPT,
             direction=None,
             lip_sync_mode="off",
-            lip_sync_target="人物1",
+            lip_sync_target="サブジェクト1",
             lip_sync_audio_slot=1,
             scenes_per_batch=3,
             system_prompts=prompts(),

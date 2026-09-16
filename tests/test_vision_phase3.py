@@ -172,11 +172,10 @@ class VisionPhase3Tests(unittest.TestCase):
             request=request,
             binding=binding,
             concept_type="person",
-            concept_index=1,
-            subject_index=2,
         )
         self.assertEqual(result.resolved_picture_reference, "<Picture 3>")
-        self.assertIn("<Picture 3>", result.emd.emd_fragment)
+        self.assertIn("`画像3`", result.emd.emd_fragment)
+        self.assertNotIn("<Picture 3>", result.emd.emd_fragment)
         self.assertIn("subject_hint: 狐の尾は一本です。", result.emd.emd_fragment)
         stored = result.reference_bindings.bindings[0]
         self.assertEqual(stored.image_sha256, "a" * 64)
@@ -214,8 +213,6 @@ class VisionPhase3Tests(unittest.TestCase):
                 "none", picture_index=1, prompt=None, unique_id=None
             ),
             concept_type="person",
-            concept_index=1,
-            subject_index=1,
         )
         self.assertNotIn("画像外の設定", result.emd.emd_fragment)
 
@@ -259,6 +256,8 @@ class VisionPhase3Tests(unittest.TestCase):
             inputs["required"]["seed"][1]["control_after_generate"],
             "randomize",
         )
+        self.assertNotIn("concept_index", inputs["required"])
+        self.assertNotIn("subject_index", inputs["required"])
         self.assertEqual(inputs["hidden"], {"prompt": "PROMPT", "unique_id": "UNIQUE_ID"})
 
 

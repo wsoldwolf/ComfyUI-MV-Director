@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
 from typing import Any
 
-from ..artifacts.base import canonical_json
 from ..artifacts.references import (
     RequiredReference,
     RequiredReferencesArtifact,
@@ -24,7 +24,13 @@ class CompileResult:
     required_references: RequiredReferencesArtifact
 
     def plan_json(self) -> str:
-        return canonical_json(self.plan)
+        return json.dumps(
+            self.plan,
+            ensure_ascii=False,
+            sort_keys=True,
+            indent=2,
+            allow_nan=False,
+        ) + "\n"
 
 
 def format_time_ms(value: int) -> str:
@@ -48,10 +54,7 @@ class _TranslationTable:
             units.append(text)
 
         for subject_index, subject in enumerate(self.document.subjects):
-            if subject.name is not None:
-                add(f"subject.{subject_index}.name", subject.name)
-            for index, text in enumerate(subject.descriptions):
-                add(f"subject.{subject_index}.description.{index}", text)
+            add(f"subject.{subject_index}.description", subject.description)
         for index, text in enumerate(self.document.retention):
             add(f"retention.{index}", text)
         for section, values in self.document.common_prompt:
@@ -78,25 +81,13 @@ class _TranslationTable:
 def _subject_definition(
     subject: Subject, index: int, translations: _TranslationTable
 ) -> list[str]:
-    name = (
-        translations.get(f"subject.{index}.name")
-        if subject.name is not None
-        else None
-    )
-    descriptions = [
-        translations.get(f"subject.{index}.description.{item_index}")
-        for item_index in range(len(subject.descriptions))
-    ]
-    description = " ".join(descriptions)
-    noun = name or subject.concept_type
-    if subject.picture_ref is not None:
-        return [
-            f"{subject.picture_ref} is the connected visual reference for {noun}.",
-            f"{subject.subject_ref} is the {subject.concept_type} defined by "
-            f"{subject.picture_ref}, described here: {description}",
-        ]
+    description = translations.get(f"subject.{index}.description")
+    if not subject.references:
+        return [f"{subject.subject_ref} is described here: {description}"]
+    references = ", ".join(subject.references)
     return [
-        f"{subject.subject_ref} is the {subject.concept_type} described here: {description}"
+        f"{subject.subject_ref} is described here: {description} "
+        f"Use these connected references for it: {references}."
     ]
 
 
@@ -110,13 +101,19 @@ def _retention_lines(
         ]
     lines: list[str] = []
     for subject in document.subjects:
-        if subject.picture_ref is not None:
+        picture_refs = tuple(
+            reference
+            for reference in subject.references
+            if reference.startswith("<Picture ")
+        )
+        if picture_refs:
+            pictures = ", ".join(picture_refs)
             lines.extend(
                 [
-                    f"{subject.picture_ref}: fully_preserved - use the connected image "
-                    "as the visual identity reference.",
+                    f"{pictures}: fully_preserved - use the connected image reference "
+                    "or references for visual identity.",
                     f"{subject.subject_ref}: fully_preserved - preserve the identity and "
-                    f"described attributes from {subject.picture_ref}.",
+                    f"described attributes from {pictures}.",
                 ]
             )
         else:
@@ -239,18 +236,28 @@ def _scene_prompt(
 def _required_references(document: EMDDocument) -> RequiredReferencesArtifact:
     references: list[RequiredReference] = []
     for subject in document.subjects:
-        if subject.picture_ref is None:
-            continue
-        slot = int(subject.picture_ref.removeprefix("<Picture ").removesuffix(">"))
-        references.append(
-            RequiredReference(
-                concept_id=subject.concept_id,
-                subject_ref=subject.subject_ref,
-                h3_ref=subject.picture_ref,
-                required_input=f"ref_images.ref_image_{slot - 1}",
-                purpose="visual_identity",
+        for h3_ref in subject.references:
+            if h3_ref.startswith("<Picture "):
+                slot = int(h3_ref.removeprefix("<Picture ").removesuffix(">"))
+                required_input = f"ref_images.ref_image_{slot - 1}"
+                purpose = "visual_identity"
+            elif h3_ref.startswith("<Video "):
+                slot = int(h3_ref.removeprefix("<Video ").removesuffix(">"))
+                required_input = f"ref_videos.ref_video_{slot - 1}"
+                purpose = "motion_reference"
+            else:
+                slot = int(h3_ref.removeprefix("<Audio ").removesuffix(">"))
+                required_input = f"ref_audios.ref_audio_{slot - 1}"
+                purpose = "subject_audio_reference"
+            references.append(
+                RequiredReference(
+                    concept_id=subject.concept_id,
+                    subject_ref=subject.subject_ref,
+                    h3_ref=h3_ref,
+                    required_input=required_input,
+                    purpose=purpose,
+                )
             )
-        )
     for scene in document.scenes:
         for directive in scene.audio_directives:
             if directive.mode != "audio_reference":

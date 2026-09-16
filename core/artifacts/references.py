@@ -17,9 +17,10 @@ from .errors import ArtifactValidationError
 
 BINDINGS_SCHEMA = "MVD_REFERENCE_BINDINGS_V1"
 REQUIRED_SCHEMA = "MVD_REQUIRED_REFERENCES_V1"
-_CONCEPT_RE = re.compile(r"(?:人物|場所|物品)(?:[1-9]|1[0-6])\Z")
+_CONCEPT_RE = re.compile(r"サブジェクト[1-4]\Z")
 _SUBJECT_RE = re.compile(r"<Subject [1-4]>\Z")
 _PICTURE_RE = re.compile(r"<Picture ([1-9])>\Z")
+_VIDEO_RE = re.compile(r"<Video ([1-3])>\Z")
 _AUDIO_RE = re.compile(r"<Audio ([1-3])>\Z")
 _HASH_RE = re.compile(r"[0-9a-f]{64}\Z")
 
@@ -171,6 +172,32 @@ class RequiredReference:
                     "visual identity requires Subject reference",
                 )
             expected = f"ref_images.ref_image_{int(match.group(1)) - 1}"
+        elif self.purpose == "motion_reference":
+            match = _VIDEO_RE.fullmatch(self.h3_ref)
+            if match is None:
+                raise ArtifactValidationError(
+                    REQUIRED_SCHEMA, "h3_ref", "motion reference requires Video"
+                )
+            if self.subject_ref is None or not _SUBJECT_RE.fullmatch(self.subject_ref):
+                raise ArtifactValidationError(
+                    REQUIRED_SCHEMA,
+                    "subject_ref",
+                    "motion reference requires Subject reference",
+                )
+            expected = f"ref_videos.ref_video_{int(match.group(1)) - 1}"
+        elif self.purpose == "subject_audio_reference":
+            match = _AUDIO_RE.fullmatch(self.h3_ref)
+            if match is None:
+                raise ArtifactValidationError(
+                    REQUIRED_SCHEMA, "h3_ref", "subject audio reference requires Audio"
+                )
+            if self.subject_ref is None or not _SUBJECT_RE.fullmatch(self.subject_ref):
+                raise ArtifactValidationError(
+                    REQUIRED_SCHEMA,
+                    "subject_ref",
+                    "subject audio reference requires Subject reference",
+                )
+            expected = f"ref_audios.ref_audio_{int(match.group(1)) - 1}"
         elif self.purpose == "lip_sync_audio_reference":
             match = _AUDIO_RE.fullmatch(self.h3_ref)
             if match is None:
@@ -275,4 +302,3 @@ class RequiredReferencesArtifact:
         )
         artifact.validate()
         return artifact
-

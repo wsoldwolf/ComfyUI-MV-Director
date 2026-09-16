@@ -222,19 +222,17 @@ def observe_image(
 def _binding_artifact(
     *,
     binding: PictureBinding,
-    concept_id: str,
-    subject_index: int,
     image_sha256: str,
 ) -> ReferenceBindingsArtifact:
     if binding.picture_index is None or not binding.targets:
         return ReferenceBindingsArtifact()
     picture_ref = f"<Picture {binding.picture_index}>"
-    subject_ref = f"<Subject {subject_index}>"
+    subject_ref = "<Subject 1>"
     fingerprint = binding.fingerprint()
     return ReferenceBindingsArtifact(
         tuple(
             ReferenceBinding(
-                concept_id=concept_id,
+                concept_id="サブジェクト1",
                 subject_ref=subject_ref,
                 picture_ref=picture_ref,
                 target_node_id=target.node_id,
@@ -255,19 +253,14 @@ def compose_image_to_subject(
     request: VisionObservationRequest,
     binding: PictureBinding,
     concept_type: str,
-    concept_index: int,
-    subject_index: int,
     warnings: tuple[str, ...] = (),
 ) -> ImageToSubjectResult:
-    prefixes = {"person": "人物", "location": "場所", "object": "物品"}
-    if concept_type not in prefixes:
+    if concept_type not in {"person", "location", "object"}:
         raise ValueError("unknown concept_type")
     picture_index = binding.picture_index
     emd = render_subject_emd(
         observations,
         concept_type=concept_type,
-        concept_index=concept_index,
-        subject_index=subject_index,
         picture_index=picture_index,
         subject_hint=request.normalized_subject_hint,
         hint_mode=request.hint_mode,
@@ -275,8 +268,6 @@ def compose_image_to_subject(
     )
     bindings = _binding_artifact(
         binding=binding,
-        concept_id=f"{prefixes[concept_type]}{concept_index}",
-        subject_index=subject_index,
         image_sha256=prepared.image_sha256,
     )
     bindings.validate()

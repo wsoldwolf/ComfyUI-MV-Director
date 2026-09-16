@@ -114,8 +114,6 @@ class MVDirectorImageToSubjectEMD:
                 "hint_conflict": (list(HINT_CONFLICT_POLICIES), {"default": "warn"}),
                 "picture_reference_mode": (list(PICTURE_REFERENCE_MODES), {"default": "auto_h3"}),
                 "concept_type": (list(CONCEPT_TYPES), {"default": "person"}),
-                "concept_index": ("INT", {"default": 1, "min": 1, "max": 16}),
-                "subject_index": ("INT", {"default": 1, "min": 1, "max": 4}),
                 "picture_index": ("INT", {"default": 1, "min": 1, "max": 9}),
                 "analysis_max_edge": ("INT", {"default": 1024, "min": 256, "max": 2048, "step": 64}),
                 "max_tokens": ("INT", {"default": 1024, "min": 32, "max": 4096, "step": 32}),
@@ -185,8 +183,6 @@ class MVDirectorImageToSubjectEMD:
         hint_conflict: str,
         picture_reference_mode: str,
         concept_type: str,
-        concept_index: int,
-        subject_index: int,
         picture_index: int,
         analysis_max_edge: int,
         max_tokens: int,
@@ -289,8 +285,6 @@ class MVDirectorImageToSubjectEMD:
                 request=request,
                 binding=binding,
                 concept_type=concept_type,
-                concept_index=concept_index,
-                subject_index=subject_index,
                 warnings=warnings,
             )
             status = (

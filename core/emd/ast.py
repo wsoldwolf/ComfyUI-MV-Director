@@ -8,11 +8,9 @@ from dataclasses import dataclass
 @dataclass(frozen=True, slots=True)
 class Subject:
     concept_id: str
-    concept_type: str
     subject_ref: str
-    picture_ref: str | None
-    name: str | None
-    descriptions: tuple[str, ...]
+    description: str
+    references: tuple[str, ...]
     line_number: int
 
 
@@ -63,4 +61,3 @@ class EMDDocument:
 
     def common_prompt_dict(self) -> dict[str, tuple[str, ...]]:
         return dict(self.common_prompt)
-

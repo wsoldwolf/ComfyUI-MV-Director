@@ -13,8 +13,6 @@ from nodes import NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS
 
 
 ENGLISH_EMD = """# サブジェクト
-* `人物1`
-* `H3サブジェクト` `<Subject 1>`
 * A person wearing a white coat.
 > `シーン` 1
 # シーン 00:00.000 --> 00:01.000
@@ -133,6 +131,21 @@ class LlamaPromptTranslatorTests(unittest.TestCase):
         with self.assertRaisesRegex(CompilerError, "line protocol"):
             translator.translate(("一",))
         self.assertEqual(len(lifecycle.chat_calls), 1)
+
+    def test_protocol_batches_are_capped_at_seven_units(self) -> None:
+        lifecycle = FakeLifecycle()
+        lifecycle.effective_n_ctx = 32768
+        translator = LlamaPromptTranslator(
+            lifecycle,
+            system_prompt="translate",
+            runtime_config=LlamaRuntimeConfig(max_tokens=4096, n_ctx=32768),
+        )
+        translated = translator.translate(tuple(f"項目{i}" for i in range(15)))
+        self.assertEqual(len(translated), 15)
+        self.assertEqual(
+            [len(call["slots"]) for call in lifecycle.chat_calls],
+            [7, 7, 1],
+        )
 
 
 class EMDCompilerNodeTests(unittest.TestCase):

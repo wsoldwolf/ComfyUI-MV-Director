@@ -14,8 +14,9 @@ class EMDParserTests(unittest.TestCase):
         )
 
         self.assertEqual(len(document.subjects), 1)
-        self.assertEqual(document.subjects[0].concept_id, "人物1")
-        self.assertIsNone(document.subjects[0].picture_ref)
+        self.assertEqual(document.subjects[0].concept_id, "サブジェクト1")
+        self.assertEqual(document.subjects[0].subject_ref, "<Subject 1>")
+        self.assertEqual(document.subjects[0].references, ())
         self.assertEqual(
             tuple(name for name, _ in document.common_prompt),
             ("スタイル", "モーション", "カメラ"),
@@ -27,7 +28,7 @@ class EMDParserTests(unittest.TestCase):
         self.assertEqual(scene.shots[0].lyric_annotations[0].section, "VERSE1")
         self.assertEqual(
             scene.shots[1].lyric_lip_sync,
-            (("人物1", "千年鳥居をくぐるそなたよ"),),
+            (("サブジェクト1", "千年鳥居をくぐるそなたよ"),),
         )
 
     def test_missing_scene_annotation_is_rejected(self) -> None:
@@ -46,24 +47,51 @@ class EMDParserTests(unittest.TestCase):
 
     def test_picture_reference_is_optional(self) -> None:
         source = """# サブジェクト
-* `場所1`
-* `H3サブジェクト` `<Subject 2>`
 * 石造りの回廊。
 
 > `シーン` 1
 # シーン 00:00.000 --> 00:01.000
 * `H3長` 22
 ## ショット 00:00.000
-* `場所1`を固定カメラで映す。
+* `サブジェクト1`を固定カメラで映す。
 """
         document = parse_emd(source)
-        self.assertIsNone(document.subjects[0].picture_ref)
-        self.assertEqual(document.subjects[0].concept_type, "environment")
+        self.assertEqual(document.subjects[0].references, ())
+        self.assertEqual(document.subjects[0].description, "石造りの回廊。")
+
+    def test_subject_line_order_and_media_tokens_define_bindings(self) -> None:
+        source = """# サブジェクト
+* `画像3` 狐耳の少女。
+* `動画1` `音声2` 石造りの回廊。
+> `シーン` 1
+# シーン 00:00.000 --> 00:01.000
+* `H3長` 22
+## ショット 00:00.000
+* `サブジェクト1`が歩く。
+"""
+        document = parse_emd(source)
+        self.assertEqual(document.subjects[0].concept_id, "サブジェクト1")
+        self.assertEqual(document.subjects[0].references, ("<Picture 3>",))
+        self.assertEqual(document.subjects[1].concept_id, "サブジェクト2")
+        self.assertEqual(
+            document.subjects[1].references,
+            ("<Video 1>", "<Audio 2>"),
+        )
+
+    def test_legacy_subject_declaration_is_rejected(self) -> None:
+        source = """# サブジェクト
+* `人物1`
+> `シーン` 1
+# シーン 00:00.000 --> 00:01.000
+* `H3長` 22
+## ショット 00:00.000
+* 歩く。
+"""
+        with self.assertRaisesRegex(EMDParseError, "unknown Subject reserved token"):
+            parse_emd(source)
 
     def test_raw_h3_length_must_match_grid(self) -> None:
         source = """# サブジェクト
-* `人物1`
-* `H3サブジェクト` `<Subject 1>`
 * 人物。
 > `シーン` 1
 # シーン 00:00.000 --> 00:01.000
@@ -76,8 +104,6 @@ class EMDParserTests(unittest.TestCase):
 
     def test_common_prompt_order_is_strict(self) -> None:
         source = """# サブジェクト
-* `人物1`
-* `H3サブジェクト` `<Subject 1>`
 * 人物。
 # 共通プロンプト
 ## カメラ
@@ -95,8 +121,6 @@ class EMDParserTests(unittest.TestCase):
 
     def test_explicit_dialogue_tags_are_validated(self) -> None:
         valid = """# サブジェクト
-* `人物1`
-* `H3サブジェクト` `<Subject 1>`
 * 人物。
 > `シーン` 1
 # シーン 00:00.000 --> 00:01.000
@@ -115,8 +139,6 @@ class EMDParserTests(unittest.TestCase):
 
     def test_scene_annotation_must_be_physically_adjacent(self) -> None:
         source = """# サブジェクト
-* `人物1`
-* `H3サブジェクト` `<Subject 1>`
 * 人物。
 > `シーン` 1
 

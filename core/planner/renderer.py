@@ -13,7 +13,7 @@ from .errors import TimelinePlannerError
 from .template import PlannerTemplate
 
 
-_TARGET_RE = re.compile(r"(?:人物|場所|物品)(?:[1-9]|1[0-6])\Z")
+_TARGET_RE = re.compile(r"サブジェクト[1-4]\Z")
 
 
 def render_completed_emd(
@@ -32,7 +32,7 @@ def render_completed_emd(
     if lip_sync_mode not in {"off", "context_loop", "audio_reference", "lyrics"}:
         raise TimelinePlannerError("unknown lip_sync_mode")
     if not _TARGET_RE.fullmatch(lip_sync_target):
-        raise TimelinePlannerError("lip_sync_target must be 人物N, 場所N, or 物品N")
+        raise TimelinePlannerError("lip_sync_target must be サブジェクト1..4")
     if not isinstance(lip_sync_audio_slot, int) or isinstance(lip_sync_audio_slot, bool) or not 1 <= lip_sync_audio_slot <= 3:
         raise TimelinePlannerError("lip_sync_audio_slot must be in 1..3")
 
@@ -96,7 +96,7 @@ def render_completed_emd(
                 lines.append(f"* `リップシンク` `Context Loop` `{lip_sync_target}`")
             else:
                 lines.append(
-                    f"* `リップシンク` `Audio参照` `{lip_sync_target}` `H3音声{lip_sync_audio_slot}`"
+                    f"* `リップシンク` `Audio参照` `{lip_sync_target}` `音声{lip_sync_audio_slot}`"
                 )
     text = "\n".join(lines) + "\n"
     try:

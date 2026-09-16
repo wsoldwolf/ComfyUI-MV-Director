@@ -71,7 +71,7 @@ class ContractFixtureTests(unittest.TestCase):
         )
         self.assertIn("> `シーン` 1\n# シーン 00:00.000 --> 00:10.125", source)
         self.assertRegex(source, r"## ショット [0-9]{2}:[0-5][0-9]\.[0-9]{3}")
-        self.assertNotIn("`参照画像`", source)
+        self.assertNotIn("`画像", source)
 
     def test_invalid_emd_fixtures_express_single_contract_failures(self) -> None:
         missing = (
@@ -82,7 +82,7 @@ class ContractFixtureTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertNotIn("> `シーン`", missing)
         self.assertIn("`Audio参照`", conflict)
-        self.assertIn("`歌詞` `人物1`", conflict)
+        self.assertIn("`歌詞` `サブジェクト1`", conflict)
 
     def test_context_loop_fixture_has_six_sections_and_raw_length_only(self) -> None:
         payload = json.loads(
