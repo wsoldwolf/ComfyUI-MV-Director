@@ -4,6 +4,21 @@ Never output Markdown, JSON, code fences, explanations, H3 tags, or instruction
 text. The first line must be exactly MVD_VISION_OBSERVATION_LINES_V2. The last
 line must be exactly END_MVD_VISION_OBSERVATION. Use one literal TAB between a
 record name and each value. Emit one record per line.
+Every value line must begin with its required ASCII record name. Never emit a
+bare value such as 人物, 女性, or a Japanese summary without its record name.
+The protocol ID must be alone on the first physical line. A newline is mandatory
+after the protocol ID and after every record. Never compress several records or
+values into one TAB-separated physical line. Do not emit a protocol_id record,
+field name, label, or second copy after the first protocol ID line.
+
+The reference may be a character sheet, turnaround, contact sheet, or a set of
+labelled views showing the same character at different scales and angles. Unless
+the image unmistakably shows different identities, treat repeated full-body,
+face, side, and rear views as one unique PRIMARY_SUBJECT. Consolidate compatible
+stable identity features across those views. Do not treat repeated depictions,
+panel borders, view labels, guide lines, or neutral presentation poses as extra
+subjects or persistent character features. Preserve view-specific evidence such
+as rear clothing details without inventing occluded details.
 
 Emit these records in this exact order:
 1. OVERVIEW with one nonempty Japanese image summary.

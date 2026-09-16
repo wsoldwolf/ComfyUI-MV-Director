@@ -159,6 +159,7 @@ ACTION<TAB>2<TAB>人物は立ち止まり、上げた手を胸元へ静かに戻
 | カメラ | `readable_depth`（既定） | 顔、全身動作、接触点を読める距離を保ち、安定した構図、緩やかな接近・後退・横移動を使い分ける |
 | カメラ | `cinematic_depth` | 開始視点、被写体の側面を通る経路、終了視点、前景・中景・遠景の視差を明示する |
 | カメラ | `rhythmic_mv` | 楽曲強度に合わせて移動量と構図保持を変え、Scene間で角度、高さ、距離、移動方向を展開する |
+| カメラ | `arc_closeup` | 被写体を中心とするarcを主軸にSceneごとに方向、半径、高さを変え、表情重視Shotでは顔close-upの小arc、動作重視Shotではmedium又は全身arcを使う |
 
 「禁止リストを増やす」のではなく、実現したい材質、形、動き、軌道を記述する。ただしユーザー自身が否定条件を指定した場合は削除しない。
 
@@ -238,7 +239,7 @@ Sceneごとに`@tag`を有効化してnative番号を詰め直すTagged Referenc
 
 ### 5.1 入力とmode
 
-- `image`: Visionで観察する一枚のIMAGE。
+- `image`: Visionで観察する一枚のIMAGE、又は同一人物の立ち絵・顔・側面・背面を収めた最大9枚のIMAGE batch。batchはラベル付きcontact sheetへ決定論的に合成して一回で観察する。
 - `subject_hint`: 名前、画面外の重要特徴、保持したい特徴を補う任意のSTRING socket。
 - `additional_instruction`: 「眉の形と尾の本数を重点的に確認」のように、観測箇所を指定する任意のSTRING socket。
 - `analysis_profile`: `general`（既定）、`subject_only`、`scene_only`を選ぶ外部接続可能な制御socket。
@@ -258,6 +259,8 @@ Sceneごとに`@tag`を有効化してnative番号を詰め直すTagged Referenc
 `subject_hint`と`additional_instruction`は日本語の自然文をそのまま受けるデータ欄であり、見出し、名前付きプレフィクス、JSON又はMarkdown directiveを要求しない。例えば`淡い金色の短い丸眉で、狐の尾は一本です。`だけで有効とする。`subject_hint:`等を検出・除去する互換処理は実装せず、socketへ渡された文字列全体を入力本文として扱う。
 
 `subject_hint`は人物設定のauthority、`additional_instruction`は観察の焦点であり、後者を「画像に存在する事実」へ昇格させない。入力原文と正規化後文字列をartifactへ分けて保持し、semantic keyword parserで特徴へ分解しない。
+
+人物の設定画、turnaround又はcontact sheetでは、明らかに異なる人物が描かれていない限り、全身、顔アップ、側面及び背面を同じ一意の`PRIMARY_SUBJECT`の複数ビューとして統合する。繰り返し描画、panel境界、view label、guide線又は中立poseを別Subjectや恒常特徴として数えない。各ビューで見える互換な特徴は統合するが、遮蔽箇所を推測補完しない。IMAGE batchは1～9枚だけを許し、全viewのpixelと順序をfingerprint及びcache keyへ含める。
 
 - `observe_only`: `subject_hint`をVision要求又はEMDへ適用せず、入力原文artifactにだけ保持する。
 - `assist`: ヒントを画像解釈の仮説として渡すが、可視事実を置換せず、確定した人物設定としては出力しない。
@@ -295,7 +298,7 @@ END_MVD_VISION_OBSERVATION
 
 `SUBJECT_FEATURE`、`SCENE_ELEMENT`、`VISIBLE_TEXT`、`UNCERTAINTY`は0件以上、それ以外は各固定数を要求する。任意反復recordは該当内容がなければ行自体を省略する。Vision modelが`SCENE_ELEMENT`、`VISIBLE_TEXT`又は`UNCERTAINTY`を空値で一行だけ出した場合は、情報を捏造せずその行を機械的に省略してwarningへ記録する。`SUBJECT_FEATURE`の空値は受理しない。同一category反復を許す。人体分類に当てはまらない物品の形、色、数、材質、模様又は状態は`distinctive_feature`を使い、modelに新categoryを作らせない。4B modelが説明文とenumの列順を反転させることを避けるため、model出力ではvisibility列を要求せず、Pythonが保守的な`partial`を割り当てる。明示visibilityを含む内部fixtureは`clear`、`partial`、`uncertain`の三値だけを受理する。
 
-Python parserは旧実装から、CRLF正規化、空値`SUBJECT_POSE`、`visible`から`clear`、visibility欠落時の保守的`partial`、自然文中へ混入した追加TAB断片の順序保持結合、全必須recordが揃う場合だけの終端marker欠落warningを再利用する。最初のrecordが正規の`OVERVIEW`である場合だけprotocol ID欠落を決定論的に補い、4B modelで実測した`Overview: value`又は`OVERVIEW: value`だけを`OVERVIEW<TAB>value`へ正規化する。固定順で期待するrecord名はASCIIの大文字小文字を無視し、空白又はhyphenをunderscoreへ正規化するが、未知recordや順序違反は受理しない。未知category、未知enum、その他の固定順違反、code fence、参照tag、NUL又は必須record欠落は推測修復せず停止する。画像なしLLM修復、英日翻訳repair、画像全体の再観測retry及び旧`subject_hint:`互換正規化は移植しない。
+Python parserは旧実装から、CRLF正規化、空値`SUBJECT_POSE`、`visible`から`clear`、visibility欠落時の保守的`partial`、自然文中へ混入した追加TAB断片の順序保持結合、全必須recordが揃う場合だけの終端marker欠落warningを再利用する。最初のrecordが正規の`OVERVIEW`、`Overview: value` / `OVERVIEW: value`又は`PRIMARY_SUBJECT`である場合だけprotocol ID欠落を決定論的に補う。4B modelで実測したcolon形式だけを`OVERVIEW<TAB>value`へ正規化する。protocol ID直後が`PRIMARY_SUBJECT`である場合に限り、欠落した`OVERVIEW`をそのSubject名と固定句「の参照画像。」から機械生成してwarningへ記録する。固定順で期待するrecord名はASCIIの大文字小文字を無視し、空白又はhyphenをunderscoreへ正規化するが、未知recordやその他の順序違反は受理しない。未知category、未知enum、その他の固定順違反、code fence、参照tag、NUL又はそれ以外の必須record欠落は推測修復せず停止する。画像なしLLM修復、英日翻訳repair、無制限の再観測retry及び旧`subject_hint:`互換正規化は移植しない。許可する再試行は、同じ画像と設定を使い出力形式だけを強制する一回に限る。
 
 検証済みrecordからPythonが`MVD_OBSERVATIONS_V1`を構築し、`observations_json`を生成する。旧構造の`overview`、`primary_subject`、`hint_assessment`、`scene`、`composition`、`style`、`visible_text`、`uncertainties`を維持するが、schema IDとprotocol IDは新名称だけを使う。生model応答をJSONとしてparseしない。
 
@@ -306,6 +309,10 @@ Python parserは旧実装から、CRLF正規化、空値`SUBJECT_POSE`、`visibl
 `manual`は`picture_index`を使い、グラフを調べない。`none`は画像を観察資料としてだけ使い、`<Picture N>`関連を出さない。`auto_h3`で対応H3入力が見つからない場合も観察は成功させ、bindingを`unbound`として返す。解決したH3 node ID、class type、input名、Picture番号をbinding fingerprintとComfyUIの`IS_CHANGED`へ含め、配線だけを変更した場合に古いEMD断片を再利用しない。
 
 ノード内には`resolved_picture_reference`という読み取り専用の一行表示を置く。解決成功時は`<Picture N>`、未接続時は`unbound`、異なる番号への複数分岐時は`ambiguous`を表示する。これは編集可能な入力widget又は下流socketではなく、直近のgraph解決結果を確認するためのUIである。表示値をbindingの根拠にはせず、backendがhidden graphから得た結果を正とする。
+
+Visionのuser message先頭には`/no_think`を付け、推論過程を本文へ出さない。modelがそれでも先頭へ閉じた`<think>...</think>`を一ブロック出した場合だけ、parserが機械的に除去してwarningへ記録する。正規protocol ID直後に値なしの裸行`protocol_id`が一行だけ重複した場合は、意味情報を持たないmodel由来の書式ラベルとして除去しwarningへ記録する。protocol ID直後の一行がrecord名なしの値で、次行が`PRIMARY_SUBJECT`ならその値を`OVERVIEW`、次行が`HINT_STATUS`ならその値を`PRIMARY_SUBJECT`としてlabel付けする。この二形以外の裸値又は説明文は意味推測しない。初回応答がprotocol不正の場合は、同じ画像へprotocol ID、物理改行及びASCII record名を省略しないformat-only retryを一度だけ行う。初回の圧縮TAB列を位置推測で観測artifactへ変換せず、二回目も不正なら両方のエラーを保持して停止する。
+
+Visionのnative log抑制はMTMDのlog callbackで行い、ComfyUI process全体のstdout又はstderr file descriptorを差し替えない。MTMDのwarning及びerrorはstderrへ残し、tokenize等のinfo/debugだけを抑制する。
 
 ### 5.3 出力
 
@@ -328,6 +335,8 @@ Image to Subject EMDはScene、Shot、歌詞、音響、カメラ又は物語展
 ## 6. Enhancer契約
 
 ### 6.1 入力
+
+`retention_policy`はDirection Enhancerの先頭widgetとして表示し、保持方針をprofile選択や自由記述より前に確認できるようにする。
 
 - `concept_emd`: 一個のImage to Subject EMD出力又は手書きの一個のEMDサブジェクト断片。未接続でもよい。複数socket、可変list又は内部mergeは設けない。
 - `observations_json`: provenance確認用の任意入力。接続を要求しない。
@@ -441,8 +450,8 @@ Template EMDはPlannerの標準入力である。Plannerはこの文字列のann
 ...
 ```
 
-- 最初の非空行はsection見出しとする。見出しは行全体が`[A-Za-z][A-Za-z0-9_-]*`を角括弧で囲んだ形に完全一致し、前後空白を許さない。大文字小文字は区別せず、内部では大文字へ正規化する。
-- `[VERSE1]`、`[Chorus]`、`[bridge_A]`等を使用できる。未知名と同名sectionの再登場を許し、出現順を保持して自動統合しない。
+- 最初の非空行はsection見出しとする。見出しはASCII英字で始まる名前を角括弧で囲み、角括弧の内側では前後空白及び名前中のASCII空白、tab又は全角空白を許す。行自体の角括弧外に前後空白は許さない。大文字小文字は区別せず、内部では大文字へ正規化し、名前中の空白runは`_`へ変換する。
+- `[VERSE1]`、`[ Chorus ]`、`[Verse 1]`、`[bridge_A]`等を使用できる。`[Verse 1]`は`VERSE_1`となる。未知名と同名sectionの再登場を許し、出現順を保持して自動統合しない。
 - 空行は読みやすさのための区切りとして無視する。空sectionも許可する。
 - section外の歌詞本文、comment構文、LRC timestamp、SRT番号・時刻行、inline metadataは受理しない。
 - 通常の歌詞行は原文を保持したまま、ASCII空白、tab又は全角空白の一個以上のrunでatomic segmentへ分ける。連続空白から空segmentを作らない。
@@ -563,7 +572,7 @@ Sceneはplan上の`[start_ms, end_ms)`を半開区間で隙間なく一回だけ
 | 20 | `keep_model_loaded` | `BOOLEAN` | 必須 | false | 実行後model保持 |
 | 21 | `seed` | `INT` 1..2147483647 | 必須widget／外部接続可 | 1 | 言語生成seed |
 | 22 | `scenes_per_batch` | `INT` 1..6 | 必須 | 3 | action/cameraの最大Scene pack。lyric-notesは最大6 |
-| 23 | `cache_mode` | COMBO | 必須 | `use` | `use` / `refresh` / `off` |
+| 23 | `cache_mode` | COMBO | 必須 | `reuse` | `reuse` / `refresh` / `disabled` |
 | 24 | `save_debug_output` | `BOOLEAN` | 任意 | false | prompt全文等の診断bundle保存 |
 
 出力順は`emd_text: STRING`、`emd: MV_DIRECTOR_EMD`（`MVD_EMD_V1`）、`status: STRING`とする。`emd_text`は通常のマルチラインSTRINGへ接続して人間が編集できる正本で、typed `emd`はcache、診断又は型付き接続用である。Compilerはtyped artifactを要求せず、編集済み`emd_text`だけで単独動作する。
@@ -795,7 +804,7 @@ Shot本文中の日本語括弧`「...」`は歌詞annotationと区別し、明�
 
 ### 9.1 処理順
 
-CompilerはRef2VA専用のEMD parser、限定翻訳orchestrator、H3 prompt renderer、JSON serializerとする。通常入力はSTRING `emd_text`、H3 timing profile、`translation_mode`、`model_name`とruntime設定である。`translation_mode=ja_to_en`では選択GGUFを内部PromptTranslator adapterで使う。初期比較候補は4Bと8Bだが特定modelへ固定しない。Image to Subject EMD、Enhancer、Planner、IMAGE、AUDIO又はworkflow graphは要求しない。
+CompilerはRef2VA専用のEMD parser、限定翻訳orchestrator、H3 prompt renderer、JSON serializerとする。通常入力はSTRING `emd_text`、H3 timing profile、`translation_mode`、`model_name`、`cache_mode`とruntime設定である。`cache_mode`は`reuse`（既定）/ `refresh` / `disabled`とし、文法検証後の成功したPlan JSONとrequired referencesだけを保存する。`translation_mode=ja_to_en`では選択GGUFを内部PromptTranslator adapterで使う。初期比較候補は4Bと8Bだが特定modelへ固定しない。Image to Subject EMD、Enhancer、Planner、IMAGE、AUDIO又はworkflow graphは要求しない。
 
 1. EMDの`# サブジェクト`、必須Scene番号annotation、Scene、Shot、`` `H3長` ``及び予約directiveを構文解析する。
 2. Subject/Picture関連、概念ID、`「...」`、明示`<d>...</d>`、annotation、音響directive、Shotの``リップシンク 歌詞``を翻訳対象から分離する。

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
 
 from ..artifacts.base import normalize_newlines
 from ..artifacts.observations import (
@@ -46,6 +47,15 @@ class _VisionParser:
         if "\x00" in content:
             raise VisionProtocolError("NUL is not allowed")
         normalized = normalize_newlines(content)
+        self.warnings: list[str] = []
+        think_match = re.match(
+            r"\A\s*<think>.*?</think>\s*",
+            normalized,
+            flags=re.DOTALL | re.IGNORECASE,
+        )
+        if think_match is not None:
+            normalized = normalized[think_match.end():]
+            self.warnings.append("removed leading closed Vision think block")
         self.lines = [line for line in normalized.split("\n") if line != ""]
         if any(line.startswith("```") for line in self.lines):
             raise VisionProtocolError("Markdown code fences are not allowed")
@@ -53,7 +63,6 @@ class _VisionParser:
             raise VisionProtocolError("H3 reference tags are not allowed")
         self.cursor = 0
         self.allow_missing_end = allow_missing_end
-        self.warnings: list[str] = []
 
     def current(self) -> str | None:
         return self.lines[self.cursor] if self.cursor < len(self.lines) else None
@@ -115,15 +124,62 @@ class _VisionParser:
         return values
 
     def parse(self) -> VisionParseResult:
-        if self.lines and _record_name(self.lines[0]) == "OVERVIEW":
-            self.lines.insert(0, VISION_PROTOCOL_ID)
-            self.warnings.append(f"normalized missing {VISION_PROTOCOL_ID}")
+        if self.lines:
+            first_name = _record_name(self.lines[0])
+            first_is_colon_overview = self.lines[0].startswith(
+                ("Overview:", "OVERVIEW:")
+            )
+            if first_name in {"OVERVIEW", "PRIMARY_SUBJECT"} or first_is_colon_overview:
+                self.lines.insert(0, VISION_PROTOCOL_ID)
+                self.warnings.append(f"normalized missing {VISION_PROTOCOL_ID}")
         if not self.lines or self.lines[0] != VISION_PROTOCOL_ID:
+            first = self.lines[0][:120] if self.lines else "<empty>"
             raise VisionProtocolError(
-                f"Vision response must start with {VISION_PROTOCOL_ID}"
+                f"Vision response must start with {VISION_PROTOCOL_ID}; "
+                f"found {first!r}"
             )
         self.cursor = 1
-        overview = self.take_scalar("OVERVIEW", allow_empty=False)
+        if (
+            (line := self.current()) is not None
+            and line.strip().casefold() == "protocol_id"
+        ):
+            self.cursor += 1
+            self.warnings.append(
+                "ignored redundant bare protocol_id after Vision protocol ID"
+            )
+        if (
+            (line := self.current()) is not None
+            and "\t" not in line
+            and not line.startswith(("Overview:", "OVERVIEW:"))
+            and _record_name(line)
+            not in {"OVERVIEW", "PRIMARY_SUBJECT", "HINT_STATUS"}
+            and self.cursor + 1 < len(self.lines)
+        ):
+            next_name = _record_name(self.lines[self.cursor + 1])
+            if next_name == "PRIMARY_SUBJECT":
+                self.lines[self.cursor] = f"OVERVIEW\t{line.strip()}"
+                self.warnings.append(
+                    f"labelled bare OVERVIEW value at line {self.cursor + 1}"
+                )
+            elif next_name == "HINT_STATUS":
+                self.lines[self.cursor] = f"PRIMARY_SUBJECT\t{line.strip()}"
+                self.warnings.append(
+                    f"labelled bare PRIMARY_SUBJECT value at line {self.cursor + 1}"
+                )
+        if (
+            (line := self.current()) is not None
+            and _record_name(line) == "PRIMARY_SUBJECT"
+        ):
+            parts = line.split("\t")
+            subject = _value(
+                parts, 1, "PRIMARY_SUBJECT", allow_empty=True
+            ) if len(parts) > 1 else ""
+            overview = f"{subject}の参照画像。" if subject else "参照画像。"
+            self.warnings.append(
+                f"normalized missing OVERVIEW before line {self.cursor + 1}"
+            )
+        else:
+            overview = self.take_scalar("OVERVIEW", allow_empty=False)
         primary_subject = self.take_scalar("PRIMARY_SUBJECT")
 
         hint_status = self.take_scalar("HINT_STATUS", allow_empty=False)

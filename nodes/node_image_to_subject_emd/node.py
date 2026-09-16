@@ -242,7 +242,9 @@ class MVDirectorImageToSubjectEMD:
                 inputs={
                     "image_sha256": prepared.image_sha256,
                     "model": pair.signature(),
-                    "request": build_vision_request(request),
+                    "request": build_vision_request(
+                        request, reference_view_count=prepared.batch_size
+                    ),
                     "system_prompt": system_prompt,
                     "runtime": config.to_dict(),
                 },

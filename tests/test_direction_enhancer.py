@@ -361,13 +361,18 @@ class DirectionEnhancerTests(unittest.TestCase):
         )
         self.assertEqual(
             set(CAMERA_PROFILES),
-            {"readable_depth", "cinematic_depth", "rhythmic_mv"},
+            {"readable_depth", "cinematic_depth", "rhythmic_mv", "arc_closeup"},
         )
+        arc = CAMERA_PROFILES["arc_closeup"]
+        self.assertIn("arc", arc)
+        self.assertIn("close-up", arc)
+        self.assertIn("時計回り・反時計回り", arc)
         self.assertEqual(len(DIRECTION_PRESETS), 3)
 
     def test_public_node_mapping_and_socket_surface(self) -> None:
         self.assertIn("MVDirectorDirectionEnhancer", NODE_CLASS_MAPPINGS)
         inputs = NODE_CLASS_MAPPINGS["MVDirectorDirectionEnhancer"].INPUT_TYPES()
+        self.assertEqual(next(iter(inputs["required"])), "retention_policy")
         self.assertIn("style_profile", inputs["required"])
         self.assertIn("n_ctx", inputs["required"])
         self.assertEqual(

@@ -115,11 +115,12 @@ class DistributableWorkflowTests(unittest.TestCase):
                     False,
                     1,
                     "randomize",
+                    "reuse",
                 ],
             )
             seed_controls = {
                 "MVDirectorImageToSubjectEMD": (21, 22),
-                "MVDirectorDirectionEnhancer": (17, 18),
+                "MVDirectorDirectionEnhancer": (18, 19),
                 "MVDirectorTimelinePlanner": (16, 17),
             }
             for node_type, (seed_index, control_index) in seed_controls.items():

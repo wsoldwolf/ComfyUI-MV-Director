@@ -109,7 +109,7 @@ class SmallModelFormattingBackend(FakePlannerBackend):
         if task == "lyric-notes":
             return "<think>protocolを確認する。</think>\n歌詞本文\tTAB\t1\tTAB\t有効な記述1"
         if task == "song-direction":
-            return "<think></think>\nDIRECTION\tTAB\tslot 1\tTAB\t有効な全曲方針"
+            return "<think></think>\nDIRECTION\tTAB\tslot1\tTAB\t有効な全曲方針"
         records = [
             f"{record_type}<TAB>{item['slot']}<TAB>有効な記述{item['slot']}"
             for item in value["slots"]
@@ -139,6 +139,17 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertIn("Never turn a stable appearance attribute into an action", prompt)
         self.assertIn("eye color", prompt)
+
+    def test_camera_prompt_distributes_arc_and_closeup_variants(self) -> None:
+        prompt = (
+            Path(__file__).parents[1]
+            / "prompts"
+            / "timeline_planner_cameras_system_prompt.txt"
+        ).read_text(encoding="utf-8")
+        self.assertIn("vary movement direction, radius, height, distance", prompt)
+        self.assertIn("use an arc in most supplied slots", prompt)
+        self.assertIn("face close-up arc", prompt)
+        self.assertIn("without inventing cuts", prompt)
 
     def test_passthrough_retention_is_rendered_exactly(self) -> None:
         template = parse_template_emd(TEMPLATE)
@@ -471,6 +482,10 @@ class TimelinePlannerNodeTests(unittest.TestCase):
         inputs = cls.INPUT_TYPES()
         self.assertTrue(inputs["required"]["template_emd"][1]["forceInput"])
         self.assertEqual(inputs["required"]["lip_sync_mode"][1]["default"], "lyrics")
+        self.assertEqual(
+            inputs["required"]["cache_mode"],
+            (["reuse", "refresh", "disabled"], {"default": "reuse"}),
+        )
         self.assertEqual(
             inputs["required"]["seed"][1]["control_after_generate"],
             "randomize",

@@ -11,9 +11,12 @@ from .errors import LyricSegmentationError
 
 
 _SECTION_RE = re.compile(
-    r"\[([A-Z][A-Z0-9_-]*)\]\Z",
+    r"\[[ \t\u3000]*"
+    r"([A-Z][A-Z0-9_-]*(?:[ \t\u3000]+[A-Z0-9][A-Z0-9_-]*)*)"
+    r"[ \t\u3000]*\]\Z",
     re.IGNORECASE | re.ASCII,
 )
+_SECTION_SPACE_RE = re.compile(r"[ \t\u3000]+")
 _ATOMIC_RE = re.compile(r"[^ \t\u3000]+")
 _LRC_RE = re.compile(r"\[[0-9]{1,3}:[0-5][0-9](?:[.:][0-9]{1,3})?\]")
 _SRT_TIME_RE = re.compile(
@@ -71,7 +74,9 @@ def parse_plain_lyrics(text: str) -> tuple[SourceLyricSegment, ...]:
         saw_nonempty = True
         section_match = _SECTION_RE.fullmatch(line)
         if section_match:
-            current_section = section_match.group(1).upper()
+            current_section = _SECTION_SPACE_RE.sub(
+                "_", section_match.group(1)
+            ).upper()
             continue
         if current_section is None:
             raise LyricSegmentationError(

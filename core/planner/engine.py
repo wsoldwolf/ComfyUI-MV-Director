@@ -95,7 +95,7 @@ def _normalize_small_model_response(response: str, record_type: str) -> str:
     normalized = normalize_newlines(response)
     normalized = re.sub(r"<think>.*?</think>", "", normalized, flags=re.DOTALL)
     labelled_slot_line = re.compile(
-        rf"^{re.escape(record_type)}\t(?:TAB\t)?slot\s+([0-9]+)\t(?:TAB\t)?(.+)$",
+        rf"^{re.escape(record_type)}\t(?:TAB\t)?slot\s*([0-9]+)\t(?:TAB\t)?(.+)$",
         flags=re.MULTILINE | re.IGNORECASE,
     )
     normalized = labelled_slot_line.sub(

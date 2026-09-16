@@ -46,7 +46,7 @@ EMDは**Easy MarkDown**の略です。Extended Markdownではありません。�
 
 初期自動MV経路の必須入力は歌詞、ボーカルステム、フルミックスです。参照画像は任意です。`# サブジェクト`直下は1 list item＝1 Subjectで、行順から`<Subject 1..4>`を導出します。外部参照は行頭の``画像N``、``動画N``、``音声N``で任意指定し、参照なしの行もH3内蔵概念として有効です。PlannerはMV専用で、既定では`lip_sync_mode=lyrics`として歌詞方式のリップシンクdirectiveを出します。標準配布は三方式ごとのPlan/Compiler WFと動画生成WFを一対一にした計6 WFで、最終音声方針は後者が所有します。T2VA、I2VA等は現在のCompilerの責務外です。ユーザー希望は空でも構いません。
 
-画像に写っていない重要特徴をVisionへ推測させません。Image to Subject EMDには`subject_hint`と`additional_instruction`の独立STRING socketを設け、`analysis_profile`、`hint_mode`、`hint_conflict`、`picture_reference_mode`、`concept_type`、Picture番号も外部接続可能にします。Subject番号はfragment内の行順から決まるためsocketを持ちません。名前付きプレフィクスは不要で、`淡い金色の短い丸眉で、狐の尾は一本です。`のような日本語自然文をそのまま入力します。旧`subject_hint:`形式を検出・除去する互換parserは設けません。顔や衣装の重要条件を利用者が明示した場合は、観察結果とprovenanceを分けて全体方針へ統合します。
+画像に写っていない重要特徴をVisionへ推測させません。人物の設定画又は最大9枚のIMAGE batchに含まれる立ち絵、顔、側面、背面は、明らかに別人でない限り一人のキャラクターの複数ビューとして統合します。Image to Subject EMDには`subject_hint`と`additional_instruction`の独立STRING socketを設け、`analysis_profile`、`hint_mode`、`hint_conflict`、`picture_reference_mode`、`concept_type`、Picture番号も外部接続可能にします。Subject番号はfragment内の行順から決まるためsocketを持ちません。名前付きプレフィクスは不要で、`淡い金色の短い丸眉で、狐の尾は一本です。`のような日本語自然文をそのまま入力します。旧`subject_hint:`形式を検出・除去する互換parserは設けません。顔や衣装の重要条件を利用者が明示した場合は、観察結果とprovenanceを分けて全体方針へ統合します。
 
 ## 対象環境
 

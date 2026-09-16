@@ -3,6 +3,7 @@ from tempfile import TemporaryDirectory
 import unittest
 
 from core.inference import LlamaRuntimeConfig
+from core.protocols import VisionProtocolError
 from core.vision import (
     LlamaCppVisionLifecycle,
     PreparedVisionImage,
@@ -11,9 +12,11 @@ from core.vision import (
     discover_vision_model_pairs,
     observe_image,
     pixel_fingerprint,
+    prepare_comfy_image,
     resolve_picture_binding,
     resolve_vision_model_pair,
 )
+from core.vision.image_to_subject import build_vision_request
 from nodes import NODE_CLASS_MAPPINGS
 from nodes.common import (
     NO_VISION_MODELS,
@@ -37,6 +40,16 @@ class FakeObserver:
     def complete_observation(self, **kwargs):
         self.calls.append(kwargs)
         return self.response
+
+
+class SequenceObserver:
+    def __init__(self, *responses: str) -> None:
+        self.responses = list(responses)
+        self.calls = []
+
+    def complete_observation(self, **kwargs):
+        self.calls.append(kwargs)
+        return self.responses.pop(0)
 
 
 class FakeHandler:
@@ -100,6 +113,39 @@ class VisionPhase3Tests(unittest.TestCase):
         )
         with self.assertRaises(ValueError):
             pixel_fingerprint(b"\x00", width=1, height=1, channels=3)
+
+    def test_reference_view_request_consolidates_one_identity(self) -> None:
+        request = build_vision_request(
+            VisionObservationRequest(), reference_view_count=3
+        )
+        self.assertIn("3 reference views", request)
+        self.assertIn("one unique PRIMARY_SUBJECT", request)
+        prompt = (
+            Path(__file__).resolve().parents[1]
+            / "prompts"
+            / "vision_observation_system_prompt.txt"
+        ).read_text(encoding="utf-8")
+        self.assertIn("character sheet", prompt)
+        self.assertIn("rear views as one unique PRIMARY_SUBJECT", prompt)
+
+    def test_image_batch_is_composed_as_one_reference_sheet(self) -> None:
+        try:
+            import torch
+        except ImportError:
+            self.skipTest("torch is unavailable")
+        first = torch.zeros((2, 16, 12, 3), dtype=torch.float32)
+        first[1, :, :, 0] = 1.0
+        prepared = prepare_comfy_image(first, 256)
+        self.assertEqual(prepared.batch_size, 2)
+        self.assertGreater(prepared.analysis_width, prepared.source_width)
+        self.assertGreater(prepared.analysis_height, prepared.source_height)
+        self.assertIn("one character reference sheet", prepared.warnings[0])
+        second = first.clone()
+        second[1, 0, 0, 1] = 1.0
+        self.assertNotEqual(
+            prepared.image_sha256,
+            prepare_comfy_image(second, 256).image_sha256,
+        )
 
     def test_discovers_model_and_best_same_directory_projector(self) -> None:
         with TemporaryDirectory() as temporary:
@@ -181,6 +227,43 @@ class VisionPhase3Tests(unittest.TestCase):
         self.assertEqual(stored.image_sha256, "a" * 64)
         self.assertEqual(stored.target_node_id, "42")
 
+    def test_invalid_compact_response_gets_one_format_only_retry(self) -> None:
+        backend = SequenceObserver(
+            "MVD_VISION_OBSERVATION_LINES_V2\t人物\tnot_used",
+            FIXTURE.read_text(encoding="utf-8"),
+        )
+        prepared = PreparedVisionImage(
+            "data:image/png;base64,AAAA", "c" * 64, 1, 1, 1, 1, 3, 1
+        )
+        observations, warnings = observe_image(
+            backend,
+            prepared=prepared,
+            request=VisionObservationRequest(subject_hint="眉は金色です。"),
+            model_identity={},
+            system_prompt="fixed prompt",
+            runtime_config=LlamaRuntimeConfig(),
+        )
+        self.assertEqual(observations.primary_subject, "長い黒髪の人物")
+        self.assertEqual(len(backend.calls), 2)
+        self.assertIn("FORMAT RETRY", backend.calls[1]["request"])
+        self.assertTrue(any("format-only retry" in item for item in warnings))
+
+    def test_format_retry_stops_after_second_invalid_response(self) -> None:
+        backend = SequenceObserver("broken", "still broken")
+        prepared = PreparedVisionImage(
+            "data:image/png;base64,AAAA", "d" * 64, 1, 1, 1, 1, 3, 1
+        )
+        with self.assertRaisesRegex(VisionProtocolError, "format retry failed"):
+            observe_image(
+                backend,
+                prepared=prepared,
+                request=VisionObservationRequest(),
+                model_identity={},
+                system_prompt="fixed prompt",
+                runtime_config=LlamaRuntimeConfig(),
+            )
+        self.assertEqual(len(backend.calls), 2)
+
     def test_observe_only_does_not_send_or_render_hint(self) -> None:
         response = FIXTURE.read_text(encoding="utf-8").replace(
             "HINT_STATUS\tconsistent",
@@ -242,6 +325,8 @@ class VisionPhase3Tests(unittest.TestCase):
                 interrupt_callback=lambda: interrupts.append(True),
             )
             self.assertEqual(output, "MVD_RESULT")
+            user_content = first.completion_kwargs["messages"][1]["content"]
+            self.assertEqual(user_content[0]["text"], "/no_think\nrequest")
             self.assertGreaterEqual(len(interrupts), 3)
             self.assertEqual(first.reset_count, 1)
             lifecycle.clear()

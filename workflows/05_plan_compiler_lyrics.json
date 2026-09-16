@@ -371,6 +371,7 @@
         "Node name for S&R": "MVDirectorDirectionEnhancer"
       },
       "widgets_values": [
+        "profile",
         "",
         "illust_to_photoreal",
         "natural_performance",
@@ -390,8 +391,7 @@
         false,
         1,
         "randomize",
-        "reuse",
-        "profile"
+        "reuse"
       ]
     },
     {
@@ -474,7 +474,7 @@
         1,
         "randomize",
         3,
-        "use",
+        "reuse",
         false
       ]
     },
@@ -544,7 +544,8 @@
         true,
         false,
         1,
-        "randomize"
+        "randomize",
+        "reuse"
       ]
     },
     {

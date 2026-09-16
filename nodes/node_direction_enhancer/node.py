@@ -134,6 +134,7 @@ class MVDirectorDirectionEnhancer:
         models = gguf_model_choices()
         return {
             "required": {
+                "retention_policy": (list(RETENTION_POLICIES), {"default": "profile"}),
                 "user_request": ("STRING", {"default": "", "multiline": True}),
                 "style_profile": ([*STYLE_PROFILES, PASSTHROUGH_PROFILE], {"default": "reference_anime"}),
                 "motion_profile": ([*MOTION_PROFILES, PASSTHROUGH_PROFILE], {"default": "natural_performance"}),
@@ -161,7 +162,6 @@ class MVDirectorDirectionEnhancer:
                     },
                 ),
                 "cache_mode": (list(CACHE_MODES), {"default": "reuse"}),
-                "retention_policy": (list(RETENTION_POLICIES), {"default": "profile"}),
             },
             "optional": {
                 "concept_emd": ("STRING", {"default": "", "multiline": True}),

@@ -46,10 +46,20 @@ class PlainLyricsTests(unittest.TestCase):
             [("千年鳥居", "CHORUS"), ("月明かり", "BRIDGE_A")],
         )
 
+    def test_section_headings_allow_and_normalize_inner_whitespace(self) -> None:
+        segments = parse_plain_lyrics(
+            "[ Verse 1 ]\n千年鳥居\n[Chorus　]\n月明かり\n"
+        )
+        self.assertEqual(
+            [(item.text, item.section) for item in segments],
+            [("千年鳥居", "VERSE_1"), ("月明かり", "CHORUS")],
+        )
+
     def test_rejects_non_plain_metadata(self) -> None:
         invalid = (
             "歌詞\n[VERSE1]\n歌詞",
             " [VERSE1]\n歌詞",
+            "[VERSE1] \n歌詞",
             "[VERSE1]\n[00:01.00]歌詞",
             "[VERSE1]\n00:00:01,000 --> 00:00:02,000",
             "[VERSE1]\n// comment",

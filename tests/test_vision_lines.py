@@ -9,6 +9,19 @@ FIXTURE = Path(__file__).parent / "fixtures" / "protocol" / "vision_observation_
 
 
 class VisionLineProtocolTests(unittest.TestCase):
+    def test_redundant_bare_protocol_id_after_header_is_ignored(self) -> None:
+        source = FIXTURE.read_text(encoding="utf-8").replace(
+            "MVD_VISION_OBSERVATION_LINES_V2\n",
+            "MVD_VISION_OBSERVATION_LINES_V2\nprotocol_id\n",
+            1,
+        )
+        result = parse_vision_observations(source)
+        self.assertEqual(result.observations.primary_subject, "長い黒髪の人物")
+        self.assertIn(
+            "ignored redundant bare protocol_id after Vision protocol ID",
+            result.warnings,
+        )
+
     def test_canonical_fixture_builds_observations(self) -> None:
         result = parse_vision_observations(FIXTURE.read_text(encoding="utf-8"))
         observations = result.observations
@@ -47,6 +60,90 @@ class VisionLineProtocolTests(unittest.TestCase):
         self.assertEqual(result.observations.primary_subject, "長い黒髪の人物")
         self.assertTrue(any("normalized missing" in item for item in result.warnings))
 
+    def test_missing_protocol_and_overview_are_restored_before_primary_subject(self) -> None:
+        source = (
+            FIXTURE.read_text(encoding="utf-8")
+            .replace("MVD_VISION_OBSERVATION_LINES_V2\n", "", 1)
+            .replace("OVERVIEW\t夜の神社に人物が立っている。\n", "", 1)
+        )
+        result = parse_vision_observations(source)
+        self.assertEqual(result.observations.overview, "長い黒髪の人物の参照画像。")
+        self.assertEqual(result.observations.primary_subject, "長い黒髪の人物")
+        self.assertTrue(
+            any("MVD_VISION_OBSERVATION_LINES_V2" in item for item in result.warnings)
+        )
+        self.assertTrue(
+            any("missing OVERVIEW" in item for item in result.warnings)
+        )
+
+    def test_missing_protocol_before_colon_overview_is_restored(self) -> None:
+        source = (
+            FIXTURE.read_text(encoding="utf-8")
+            .replace("MVD_VISION_OBSERVATION_LINES_V2\n", "", 1)
+            .replace(
+                "OVERVIEW\t夜の神社に人物が立っている。",
+                "Overview: 夜の神社に人物が立っている。",
+                1,
+            )
+        )
+        result = parse_vision_observations(source)
+        self.assertEqual(result.observations.overview, "夜の神社に人物が立っている。")
+        self.assertTrue(any("colon-form OVERVIEW" in item for item in result.warnings))
+
+    def test_leading_closed_think_block_is_removed(self) -> None:
+        source = (
+            "<think>画像を分析する。</think>\n"
+            + FIXTURE.read_text(encoding="utf-8")
+        )
+        result = parse_vision_observations(source)
+        self.assertEqual(result.observations.primary_subject, "長い黒髪の人物")
+        self.assertTrue(any("think block" in item for item in result.warnings))
+
+    def test_unknown_leading_commentary_reports_bounded_prefix(self) -> None:
+        with self.assertRaisesRegex(
+            VisionProtocolError, "found 'Here are the records:'"
+        ):
+            parse_vision_observations(
+                "Here are the records:\n"
+                + FIXTURE.read_text(encoding="utf-8")
+            )
+
+    def test_bare_overview_is_labelled_when_primary_subject_follows(self) -> None:
+        source = FIXTURE.read_text(encoding="utf-8").replace(
+            "OVERVIEW\t夜の神社に人物が立っている。",
+            "夜の神社に人物が立っている。",
+            1,
+        )
+        result = parse_vision_observations(source)
+        self.assertEqual(result.observations.overview, "夜の神社に人物が立っている。")
+        self.assertTrue(any("bare OVERVIEW" in item for item in result.warnings))
+
+    def test_bare_primary_subject_without_overview_is_labelled_by_position(self) -> None:
+        source = (
+            FIXTURE.read_text(encoding="utf-8")
+            .replace("OVERVIEW\t夜の神社に人物が立っている。\n", "", 1)
+            .replace("PRIMARY_SUBJECT\t長い黒髪の人物", "人物", 1)
+        )
+        result = parse_vision_observations(source)
+        self.assertEqual(result.observations.overview, "人物の参照画像。")
+        self.assertEqual(result.observations.primary_subject, "人物")
+        self.assertTrue(
+            any("bare PRIMARY_SUBJECT" in item for item in result.warnings)
+        )
+
+    def test_bare_unknown_line_is_not_labelled_without_structural_lookahead(self) -> None:
+        source = FIXTURE.read_text(encoding="utf-8").replace(
+            "OVERVIEW\t夜の神社に人物が立っている。",
+            "任意の説明文",
+            1,
+        ).replace(
+            "PRIMARY_SUBJECT\t長い黒髪の人物",
+            "SUBJECT_POSE\t正面",
+            1,
+        )
+        with self.assertRaises(VisionProtocolError):
+            parse_vision_observations(source)
+
     def test_colon_form_overview_is_normalized_without_relaxing_other_records(self) -> None:
         source = FIXTURE.read_text(encoding="utf-8").replace(
             "OVERVIEW\t夜の神社に人物が立っている。",
@@ -55,6 +152,19 @@ class VisionLineProtocolTests(unittest.TestCase):
         result = parse_vision_observations(source)
         self.assertEqual(result.observations.overview, "夜の神社に人物が立っている。")
         self.assertTrue(any("colon-form OVERVIEW" in item for item in result.warnings))
+
+    def test_missing_overview_before_primary_subject_gets_neutral_summary(self) -> None:
+        source = FIXTURE.read_text(encoding="utf-8").replace(
+            "OVERVIEW\t夜の神社に人物が立っている。\n",
+            "",
+            1,
+        )
+        result = parse_vision_observations(source)
+        self.assertEqual(result.observations.overview, "長い黒髪の人物の参照画像。")
+        self.assertEqual(result.observations.primary_subject, "長い黒髪の人物")
+        self.assertTrue(
+            any("normalized missing OVERVIEW" in item for item in result.warnings)
+        )
 
     def test_fixed_record_names_accept_case_and_separator_normalization(self) -> None:
         source = (

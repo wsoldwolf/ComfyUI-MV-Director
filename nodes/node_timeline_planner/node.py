@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 import threading
 from typing import Any
@@ -45,7 +46,10 @@ except ImportError:  # Standalone repository tests.
 from ..common import gguf_model_choices, resolve_comfy_gguf_model
 
 
-CACHE_MODES = ("use", "refresh", "off")
+_LOGGER = logging.getLogger(__name__)
+
+
+CACHE_MODES = ("reuse", "refresh", "disabled")
 CHAT_FORMATS = ("auto", "qwen", "gemma")
 LIP_SYNC_MODES = ("off", "context_loop", "audio_reference", "lyrics")
 _PROMPT_FILES = {
@@ -183,7 +187,7 @@ class MVDirectorTimelinePlanner:
                     },
                 ),
                 "scenes_per_batch": ("INT", {"default": 3, "min": 1, "max": 6}),
-                "cache_mode": (list(CACHE_MODES), {"default": "use"}),
+                "cache_mode": (list(CACHE_MODES), {"default": "reuse"}),
             },
             "optional": {
                 "concept_emd": ("STRING", {"default": "", "multiline": True, "forceInput": True}),
@@ -222,7 +226,7 @@ class MVDirectorTimelinePlanner:
     ) -> Any:
         with self._lock:
             if cache_mode not in CACHE_MODES:
-                raise ValueError("cache_mode must be use, refresh, or off")
+                raise ValueError("cache_mode must be reuse, refresh, or disabled")
             if lip_sync_mode not in LIP_SYNC_MODES:
                 raise ValueError("unknown lip_sync_mode")
             if chat_format not in CHAT_FORMATS:
@@ -270,9 +274,11 @@ class MVDirectorTimelinePlanner:
                 },
             )
             cache = _cache()
-            cached = cache.get(key) if cache_mode == "use" and cache else None
+            cached = cache.get(key) if cache_mode == "reuse" and cache else None
             self._backend.reset_trace()
-            cache_status = "hit" if cached else ("miss" if cache_mode == "use" else cache_mode)
+            cache_status = "hit" if cached else (
+                "miss" if cache_mode == "reuse" else cache_mode
+            )
             content: PlannerContent | None = None
             missing: tuple[tuple[str, int, int], ...] = ()
             if cached and isinstance(cached.get("content"), dict):
@@ -293,7 +299,7 @@ class MVDirectorTimelinePlanner:
                         runtime_config=config,
                         interrupt_callback=_interrupt,
                     )
-                    if content is not None and cache_mode in {"use", "refresh"} and cache is not None:
+                    if content is not None and cache_mode in {"reuse", "refresh"} and cache is not None:
                         cache.put_success(key, {"content": content.to_dict()})
                 finally:
                     if not keep_model_loaded:
@@ -335,6 +341,7 @@ class MVDirectorTimelinePlanner:
                     "Timeline Planner did not produce a complete EMD; "
                     f"{status}. Compiler execution was blocked."
                 )
+                _LOGGER.error(message)
                 try:
                     from comfy_execution.graph import ExecutionBlocker  # type: ignore
                 except Exception as exc:

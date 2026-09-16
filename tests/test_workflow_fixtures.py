@@ -44,7 +44,7 @@ class WorkflowFixtureTests(unittest.TestCase):
         self.assertNotIn("MVDirectorImageToSubjectEMD", types)
         self.assertNotIn("MVDirectorTimelinePlanner", types)
         self.assertEqual(nodes[3]["type"], "MVDirectorEMDCompiler")
-        self.assertEqual(nodes[3]["widgets_values"][-1], "randomize")
+        self.assertEqual(nodes[3]["widgets_values"][-2:], ["randomize", "reuse"])
         self.assertIn([4, 3, 0, 5, 1, "STRING"], workflow["links"])
         encoded, basename, metadata = nodes[1]["widgets_values"]
         emd = decode_embedded_text(encoded, basename, metadata)

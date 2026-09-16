@@ -60,9 +60,11 @@ Plannerの入力は表示順に、必須`template_emd`、任意`concept_emd`、�
 
 Direction artifactは新しい公開node又はユーザー記述形式ではなく、EnhancerからPlannerへ四方向と最小provenanceを曖昧なく渡すcustom socket値である。Enhancerは同内容の`direction_emd_preview`も返すが、Plannerはpreviewを再parseしない。artifactが未接続でも動作する。
 
+Direction Enhancerでは`retention_policy`を先頭widgetに置く。LLM利用nodeの`cache_mode`は`reuse` / `refresh` / `disabled`へ統一する。
+
 ### 1.6 EMD Compilerのsocket
 
-`MVDirectorEMDCompiler`は必須`emd_text`、`translation_mode`、GGUF `model_name`、`chat_format`、`steps`、`max_tokens`、`temperature`、`top_p`、`repetition_penalty`、`gpu_layers`、`n_batch`、`n_ctx`、`flash_attn`、`kv_cache_type`、`op_offload`、`keep_model_loaded`、`seed`と、任意`MV_DIRECTOR_H3_TIMING_PROFILE`を受ける。`translation_mode`は`ja_to_en`を既定とし、`already_english`ではmodel選択値が空又はstaleでもGGUFをresolve又はloadしない。Compiler独自のcache、repair、retry、意味監査又はgraph inspectionは設けない。
+`MVDirectorEMDCompiler`は必須`emd_text`、`translation_mode`、GGUF `model_name`、`chat_format`、`steps`、`max_tokens`、`temperature`、`top_p`、`repetition_penalty`、`gpu_layers`、`n_batch`、`n_ctx`、`flash_attn`、`kv_cache_type`、`op_offload`、`keep_model_loaded`、`seed`、`cache_mode`と、任意`MV_DIRECTOR_H3_TIMING_PROFILE`を受ける。`cache_mode`は`reuse`（既定）/ `refresh` / `disabled`とする。`translation_mode`は`ja_to_en`を既定とし、`already_english`ではmodel選択値が空又はstaleでもGGUFをresolve又はloadしない。Compilerは成功したPlan JSONとrequired referencesだけをcacheし、失敗、repair、意味監査又はgraph inspectionを保存しない。
 
 出力は`plan_json: STRING`、`required_references: MV_DIRECTOR_REQUIRED_REFERENCES`、`status: STRING`の順とする。`plan_json`はUnicode非escape、key sort、2 space indent、LF改行、末尾LFのpretty-printed JSONとする。文法不正は行番号を持つ`EMDParseError`として停止し、空Plan又は補正文を返さない。日本語翻訳応答は`TRANSLATION<TAB>SLOT<TAB>TEXT`だけを受理し、contextに収まり、かつ7 unit以下となる最大の連続unit群へ有限分割する。欠落、重複、未知行又は破損行はretryせず停止する。
 

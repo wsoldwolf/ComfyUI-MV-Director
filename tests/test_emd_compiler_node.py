@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
 from core.compiler import CompilerError, LlamaPromptTranslator
 from core.emd import EMDParseError
-from core.inference import LlamaRuntimeConfig, TokenCount
+from core.inference import LlamaRuntimeConfig, SuccessCache, TokenCount
 from nodes import NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS
 
 
@@ -211,7 +212,7 @@ class EMDCompilerNodeTests(unittest.TestCase):
             "randomize",
         )
         self.assertIn("h3_timing_profile", inputs["optional"])
-        self.assertNotIn("cache_mode", inputs["required"])
+        self.assertEqual(inputs["required"]["cache_mode"][1]["default"], "reuse")
 
     def test_already_english_does_not_resolve_or_load_a_model(self) -> None:
         cls = NODE_CLASS_MAPPINGS["MVDirectorEMDCompiler"]
@@ -243,6 +244,60 @@ class EMDCompilerNodeTests(unittest.TestCase):
         self.assertEqual(lifecycle.ensure_calls, 0)
         self.assertEqual(lifecycle.clear_calls, 1)
 
+    def test_success_cache_round_trips_plan_and_references(self) -> None:
+        cls = NODE_CLASS_MAPPINGS["MVDirectorEMDCompiler"]
+        node = cls()
+        lifecycle = FakeLifecycle()
+        node._lifecycle = lifecycle
+        with TemporaryDirectory() as temporary, patch(
+            "nodes.node_emd_compiler.node._cache",
+            return_value=SuccessCache(Path(temporary)),
+        ):
+            first = node.compile_emd(
+                ENGLISH_EMD,
+                "already_english",
+                "(no GGUF models found)",
+                "auto",
+                20,
+                64,
+                0.1,
+                0.9,
+                1.05,
+                -1,
+                256,
+                32768,
+                True,
+                "q8_0",
+                True,
+                False,
+                1,
+                "reuse",
+            )
+            second = node.compile_emd(
+                ENGLISH_EMD,
+                "already_english",
+                "(no GGUF models found)",
+                "auto",
+                20,
+                64,
+                0.1,
+                0.9,
+                1.05,
+                -1,
+                256,
+                32768,
+                True,
+                "q8_0",
+                True,
+                False,
+                1,
+                "reuse",
+            )
+        self.assertEqual(first[:2], second[:2])
+        self.assertIn("cache=miss", first[2])
+        self.assertIn("cache=hit", second[2])
+        self.assertEqual(lifecycle.ensure_calls, 0)
+
     def test_ja_to_en_uses_selected_model_and_internal_translator(self) -> None:
         source = ENGLISH_EMD.replace(
             "A person wearing a white coat.", "白いコートを着た人物。"
@@ -251,7 +306,13 @@ class EMDCompilerNodeTests(unittest.TestCase):
         node = cls()
         lifecycle = FakeLifecycle()
         node._lifecycle = lifecycle
-        model = SimpleNamespace(path=Path("selected.gguf"))
+        model = SimpleNamespace(
+            path=Path("selected.gguf"),
+            selection_id="selected.gguf",
+            fingerprint="f" * 64,
+            size=123,
+            mtime_ns=456,
+        )
         with patch(
             "nodes.node_emd_compiler.node.resolve_comfy_gguf_model",
             return_value=model,
