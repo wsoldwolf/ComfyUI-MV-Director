@@ -25,9 +25,10 @@ ENGLISH_EMD = """# サブジェクト
 
 
 class FakeLifecycle:
-    def __init__(self, *, invalid_response: bool = False) -> None:
+    def __init__(self, *, invalid_response: bool = False, small_model_format: bool = False) -> None:
         self.effective_n_ctx = 1120
         self.invalid_response = invalid_response
+        self.small_model_format = small_model_format
         self.chat_calls: list[dict[str, object]] = []
         self.ensure_calls = 0
         self.clear_calls = 0
@@ -36,8 +37,21 @@ class FakeLifecycle:
         return TokenCount(10 + prompt.count('"slot":') * 20, False)
 
     def complete_chat(self, messages, config, interrupt_callback=None):
-        payload = json.loads(messages[-1]["content"])
+        content = messages[-1]["content"]
+        if not content.startswith("/no_think\n"):
+            raise AssertionError("translation request must disable thinking")
+        payload = json.loads(content.removeprefix("/no_think\n"))
         self.chat_calls.append(payload)
+        if self.small_model_format:
+            rows = [
+                f"EN:{item['text']}<TAB>{item['slot']}<TAB>EN:{item['text']}"
+                for item in payload["slots"]
+            ]
+            return (
+                "<think>translate every slot</think>\n"
+                "TRANSLATION<TAB>SLOT<TAB>ENGLISH_TEXT\n"
+                + "\n".join(rows)
+            )
         rows = [
             f"TRANSLATION\t{item['slot']}\tEN:{item['text']}"
             for item in reversed(payload["slots"])
@@ -54,6 +68,17 @@ class FakeLifecycle:
 
 
 class LlamaPromptTranslatorTests(unittest.TestCase):
+    def test_qwen4b_thinking_header_and_literal_tabs_are_normalized(self) -> None:
+        lifecycle = FakeLifecycle(small_model_format=True)
+        translator = LlamaPromptTranslator(
+            lifecycle,
+            system_prompt="translate",
+            runtime_config=LlamaRuntimeConfig(max_tokens=32, n_ctx=1100),
+        )
+        translated = translator.translate(("一", "二"))
+        self.assertEqual(translated, ("EN:一", "EN:二"))
+        self.assertEqual(translator.batch_count, 1)
+
     def test_finite_batches_preserve_original_unit_order(self) -> None:
         lifecycle = FakeLifecycle()
         translator = LlamaPromptTranslator(

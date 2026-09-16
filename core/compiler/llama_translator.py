@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+import re
 from typing import Any
 
-from ..artifacts import canonical_json
+from ..artifacts import canonical_json, normalize_newlines
 from ..inference import (
     ContextBudgetError,
     LlamaCppLifecycle,
@@ -16,8 +17,54 @@ from ..protocols import parse_llm_records
 from .errors import CompilerError
 
 
-TRANSLATION_PROMPT_VERSION = "mvd-prompt-translation-ja-en-v1"
+TRANSLATION_PROMPT_VERSION = "mvd-prompt-translation-ja-en-v2"
 TRANSLATION_RECORD_TYPE = "TRANSLATION"
+
+
+def _normalize_small_model_response(response: str) -> str:
+    """Normalize observed Qwen3-4B separators without changing slot identity."""
+
+    normalized = normalize_newlines(response)
+    normalized = re.sub(r"<think>.*?</think>", "", normalized, flags=re.DOTALL)
+    normalized = "\n".join(
+        line
+        for line in normalized.split("\n")
+        if line.strip()
+        not in {
+            "TRANSLATION<TAB>SLOT<TAB>ENGLISH_TEXT",
+            "TRANSLATION\tSLOT\tENGLISH_TEXT",
+        }
+    )
+    labelled_slot_line = re.compile(
+        r"^TRANSLATION\t(?:TAB\t)?slot\s+([0-9]+)\t(?:TAB\t)?(.+)$",
+        flags=re.MULTILINE | re.IGNORECASE,
+    )
+    normalized = labelled_slot_line.sub(
+        lambda match: f"{TRANSLATION_RECORD_TYPE}\t{match.group(1)}\t{match.group(2)}",
+        normalized,
+    )
+    literal_tab_line = re.compile(
+        r"^[^\n]*?<TAB>([0-9]+)<TAB>(.+)$",
+        flags=re.MULTILINE,
+    )
+    normalized = literal_tab_line.sub(
+        lambda match: f"{TRANSLATION_RECORD_TYPE}\t{match.group(1)}\t{match.group(2)}",
+        normalized,
+    )
+    tab_label_line = re.compile(
+        r"^[^\n\t]*\tTAB\t([0-9]+)\tTAB\t(.+)$",
+        flags=re.MULTILINE,
+    )
+    normalized = tab_label_line.sub(
+        lambda match: f"{TRANSLATION_RECORD_TYPE}\t{match.group(1)}\t{match.group(2)}",
+        normalized,
+    )
+    normalized = re.sub(
+        r"\tTRANSLATION\t([0-9]+)\t",
+        r"\nTRANSLATION\t\1\t",
+        normalized,
+    )
+    return normalized
 
 
 class LlamaPromptTranslator:
@@ -55,7 +102,7 @@ class LlamaPromptTranslator:
         )
 
     def _check_budget(self, units: Sequence[str]) -> bool:
-        payload = self._payload(units)
+        payload = f"/no_think\n{self._payload(units)}"
         count = self.lifecycle.count_serialized_prompt(
             self.system_prompt + "\n" + payload
         )
@@ -79,7 +126,7 @@ class LlamaPromptTranslator:
         if accepted:
             return accepted
 
-        payload = self._payload(remaining[:1])
+        payload = f"/no_think\n{self._payload(remaining[:1])}"
         count = self.lifecycle.count_serialized_prompt(
             self.system_prompt + "\n" + payload
         )
@@ -92,7 +139,7 @@ class LlamaPromptTranslator:
         raise AssertionError("unreachable context budget state")
 
     def _translate_batch(self, units: Sequence[str]) -> tuple[str, ...]:
-        payload = self._payload(units)
+        payload = f"/no_think\n{self._payload(units)}"
         count = self.lifecycle.count_serialized_prompt(
             self.system_prompt + "\n" + payload
         )
@@ -112,7 +159,7 @@ class LlamaPromptTranslator:
         )
         slots = frozenset(range(1, len(units) + 1))
         parsed = parse_llm_records(
-            response,
+            _normalize_small_model_response(response),
             allowed_slots={TRANSLATION_RECORD_TYPE: slots},
             required=frozenset((TRANSLATION_RECORD_TYPE, slot) for slot in slots),
         )

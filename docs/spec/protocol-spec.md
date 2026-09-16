@@ -211,7 +211,7 @@ issue reasonは`field_count`、`unknown_type`、`invalid_slot`、`unknown_slot`�
 | cameras | `CAMERA` | side tableの全slot |
 | translation-ja-en | `TRANSLATION` | batch内の全slot |
 
-Compilerの`translation-ja-en`は描写文の一対一翻訳だけを返し、欠落、重複、未知行又は破損行があれば修復・retryせず停止する。slotは各有限batch内で1から振り直し、Pythonが元のtranslation unit順へ戻す。入力JSONはPython所有であり、LLMへJSON出力を要求しない。
+Compilerの`translation-ja-en`は描写文の一対一翻訳だけを返し、欠落、重複、未知行又は破損行があれば修復・retryせず停止する。slotは各有限batch内で1から振り直し、Pythonが元のtranslation unit順へ戻す。入力JSONはPython所有であり、LLMへJSON出力を要求しない。Qwen3-4Bへはuser message先頭で`/no_think`を指定する。Compiler翻訳に限り、閉じた`<think>...</think>`、文字列`<TAB>`又はTABで囲まれた`TAB`ラベル、`slot N`表記、及び一物理行へ連結された既知`TRANSLATION` recordをparser前に決定論的に正規化する。実測形式の先頭に英訳文が複製されていても、数値slot後の英訳文だけを採用する。slot番号、protected token又は英訳本文の意味は修復しない。
 
 ### 9.3 Compiler翻訳保護token
 
