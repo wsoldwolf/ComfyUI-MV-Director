@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import json
 import unittest
+from pathlib import Path
 
 from core.artifacts import DirectionArtifact
+from core.compiler import compile_ref2va
+from core.direction import STYLE_PROFILES
 from core.emd import parse_emd
 from core.inference import LlamaRuntimeConfig
 from core.planner import (
@@ -32,6 +35,14 @@ TEMPLATE = """> `シーン` 1
 
 CONCEPT = """# サブジェクト
 * `画像1` 主人公。長い黒髪と白い衣装を持つ人物。
+"""
+
+INSTRUMENTAL_TAIL = """
+> `シーン` 2
+# シーン 00:10.125 --> 00:11.833
+* `H3長` 56
+## ショット 00:10.125
+* 未計画
 """
 
 
@@ -80,6 +91,11 @@ class DialogueOnlyPlannerBackend(FakePlannerBackend):
         )
 
 
+class PassthroughTranslator:
+    def translate(self, units):
+        return tuple(units)
+
+
 class SmallModelFormattingBackend(FakePlannerBackend):
     def complete_planner(self, *, task, system_prompt, payload, config, interrupt_callback=None):
         value = json.loads(payload)
@@ -115,6 +131,103 @@ def prompts() -> dict[str, str]:
 
 
 class TimelinePlannerCoreTests(unittest.TestCase):
+    def test_action_prompt_does_not_animate_appearance_attributes(self) -> None:
+        prompt = (
+            Path(__file__).parents[1]
+            / "prompts"
+            / "timeline_planner_actions_system_prompt.txt"
+        ).read_text(encoding="utf-8")
+        self.assertIn("Never turn a stable appearance attribute into an action", prompt)
+        self.assertIn("eye color", prompt)
+
+    def test_passthrough_retention_is_rendered_exactly(self) -> None:
+        template = parse_template_emd(TEMPLATE)
+        content = PlannerContent(
+            lyric_notes=(),
+            song_direction="",
+            actions=((1, 1, "動作1"), (1, 2, "動作2")),
+            cameras=((1, 1, "カメラ1"), (1, 2, "カメラ2")),
+            issue_count=0,
+            retried_scenes=(),
+            removed_generated_dialogue_count=0,
+            unused_protected_dialogue_ids=(),
+        )
+        retention = (
+            "`サブジェクト1`: `partially_preserved` "
+            "髪型と衣装だけを保持する。"
+        )
+        emd = render_planner_content(
+            content=content,
+            concept_emd=normalize_concept_emd(CONCEPT),
+            template=template,
+            direction=DirectionArtifact(
+                retention_policy="passthrough",
+                retention_lines=(retention,),
+            ),
+            lip_sync_mode="off",
+            lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1,
+        ).text
+        self.assertIn(f"# 保持分析\n* {retention}", emd)
+        parsed = parse_emd(emd).retention[0]
+        self.assertEqual(parsed.concept_id, "サブジェクト1")
+        self.assertEqual(parsed.mode, "partially_preserved")
+        self.assertEqual(parsed.description, "髪型と衣装だけを保持する。")
+
+    def test_cinematic_profile_emits_partial_retention_and_scene_reinforcement(self) -> None:
+        template = parse_template_emd(TEMPLATE + INSTRUMENTAL_TAIL)
+        concept = normalize_concept_emd(CONCEPT)
+        content = PlannerContent(
+            lyric_notes=((1, "note"),),
+            song_direction="direction",
+            actions=((1, 1, "動作1"), (1, 2, "動作2"), (2, 1, "余韻の動作")),
+            cameras=((1, 1, "カメラ1"), (1, 2, "カメラ2"), (2, 1, "余韻のカメラ")),
+            issue_count=0,
+            retried_scenes=(),
+            removed_generated_dialogue_count=0,
+            unused_protected_dialogue_ids=(),
+        )
+        emd = render_planner_content(
+            content=content,
+            concept_emd=concept,
+            template=template,
+            direction=DirectionArtifact(
+                style_direction=(STYLE_PROFILES["illust_to_photoreal"],),
+                style_profile_id="illust_to_photoreal",
+                retention_policy="profile",
+            ),
+            lip_sync_mode="off",
+            lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1,
+        ).text
+        self.assertIn("# 保持分析", emd)
+        self.assertIn(
+            "* `サブジェクト1`: `partially_preserved` "
+            "Maintain described identifying elements. For characters, maintain "
+            "hairstyle, hair color, eye color, outfit, color scheme, and accessories, "
+            "and embody them as a physical realistic portrayal in a common prompt.",
+            emd,
+        )
+        reinforcement = (
+            "Shoot as a photorealistic live-action video, depicting the characters "
+            "as real human actors."
+        )
+        self.assertEqual(emd.count(reinforcement), 2)
+        document = parse_emd(emd)
+        self.assertEqual(document.retention[0].mode, "partially_preserved")
+
+        plan = compile_ref2va(emd, PassthroughTranslator()).plan
+        self.assertTrue(
+            plan["prompt_prefix"][0].startswith(
+                "Shoot as a scene from a photorealistic live-action movie."
+            )
+        )
+        for scene in plan["shots"]:
+            prompt = "\n".join(scene["prompt"])
+            self.assertIn("<Subject 1>: partially_preserved -", prompt)
+            self.assertIn(reinforcement, prompt)
+            self.assertNotIn("fully_preserved", prompt)
+
     def test_qwen4b_thinking_literal_tabs_and_joined_records_are_normalized(self) -> None:
         result = plan_timeline(
             SmallModelFormattingBackend(),
@@ -216,13 +329,13 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertNotIn("cameras", [task for task, _ in backend.calls])
 
     def test_lip_sync_modes_only_change_deterministic_renderer(self) -> None:
-        template = parse_template_emd(TEMPLATE)
+        template = parse_template_emd(TEMPLATE + INSTRUMENTAL_TAIL)
         concept = normalize_concept_emd(CONCEPT)
         content = PlannerContent(
             lyric_notes=((1, "note"),),
             song_direction="direction",
-            actions=((1, 1, "動作1"), (1, 2, "動作2")),
-            cameras=((1, 1, "カメラ1"), (1, 2, "カメラ2")),
+            actions=((1, 1, "動作1"), (1, 2, "動作2"), (2, 1, "余韻の動作")),
+            cameras=((1, 1, "カメラ1"), (1, 2, "カメラ2"), (2, 1, "余韻のカメラ")),
             issue_count=0,
             retried_scenes=(),
             removed_generated_dialogue_count=0,
@@ -247,6 +360,28 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertIn("`歌詞` `サブジェクト1`", outputs["lyrics"])
         for text in outputs.values():
             self.assertIn("> `歌詞` 千年鳥居をくぐるそなたよ", text)
+
+        context_document = parse_emd(outputs["context_loop"])
+        self.assertEqual(
+            [
+                [directive.mode for directive in scene.audio_directives]
+                for scene in context_document.scenes
+            ],
+            [["context_loop"], ["context_loop"]],
+        )
+        audio_reference_document = parse_emd(outputs["audio_reference"])
+        self.assertEqual(
+            [
+                [directive.mode for directive in scene.audio_directives]
+                for scene in audio_reference_document.scenes
+            ],
+            [["audio_reference"], []],
+        )
+        plan = compile_ref2va(outputs["context_loop"], PassthroughTranslator()).plan
+        for scene in plan["shots"]:
+            self.assertEqual(scene["source_reference"], "off")
+            self.assertEqual(scene["generated_continuity"], "off")
+            self.assertEqual(scene["source_audio_target"], "locked")
 
     def test_generated_dialogue_and_placeholder_echoes_are_removed(self) -> None:
         protector = DialogueProtector()

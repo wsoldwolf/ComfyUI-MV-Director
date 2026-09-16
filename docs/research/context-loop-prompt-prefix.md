@@ -11,7 +11,7 @@ Planの正しいkey名は`prompt_prefix`である。JSON object内のproperty順
 final prompt = prompt_prefix + "\n\n" + scene_prompt
 ```
 
-Style Profileの固定英語anchorは`prompt_prefix`の先頭行へ置く。`# サブジェクト`は顔、体格、髪、衣装設計及び配色等の媒体非依存な同一性を記述し、参照画像がイラスト、写真又はCGであることを生成先の固定条件にしない。
+Style Profileの固定英語anchorは`prompt_prefix`の先頭行へ置く。2026-09-16 20:30の実写風生成を復元する`illust_to_photoreal`は、保存Plan `context_loop_plan_00009.txt`の長い英語anchorを完全一致で使う。また各Sceneの先頭Shotへ``Shoot as a photorealistic live-action video, depicting the characters as real human actors.``を明示する。どちらも再翻訳又はLLMによる言い換えを行わない。`# サブジェクト`は顔、体格、髪、衣装設計及び配色等の媒体非依存な同一性を記述し、参照画像がイラスト、写真又はCGであることを生成先の固定条件にしない。
 
 ## 1. 入力と正規化
 

@@ -29,11 +29,16 @@ class FakeLifecycle:
         invalid_response: bool = False,
         small_model_format: bool = False,
         japanese_response: bool = False,
+        invalid_last_slot_once: bool = False,
+        invalid_last_slot_always: bool = False,
     ) -> None:
         self.effective_n_ctx = 1120
         self.invalid_response = invalid_response
         self.small_model_format = small_model_format
         self.japanese_response = japanese_response
+        self.invalid_last_slot_once = invalid_last_slot_once
+        self.invalid_last_slot_always = invalid_last_slot_always
+        self.invalid_last_slot_used = False
         self.chat_calls: list[dict[str, object]] = []
         self.ensure_calls = 0
         self.clear_calls = 0
@@ -72,6 +77,18 @@ class FakeLifecycle:
             rows.append(
                 f"TRANSLATION\t{item['slot']}\tEnglish {item['slot']}{protected}"
             )
+        should_corrupt = self.invalid_last_slot_always or (
+            self.invalid_last_slot_once and not self.invalid_last_slot_used
+        )
+        if should_corrupt:
+            self.invalid_last_slot_used = True
+            last_slot = payload["slots"][-1]["slot"]
+            rows = [
+                row
+                for row in rows
+                if not row.startswith(f"TRANSLATION\t{last_slot}\t")
+            ]
+            rows.append("TRANSLATION\tseven\tbroken")
         if self.invalid_response:
             rows.append("extra commentary")
         return "\n".join(rows)
@@ -131,6 +148,32 @@ class LlamaPromptTranslatorTests(unittest.TestCase):
         with self.assertRaisesRegex(CompilerError, "line protocol"):
             translator.translate(("一",))
         self.assertEqual(len(lifecycle.chat_calls), 1)
+
+    def test_missing_slot_is_retried_once_as_an_isolated_unit(self) -> None:
+        lifecycle = FakeLifecycle(invalid_last_slot_once=True)
+        lifecycle.effective_n_ctx = 32768
+        translator = LlamaPromptTranslator(
+            lifecycle,
+            system_prompt="translate",
+            runtime_config=LlamaRuntimeConfig(max_tokens=4096, n_ctx=32768),
+        )
+        translated = translator.translate(("一", "二", "三", "四", "五", "六", "七"))
+        self.assertEqual(translated[:6], tuple(f"English {index}" for index in range(1, 7)))
+        self.assertEqual(translated[6], "English 1")
+        self.assertEqual([len(call["slots"]) for call in lifecycle.chat_calls], [7, 1])
+        self.assertEqual(lifecycle.chat_calls[1]["slots"][0]["japanese_text"], "七")
+        self.assertEqual(translator.batch_count, 2)
+
+    def test_isolated_retry_failure_still_stops(self) -> None:
+        lifecycle = FakeLifecycle(invalid_last_slot_always=True)
+        translator = LlamaPromptTranslator(
+            lifecycle,
+            system_prompt="translate",
+            runtime_config=LlamaRuntimeConfig(max_tokens=32, n_ctx=1100),
+        )
+        with self.assertRaisesRegex(CompilerError, "isolated retry for slot 1"):
+            translator.translate(("一",))
+        self.assertEqual(len(lifecycle.chat_calls), 2)
 
     def test_protocol_batches_are_capped_at_seven_units(self) -> None:
         lifecycle = FakeLifecycle()

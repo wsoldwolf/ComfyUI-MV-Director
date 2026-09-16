@@ -11,8 +11,11 @@ try:
     from ...core.direction import (
         CAMERA_PROFILES,
         MOTION_PROFILES,
+        PASSTHROUGH_PROFILE,
+        RETENTION_POLICIES,
         STYLE_PROFILES,
         DirectionEnhancerInput,
+        build_direction_payload,
         enhance_direction,
     )
     from ...core.direction.enhancer import DIRECTION_PROMPT_VERSION
@@ -28,8 +31,11 @@ except ImportError:  # Standalone repository tests.
     from core.direction import (
         CAMERA_PROFILES,
         MOTION_PROFILES,
+        PASSTHROUGH_PROFILE,
+        RETENTION_POLICIES,
         STYLE_PROFILES,
         DirectionEnhancerInput,
+        build_direction_payload,
         enhance_direction,
     )
     from core.direction.enhancer import DIRECTION_PROMPT_VERSION
@@ -129,9 +135,9 @@ class MVDirectorDirectionEnhancer:
         return {
             "required": {
                 "user_request": ("STRING", {"default": "", "multiline": True}),
-                "style_profile": (list(STYLE_PROFILES), {"default": "reference_anime"}),
-                "motion_profile": (list(MOTION_PROFILES), {"default": "natural_performance"}),
-                "camera_profile": (list(CAMERA_PROFILES), {"default": "readable_depth"}),
+                "style_profile": ([*STYLE_PROFILES, PASSTHROUGH_PROFILE], {"default": "reference_anime"}),
+                "motion_profile": ([*MOTION_PROFILES, PASSTHROUGH_PROFILE], {"default": "natural_performance"}),
+                "camera_profile": ([*CAMERA_PROFILES, PASSTHROUGH_PROFILE], {"default": "readable_depth"}),
                 "model_name": (models, {"default": models[0]}),
                 "chat_format": ("STRING", {"default": ""}),
                 "max_tokens": ("INT", {"default": 768, "min": 64, "max": 4096, "step": 32}),
@@ -155,10 +161,12 @@ class MVDirectorDirectionEnhancer:
                     },
                 ),
                 "cache_mode": (list(CACHE_MODES), {"default": "reuse"}),
+                "retention_policy": (list(RETENTION_POLICIES), {"default": "profile"}),
             },
             "optional": {
                 "concept_emd": ("STRING", {"default": "", "multiline": True}),
                 "observations_json": ("STRING", {"default": "", "multiline": True}),
+                "direction_emd_passthrough": ("STRING", {"forceInput": True}),
             },
         }
 
@@ -183,8 +191,10 @@ class MVDirectorDirectionEnhancer:
         keep_model_loaded: bool,
         seed: int,
         cache_mode: str,
+        retention_policy: str,
         concept_emd: str = "",
         observations_json: str = "",
+        direction_emd_passthrough: str = "",
     ) -> tuple[DirectionArtifact, str, str]:
         with self._lock:
             if cache_mode not in CACHE_MODES:
@@ -196,6 +206,8 @@ class MVDirectorDirectionEnhancer:
                 style_profile=style_profile,
                 motion_profile=motion_profile,
                 camera_profile=camera_profile,
+                retention_policy=retention_policy,
+                direction_emd_passthrough=direction_emd_passthrough,
             )
             value.validate()
             config = LlamaRuntimeConfig(
@@ -214,6 +226,23 @@ class MVDirectorDirectionEnhancer:
                 seed=seed,
             )
             config.validate()
+            if not value.requires_inference:
+                try:
+                    result = enhance_direction(
+                        self._backend,
+                        value=value,
+                        system_prompt="",
+                        runtime_config=config,
+                        interrupt_callback=_interrupt,
+                    )
+                finally:
+                    self._lifecycle.clear()
+                return (
+                    result.direction,
+                    result.direction_emd_preview,
+                    "cache=bypass; model=not_loaded; passthrough=yes; "
+                    f"issues={len(result.issues)}; missing_retry=no",
+                )
             model = resolve_comfy_gguf_model(model_name)
             system_prompt = _system_prompt()
             key = build_cache_key(
@@ -227,6 +256,9 @@ class MVDirectorDirectionEnhancer:
                         "mtime_ns": model.mtime_ns,
                     },
                     "system_prompt_sha256": sha256_text(system_prompt),
+                    "direction_payload_sha256": sha256_text(
+                        build_direction_payload(value)
+                    ),
                     "input": {
                         "concept_emd": value.normalized_concept_emd,
                         "observations_json": value.normalized_observations_json,
@@ -234,6 +266,8 @@ class MVDirectorDirectionEnhancer:
                         "style_profile": style_profile,
                         "motion_profile": motion_profile,
                         "camera_profile": camera_profile,
+                        "retention_policy": retention_policy,
+                        "direction_emd_passthrough": value.normalized_direction_emd_passthrough,
                     },
                     "runtime": config.to_dict(),
                 },

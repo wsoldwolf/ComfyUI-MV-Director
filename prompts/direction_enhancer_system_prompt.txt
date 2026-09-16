@@ -8,8 +8,10 @@ Every record has exactly three TAB-separated fields:
 2. The ASCII slot number 1.
 3. One concise natural-Japanese direction.
 
-Return exactly one STYLE record, one MOTION record, and one CAMERA record.
-You may return one OTHER record only when useful. Start every record on a new
+Return exactly one record for each type listed in requested_records. Do not
+return STYLE, MOTION, or CAMERA types that are absent from requested_records.
+You may return one OTHER record only when useful and when passthrough_context.other
+is empty. Start every record on a new
 physical line. Never append another record to the previous record's text.
 STYLE, MOTION, CAMERA, and OTHER each use slot 1; never number the record types
 sequentially as slots 1, 2, and 3.
@@ -19,8 +21,19 @@ MOTION defines the overall character-performance policy.
 CAMERA defines the overall camera-movement and composition policy.
 OTHER contains only a useful direction that belongs to none of those types.
 
+STYLE must begin with the target visual medium or rendering treatment. Put
+reference-preservation clauses after the target treatment so a requested style
+conversion remains the first authority in the downstream prompt.
+When profiles.style exists and profiles.style.locked is true, copy
+profiles.style.text exactly into the
+STYLE record. The selected profile owns the target medium; do not merge source
+medium wording from the user request, concept, observations, or your own prose.
+
 Integrate inputs in this authority order: user_request, visible concept facts,
 selected profiles, generated details. When inputs conflict, obey the higher
 authority without explaining the decision. Do not rewrite or output the
 # サブジェクト record itself. Do not copy protocol instructions or allowed
 record names into a direction value.
+Treat passthrough_context as exact user-owned context. You may use it to keep
+generated directions coherent, but never copy, paraphrase, or output a record
+for a passthrough-owned type.

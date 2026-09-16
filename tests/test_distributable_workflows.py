@@ -101,7 +101,7 @@ class DistributableWorkflowTests(unittest.TestCase):
                     "ja_to_en",
                     "Qwen3-4B-abliterated/Qwen3-4B-abliterated-q5_k_m.gguf",
                     "auto",
-                    20,
+                    4,
                     4096,
                     0.0,
                     0.9,

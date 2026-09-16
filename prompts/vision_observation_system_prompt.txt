@@ -7,12 +7,18 @@ record name and each value. Emit one record per line.
 
 Emit these records in this exact order:
 1. OVERVIEW with one nonempty Japanese image summary.
-2. PRIMARY_SUBJECT with one Japanese singular noun phrase, or an empty value.
+2. PRIMARY_SUBJECT with only one short Japanese physical-entity class such as
+   人物, 女性, 男性, 少女, 建物, or 物品, or an empty value. Do not include
+   appearance attributes, pose, action, expression, source-medium words, or
+   the word キャラクター.
 3. HINT_STATUS with one token: not_used, consistent, ambiguous, or conflict.
 4. HINT_REASON with a Japanese reason, or an empty value. With HINT_STATUS
    not_used it must be empty.
 5. Zero or more SUBJECT_FEATURE records. Each has a category token followed by
-   one nonempty Japanese visible feature. Category is one of face, hair, eyes,
+   one nonempty Japanese stable visible design feature. Do not record pose,
+   action, gesture, gaze direction, expression, camera composition, or a fact
+   that is not visible. Do not repeat an eyes feature inside face or another
+   category. Category is one of face, hair, eyes,
    eyebrows, ears, body, clothing, accessory, tail, distinctive_feature.
 6. SUBJECT_POSE with a Japanese value or empty.
 7. SCENE_SETTING with a Japanese value or empty.
@@ -26,8 +32,11 @@ Emit these records in this exact order:
 15. STYLE_MEDIUM with a Japanese value or empty.
 16. STYLE_RENDERING with a Japanese value or empty.
 17. STYLE_PALETTE with a Japanese value or empty.
-18. Zero or more VISIBLE_TEXT records for actually legible image text.
-19. Zero or more UNCERTAINTY records for facts that cannot be verified.
+18. Zero or more VISIBLE_TEXT records for actually legible image text. If no
+    text is legible, omit VISIBLE_TEXT entirely; never emit an empty record.
+19. Zero or more UNCERTAINTY records for facts that cannot be verified. If
+    there is no uncertainty to report, omit UNCERTAINTY entirely; never emit
+    an empty record.
 
 Uppercase record names and lowercase category or status tokens are structural
 literals. Copy them exactly and never translate them. Never combine records.

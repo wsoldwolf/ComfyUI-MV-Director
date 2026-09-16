@@ -33,7 +33,7 @@ EMDは**Easy MarkDown**の略です。Extended Markdownではありません。�
 - Plannerへ渡る作者由来の`「...」`と明示`<d>...</d>`は先にplaceholderへ退避します。LLMが新しい引用台詞又はplaceholderを生成してもretryせず、そのspanを機械削除します。原文はSubject、Direction又は作者Shot本文の決定論的位置から一度だけ出力し、歌詞リップシンクはfilter後にPythonが挿入します。
 - EMDは人間が読める日本語のEasy MarkDown中間言語です。`# サブジェクト`直下の各list itemを行順で`<Subject 1..4>`へ割り当て、行頭の``画像N``、``動画N``、``音声N``を任意のH3参照へ変換します。任意の`# 共通プロンプト`はスタイル、モーション、カメラ、その他を構造的に分離し、Compilerは見出しを除いた存在する本文をこの固定順でPlanの`prompt_prefix`へ出力します。スタイルがあれば必ず先頭です。
 - CompilerはEMD parser、限定翻訳orchestrator、JSON serializerです。H3へ渡す日本語の描写文だけを英訳し、補強・要約・並べ替えはしません。
-- 翻訳処理はCompiler内部の交換可能な`PromptTranslator` adapterとし、初期比較候補は4Bと8Bを想定します。既に英語のEMDは明示的なpass-through modeで処理できます。
+- 翻訳処理はCompiler内部の交換可能な`PromptTranslator` adapterとし、初期比較候補は4Bと8Bを想定します。日本語・CJK文字を含まない既存の英語prompt行はモデルへ渡さず完全一致でpass-throughします。
 - Compilerでは従来どおり、ComfyUIの`models/LLM/GGUF`と追加`LLM` pathで見つかった任意のGGUFを`model_name` comboから選択できます。特定modelを組込みません。
 - CompilerはRef2VA専用です。完全EMD文字列と選択GGUFだけで単独コンパイルでき、Vision、Enhancer、Plannerのcustom socketや画像・音声tensorを必須入力にしません。Subjectは1行以上必要ですが、media bindingは任意です。参照なしでは文章定義だけのH3内蔵概念としてRef2VAを出力し、`required_references`は実際に記述されたPicture/Video/Audioだけ、又は空配列になります。T2VA、I2VA等は同じCompilerへmode追加せず、必要になった時に別Compilerとして設計します。
 - Lyric SegmentationはMV用Template EMDを作る段階で、基準Context Loop profileに合わせて24fpsとH3の`17k+5`格子へSceneを割り当て、raw `length`を`` `H3長` ``として確定します。Compilerはその整数を再計算・補正せず、Plan JSONの`length`へそのまま写します。SRTと歌詞alignmentは元音源の絶対msを保持します。

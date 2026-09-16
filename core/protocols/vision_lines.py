@@ -98,6 +98,22 @@ class _VisionParser:
         self.cursor += 1
         return value
 
+    def take_optional_repeated(self, record_type: str) -> list[str]:
+        values: list[str] = []
+        while (
+            (line := self.current()) is not None
+            and _record_name(line) == record_type
+        ):
+            line_number = self.cursor + 1
+            value = self.take_scalar(record_type, allow_empty=True)
+            if value:
+                values.append(value)
+            else:
+                self.warnings.append(
+                    f"ignored empty optional {record_type} at line {line_number}"
+                )
+        return values
+
     def parse(self) -> VisionParseResult:
         if self.lines and _record_name(self.lines[0]) == "OVERVIEW":
             self.lines.insert(0, VISION_PROTOCOL_ID)
@@ -172,9 +188,7 @@ class _VisionParser:
 
         subject_pose = self.take_scalar("SUBJECT_POSE")
         scene_setting = self.take_scalar("SCENE_SETTING")
-        scene_elements: list[str] = []
-        while (line := self.current()) is not None and _record_name(line) == "SCENE_ELEMENT":
-            scene_elements.append(self.take_scalar("SCENE_ELEMENT", allow_empty=False))
+        scene_elements = self.take_optional_repeated("SCENE_ELEMENT")
         lighting = self.take_scalar("LIGHTING")
         time_weather = self.take_scalar("TIME_WEATHER")
 
@@ -185,12 +199,8 @@ class _VisionParser:
         style_medium = self.take_scalar("STYLE_MEDIUM")
         style_rendering = self.take_scalar("STYLE_RENDERING")
         style_palette = self.take_scalar("STYLE_PALETTE")
-        visible_text: list[str] = []
-        while (line := self.current()) is not None and _record_name(line) == "VISIBLE_TEXT":
-            visible_text.append(self.take_scalar("VISIBLE_TEXT", allow_empty=False))
-        uncertainties: list[str] = []
-        while (line := self.current()) is not None and _record_name(line) == "UNCERTAINTY":
-            uncertainties.append(self.take_scalar("UNCERTAINTY", allow_empty=False))
+        visible_text = self.take_optional_repeated("VISIBLE_TEXT")
+        uncertainties = self.take_optional_repeated("UNCERTAINTY")
 
         if self.current() == VISION_END_MARKER:
             self.cursor += 1

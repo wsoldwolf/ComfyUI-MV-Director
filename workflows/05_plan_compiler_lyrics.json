@@ -372,7 +372,7 @@
       },
       "widgets_values": [
         "",
-        "reference_cinematic",
+        "illust_to_photoreal",
         "natural_performance",
         "readable_depth",
         "Qwen3-4B-abliterated/Qwen3-4B-abliterated-q5_k_m.gguf",
@@ -390,7 +390,8 @@
         false,
         1,
         "randomize",
-        "reuse"
+        "reuse",
+        "profile"
       ]
     },
     {
@@ -530,7 +531,7 @@
         "ja_to_en",
         "Qwen3-4B-abliterated/Qwen3-4B-abliterated-q5_k_m.gguf",
         "auto",
-        20,
+        4,
         4096,
         0.0,
         0.9,

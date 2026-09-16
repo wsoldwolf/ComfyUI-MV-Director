@@ -40,9 +40,9 @@ Pictureの有無で`compiler_ready`を分けず、一件以上の正しいSubjec
 
 ### P0-4. `vocal evidence`の判定規則（解決済み）
 
-`vocal evidence`という独立判定を廃止する。`context_loop`又は`audio_reference`では、Lyric Segmentationが一個以上の`歌詞`annotationを構造配置したSceneだけを`lip_sync_active=true`とみなし、対応するリップシンクdirectiveを出す。歌詞文字列、音量又はVAD区間をPlannerが再評価しない。
+`vocal evidence`という独立判定を廃止する。`context_loop`では、歌詞annotationの有無にかかわらず全Sceneへ対応directiveを出し、Compilerがgeneration-timeの`source_reference=off`、`generated_continuity=off`、`source_audio_target=locked`を常に明示できるようにする。`audio_reference`と`lyrics`では、Lyric Segmentationが一個以上の`歌詞`annotationを構造配置したScene又はShotだけを`lip_sync_active=true`とみなす。歌詞文字列、音量又はVAD区間をPlannerが再評価しない。
 
-VADとWhisperはLyric Segmentation内部でatomic lyric segmentのsource開始・終了msを確定するためだけに使う。annotationのない間奏Sceneへはdirectiveを出さない。歌詞にないアドリブも同期対象にしたい場合はplain lyricsへその音節を追加するか、人間が完成EMDへdirectiveを明示する。これによりthreshold依存の二重判定とPlanner側の再対応付けを避ける。
+VADとWhisperはLyric Segmentation内部でatomic lyric segmentのsource開始・終了msを確定するためだけに使う。annotationのない間奏Sceneでは、Context Loop directiveだけを保持し、Audio参照又は歌詞directiveは出さない。歌詞にないアドリブも後二方式の同期対象にしたい場合はplain lyricsへその音節を追加するか、人間が完成EMDへdirectiveを明示する。これによりthreshold依存の二重判定とPlanner側の再対応付けを避ける。
 
 ## 3. Phase 1～6までに固定すべき契約
 
@@ -62,7 +62,7 @@ Direction artifactはユーザーが記述する別形式ではなく、Enhancer
 
 ### P1-4. provenance record（解決済み）
 
-`MVD_DIRECTION_V1.provenance`はPythonが作る入力・機械処理履歴に限定する。固定fieldは`record_id`、`record_kind`、`source`、`source_ref`、`source_position`、`target`、`disposition`、`reason`、`sha256`とする。原文は複製しない。
+`MVD_DIRECTION_V2.provenance`はPythonが作る入力・機械処理履歴に限定する。固定fieldは`record_id`、`record_kind`、`source`、`source_ref`、`source_position`、`target`、`disposition`、`reason`、`sha256`とする。原文は複製しない。
 
 V1で記録するのは入力の供給、妥当なLLM行の採用、空・完全一致重複・protocol不正による機械的破棄だけである。意味上の採用、上書き、破棄又はauthority遵守をPythonの文字列比較から推測せず、LLMにも説明文を作らせない。そのため`superseded`や自由文reasonは設けない。これは再現と診断用lineageであり、chain-of-thought又はsemantic auditではない。
 

@@ -81,6 +81,22 @@ class Ref2VACompilerTests(unittest.TestCase):
         self.assertNotIn("VERSE1", "\n".join(scene["prompt"]))
         self.assertEqual(result.required_references.references, ())
 
+    def test_already_english_prompt_is_passed_through_exactly(self) -> None:
+        source = """# サブジェクト
+* 人物。
+# 共通プロンプト
+## スタイル
+* photorealistic video.
+> `シーン` 1
+# シーン 00:00.000 --> 00:01.000
+* `H3長` 22
+## ショット 00:00.000
+* 歩く。
+"""
+        result = compile_ref2va(source, EchoTranslator())
+        self.assertEqual(result.plan["prompt_prefix"][0], "photorealistic video.")
+        self.assertNotIn("EN:photorealistic video.", result.plan_json())
+
     def test_subject_media_and_lip_sync_audio_require_slots(self) -> None:
         source = """# サブジェクト
 * `画像3` `動画1` `音声3` 主人公。
@@ -109,6 +125,35 @@ class Ref2VACompilerTests(unittest.TestCase):
             prompt,
         )
         self.assertNotIn("source_audio_target", result.plan["shots"][0])
+
+    def test_default_reference_prompt_uses_subject_only_retention(self) -> None:
+        source = """# サブジェクト
+* `画像1` 狐耳の少女
+> `シーン` 1
+# シーン 00:00.000 --> 00:01.000
+* `H3長` 22
+## ショット 00:00.000
+* 踊る。
+"""
+        prompt = compile_ref2va(source, EchoTranslator()).plan["shots"][0]["prompt"]
+        self.assertIn(
+            "<Subject 1> is described here: EN:狐耳の少女. "
+            "Use these connected references for it: <Picture 1>.",
+            prompt,
+        )
+        summary_index = prompt.index("summary:")
+        self.assertEqual(prompt[summary_index + 1], "[reference generation] EN:踊る。")
+        retention_index = prompt.index("retention_analysis:")
+        detailed_index = prompt.index("detailed_description:")
+        retention = [line for line in prompt[retention_index + 1:detailed_index] if line]
+        self.assertEqual(
+            retention,
+            [
+                "<Subject 1>: fully_preserved - preserve the described identity "
+                "and attributes across shots."
+            ],
+        )
+        self.assertNotIn("<Picture 1>", "\n".join(retention))
 
     def test_silence_is_an_explicit_flag(self) -> None:
         source = """# サブジェクト
@@ -169,7 +214,7 @@ class Ref2VACompilerTests(unittest.TestCase):
         source = """# サブジェクト
 * 人物。
 # 保持分析
-* `サブジェクト1`: 顔と衣装を保持する。
+* `サブジェクト1`: `partially_preserved` 顔と衣装を保持する。
 > `シーン` 1
 # シーン 00:00.000 --> 00:01.000
 * `H3長` 22
@@ -184,7 +229,10 @@ class Ref2VACompilerTests(unittest.TestCase):
         self.assertEqual(scene["generated_continuity"], "off")
         self.assertEqual(scene["source_audio_target"], "locked")
         prompt_text = "\n".join(scene["prompt"])
-        self.assertIn("EN:<Subject 1>: 顔と衣装を保持する。", prompt_text)
+        self.assertIn(
+            "<Subject 1>: partially_preserved - EN:顔と衣装を保持する。",
+            prompt_text,
+        )
         self.assertIn("locked source vocal", prompt_text)
         self.assertIn("explicitly provided with d tags", prompt_text)
 

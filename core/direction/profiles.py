@@ -12,9 +12,44 @@ STYLE_PROFILES = {
         "参照画像の人物設計を保ち、自然な皮膚・布・材質、映画照明、"
         "レンズによる奥行きで実写映画として描く。"
     ),
+    "illust_to_photoreal": (
+        "Shoot as a scene from a photorealistic live-action movie. Express all "
+        "subjects as physically existing in a real filming location. The characters "
+        "are to be portrayed as real human actors with natural facial bone structure, "
+        "typical human eye proportions, realistic human body proportions, skin visible "
+        "with pores and fine hairs, hair that can be individually identified, and "
+        "fabric made from actual physical materials. Maintain hair color, eye color, "
+        "outfit colors and shapes, and accessories as consistent identifying elements, "
+        "and embody them as movie makeup, special effects, and real clothing. Animal "
+        "ears and tails should be expressed with real fur texture, natural weight, and "
+        "movement integrated with the body. Shoot using movie lighting, realistic "
+        "dynamic range, and depth from an optical lens. Apply this physical live-action "
+        "portrayal to subsequent subject definitions and preservation analysis."
+    ),
     "reference_painterly": (
         "参照画像の形と配色を保ち、紙目、透明な色層、柔らかな境界を持つ"
         "手描き絵画として描く。"
+    ),
+}
+
+# This profile controls a medium conversion.  Its STYLE output is kept
+# deterministic so a small LLM cannot reintroduce source-medium vocabulary or
+# invert the selected target medium while paraphrasing it.
+LOCKED_STYLE_PROFILES = frozenset({"illust_to_photoreal"})
+
+STYLE_RETENTION_POLICIES = {
+    "illust_to_photoreal": (
+        "`partially_preserved` Maintain described identifying elements. For "
+        "characters, maintain hairstyle, hair color, eye color, outfit, color scheme, "
+        "and accessories, and embody them as a physical realistic portrayal in a "
+        "common prompt."
+    ),
+}
+
+STYLE_SCENE_REINFORCEMENTS = {
+    "illust_to_photoreal": (
+        "Shoot as a photorealistic live-action video, depicting the characters as "
+        "real human actors."
     ),
 }
 
@@ -65,4 +100,3 @@ DIRECTION_PRESETS = {
         "cinematic_depth",
     ),
 }
-

@@ -119,6 +119,36 @@ class EMDParserTests(unittest.TestCase):
         with self.assertRaisesRegex(EMDParseError, "subsection order"):
             parse_emd(source)
 
+    def test_retention_mode_is_structural_and_description_is_separate(self) -> None:
+        source = """# サブジェクト
+* `画像1` 人物。
+# 保持分析
+* `サブジェクト1`: `partially_preserved` 髪型と衣装を維持する。
+> `シーン` 1
+# シーン 00:00.000 --> 00:01.000
+* `H3長` 22
+## ショット 00:00.000
+* 歩く。
+"""
+        directive = parse_emd(source).retention[0]
+        self.assertEqual(directive.concept_id, "サブジェクト1")
+        self.assertEqual(directive.mode, "partially_preserved")
+        self.assertEqual(directive.description, "髪型と衣装を維持する。")
+
+    def test_retention_without_fixed_mode_is_rejected(self) -> None:
+        source = """# サブジェクト
+* 人物。
+# 保持分析
+* `サブジェクト1`: 髪型と衣装を維持する。
+> `シーン` 1
+# シーン 00:00.000 --> 00:01.000
+* `H3長` 22
+## ショット 00:00.000
+* 歩く。
+"""
+        with self.assertRaisesRegex(EMDParseError, "fixed mode"):
+            parse_emd(source)
+
     def test_explicit_dialogue_tags_are_validated(self) -> None:
         valid = """# サブジェクト
 * 人物。

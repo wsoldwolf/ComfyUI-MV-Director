@@ -108,7 +108,7 @@ ComfyUI-MV-Director/
 
 最初に実装するもの:
 
-- `MVD_OBSERVATIONS_V1`、`MVD_EMD_FRAGMENT_V1`、`MVD_REFERENCE_BINDINGS_V1`、`MVD_DIRECTION_V1`、`MVD_TIMELINE_V1`、`MVD_EMD_TEMPLATE_V1`、`MVD_EMD_V1`、`MVD_REQUIRED_REFERENCES_V1`
+- `MVD_OBSERVATIONS_V1`、`MVD_EMD_FRAGMENT_V1`、`MVD_REFERENCE_BINDINGS_V1`、`MVD_DIRECTION_V2`、`MVD_TIMELINE_V1`、`MVD_EMD_TEMPLATE_V1`、`MVD_EMD_V1`、`MVD_REQUIRED_REFERENCES_V1`
 - EMD（Easy MarkDown）canonical exampleとinvalid fixture。共通プロンプトとStyle、Motion、Camera、Otherはすべて任意で、存在する本文だけを固定順に持つ
 - 必須の``> `シーン` N``、`# シーン START --> END`と全`## ショット TIME`の絶対`MM:SS.mmm` fixture、`scene_NNNN` ID及びScene相対H3時刻への固定変換fixture
 - Lyric Segmentationが要求msとH3 Timing Profileからraw `length`、delivered frames、plan Scene境界、量子化差分を得るfixture。Compilerが`` `H3長` ``を無変換で写し、`duration_seconds`と`duration_ms`をPlanへ出さないことも固定する
@@ -118,7 +118,7 @@ ComfyUI-MV-Director/
 - 旧ログ由来の「自然な動作なのに語句検査で止まった」入力fixture
 - Planner入力の作者台詞placeholder、原位置からの作者原文一回出力、既知／未知／重複placeholder echo削除、LLM生成`「...」`／`<d>...</d>`削除、引用出現時のretryなしfixture
 - `MVD_LLM_RECORDS_V1`の`TYPE<TAB>SLOT<TAB>TEXT` parser fixture。並べ替え、前置き、Markdown fence、未知type、重複、欠落slotを含め、有効recordの部分回収とslot side tableの対応を固定する
-- `MVD_DIRECTION_V1.provenance`の固定record ID、source、position、target、disposition、reason及びhash fixture。semanticな採用理由を推測しない
+- `MVD_DIRECTION_V2.provenance`の固定record ID、source、position、target、disposition、reason及びhash fixture。semanticな採用理由を推測しない
 - Context Loop 0.6.9 commit `9860a063784c8c23b58e00107f2180e0df3c43d9`が受理する`prompt_prefix`先頭連結、Ref2VA六セクション、正規Shot構文、Planの最小valid fixture
 
 完了条件:
@@ -194,7 +194,7 @@ ComfyUI-MV-Director/
 2. 初期3 preset
 3. user > vision concept > profile > generatedのauthorityを保ち、`style_direction`、`motion_direction`、`camera_direction`、`other_direction`を分離して返す統合prompt
 4. `STYLE` / `MOTION` / `CAMERA` / `OTHER`の行record parser。必須slot欠落時だけ一回局所retry
-5. 内部`MVD_DIRECTION_V1`と人間向け`direction_emd_preview`。provenanceはPythonが入力、採用行、機械的破棄だけから作る
+5. 内部`MVD_DIRECTION_V2`と人間向け`direction_emd_preview`。profile ID、保持方針及び機械的パススルーを保存する
 
 完了条件:
 
@@ -202,7 +202,7 @@ ComfyUI-MV-Director/
 - Vision node又はconcept EMDがなくてもdirectionを得る。
 - provenanceは意味上の採否や思考理由を捏造せず、固定enum以外の自由文理由を持たない。
 - concept EMDとuser requestが同時に空でも、選択済み既定profileだけからdirectionを得る。
-- concept EMDは読み取り専用で、EnhancerがSubject record、Picture束縛又は保持分析を書き換えない。
+- concept EMDは読み取り専用で、EnhancerはSubject record又はPicture束縛を書き換えない。保持分析は独立policy又は外部Direction EMDパススルーから機械的に供給する。
 - Style、Motion、Camera、Otherの空でない出力だけを対応する任意EMD subsectionへ機械的に配置でき、本文の意味を正規表現で再分類しない。
 - 「夜間」「丸く短い金色の眉」の短い指定が、長い旧手書きCommonなしでauthorityとして残る。
 - time-of-day辞書やomit部分一致を使わない。
@@ -247,7 +247,7 @@ ComfyUI-MV-Director/
 - 行protocolの必須slot欠落以外の品質理由で自動retryしない。
 - LLMが引用台詞、dialogue tag又はplaceholder echoを生成してもretryせず、生成spanを機械削除する。作者台詞は原位置から一回だけ出力し、placeholderを最終EMDへ漏らさない。
 - Template EMD入力時にWhisper又は音声解析を再実行しない。
-- `lip_sync_mode`をLLMへ渡さず、PythonだけがLyric Segmentationで歌詞annotationを構造配置済みのScene又はShotへ対応directiveを出す。歌詞annotationは全modeで保持し、`lyrics`だけがShotの``リップシンク 歌詞``をmaterializeする。PlannerとCompilerは歌詞時刻の数値包含で再対応付けしない。mode又はAudio slotだけの変更で人物動作・カメラtaskを再推論しない。完成動画の音声選択は対応する動画生成WFのChain Policyが所有する。
+- `lip_sync_mode`をLLMへ渡さず、Pythonだけが対応directiveを出す。`context_loop`は全Sceneへmaterializeし、`audio_reference`は歌詞annotationを構造配置済みのSceneへ、`lyrics`は対応Shotへだけmaterializeする。歌詞annotationは全modeで保持する。PlannerとCompilerは歌詞時刻の数値包含で再対応付けしない。mode又はAudio slotだけの変更で人物動作・カメラtaskを再推論しない。完成動画の音声選択は対応する動画生成WFのChain Policyが所有する。
 
 ### Phase 7: Compiler node wrapper
 

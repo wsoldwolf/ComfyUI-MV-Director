@@ -6,6 +6,10 @@ import re
 from typing import Mapping
 
 from ..artifacts import DirectionArtifact, EMDTextArtifact
+from ..direction.profiles import (
+    STYLE_RETENTION_POLICIES,
+    STYLE_SCENE_REINFORCEMENTS,
+)
 from ..emd import parse_emd
 from ..h3_contract import DEFAULT_H3_TIMING_PROFILE, H3TimingProfile
 from ..lyrics import format_emd_time
@@ -14,6 +18,14 @@ from .template import PlannerTemplate
 
 
 _TARGET_RE = re.compile(r"サブジェクト[1-4]\Z")
+
+
+def _concept_subject_count(concept_emd: str) -> int:
+    return sum(
+        1
+        for line in concept_emd.rstrip().split("\n")
+        if line.startswith("* ")
+    )
 
 
 def render_completed_emd(
@@ -37,6 +49,24 @@ def render_completed_emd(
         raise TimelinePlannerError("lip_sync_audio_slot must be in 1..3")
 
     lines = concept_emd.rstrip().split("\n")
+    style_profile = direction.style_profile_id
+    retention_policy = (
+        STYLE_RETENTION_POLICIES.get(style_profile, "")
+        if direction.retention_policy == "profile"
+        else ""
+    )
+    scene_reinforcement = STYLE_SCENE_REINFORCEMENTS.get(
+        style_profile, ""
+    )
+    if direction.retention_policy == "passthrough":
+        lines.extend(("", "# 保持分析"))
+        lines.extend(f"* {value}" for value in direction.retention_lines)
+    elif retention_policy:
+        lines.extend(("", "# 保持分析"))
+        lines.extend(
+            f"* `サブジェクト{index}`: {retention_policy}"
+            for index in range(1, _concept_subject_count(concept_emd) + 1)
+        )
     common = (
         ("スタイル", direction.style_direction),
         ("モーション", direction.motion_direction),
@@ -82,6 +112,8 @@ def render_completed_emd(
                 body.append(action)
             if camera:
                 body.append(camera)
+            if shot_index == 1 and scene_reinforcement:
+                body.append(scene_reinforcement)
             if not body:
                 body.append("未計画")
             lines.extend(f"* {value}" for value in body)
@@ -90,7 +122,9 @@ def render_completed_emd(
                     f"* `リップシンク` `歌詞` `{lip_sync_target}` 「{lyric.text}」"
                     for lyric in shot.lyric_annotations
                 )
-        if scene_has_lyrics and lip_sync_mode in {"context_loop", "audio_reference"}:
+        if lip_sync_mode == "context_loop" or (
+            scene_has_lyrics and lip_sync_mode == "audio_reference"
+        ):
             lines.append("## 音響")
             if lip_sync_mode == "context_loop":
                 lines.append(f"* `リップシンク` `Context Loop` `{lip_sync_target}`")

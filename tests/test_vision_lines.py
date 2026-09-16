@@ -18,6 +18,17 @@ class VisionLineProtocolTests(unittest.TestCase):
         self.assertEqual(observations.scene_elements, ("朱塗りの鳥居",))
         self.assertEqual(result.warnings, ())
 
+    def test_system_prompt_keeps_subject_class_physical_and_features_stable(self) -> None:
+        prompt = (
+            Path(__file__).parents[1]
+            / "prompts"
+            / "vision_observation_system_prompt.txt"
+        ).read_text(encoding="utf-8")
+        self.assertIn("physical-entity class", prompt)
+        self.assertIn("the word キャラクター", prompt)
+        self.assertIn("stable visible design feature", prompt)
+        self.assertIn("Do not repeat an eyes feature", prompt)
+
     def test_small_unambiguous_normalizations_do_not_retry(self) -> None:
         source = FIXTURE.read_text(encoding="utf-8").replace(
             "腰まで届く長い黒髪\tclear", "腰まで届く\t長い黒髪\tvisible"
@@ -65,6 +76,39 @@ class VisionLineProtocolTests(unittest.TestCase):
         )
         result = parse_vision_observations(source)
         self.assertEqual(result.observations.subject_features[1].visibility, "partial")
+
+    def test_empty_optional_visible_text_is_ignored_with_warning(self) -> None:
+        source = FIXTURE.read_text(encoding="utf-8").replace(
+            "VISIBLE_TEXT\t奉納", "VISIBLE_TEXT\t"
+        )
+        result = parse_vision_observations(source)
+        self.assertEqual(result.observations.visible_text, ())
+        self.assertTrue(
+            any(
+                "ignored empty optional VISIBLE_TEXT" in item
+                for item in result.warnings
+            )
+        )
+
+    def test_empty_optional_scene_element_and_uncertainty_are_ignored(self) -> None:
+        source = (
+            FIXTURE.read_text(encoding="utf-8")
+            .replace("SCENE_ELEMENT\t朱塗りの鳥居", "SCENE_ELEMENT\t")
+            .replace("UNCERTAINTY\t人物の背面は見えない。", "UNCERTAINTY\t")
+        )
+        result = parse_vision_observations(source)
+        self.assertEqual(result.observations.scene_elements, ())
+        self.assertEqual(result.observations.uncertainties, ())
+        self.assertEqual(
+            len(
+                [
+                    item
+                    for item in result.warnings
+                    if "ignored empty optional" in item
+                ]
+            ),
+            2,
+        )
 
     def test_unknown_or_reordered_record_is_rejected(self) -> None:
         source = FIXTURE.read_text(encoding="utf-8").replace(

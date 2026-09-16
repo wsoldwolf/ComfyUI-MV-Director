@@ -15,7 +15,7 @@ from .renderer import render_completed_emd
 from .template import PlannerTemplate, normalize_concept_emd, parse_template_emd
 
 
-PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v2"
+PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v3"
 TASKS = ("lyric-notes", "song-direction", "actions", "cameras")
 
 

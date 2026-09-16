@@ -19,7 +19,7 @@ from .image_data import PreparedVisionImage
 from .subject_emd import SubjectEMDResult, render_subject_emd
 
 
-VISION_PROMPT_VERSION = "mvd-vision-observation-v2"
+VISION_PROMPT_VERSION = "mvd-vision-observation-v3"
 ANALYSIS_PROFILES = ("general", "subject_only", "scene_only")
 HINT_MODES = ("observe_only", "assist", "lock_identity")
 HINT_CONFLICT_POLICIES = ("warn", "strict")

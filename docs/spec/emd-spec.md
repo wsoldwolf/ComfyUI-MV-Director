@@ -92,10 +92,23 @@ Shot、保持分析及びlip-syncでSubjectを参照する場合は、派生ID `
 
 ```markdown
 # 保持分析
-* `サブジェクト1`: 顔立ち、髪、衣装、配色を保持する。
+* `サブジェクト1`: `partially_preserved` 髪、衣装、配色を保持する。
 ```
 
-対象は`# サブジェクト`で定義済みでなければならない。章が省略された場合、Compilerは各Subjectに固定の保持文を出す。Picture参照を持つSubjectでは、そのPictureも自動保持対象になる。
+コロン直後の保持モードは ``fully_preserved`` 又は
+``partially_preserved`` の固定tokenであり、省略又は翻訳できない。Compilerは
+このtokenをH3の正規語彙としてそのまま出力し、後続の説明だけを英訳する。
+
+`illust_to_photoreal`を使用する自動Plannerは、旧japanese2jsonで有効だった参照範囲限定を現行文法へ移し、各Subjectについて概念的に次を明記する。
+
+```markdown
+# 保持分析
+* `サブジェクト1`: `partially_preserved` 髪型、髪色、衣装、配色及び装飾品を維持する。
+```
+
+同profileの`## スタイル`は、実写風生成に成功した保存Plan `context_loop_plan_00009.txt`の長い英語anchorを完全一致で持つ。さらに各Sceneの最初のShotへ``Shoot as a photorealistic live-action video, depicting the characters as real human actors.``を一回明示する。Compilerは既に英語の両方を翻訳器へ渡さず完全一致で写す。
+
+対象は`# サブジェクト`で定義済みでなければならない。章が省略された場合、Compilerは各Subjectに固定の保持文を出す。Picture参照を持つ場合もPicture自体を独立した保持対象として自動追加しない。
 
 ## 5. 共通プロンプト
 
@@ -197,6 +210,8 @@ Compilerは歌詞原文を翻訳せず、対象Shotへ次の固定文を追加�
 
 Scene末尾の`## 音響`は任意であり、存在する場合は空にできない。
 
+Timeline Plannerで`context_loop`を選んだ場合は、歌詞annotationのない間奏又は末尾を含む全SceneへContext Loop directiveを明示する。これによりCompilerが全Sceneへ同じgeneration-time source音声方針を出力する。`audio_reference`は歌詞annotationのあるSceneだけに出し、歌詞方式は対応Shotだけに出す。手書きEMDでは必要なSceneへ明示し、Compilerは欠けたdirectiveを推測しない。
+
 ```markdown
 ## 音響
 * `リップシンク` `Context Loop` `サブジェクト1`
@@ -231,7 +246,7 @@ Scene末尾の`## 音響`は任意であり、存在する場合は空にでき�
 * `画像1` 狐耳の少女。長い金髪、赤い瞳、白と赤の着物風衣装を持つ。
 
 # 保持分析
-* `サブジェクト1`: 顔立ち、髪、狐耳、尾、衣装と配色を保持する。
+* `サブジェクト1`: `partially_preserved` 髪、狐耳、尾、衣装と配色を保持する。
 
 # 共通プロンプト
 ## スタイル
@@ -274,6 +289,8 @@ CompilerはContext Loop Plan JSONをUTF-8相当のUnicode文字列として返�
 4. `detailed_description:`
 5. `overall_soundscape:`
 6. `non_diegetic_music:`
+
+`summary:`は翻訳したScene先頭記述又は先頭Shot本文の前へ、Compilerが固定task directive ``[reference generation]``を付ける。`subject_definitions:`では各`<Subject N>`を行頭から一回だけ定義し、Picture等の参照tokenは同じ行の文中で関連付ける。`# 保持分析`が省略された場合、`retention_analysis:`はSubjectごとの固定保持文だけを持ち、Picture tokenを独立保持対象として自動追加しない。作者が`# 保持分析`を明記した場合、Compilerは固定modeをそのまま写し、説明だけを英訳して文書順で使う。保持範囲を意味推測で補正しない。
 
 `required_references`は、Subject行及びAudio参照directiveで明示されたslotだけを列挙する。CompilerはComfyUI graphの実配線を検査しない。
 

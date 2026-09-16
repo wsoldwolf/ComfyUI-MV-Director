@@ -1,6 +1,7 @@
 import base64
 import json
 import unittest
+from types import SimpleNamespace
 
 from core.audio import (
     AudioShape,
@@ -75,6 +76,41 @@ class AudioPadPairTests(unittest.TestCase):
             fps=24,
         )
         self.assertEqual(targets, (2000, 2000))
+
+    def test_node_uses_exact_timeline_frames_instead_of_rounded_milliseconds(self) -> None:
+        class TimelineStub:
+            plan_duration_ms = 29_958
+            scenes = (
+                SimpleNamespace(delivered_frames=226),
+                SimpleNamespace(delivered_frames=243),
+                SimpleNamespace(delivered_frames=211),
+                SimpleNamespace(delivered_frames=39),
+            )
+
+            def validate(self) -> None:
+                return None
+
+        audio_a = {
+            "waveform": FakeWaveform((1, 2, 1_436_000)),
+            "sample_rate": 48_000,
+        }
+        audio_b = {
+            "waveform": FakeWaveform((1, 1, 1_436_000)),
+            "sample_rate": 48_000,
+        }
+        padded_a, padded_b, status, _reference = MVDirectorAudioPadPair().pad_pair(
+            audio_a,
+            audio_b,
+            extra_padding_ms=0,
+            target_h3_frames=0,
+            pad_position="end",
+            reference_alignment="off",
+            timeline=TimelineStub(),
+        )
+        self.assertEqual(padded_a["waveform"].shape[-1], 1_438_000)
+        self.assertEqual(padded_b["waveform"].shape[-1], 1_438_000)
+        self.assertIn("timeline_frames=719", status)
+        self.assertIn("target_frames=719", status)
 
     def test_reference_alignment_places_source_scenes_on_plan_frames(self) -> None:
         waveform = FakeWaveform((1, 1, 800), range(1, 801))

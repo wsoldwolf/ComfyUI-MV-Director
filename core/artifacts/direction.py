@@ -1,4 +1,4 @@
-"""MVD_DIRECTION_V1."""
+"""MVD_DIRECTION_V2."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from .base import (
 from .errors import ArtifactValidationError
 
 
-SCHEMA = "MVD_DIRECTION_V1"
+SCHEMA = "MVD_DIRECTION_V2"
 _HASH_RE = re.compile(r"[0-9a-f]{64}\Z")
 _RECORD_KINDS = {"input", "output", "discard"}
 _SOURCES = {"user", "vision", "profile", "generated"}
@@ -27,10 +27,14 @@ _REASONS = {
     "empty",
     "exact_duplicate",
     "invalid_line_record",
+    "profile_enforced",
+    "profile_overridden",
+    "passthrough_enforced",
 }
 _TARGET_RE = re.compile(
-    r"(?:style_direction|motion_direction|camera_direction|other_direction)\[[0-9]+\]\Z"
+    r"(?:style_direction|motion_direction|camera_direction|other_direction|retention_lines)\[[0-9]+\]\Z"
 )
+_RETENTION_POLICIES = {"compiler_default", "profile", "passthrough"}
 
 
 @dataclass(frozen=True, slots=True)
@@ -151,6 +155,11 @@ class DirectionArtifact:
     motion_direction: tuple[str, ...] = ()
     camera_direction: tuple[str, ...] = ()
     other_direction: tuple[str, ...] = ()
+    style_profile_id: str = ""
+    motion_profile_id: str = ""
+    camera_profile_id: str = ""
+    retention_policy: str = "compiler_default"
+    retention_lines: tuple[str, ...] = ()
     provenance: tuple[ProvenanceRecord, ...] = ()
     schema: str = SCHEMA
 
@@ -162,6 +171,7 @@ class DirectionArtifact:
             "motion_direction",
             "camera_direction",
             "other_direction",
+            "retention_lines",
         ):
             values = getattr(self, field_name)
             if not isinstance(values, tuple):
@@ -170,6 +180,30 @@ class DirectionArtifact:
                 )
             for index, item in enumerate(values):
                 require_string(item, schema=SCHEMA, path=f"{field_name}[{index}]")
+        for field_name in (
+            "style_profile_id",
+            "motion_profile_id",
+            "camera_profile_id",
+        ):
+            value = getattr(self, field_name)
+            if not isinstance(value, str):
+                raise ArtifactValidationError(SCHEMA, field_name, "must be a string")
+        if self.retention_policy not in _RETENTION_POLICIES:
+            raise ArtifactValidationError(
+                SCHEMA, "retention_policy", "unsupported value"
+            )
+        if self.retention_policy == "passthrough" and not self.retention_lines:
+            raise ArtifactValidationError(
+                SCHEMA,
+                "retention_lines",
+                "passthrough retention requires at least one line",
+            )
+        if self.retention_policy != "passthrough" and self.retention_lines:
+            raise ArtifactValidationError(
+                SCHEMA,
+                "retention_lines",
+                "lines are only valid for passthrough retention",
+            )
         ids: set[str] = set()
         for index, record in enumerate(self.provenance):
             if not isinstance(record, ProvenanceRecord):
@@ -191,6 +225,11 @@ class DirectionArtifact:
             "motion_direction": list(self.motion_direction),
             "camera_direction": list(self.camera_direction),
             "other_direction": list(self.other_direction),
+            "style_profile_id": self.style_profile_id,
+            "motion_profile_id": self.motion_profile_id,
+            "camera_profile_id": self.camera_profile_id,
+            "retention_policy": self.retention_policy,
+            "retention_lines": list(self.retention_lines),
             "provenance": [record.to_dict() for record in self.provenance],
         }
 
@@ -209,6 +248,11 @@ class DirectionArtifact:
                 "motion_direction",
                 "camera_direction",
                 "other_direction",
+                "style_profile_id",
+                "motion_profile_id",
+                "camera_profile_id",
+                "retention_policy",
+                "retention_lines",
                 "provenance",
             },
         )
@@ -221,6 +265,7 @@ class DirectionArtifact:
             "motion_direction",
             "camera_direction",
             "other_direction",
+            "retention_lines",
         ):
             items = require_sequence(
                 value[field_name], schema=SCHEMA, path=field_name
@@ -230,11 +275,18 @@ class DirectionArtifact:
             value["provenance"], schema=SCHEMA, path="provenance"
         )
         artifact = cls(
-            **directions,
+            style_direction=directions["style_direction"],
+            motion_direction=directions["motion_direction"],
+            camera_direction=directions["camera_direction"],
+            other_direction=directions["other_direction"],
+            style_profile_id=value["style_profile_id"],
+            motion_profile_id=value["motion_profile_id"],
+            camera_profile_id=value["camera_profile_id"],
+            retention_policy=value["retention_policy"],
+            retention_lines=directions["retention_lines"],
             provenance=tuple(
                 ProvenanceRecord.from_dict(item) for item in provenance_values
             ),
         )
         artifact.validate()
         return artifact
-

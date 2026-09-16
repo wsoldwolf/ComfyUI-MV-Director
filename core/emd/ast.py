@@ -15,6 +15,14 @@ class Subject:
 
 
 @dataclass(frozen=True, slots=True)
+class RetentionDirective:
+    concept_id: str
+    mode: str
+    description: str
+    line_number: int
+
+
+@dataclass(frozen=True, slots=True)
 class LyricAnnotation:
     text: str
     section: str | None
@@ -55,7 +63,7 @@ class Scene:
 @dataclass(frozen=True, slots=True)
 class EMDDocument:
     subjects: tuple[Subject, ...]
-    retention: tuple[str, ...]
+    retention: tuple[RetentionDirective, ...]
     common_prompt: tuple[tuple[str, tuple[str, ...]], ...]
     scenes: tuple[Scene, ...]
 

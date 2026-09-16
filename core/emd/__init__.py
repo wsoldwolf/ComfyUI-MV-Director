@@ -4,6 +4,7 @@ from .ast import (
     AudioDirective,
     EMDDocument,
     LyricAnnotation,
+    RetentionDirective,
     Scene,
     Shot,
     Subject,
@@ -16,10 +17,10 @@ __all__ = [
     "EMDDocument",
     "EMDParseError",
     "LyricAnnotation",
+    "RetentionDirective",
     "Scene",
     "Shot",
     "Subject",
     "parse_emd",
     "parse_time_ms",
 ]
-

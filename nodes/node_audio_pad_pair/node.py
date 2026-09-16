@@ -64,14 +64,27 @@ class MVDirectorAudioPadPair:
         profile = h3_timing_profile or DEFAULT_H3_TIMING_PROFILE
         profile.validate()
         plan_duration_ms = 0
+        timeline_h3_frames = 0
         if timeline is not None:
             timeline.validate()
             plan_duration_ms = timeline.plan_duration_ms
+            # ``plan_duration_ms`` is a human-readable integer serialization of
+            # the frame timeline.  It can be fractionally shorter than the exact
+            # frame duration (for example, 719 / 24 s serializes as 29,958 ms).
+            # Keep the frame count authoritative so H3 preflight never loses the
+            # final frame through millisecond rounding.
+            timeline_h3_frames = sum(
+                scene.delivered_frames for scene in timeline.scenes
+            )
+        effective_target_h3_frames = max(
+            target_h3_frames,
+            timeline_h3_frames,
+        )
         padded_a, padded_b, targets = pad_audio_pair(
             audio_a,
             audio_b,
             plan_duration_ms=plan_duration_ms,
-            target_h3_frames=target_h3_frames,
+            target_h3_frames=effective_target_h3_frames,
             fps=profile.fps,
             extra_padding_ms=extra_padding_ms,
         )
@@ -102,7 +115,9 @@ class MVDirectorAudioPadPair:
             )
         status = (
             f"pad=end; target_samples_a={targets[0]}; target_samples_b={targets[1]}; "
-            f"plan_ms={plan_duration_ms}; target_frames={target_h3_frames}; "
+            f"plan_ms={plan_duration_ms}; timeline_frames={timeline_h3_frames}; "
+            f"requested_target_frames={target_h3_frames}; "
+            f"target_frames={effective_target_h3_frames}; "
             f"{alignment_status}"
         )
         return padded_a, padded_b, status, reference_audio_b

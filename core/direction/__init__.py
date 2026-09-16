@@ -5,9 +5,16 @@ from .enhancer import (
     DirectionEnhancerError,
     DirectionEnhancerInput,
     DirectionEnhancerResult,
+    PASSTHROUGH_PROFILE,
+    RETENTION_POLICIES,
     build_direction_payload,
     enhance_direction,
     render_direction_emd_preview,
+)
+from .passthrough import (
+    DirectionPassthrough,
+    DirectionPassthroughError,
+    parse_direction_passthrough,
 )
 from .profiles import (
     CAMERA_PROFILES,
@@ -23,10 +30,14 @@ __all__ = [
     "DirectionEnhancerError",
     "DirectionEnhancerInput",
     "DirectionEnhancerResult",
+    "DirectionPassthrough",
+    "DirectionPassthroughError",
     "MOTION_PROFILES",
+    "PASSTHROUGH_PROFILE",
+    "RETENTION_POLICIES",
     "STYLE_PROFILES",
     "build_direction_payload",
     "enhance_direction",
+    "parse_direction_passthrough",
     "render_direction_emd_preview",
 ]
-

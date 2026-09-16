@@ -26,7 +26,7 @@ V1は後方互換を要求しない。未知schema、旧`CL...` schema又はvers
 | `MVD_OBSERVATIONS_V1` | `ObservationsArtifact` | Visionの検証済み観察 |
 | `MVD_EMD_FRAGMENT_V1` | `EMDTextArtifact` | Subjectだけの編集可能EMD |
 | `MVD_REFERENCE_BINDINGS_V1` | `ReferenceBindingsArtifact` | IMAGEとPictureの物理束縛 |
-| `MVD_DIRECTION_V1` | `DirectionArtifact` | 四方向とprovenance |
+| `MVD_DIRECTION_V2` | `DirectionArtifact` | 四方向、profile ID、保持方針とprovenance |
 | `MVD_TIMELINE_V1` | `TimelineArtifact` | source音声、歌詞、Scene、Shot |
 | `MVD_EMD_TEMPLATE_V1` | `EMDTextArtifact` | 時間枠と歌詞annotation |
 | `MVD_EMD_V1` | `EMDTextArtifact` | 完成EMD |
@@ -44,16 +44,21 @@ V1は後方互換を要求しない。未知schema、旧`CL...` schema又はvers
 
 ```json
 {
-  "schema": "MVD_DIRECTION_V1",
+  "schema": "MVD_DIRECTION_V2",
   "style_direction": ["..."],
   "motion_direction": ["..."],
   "camera_direction": ["..."],
   "other_direction": [],
+  "style_profile_id": "reference_cinematic",
+  "motion_profile_id": "natural_performance",
+  "camera_profile_id": "readable_depth",
+  "retention_policy": "compiler_default",
+  "retention_lines": [],
   "provenance": []
 }
 ```
 
-四方向は空文字列を含まない文字列配列で、順序を保持する。provenance recordは次の固定shapeを使う。
+四方向は空文字列を含まない文字列配列で、順序を保持する。`retention_policy`は`profile` / `compiler_default` / `passthrough`のいずれかとする。`retention_lines`は`passthrough`時だけ非空で、各要素は先頭の`* `を除いたEMD保持record `` `サブジェクトN`: `fully_preserved|partially_preserved` 説明``である。三profile IDはPlannerがテキスト一致推測をせず機械policyを適用するために保存する。provenance recordは次の固定shapeを使う。
 
 ```json
 {
@@ -74,9 +79,9 @@ V1は後方互換を要求しない。未知schema、旧`CL...` schema又はvers
 - `record_kind`: `input` / `output` / `discard`
 - `source`: `user` / `vision` / `profile` / `generated`
 - `disposition`: `supplied` / `accepted` / `discarded`
-- `reason`: `direct_input` / `valid_line_record` / `empty` / `exact_duplicate` / `invalid_line_record`
+- `reason`: `direct_input` / `valid_line_record` / `empty` / `exact_duplicate` / `invalid_line_record` / `profile_enforced` / `profile_overridden` / `passthrough_enforced`
 - `source_position`: 0以上の入力item又は物理行index
-- `target`: 採用outputだけが`style_direction[N]`等を持ち、それ以外はnull
+- `target`: 採用outputだけが`style_direction[N]`又は`retention_lines[N]`等を持ち、それ以外はnull
 
 semanticな採用、上書き又は破棄理由を生成しない。
 

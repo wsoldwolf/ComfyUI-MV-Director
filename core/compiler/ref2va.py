@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import json
+import re
 from typing import Any
 
 from ..artifacts.references import (
@@ -16,6 +17,11 @@ from ..h3_contract import DEFAULT_H3_TIMING_PROFILE, H3TimingProfile
 
 from .protection import protect_unit
 from .translator import PromptTranslator, translate_exact
+
+
+_TRANSLATION_REQUIRED_RE = re.compile(
+    r"[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]"
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,8 +61,8 @@ class _TranslationTable:
 
         for subject_index, subject in enumerate(self.document.subjects):
             add(f"subject.{subject_index}.description", subject.description)
-        for index, text in enumerate(self.document.retention):
-            add(f"retention.{index}", text)
+        for index, directive in enumerate(self.document.retention):
+            add(f"retention.{index}.description", directive.description)
         for section, values in self.document.common_prompt:
             for index, text in enumerate(values):
                 add(f"common.{section}.{index}", text)
@@ -68,10 +74,19 @@ class _TranslationTable:
                     add(f"scene.{scene_index}.shot.{shot_index}.body.{index}", text)
 
         protected = [protect_unit(text, self.document.subjects) for text in units]
-        translated = translate_exact(self.translator, [item.text for item in protected])
+        translated_indices = [
+            index
+            for index, item in enumerate(protected)
+            if _TRANSLATION_REQUIRED_RE.search(item.text)
+        ]
+        translated = translate_exact(
+            self.translator,
+            [protected[index].text for index in translated_indices],
+        )
+        translated_by_index = dict(zip(translated_indices, translated))
         self._values = {
-            key: item.restore(value)
-            for key, item, value in zip(keys, protected, translated)
+            key: item.restore(translated_by_index.get(index, item.text))
+            for index, (key, item) in enumerate(zip(keys, protected))
         }
 
     def get(self, key: str) -> str:
@@ -84,9 +99,14 @@ def _subject_definition(
     description = translations.get(f"subject.{index}.description")
     if not subject.references:
         return [f"{subject.subject_ref} is described here: {description}"]
+    separator = (
+        ""
+        if description.rstrip().endswith((".", "!", "?", "。", "！", "？"))
+        else "."
+    )
     references = ", ".join(subject.references)
     return [
-        f"{subject.subject_ref} is described here: {description} "
+        f"{subject.subject_ref} is described here: {description.rstrip()}{separator} "
         f"Use these connected references for it: {references}."
     ]
 
@@ -95,32 +115,20 @@ def _retention_lines(
     document: EMDDocument, translations: _TranslationTable
 ) -> list[str]:
     if document.retention:
+        subject_refs = {
+            subject.concept_id: subject.subject_ref for subject in document.subjects
+        }
         return [
-            translations.get(f"retention.{index}")
-            for index in range(len(document.retention))
+            f"{subject_refs[directive.concept_id]}: {directive.mode} - "
+            f"{translations.get(f'retention.{index}.description')}"
+            for index, directive in enumerate(document.retention)
         ]
     lines: list[str] = []
     for subject in document.subjects:
-        picture_refs = tuple(
-            reference
-            for reference in subject.references
-            if reference.startswith("<Picture ")
+        lines.append(
+            f"{subject.subject_ref}: fully_preserved - preserve the described "
+            "identity and attributes across shots."
         )
-        if picture_refs:
-            pictures = ", ".join(picture_refs)
-            lines.extend(
-                [
-                    f"{pictures}: fully_preserved - use the connected image reference "
-                    "or references for visual identity.",
-                    f"{subject.subject_ref}: fully_preserved - preserve the identity and "
-                    f"described attributes from {pictures}.",
-                ]
-            )
-        else:
-            lines.append(
-                f"{subject.subject_ref}: fully_preserved - preserve the described "
-                "identity and attributes across shots."
-            )
     return lines
 
 
@@ -210,9 +218,12 @@ def _scene_prompt(
             )
         shot_lines.append(f"{marker} {' '.join(parts)}")
 
-    summary = scene_lines[0] if scene_lines else translations.get(
+    summary_body = scene_lines[0] if scene_lines else translations.get(
         f"scene.{scene_index}.shot.0.body.0"
     )
+    summary = summary_body.strip()
+    if not summary.startswith("[reference generation]"):
+        summary = f"[reference generation] {summary}"
     soundscape, music, audio_fields = _audio_prompt(
         document, scene.audio_directives
     )

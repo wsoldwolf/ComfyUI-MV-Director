@@ -12,6 +12,7 @@ from .ast import (
     AudioDirective,
     EMDDocument,
     LyricAnnotation,
+    RetentionDirective,
     Scene,
     Shot,
     Subject,
@@ -48,7 +49,8 @@ _SHOT_CONCEPT_START_RE = re.compile(
     r"\* `サブジェクト[1-4]`(?:\s|\Z)"
 )
 _RETENTION_RE = re.compile(
-    r"\* `(サブジェクト[1-4])`:\s*(.+)\Z"
+    r"\* `(サブジェクト[1-4])`:\s*"
+    r"`(fully_preserved|partially_preserved)`\s+(.+)\Z"
 )
 _RESERVED_LIST_RE = re.compile(r"\* `[^`]+`(?:\s|\Z)")
 _D_TAG_RE = re.compile(r"</?d(?:\[[^\]\r\n]+\])?>")
@@ -124,7 +126,7 @@ class _Parser:
             raise EMDParseError(0, "empty EMD is not compiler-ready")
         self.expect("# サブジェクト")
         subjects = self.parse_subjects()
-        retention: tuple[str, ...] = ()
+        retention: tuple[RetentionDirective, ...] = ()
         common: tuple[tuple[str, tuple[str, ...]], ...] = ()
         line = self.current()
         if line and line.text == "# 保持分析":
@@ -234,20 +236,29 @@ class _Parser:
             )
         return tuple(values)
 
-    def parse_retention(self, subjects: tuple[Subject, ...]) -> tuple[str, ...]:
+    def parse_retention(
+        self, subjects: tuple[Subject, ...]
+    ) -> tuple[RetentionDirective, ...]:
         self.expect("# 保持分析")
         defined = {subject.concept_id for subject in subjects}
-        values: list[str] = []
+        values: list[RetentionDirective] = []
         while (line := self.current()) is not None and line.text.startswith("* "):
             match = _RETENTION_RE.fullmatch(line.text)
             if match is None:
                 raise EMDParseError(
                     line.number,
-                    "retention line must start with a defined concept ID and colon",
+                    "retention line must use a defined concept ID, fixed mode, and description",
                 )
             if match.group(1) not in defined:
                 raise EMDParseError(line.number, "retention references undefined concept ID")
-            values.append(line.text[2:])
+            values.append(
+                RetentionDirective(
+                    concept_id=match.group(1),
+                    mode=match.group(2),
+                    description=match.group(3),
+                    line_number=line.number,
+                )
+            )
             self.take()
         if not values:
             line = self.current()

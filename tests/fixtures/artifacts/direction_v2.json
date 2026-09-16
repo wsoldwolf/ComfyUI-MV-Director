@@ -1,5 +1,5 @@
 {
-  "schema": "MVD_DIRECTION_V1",
+  "schema": "MVD_DIRECTION_V2",
   "style_direction": [
     "実写映画として描写する。"
   ],
@@ -10,6 +10,11 @@
     "前景と背景の視差を使う。"
   ],
   "other_direction": [],
+  "style_profile_id": "reference_cinematic",
+  "motion_profile_id": "natural_performance",
+  "camera_profile_id": "readable_depth",
+  "retention_policy": "compiler_default",
+  "retention_lines": [],
   "provenance": [
     {
       "record_id": "src_0001",

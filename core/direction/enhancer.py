@@ -17,17 +17,24 @@ from ..artifacts import (
 )
 from ..inference import LlamaRuntimeConfig
 from ..protocols import LLMRecord, LLMRecordIssue, parse_llm_records
-from .profiles import CAMERA_PROFILES, MOTION_PROFILES, STYLE_PROFILES
+from .profiles import (
+    CAMERA_PROFILES,
+    LOCKED_STYLE_PROFILES,
+    MOTION_PROFILES,
+    STYLE_PROFILES,
+)
+from .passthrough import DirectionPassthrough, parse_direction_passthrough
 
 
-DIRECTION_PROMPT_VERSION = "mvd-direction-enhancer-v2"
+DIRECTION_PROMPT_VERSION = "mvd-direction-enhancer-v13"
+PASSTHROUGH_PROFILE = "passthrough"
+RETENTION_POLICIES = ("profile", "compiler_default", "passthrough")
 _ALLOWED = {
     "STYLE": frozenset({1}),
     "MOTION": frozenset({1}),
     "CAMERA": frozenset({1}),
     "OTHER": frozenset({1}),
 }
-_REQUIRED = frozenset({("STYLE", 1), ("MOTION", 1), ("CAMERA", 1)})
 _FIELD_BY_TYPE = {
     "STYLE": "style_direction",
     "MOTION": "motion_direction",
@@ -61,20 +68,29 @@ class DirectionEnhancerInput:
     style_profile: str = "reference_anime"
     motion_profile: str = "natural_performance"
     camera_profile: str = "readable_depth"
+    retention_policy: str = "profile"
+    direction_emd_passthrough: str = ""
 
     def validate(self) -> None:
-        for name in ("concept_emd", "observations_json", "user_request"):
+        for name in (
+            "concept_emd",
+            "observations_json",
+            "user_request",
+            "direction_emd_passthrough",
+        ):
             value = getattr(self, name)
             if not isinstance(value, str):
                 raise DirectionEnhancerError(f"{name} must be a string")
             if "\x00" in value:
                 raise DirectionEnhancerError(f"{name} contains NUL")
-        if self.style_profile not in STYLE_PROFILES:
+        if self.style_profile not in {*STYLE_PROFILES, PASSTHROUGH_PROFILE}:
             raise DirectionEnhancerError("unknown style_profile")
-        if self.motion_profile not in MOTION_PROFILES:
+        if self.motion_profile not in {*MOTION_PROFILES, PASSTHROUGH_PROFILE}:
             raise DirectionEnhancerError("unknown motion_profile")
-        if self.camera_profile not in CAMERA_PROFILES:
+        if self.camera_profile not in {*CAMERA_PROFILES, PASSTHROUGH_PROFILE}:
             raise DirectionEnhancerError("unknown camera_profile")
+        if self.retention_policy not in RETENTION_POLICIES:
+            raise DirectionEnhancerError("unknown retention_policy")
         concept = self.normalized_concept_emd
         if concept:
             headings = [line for line in concept.split("\n") if line.startswith("# ")]
@@ -90,6 +106,30 @@ class DirectionEnhancerInput:
             if not isinstance(value, dict):
                 raise DirectionEnhancerError("observations_json must contain an object")
             ObservationsArtifact.from_dict(value)
+        passthrough = self.passthrough
+        selected = {
+            "style": self.style_profile == PASSTHROUGH_PROFILE,
+            "motion": self.motion_profile == PASSTHROUGH_PROFILE,
+            "camera": self.camera_profile == PASSTHROUGH_PROFILE,
+        }
+        for name, enabled in selected.items():
+            values = getattr(passthrough, name)
+            if enabled and not values:
+                raise DirectionEnhancerError(
+                    f"{name}_profile=passthrough requires ## {_PASSTHROUGH_HEADING[name]}"
+                )
+            if values and not enabled:
+                raise DirectionEnhancerError(
+                    f"## {_PASSTHROUGH_HEADING[name]} requires {name}_profile=passthrough"
+                )
+        if self.retention_policy == "passthrough" and not passthrough.retention:
+            raise DirectionEnhancerError(
+                "retention_policy=passthrough requires # 保持分析"
+            )
+        if passthrough.retention and self.retention_policy != "passthrough":
+            raise DirectionEnhancerError(
+                "# 保持分析 requires retention_policy=passthrough"
+            )
 
     @property
     def normalized_concept_emd(self) -> str:
@@ -102,6 +142,40 @@ class DirectionEnhancerInput:
     @property
     def normalized_user_request(self) -> str:
         return normalize_newlines(self.user_request).strip()
+
+    @property
+    def normalized_direction_emd_passthrough(self) -> str:
+        return normalize_newlines(self.direction_emd_passthrough).strip()
+
+    @property
+    def passthrough(self) -> DirectionPassthrough:
+        return parse_direction_passthrough(
+            self.normalized_direction_emd_passthrough,
+            concept_emd=self.normalized_concept_emd,
+        )
+
+    @property
+    def requested_record_types(self) -> tuple[str, ...]:
+        return tuple(
+            record_type
+            for record_type, profile in (
+                ("STYLE", self.style_profile),
+                ("MOTION", self.motion_profile),
+                ("CAMERA", self.camera_profile),
+            )
+            if profile != PASSTHROUGH_PROFILE
+        )
+
+    @property
+    def requires_inference(self) -> bool:
+        return bool(self.requested_record_types)
+
+
+_PASSTHROUGH_HEADING = {
+    "style": "スタイル",
+    "motion": "モーション",
+    "camera": "カメラ",
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -120,21 +194,32 @@ def build_direction_payload(value: DirectionEnhancerInput) -> str:
         "authority_order": ["user", "vision_concept", "profile", "generated"],
         "user_request": value.normalized_user_request,
         "concept_emd": value.normalized_concept_emd,
-        "profiles": {
-            "style": {
-                "id": value.style_profile,
-                "text": STYLE_PROFILES[value.style_profile],
-            },
-            "motion": {
-                "id": value.motion_profile,
-                "text": MOTION_PROFILES[value.motion_profile],
-            },
-            "camera": {
-                "id": value.camera_profile,
-                "text": CAMERA_PROFILES[value.camera_profile],
-            },
+        "requested_records": list(value.requested_record_types),
+        "profiles": {},
+        "passthrough_context": {
+            "style": list(value.passthrough.style),
+            "motion": list(value.passthrough.motion),
+            "camera": list(value.passthrough.camera),
+            "other": list(value.passthrough.other),
         },
     }
+    profiles = payload["profiles"]
+    if value.style_profile != PASSTHROUGH_PROFILE:
+        profiles["style"] = {
+            "id": value.style_profile,
+            "text": STYLE_PROFILES[value.style_profile],
+            "locked": value.style_profile in LOCKED_STYLE_PROFILES,
+        }
+    if value.motion_profile != PASSTHROUGH_PROFILE:
+        profiles["motion"] = {
+            "id": value.motion_profile,
+            "text": MOTION_PROFILES[value.motion_profile],
+        }
+    if value.camera_profile != PASSTHROUGH_PROFILE:
+        profiles["camera"] = {
+            "id": value.camera_profile,
+            "text": CAMERA_PROFILES[value.camera_profile],
+        }
     if value.normalized_observations_json:
         payload["vision_observations"] = json.loads(
             value.normalized_observations_json
@@ -152,13 +237,21 @@ def _input_provenance(value: DirectionEnhancerInput) -> list[ProvenanceRecord]:
         items.append(
             ("vision", "observations_json", value.normalized_observations_json)
         )
-    items.extend(
-        (
-            ("profile", value.style_profile, STYLE_PROFILES[value.style_profile]),
-            ("profile", value.motion_profile, MOTION_PROFILES[value.motion_profile]),
-            ("profile", value.camera_profile, CAMERA_PROFILES[value.camera_profile]),
+    for profile_id, profiles in (
+        (value.style_profile, STYLE_PROFILES),
+        (value.motion_profile, MOTION_PROFILES),
+        (value.camera_profile, CAMERA_PROFILES),
+    ):
+        if profile_id != PASSTHROUGH_PROFILE:
+            items.append(("profile", profile_id, profiles[profile_id]))
+    if value.normalized_direction_emd_passthrough:
+        items.append(
+            (
+                "user",
+                "direction_emd_passthrough",
+                value.normalized_direction_emd_passthrough,
+            )
         )
-    )
     return [
         ProvenanceRecord(
             record_id=f"src_{index:04d}",
@@ -257,11 +350,19 @@ def render_direction_emd_preview(direction: DirectionArtifact) -> str:
         ("カメラ", direction.camera_direction),
         ("その他", direction.other_direction),
     )
-    lines = ["# 共通プロンプト"]
+    lines: list[str] = []
+    if direction.retention_lines:
+        lines.extend(
+            ("# 保持分析", *(f"* {item}" for item in direction.retention_lines))
+        )
+    if any(values for _, values in sections):
+        if lines:
+            lines.append("")
+        lines.append("# 共通プロンプト")
     for heading, values in sections:
         if values:
             lines.extend((f"## {heading}", *(f"* {item}" for item in values)))
-    return "\n".join(lines) + "\n"
+    return "\n".join(lines) + ("\n" if lines else "")
 
 
 def enhance_direction(
@@ -274,28 +375,45 @@ def enhance_direction(
 ) -> DirectionEnhancerResult:
     value.validate()
     runtime_config.validate()
-    if not system_prompt.strip():
+    if value.requires_inference and not system_prompt.strip():
         raise DirectionEnhancerError("Direction system prompt is empty")
     payload = build_direction_payload(value)
-    first_response = backend.complete_direction(
-        system_prompt=system_prompt,
-        payload=payload,
-        config=runtime_config,
-        interrupt_callback=interrupt_callback,
-    )
-    first = parse_llm_records(
-        _normalize_small_model_response(first_response),
-        allowed_slots=_ALLOWED,
-        required=_REQUIRED,
-    )
-    all_issues = list(first.issues)
-    retried_missing = first.missing
+    passthrough = value.passthrough
+    requested = value.requested_record_types
+    required = frozenset((record_type, 1) for record_type in requested)
+    allowed_types = set(requested)
+    if not passthrough.other:
+        allowed_types.add("OTHER")
+    allowed = {
+        record_type: _ALLOWED[record_type]
+        for record_type in _DIRECTION_RECORD_TYPES
+        if record_type in allowed_types
+    }
+    first_records: tuple[LLMRecord, ...] = ()
+    all_issues: list[LLMRecordIssue] = []
+    retried_missing: tuple[tuple[str, int], ...] = ()
+    remaining: tuple[tuple[str, int], ...] = ()
+    if value.requires_inference:
+        first_response = backend.complete_direction(
+            system_prompt=system_prompt,
+            payload=payload,
+            config=runtime_config,
+            interrupt_callback=interrupt_callback,
+        )
+        first = parse_llm_records(
+            _normalize_small_model_response(first_response),
+            allowed_slots=allowed,
+            required=required,
+        )
+        first_records = first.records
+        all_issues.extend(first.issues)
+        retried_missing = first.missing
+        remaining = first.missing
     retry_records: tuple[LLMRecord, ...] = ()
-    remaining = first.missing
-    if first.missing:
+    if retried_missing:
         retry_response = backend.complete_direction(
             system_prompt=system_prompt,
-            payload=_retry_payload(payload, first.missing),
+            payload=_retry_payload(payload, retried_missing),
             config=runtime_config,
             interrupt_callback=interrupt_callback,
         )
@@ -303,52 +421,112 @@ def enhance_direction(
             _normalize_small_model_response(retry_response),
             allowed_slots={
                 record_type: frozenset({slot})
-                for record_type, slot in first.missing
+                for record_type, slot in retried_missing
             },
-            required=frozenset(first.missing),
+            required=frozenset(retried_missing),
         )
         all_issues.extend(retry_result.issues)
         retry_records = retry_result.records
         recovered = {
             (record.record_type, record.slot)
             for record in retry_records
-            if (record.record_type, record.slot) in set(first.missing)
+            if (record.record_type, record.slot) in set(retried_missing)
         }
-        remaining = tuple(item for item in first.missing if item not in recovered)
+        remaining = tuple(item for item in retried_missing if item not in recovered)
     if remaining:
         labels = ", ".join(f"{kind}:{slot}" for kind, slot in remaining)
         raise DirectionEnhancerError(
             f"Direction Enhancer is missing required records after one retry: {labels}"
         )
 
-    records = _merge_records(first.records, retry_records, first.missing)
+    records = _merge_records(first_records, retry_records, retried_missing)
     values: dict[str, list[str]] = {
-        "style_direction": [],
-        "motion_direction": [],
-        "camera_direction": [],
-        "other_direction": [],
+        "style_direction": list(passthrough.style),
+        "motion_direction": list(passthrough.motion),
+        "camera_direction": list(passthrough.camera),
+        "other_direction": list(passthrough.other),
     }
     provenance = _input_provenance(value)
     provenance.extend(_discard_provenance(all_issues))
     output_counts = {field: 0 for field in values}
+    for field, passthrough_values in (
+        ("style_direction", passthrough.style),
+        ("motion_direction", passthrough.motion),
+        ("camera_direction", passthrough.camera),
+        ("other_direction", passthrough.other),
+    ):
+        for index, text in enumerate(passthrough_values):
+            output_counts[field] += 1
+            provenance.append(
+                ProvenanceRecord(
+                    record_id=f"out_{field}_{output_counts[field]:04d}",
+                    record_kind="output",
+                    source="user",
+                    source_ref="direction_emd_passthrough",
+                    source_position=index,
+                    target=f"{field}[{index}]",
+                    disposition="accepted",
+                    reason="passthrough_enforced",
+                    sha256=sha256_text(text),
+                )
+            )
     for record in records:
         field = _FIELD_BY_TYPE[record.record_type]
         if values[field]:
             continue
+        output_text = record.text
+        output_source = "generated"
+        output_source_ref = f"{record.record_type}:{record.slot}"
+        output_reason = "valid_line_record"
+        if (
+            record.record_type == "STYLE"
+            and value.style_profile in LOCKED_STYLE_PROFILES
+        ):
+            provenance.append(
+                ProvenanceRecord(
+                    record_id="drop_locked_style_0001",
+                    record_kind="discard",
+                    source="generated",
+                    source_ref=f"{record.record_type}:{record.slot}",
+                    source_position=record.line_number - 1,
+                    target=None,
+                    disposition="discarded",
+                    reason="profile_overridden",
+                    sha256=sha256_text(record.text),
+                )
+            )
+            output_text = STYLE_PROFILES[value.style_profile]
+            output_source = "profile"
+            output_source_ref = value.style_profile
+            output_reason = "profile_enforced"
         target_index = len(values[field])
-        values[field].append(record.text)
+        values[field].append(output_text)
         output_counts[field] += 1
         provenance.append(
             ProvenanceRecord(
                 record_id=f"out_{record.record_type.casefold()}_{output_counts[field]:04d}",
                 record_kind="output",
-                source="generated",
-                source_ref=f"{record.record_type}:{record.slot}",
+                source=output_source,
+                source_ref=output_source_ref,
                 source_position=record.line_number - 1,
                 target=f"{field}[{target_index}]",
                 disposition="accepted",
-                reason="valid_line_record",
-                sha256=sha256_text(record.text),
+                reason=output_reason,
+                sha256=sha256_text(output_text),
+            )
+        )
+    for index, text in enumerate(passthrough.retention):
+        provenance.append(
+            ProvenanceRecord(
+                record_id=f"out_retention_{index + 1:04d}",
+                record_kind="output",
+                source="user",
+                source_ref="direction_emd_passthrough",
+                source_position=index,
+                target=f"retention_lines[{index}]",
+                disposition="accepted",
+                reason="passthrough_enforced",
+                sha256=sha256_text(text),
             )
         )
     direction = DirectionArtifact(
@@ -356,6 +534,11 @@ def enhance_direction(
         motion_direction=tuple(values["motion_direction"]),
         camera_direction=tuple(values["camera_direction"]),
         other_direction=tuple(values["other_direction"]),
+        style_profile_id=value.style_profile,
+        motion_profile_id=value.motion_profile,
+        camera_profile_id=value.camera_profile,
+        retention_policy=value.retention_policy,
+        retention_lines=passthrough.retention,
         provenance=tuple(provenance),
     )
     direction.validate()

@@ -106,9 +106,9 @@ EMDはEasy MarkDownの略であり、Extended Markdownではありません。�
 
 Shot本文の`「...」`は内容を変えず`<d>[Japanese]...</d>`へ包むだけにします。作者が既に書いた`<d>...</d>`又は`<d>[English]...</d>`はopaque spanとして翻訳せず、そのままH3へ渡します。話者やsource audioとの一致は監査しません。追加発声禁止が必要な作者は`明示台詞のみ`を明記し、Compilerはその場合だけ対応prompt要素を出します。歌詞annotationは直接台詞へ変換しません。
 
-EnhancerとPlannerのLLM出力にJSONを使いません。`MVD_LLM_RECORDS_V1`として`TYPE<TAB>SLOT<TAB>TEXT`の一行一recordだけを返させ、短いslotから実Scene/Shot IDと時刻への対応はPython side tableが所有します。LLMはheader、終端marker、JSON escape、実ID又は時刻を生成しません。Pythonがrecordを解析して`MVD_DIRECTION_V1`、完成EMD及び下流JSONを構築します。旧実装から再利用するのは行指向の境界だけで、入れ子blockや意味repairは持ち込みません。
+EnhancerとPlannerのLLM出力にJSONを使いません。`MVD_LLM_RECORDS_V1`として`TYPE<TAB>SLOT<TAB>TEXT`の一行一recordだけを返させ、短いslotから実Scene/Shot IDと時刻への対応はPython side tableが所有します。LLMはheader、終端marker、JSON escape、実ID又は時刻を生成しません。Pythonがrecordと機械的パススルーを合成して`MVD_DIRECTION_V2`、完成EMD及び下流JSONを構築します。旧実装から再利用するのは行指向の境界だけで、入れ子blockや意味repairは持ち込みません。
 
-`MVD_DIRECTION_V1`はユーザー記述形式ではなくEnhancerからPlannerへの任意typed artifactです。四方向と、入力・採用行・機械的破棄だけをPythonが記録した最小provenanceを持ちます。LLMの意味判断や上書き理由は推測しません。Enhancerは確認用EMD previewも返しますがPlannerはartifactだけを読み、未接続でも動作します。Plannerは旧llama.cpp調整socketを維持し、完全表は最小コア仕様7.4を正とします。
+`MVD_DIRECTION_V2`はEnhancerからPlannerへの任意typed artifactです。四方向、profile ID、保持方針、任意の機械的パススルー行とprovenanceを持ちます。各profile comboを`passthrough`にした区分はLLMへ渡さず、三区分すべてがパススルーならGGUFをロードしません。Enhancerは確認用EMD previewも返しますがPlannerはartifactだけを読み、未接続でも動作します。
 
 人物動作を先に生成し、camera taskは確定actionを読み取り専用contextとして受けます。同じShotでは両者を全区間で並行させ、action、cameraの順に出力します。数値sub-timeとmid-shot cutは生成せず、cutはLyric Segmentationが既に確定したShot境界でだけ表現します。
 
@@ -126,7 +126,7 @@ Plannerでは作者由来の`「...」`と明示`<d>...</d>`をLLM前に`__MVD_L
 
 Compilerは完全Ref2VA EMD文字列、H3 Timing Profile、翻訳mode、選択GGUFとruntime設定だけで単独実行できるものとする。日本語prompt本文だけを英訳し、各Sceneへ正規Ref2VA六セクションを出す。EMDにない六セクション必須欄はLLMに補わせず、Scene本文の一行コピーと固定の保持・音響no-op文で機械的に満たす。先頭Shotは`[Shot 1]`、後続は`[Shot N] At MM:SS.mmm,`とする。IMAGE、AUDIO又はworkflow graphは要求しない。一つ以上のSubject descriptionは必須だがmedia bindingは任意で、なければ文章定義だけのH3内蔵概念としてRef2VAを出力し、T2VAへfallbackしない。
 
-Timeline PlannerはMV専用とし、外部接続可能な`lip_sync_mode`（`off`、`context_loop`、`audio_reference`、`lyrics`。既定`lyrics`）で口形方式だけを切り替える。EMDは``リップシンク Context Loop``、``リップシンク Audio参照``、``リップシンク 歌詞``へ統一し、`off`ではdirectiveを出さない。歌詞annotationは全modeで完成EMDへ保持し、人物動作・演出にも使う。mode切替は口形directiveのmaterializeだけを変え、歌詞を物理削除しない。
+Timeline PlannerはMV専用とし、外部接続可能な`lip_sync_mode`（`off`、`context_loop`、`audio_reference`、`lyrics`。既定`lyrics`）で口形方式だけを切り替える。EMDは``リップシンク Context Loop``、``リップシンク Audio参照``、``リップシンク 歌詞``へ統一し、`off`ではdirectiveを出さない。`context_loop`は歌詞のない間奏又は末尾を含む全Sceneへmaterializeし、Compiler出力のgeneration-time source音声方針を決定的にする。後二方式は歌詞annotationのあるScene又はShotだけへmaterializeする。歌詞annotationは全modeで完成EMDへ保持し、人物動作・演出にも使う。mode切替は口形directiveのmaterializeだけを変え、歌詞を物理削除しない。
 
 「最終音声として保持」は人間がEMDへ書く条件ではない。標準構成は三方式ごとのPlan/Compiler WFと動画生成WFを一対一にした計6 WFとし、完成動画のsoundtrackは後者のContext Loop Chain Policyが所有する。Plannerに`lock_source_audio`を設けず、EMDに`ソース音声固定`を設けない。Context Loop方式のCompiler出力にある`source_audio_target: "locked"`はgeneration-timeのsource音声ターゲットであり、最終音声選択ではない。実装前に監査した境界と解決内容は`docs/research/spec-gap-audit-2026-09-16.md`にまとめた。
 

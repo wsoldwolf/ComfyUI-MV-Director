@@ -17,7 +17,7 @@ from ..protocols import parse_llm_records
 from .errors import CompilerError
 
 
-TRANSLATION_PROMPT_VERSION = "mvd-prompt-translation-ja-en-v3"
+TRANSLATION_PROMPT_VERSION = "mvd-prompt-translation-ja-en-v4"
 TRANSLATION_RECORD_TYPE = "TRANSLATION"
 TRANSLATION_MAX_BATCH_UNITS = 7
 _JAPANESE_SCRIPT_RE = re.compile(r"[\u3040-\u30ff\u3400-\u9fff]")
@@ -70,7 +70,7 @@ def _normalize_small_model_response(response: str) -> str:
 
 
 class LlamaPromptTranslator:
-    """Translate ordered units without repair, semantic review, or retry."""
+    """Translate ordered units with one isolated retry for missing slots."""
 
     def __init__(
         self,
@@ -145,7 +145,7 @@ class LlamaPromptTranslator:
         )
         raise AssertionError("unreachable context budget state")
 
-    def _translate_batch(self, units: Sequence[str]) -> tuple[str, ...]:
+    def _complete_units(self, units: Sequence[str]) -> str:
         payload = f"/no_think\n{self._payload(units)}"
         count = self.lifecycle.count_serialized_prompt(
             self.system_prompt + "\n" + payload
@@ -164,19 +164,17 @@ class LlamaPromptTranslator:
             self.runtime_config,
             interrupt_callback=self.interrupt_callback,
         )
-        slots = frozenset(range(1, len(units) + 1))
-        parsed = parse_llm_records(
-            _normalize_small_model_response(response),
-            allowed_slots={TRANSLATION_RECORD_TYPE: slots},
-            required=frozenset((TRANSLATION_RECORD_TYPE, slot) for slot in slots),
-        )
-        if parsed.issues or parsed.missing:
-            reasons = ",".join(issue.reason for issue in parsed.issues) or "none"
-            missing = ",".join(str(slot) for _, slot in parsed.missing) or "none"
-            raise CompilerError(
-                "translation response does not match the line protocol: "
-                f"issues={reasons}; missing_slots={missing}"
-            )
+        self.batch_count += 1
+        if count.estimated:
+            self.estimated_token_batches += 1
+        return response
+
+    @staticmethod
+    def _english_text_by_slot(
+        parsed: Any,
+        *,
+        displayed_slots: Sequence[int],
+    ) -> dict[int, str]:
         by_slot = {record.slot: record.text for record in parsed.records}
         non_english = [
             slot
@@ -184,13 +182,57 @@ class LlamaPromptTranslator:
             if _JAPANESE_SCRIPT_RE.search(text) or text.strip() == str(slot)
         ]
         if non_english:
-            labels = ",".join(str(slot) for slot in sorted(non_english))
+            labels = ",".join(
+                str(displayed_slots[slot - 1]) for slot in sorted(non_english)
+            )
             raise CompilerError(
                 "translation response is not English for slots: " + labels
             )
-        self.batch_count += 1
-        if count.estimated:
-            self.estimated_token_batches += 1
+        return by_slot
+
+    @staticmethod
+    def _protocol_error(parsed: Any) -> CompilerError:
+        reasons = ",".join(issue.reason for issue in parsed.issues) or "none"
+        missing = ",".join(str(slot) for _, slot in parsed.missing) or "none"
+        return CompilerError(
+            "translation response does not match the line protocol: "
+            f"issues={reasons}; missing_slots={missing}"
+        )
+
+    def _translate_batch(self, units: Sequence[str]) -> tuple[str, ...]:
+        response = self._complete_units(units)
+        slots = frozenset(range(1, len(units) + 1))
+        parsed = parse_llm_records(
+            _normalize_small_model_response(response),
+            allowed_slots={TRANSLATION_RECORD_TYPE: slots},
+            required=frozenset((TRANSLATION_RECORD_TYPE, slot) for slot in slots),
+        )
+        by_slot = self._english_text_by_slot(
+            parsed,
+            displayed_slots=tuple(range(1, len(units) + 1)),
+        )
+        if parsed.issues and not parsed.missing:
+            raise self._protocol_error(parsed)
+
+        for _, missing_slot in parsed.missing:
+            retry_response = self._complete_units((units[missing_slot - 1],))
+            retry = parse_llm_records(
+                _normalize_small_model_response(retry_response),
+                allowed_slots={TRANSLATION_RECORD_TYPE: frozenset({1})},
+                required=frozenset({(TRANSLATION_RECORD_TYPE, 1)}),
+            )
+            if retry.issues or retry.missing:
+                raise CompilerError(
+                    "translation response does not match the line protocol after "
+                    f"isolated retry for slot {missing_slot}: "
+                    f"{self._protocol_error(retry)}"
+                )
+            retry_by_slot = self._english_text_by_slot(
+                retry,
+                displayed_slots=(missing_slot,),
+            )
+            by_slot[missing_slot] = retry_by_slot[1]
+
         return tuple(by_slot[slot] for slot in range(1, len(units) + 1))
 
     def translate(self, units: Sequence[str]) -> Sequence[str]:
