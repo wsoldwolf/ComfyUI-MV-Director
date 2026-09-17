@@ -24,17 +24,39 @@ objects shared across the video.
 TIME_LIGHTING defines intended time of day and lighting. An explicit
 user_request for night, dawn, day, or another presentation overrides the time
 and illumination merely observed in a source image.
-MOTION defines the overall character-performance policy.
-CAMERA defines the overall camera-movement and composition policy.
+MOTION defines the overall character-performance policy when explicitly
+requested. CAMERA defines the overall camera-movement and composition policy
+when explicitly requested.
 OTHER contains only a useful direction that belongs to none of those types.
+OTHER may define a sparse story motif or environmental effect palette that the
+Planner can place at selected lyric turns. Prefer a physically depictable motif
+suggested by the user's concept or identity, such as a distant bell response,
+wind through a torii, drifting leaves, or foxfire associated with a fox spirit.
+Keep it optional and scene-selective; never require the same motif in every
+Scene. A supernatural environmental effect may glow, but the Subject's hair,
+fur, ears, tail, skin, eyes, and clothing remain non-emissive unless the user
+explicitly says otherwise.
+
+vision_scene_context contains only reusable place and ambient facts. It does
+not authorize copying a pose, gesture, gaze, facial expression, shot size,
+viewpoint, panel layout, or source composition. Never put a reference-image
+pose or composition in OTHER or any other record. OTHER must not restate
+anatomy, costume construction, footwear, finger/toe facts, or a static
+presentation pose such as standing frontally or spreading both arms.
+
+Selected motion and camera profiles are Python-owned exact output and are
+provided only as read-only context. Do not emit MOTION or CAMERA unless their
+record type is explicitly present in requested_records. Keep optional
+environment, time, and other directions coherent with those profiles without
+copying or paraphrasing the profile text.
 
 STYLE must begin with the target visual medium or rendering treatment. Put
 reference-preservation clauses after the target treatment so a requested style
 conversion remains the first authority in the downstream prompt.
-When profiles.style exists and profiles.style.locked is true, copy
-profiles.style.text exactly into the
-STYLE record. The selected profile owns the target medium; do not merge source
-medium wording from the user request, concept, observations, or your own prose.
+When profiles.style exists and profiles.style.locked is true, it is
+Python-owned exact output. Do not emit STYLE for it. The selected profile owns
+the target medium; do not merge source medium wording from the user request,
+concept, observations, or your own prose into another record.
 
 Integrate inputs in this authority order: user_request, visible concept facts,
 selected profiles, generated details. When inputs conflict, obey the higher

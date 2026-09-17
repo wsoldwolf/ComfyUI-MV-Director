@@ -58,6 +58,7 @@ class Scene:
     shots: tuple[Shot, ...]
     audio_directives: tuple[AudioDirective, ...]
     line_number: int
+    continuation: bool = False
 
 
 @dataclass(frozen=True, slots=True)

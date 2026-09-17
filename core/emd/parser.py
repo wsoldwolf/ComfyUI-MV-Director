@@ -25,7 +25,7 @@ _SUBJECT_MEDIA_RE = re.compile(r"`(画像([1-9])|動画([1-3])|音声([1-3]))`")
 _SCENE_ANNOTATION_RE = re.compile(r"> `シーン` ([1-9][0-9]*)\Z")
 _SCENE_RE = re.compile(
     r"# シーン ([0-9]{2,}:[0-5][0-9]\.[0-9]{3}) --> "
-    r"([0-9]{2,}:[0-5][0-9]\.[0-9]{3})\Z"
+    r"([0-9]{2,}:[0-5][0-9]\.[0-9]{3})( 継続)?\Z"
 )
 _H3_LENGTH_RE = re.compile(r"\* `H3長` ([1-9][0-9]*)\Z")
 _SHOT_RE = re.compile(r"## ショット ([0-9]{2,}:[0-5][0-9]\.[0-9]{3})\Z")
@@ -334,6 +334,11 @@ class _Parser:
                 )
             start_ms = parse_time_ms(heading.group(1), line_number=heading_line.number)
             end_ms = parse_time_ms(heading.group(2), line_number=heading_line.number)
+            continuation = heading.group(3) is not None
+            if not scenes and continuation:
+                raise EMDParseError(
+                    heading_line.number, "first Scene cannot use 継続"
+                )
             if start_ms != previous_end or end_ms <= start_ms:
                 raise EMDParseError(
                     heading_line.number, "Scenes must be positive and contiguous"
@@ -355,7 +360,6 @@ class _Parser:
                 raise EMDParseError(
                     length_line.number, str(exc)
                 ) from exc
-
             descriptions: list[str] = []
             while (line := self.current()) is not None:
                 if line.text.startswith("> `") or line.text.startswith("## ショット "):
@@ -456,6 +460,7 @@ class _Parser:
                     shots=tuple(shots),
                     audio_directives=tuple(audio),
                     line_number=heading_line.number,
+                    continuation=continuation,
                 )
             )
             previous_end = end_ms

@@ -188,5 +188,43 @@ class EMDParserTests(unittest.TestCase):
             parse_emd(source)
 
 
+    def test_scene_continuation_is_explicit_and_omission_means_cut(self) -> None:
+        source = """# サブジェクト
+* 人物。
+> `シーン` 1
+# シーン 00:00.000 --> 00:01.000
+* `H3長` 22
+## ショット 00:00.000
+* 歩く。
+> `シーン` 2
+# シーン 00:01.000 --> 00:02.000 継続
+* `H3長` 22
+## ショット 00:01.000
+* 歩き続ける。
+> `シーン` 3
+# シーン 00:02.000 --> 00:03.000
+* `H3長` 22
+## ショット 00:02.000
+* 顔のアップへ切り替える。
+"""
+        document = parse_emd(source)
+        self.assertEqual(
+            [scene.continuation for scene in document.scenes],
+            [False, True, False],
+        )
+
+    def test_first_scene_cannot_be_continuation(self) -> None:
+        source = """# サブジェクト
+* 人物。
+> `シーン` 1
+# シーン 00:00.000 --> 00:01.000 継続
+* `H3長` 22
+## ショット 00:00.000
+* 歩く。
+"""
+        with self.assertRaisesRegex(EMDParseError, "first Scene cannot use 継続"):
+            parse_emd(source)
+
+
 if __name__ == "__main__":
     unittest.main()

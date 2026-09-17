@@ -8,7 +8,12 @@ from core.artifacts import DirectionArtifact
 from core.compiler import compile_ref2va
 from core.direction import STYLE_PROFILES
 from core.emd import parse_emd
+from core.emd.ast import Scene
 from core.inference import LlamaRuntimeConfig
+from core.h3_contract import (
+    FACE_PERFORMANCE_CUT_ACTION,
+    FACE_PERFORMANCE_CUT_CAMERA,
+)
 from core.planner import (
     DialogueProtector,
     PlannerContent,
@@ -19,10 +24,21 @@ from core.planner import (
     render_planner_content,
 )
 from core.planner.layout import (
+    apply_scene_continuations,
     apply_shot_layouts,
     build_layout_candidates,
     parse_layout_selection,
+    parse_scene_layout_selection,
+    repair_scene_layout_selection,
 )
+from core.planner.engine import (
+    _camera_editorial_role,
+    _performance_role,
+    _recover_unframed_records,
+    _repair_boundary_contract,
+    _satisfies_boundary_contract,
+)
+from core.planner.template import PlannerTemplate
 
 
 TEMPLATE = """> `シーン` 1
@@ -44,9 +60,24 @@ CONCEPT = """# サブジェクト
 
 INSTRUMENTAL_TAIL = """
 > `シーン` 2
-# シーン 00:10.125 --> 00:11.833
+# シーン 00:10.125 --> 00:11.833 継続
 * `H3長` 56
 ## ショット 00:10.125
+* 未計画
+"""
+
+LATE_SECTION_TEMPLATE = """> `シーン` 1
+# シーン 00:00.000 --> 00:06.000
+* `H3長` 158
+## ショット 00:00.000
+* 未計画
+## ショット 00:02.000
+* 未計画
+> `セクション` VERSE2
+> `歌詞開始` 00:02.200
+> `歌詞終了` 00:04.500
+> `歌詞` 新しい節を歌う
+## ショット 00:04.000
 * 未計画
 """
 
@@ -69,22 +100,47 @@ class FakePlannerBackend:
         rows = []
         for item in value["slots"]:
             slot = item["slot"]
-            if task == "actions" and slot == 2 and self.miss_action_slot_two > 0:
+            if (
+                task == "actions"
+                and item.get("shot_index") == 2
+                and self.miss_action_slot_two > 0
+            ):
                 self.miss_action_slot_two -= 1
                 continue
             if task == "shot-layout":
-                text = ",".join(
+                text = ("CUT" if item["scene_number"] == 1 else "CONTINUE") + "," + ",".join(
                     candidate["id"]
                     for candidate in item["candidates"]
                     if candidate["source"] in {"scene_start", "existing_shot"}
                 )
             else:
+                identity = (
+                    f"{item.get('scene_number', 0)}-"
+                    f"{item.get('shot_index', 0)}"
+                )
                 text = {
-                    "visual-beats": f"鳥居へ歩み寄り、触れて振り返る視覚動作 {slot}",
+                    "visual-beats": (
+                        "鳥居へ歩み寄り、触れて振り返る視覚動作 "
+                        f"{item.get('scene_number', 0)}"
+                    ),
                     "song-direction": "夜から朝へ進み、鳥居を反復する。",
-                    "actions": f"サブジェクト1が重心を移しながら歩く。{slot} 「生成台詞」",
-                    "cameras": f"カメラは前景の鳥居から人物へ緩やかに寄る。{slot}",
+                    "actions": (
+                        "サブジェクト1が重心を移しながら歩く。"
+                        f"{identity} 「生成台詞」"
+                    ),
+                    "cameras": (
+                        "カメラは前景の鳥居から人物へ緩やかに寄る。"
+                        + identity
+                    ),
                 }[task]
+                if task == "cameras" and (
+                    value.get("diversity_retry")
+                    or value.get("camera_quality_retry")
+                ):
+                    text = (
+                        "Truck Right at fast speed で人物の肩越しに鳥居を横切る。"
+                        + identity
+                    )
             rows.append(f"{record_type}\t{slot}\t{text}")
         return "\n".join(rows)
 
@@ -103,6 +159,7 @@ class DialogueOnlyPlannerBackend(FakePlannerBackend):
         if task == "shot-layout":
             return "\n".join(
                 f"LAYOUT\t{item['slot']}\t"
+                f"{'CUT' if item['scene_number'] == 1 else 'CONTINUE'},"
                 + ",".join(
                     candidate["id"]
                     for candidate in item["candidates"]
@@ -140,7 +197,7 @@ class NewCutPlannerBackend(FakePlannerBackend):
                 if candidate["source"] == "balanced"
             ]
             selected = ["B0", balanced[0], balanced[-1]]
-            rows.append(f"LAYOUT\t{item['slot']}\t{','.join(selected)}")
+            rows.append(f"LAYOUT\t{item['slot']}\tCUT,{','.join(selected)}")
         return "\n".join(rows)
 
 
@@ -170,9 +227,10 @@ class SmallModelFormattingBackend(FakePlannerBackend):
                 for candidate in value["slots"][0]["candidates"]
                 if candidate["source"] in {"scene_start", "existing_shot"}
             )
-            return f"<think></think>\nLAYOUT\tTAB\tslot1\tTAB\t{selected}"
+            return f"<think></think>\nLAYOUT\tTAB\tslot1\tTAB\tCUT,{selected}"
         records = [
-            f"{record_type}<TAB>{item['slot']}<TAB>有効な記述{item['slot']}"
+            f"{record_type}<TAB>{item['slot']}<TAB>"
+            + f"有効な記述{item['slot']}"
             for item in value["slots"]
         ]
         return "<think>protocolを確認する。</think>\n" + "<TAB>".join(records)
@@ -193,6 +251,107 @@ def prompts() -> dict[str, str]:
 
 
 class TimelinePlannerCoreTests(unittest.TestCase):
+    def test_unframed_camera_lines_are_recovered_without_rewriting_text(self) -> None:
+        response = (
+            "Arc Shot with large amplitude at fast speed で側面を通る。\n"
+            "Tracking Shot at fast speed で走る人物を追う。"
+        )
+        self.assertEqual(
+            _recover_unframed_records(response, "CAMERA", [4, 5]),
+            {
+                4: "Arc Shot with large amplitude at fast speed で側面を通る。",
+                5: "Tracking Shot at fast speed で走る人物を追う。",
+            },
+        )
+
+    def test_numbered_protocol_wrapper_is_removed_but_text_is_unchanged(self) -> None:
+        response = (
+            "1. Arc Shot で人物の右側へ回る。\n"
+            "2: Static Shot で顔を保持する。"
+        )
+        self.assertEqual(
+            _recover_unframed_records(response, "CAMERA", [1, 2]),
+            {
+                1: "Arc Shot で人物の右側へ回る。",
+                2: "Static Shot で顔を保持する。",
+            },
+        )
+
+    def test_single_unlabelled_line_is_not_guessed(self) -> None:
+        self.assertEqual(
+            _recover_unframed_records(
+                "Arc Shot で人物の側面を通る。", "CAMERA", [1]
+            ),
+            {},
+        )
+
+    def test_isolated_single_unlabelled_line_has_unique_side_table_mapping(self) -> None:
+        self.assertEqual(
+            _recover_unframed_records(
+                "Static Shot で両目と口全体を大きく写す。",
+                "CAMERA",
+                [7],
+                allow_single_positional=True,
+            ),
+            {7: "Static Shot で両目と口全体を大きく写す。"},
+        )
+
+    def test_boundary_repair_scales_to_twenty_four_all_cut_scenes(self) -> None:
+        template = PlannerTemplate(
+            scenes=tuple(
+                Scene(
+                    scene_number=index,
+                    start_ms=(index - 1) * 1000,
+                    end_ms=index * 1000,
+                    h3_length=22,
+                    descriptions=(),
+                    shots=(),
+                    audio_directives=(),
+                    line_number=index,
+                    continuation=False,
+                )
+                for index in range(1, 25)
+            )
+        )
+        repaired, changed = _repair_boundary_contract(
+            template,
+            {index: False for index in range(1, 25)},
+        )
+        later = [repaired[index] for index in range(2, 25)]
+        self.assertTrue(_satisfies_boundary_contract(template, repaired))
+        self.assertGreaterEqual(later.count(False), 5)
+        self.assertGreaterEqual(later.count(True), 7)
+        self.assertEqual(len(changed), later.count(True))
+
+    def test_exact_boundary_alternation_is_repaired(self) -> None:
+        template = PlannerTemplate(
+            scenes=tuple(
+                Scene(
+                    scene_number=index,
+                    start_ms=(index - 1) * 1000,
+                    end_ms=index * 1000,
+                    h3_length=22,
+                    descriptions=(),
+                    shots=(),
+                    audio_directives=(),
+                    line_number=index,
+                    continuation=False,
+                )
+                for index in range(1, 9)
+            )
+        )
+        alternating = {
+            index: bool(index % 2 == 0) for index in range(1, 9)
+        }
+        self.assertFalse(_satisfies_boundary_contract(template, alternating))
+        repaired, _changed = _repair_boundary_contract(template, alternating)
+        self.assertTrue(_satisfies_boundary_contract(template, repaired))
+        later = [repaired[index] for index in range(2, 9)]
+        transitions = sum(
+            left != right for left, right in zip(later, later[1:])
+        )
+        self.assertLess(transitions, len(later) - 1)
+
     def test_every_layout_candidate_combination_is_duration_safe(self) -> None:
         scene = parse_template_emd(TEMPLATE).scenes[0]
         candidates = build_layout_candidates(scene)
@@ -262,6 +421,15 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertTrue(result.complete)
         document = parse_emd(result.emd.text)
         self.assertEqual(len(document.scenes[0].shots), 3)
+        layout_payload = next(
+            payload for task, payload in backend.calls if task == "shot-layout"
+        )
+        self.assertTrue(
+            all(
+                "current_boundary_mode" not in slot
+                for slot in layout_payload["slots"]
+            )
+        )
         action_payload = next(
             payload for task, payload in backend.calls if task == "actions"
         )
@@ -293,13 +461,13 @@ class TimelinePlannerCoreTests(unittest.TestCase):
                 value = json.loads(payload)
                 self.calls.append((task, value))
                 return "\n".join(
-                    f"LAYOUT\t{item['slot']}\tB0,B999"
+                    f"LAYOUT\t{item['slot']}\tBROKEN"
                     for item in value["slots"]
                 )
 
         result = plan_timeline(
             InvalidLayoutBackend(),
-            template_emd=TEMPLATE,
+            template_emd=TEMPLATE + INSTRUMENTAL_TAIL,
             concept_emd=CONCEPT,
             direction=None,
             lip_sync_mode="off",
@@ -311,8 +479,62 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         )
 
         self.assertTrue(result.complete)
-        self.assertEqual(result.content.layout_fallback_scenes, (1,))
-        self.assertEqual(len(parse_emd(result.emd.text).scenes[0].shots), 1)
+        self.assertEqual(result.content.layout_fallback_scenes, (1, 2))
+        document = parse_emd(result.emd.text)
+        self.assertEqual(len(document.scenes[0].shots), 1)
+        self.assertEqual(
+            [scene.continuation for scene in document.scenes],
+            [False, False],
+        )
+
+    def test_scene_layout_protocol_selects_cut_or_continuation(self) -> None:
+        template = parse_template_emd(TEMPLATE + INSTRUMENTAL_TAIL)
+        second = template.scenes[1]
+        candidates = build_layout_candidates(second)
+        continuation, starts = parse_scene_layout_selection(
+            "CONTINUE,B0",
+            candidates,
+            scene_end_ms=second.end_ms,
+            first_scene=False,
+        )
+        self.assertTrue(continuation)
+        self.assertEqual(starts, (second.start_ms,))
+        with self.assertRaisesRegex(Exception, "first Scene cannot continue"):
+            parse_scene_layout_selection(
+                "CONTINUE,B0",
+                build_layout_candidates(template.scenes[0]),
+                scene_end_ms=template.scenes[0].end_ms,
+                first_scene=True,
+            )
+
+    def test_layout_repair_normalizes_separators_unknown_ids_and_excess(self) -> None:
+        scene = parse_template_emd(TEMPLATE).scenes[0]
+        candidates = build_layout_candidates(scene)
+        continuation, starts = repair_scene_layout_selection(
+            "CUT B0 B1 B2 B3 B4 B999",
+            candidates,
+            scene_end_ms=scene.end_ms,
+            first_scene=True,
+        )
+        self.assertFalse(continuation)
+        self.assertGreaterEqual(len(starts), 1)
+        self.assertLessEqual(len(starts), 4)
+        self.assertEqual(starts[0], scene.start_ms)
+
+    def test_cut_retimes_h3_length_and_removes_continuation_suffix(self) -> None:
+        second_scene = """
+> `シーン` 2
+# シーン 00:10.125 --> 00:20.042 継続
+* `H3長` 260
+## ショット 00:10.125
+* 未計画
+"""
+        template = parse_template_emd(TEMPLATE + second_scene)
+        retimed = apply_scene_continuations(template, {1: False, 2: False})
+        self.assertFalse(retimed.scenes[1].continuation)
+        self.assertEqual(retimed.scenes[1].start_ms, retimed.scenes[0].end_ms)
+        self.assertEqual(retimed.scenes[1].h3_length % 17, 5)
+        self.assertEqual(retimed.scenes[1].h3_length, 243)
 
     def test_action_prompt_does_not_animate_appearance_attributes(self) -> None:
         prompt = (
@@ -322,6 +544,28 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertIn("Never turn a stable appearance attribute into an action", prompt)
         self.assertIn("eye color", prompt)
+        self.assertIn("readable acceleration", prompt)
+        self.assertIn("subject_instance_policy", prompt)
+        self.assertIn("animal ears, ear interiors", prompt)
+        self.assertIn("do not make an ear or patch of fur", prompt)
+        self.assertIn("highest-priority immutable common constraint set", prompt)
+        self.assertIn("omit any conflicting", prompt)
+        self.assertIn("subject_roster identifies performers only", prompt)
+        self.assertIn("detailed Subject appearance remains renderer-owned", prompt)
+        self.assertIn("feet, toes, fabric sliding over terrain", prompt)
+
+    def test_visual_beat_prompt_treats_complete_direction_as_immutable(self) -> None:
+        prompt = (
+            Path(__file__).parents[1]
+            / "prompts"
+            / "timeline_planner_visual_beats_system_prompt.txt"
+        ).read_text(encoding="utf-8")
+        self.assertIn("complete direction", prompt)
+        self.assertIn("immutable common constraint set", prompt)
+        self.assertIn("must not shine, glow, radiate, bloom", prompt)
+        self.assertIn("subject_roster", prompt)
+        self.assertIn("not creative source material", prompt)
+        self.assertIn("footwear", prompt)
 
     def test_camera_prompt_keeps_arc_and_closeup_shot_local(self) -> None:
         prompt = (
@@ -333,6 +577,197 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertIn("Use an arc only when", prompt)
         self.assertIn("use a close-up only", prompt)
         self.assertIn("Never impose either choice on the whole Scene", prompt)
+        self.assertIn("the first Shot must use a face close-up", prompt)
+        self.assertIn("both eyes, both eyebrows", prompt)
+        self.assertIn("arc_required", prompt)
+        self.assertIn("camera contract, not a suggestion", prompt)
+        self.assertIn("must begin with Arc Shot", prompt)
+        self.assertIn(
+            "begin with exactly one literal MiniMax H3 Motion Type",
+            prompt,
+        )
+        self.assertIn("Never start the physical line directly with the Motion Type", prompt)
+        self.assertIn("Tracking Shot", prompt)
+        self.assertIn("exactly one performer", prompt)
+        self.assertIn("must remain non-emissive", prompt)
+        self.assertIn("translucent lamp effect", prompt)
+        self.assertIn("highest-priority immutable common constraint set", prompt)
+        self.assertIn("every Scene represented by the", prompt)
+        self.assertIn("complete speaking mouth", prompt)
+        self.assertIn("incompatible body-part detail", prompt)
+
+    def test_layout_prompt_balances_boundaries_and_uses_lyrics_for_face_edits(self) -> None:
+        prompt = (
+            Path(__file__).parents[1]
+            / "prompts"
+            / "timeline_planner_shot_layout_system_prompt.txt"
+        ).read_text(encoding="utf-8")
+        self.assertIn("previous_visual_beat and previous_lyrics", prompt)
+        self.assertIn("must contain both later CUT and", prompt)
+        self.assertIn("first appearance of a new lyric section", prompt)
+        self.assertIn("renderer-owned", prompt)
+        self.assertNotIn("must begin a new CUT", prompt)
+        self.assertIn("boundary_mix_retry_reason", prompt)
+        self.assertIn("later_continue_minimum", prompt)
+        self.assertIn("The retry is invalid", prompt)
+
+    def test_degenerate_all_cut_layout_is_replanned_once(self) -> None:
+        class DegenerateThenMixedBackend(FakePlannerBackend):
+            def complete_planner(
+                self,
+                *,
+                task,
+                system_prompt,
+                payload,
+                config,
+                interrupt_callback=None,
+            ):
+                if task != "shot-layout":
+                    return super().complete_planner(
+                        task=task,
+                        system_prompt=system_prompt,
+                        payload=payload,
+                        config=config,
+                        interrupt_callback=interrupt_callback,
+                    )
+                value = json.loads(payload)
+                self.calls.append((task, value))
+                retry = "boundary_mix_retry_reason" in value
+                rows = []
+                for item in value["slots"]:
+                    mode = (
+                        "CONTINUE"
+                        if retry and item["scene_number"] in {2, 4}
+                        else "CUT"
+                    )
+                    rows.append(f"LAYOUT\t{item['slot']}\t{mode},B0")
+                return "\n".join(rows)
+
+        four_scenes = """> `シーン` 1
+# シーン 00:00.000 --> 00:02.000
+* `H3長` 56
+## ショット 00:00.000
+* 未計画
+> `シーン` 2
+# シーン 00:02.000 --> 00:04.000 継続
+* `H3長` 56
+## ショット 00:02.000
+* 未計画
+> `シーン` 3
+# シーン 00:04.000 --> 00:06.000 継続
+* `H3長` 56
+## ショット 00:04.000
+* 未計画
+> `シーン` 4
+# シーン 00:06.000 --> 00:08.000 継続
+* `H3長` 56
+## ショット 00:06.000
+* 未計画
+"""
+        backend = DegenerateThenMixedBackend()
+        result = plan_timeline(
+            backend,
+            template_emd=four_scenes,
+            concept_emd=CONCEPT,
+            direction=None,
+            lip_sync_mode="lyrics",
+            lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1,
+            scenes_per_batch=3,
+            system_prompts=prompts(),
+            runtime_config=runtime(),
+        )
+        self.assertTrue(result.complete)
+        self.assertTrue(result.content.layout_mix_retry)
+        self.assertEqual(
+            result.content.scene_continuations,
+            ((1, False), (2, True), (3, False), (4, True)),
+        )
+        layout_calls = [
+            payload for task, payload in backend.calls if task == "shot-layout"
+        ]
+        self.assertEqual(len(layout_calls), 2)
+        self.assertIn("boundary_mix_retry_reason", layout_calls[1])
+        self.assertEqual(
+            layout_calls[1]["boundary_contract"]["later_continue_minimum"],
+            2,
+        )
+        self.assertEqual(
+            layout_calls[1]["boundary_contract"]["later_cut_minimum"],
+            1,
+        )
+        self.assertIn("previous_visual_beat", layout_calls[0]["slots"][1])
+        self.assertIn("previous_lyrics", layout_calls[0]["slots"][1])
+
+    def test_degenerate_retry_that_remains_all_cut_is_structurally_repaired(self) -> None:
+        class AlwaysCutBackend(FakePlannerBackend):
+            def complete_planner(
+                self,
+                *,
+                task,
+                system_prompt,
+                payload,
+                config,
+                interrupt_callback=None,
+            ):
+                if task != "shot-layout":
+                    return super().complete_planner(
+                        task=task,
+                        system_prompt=system_prompt,
+                        payload=payload,
+                        config=config,
+                        interrupt_callback=interrupt_callback,
+                    )
+                value = json.loads(payload)
+                self.calls.append((task, value))
+                return "\n".join(
+                    f"LAYOUT\t{item['slot']}\tCUT,B0"
+                    for item in value["slots"]
+                )
+
+        four_scenes = """> `シーン` 1
+# シーン 00:00.000 --> 00:02.000
+* `H3長` 56
+## ショット 00:00.000
+* 未計画
+> `シーン` 2
+# シーン 00:02.000 --> 00:04.000 継続
+* `H3長` 56
+## ショット 00:02.000
+* 未計画
+> `シーン` 3
+# シーン 00:04.000 --> 00:06.000 継続
+* `H3長` 56
+## ショット 00:04.000
+* 未計画
+> `シーン` 4
+# シーン 00:06.000 --> 00:08.000 継続
+* `H3長` 56
+## ショット 00:06.000
+* 未計画
+"""
+        result = plan_timeline(
+            AlwaysCutBackend(),
+            template_emd=four_scenes,
+            concept_emd=CONCEPT,
+            direction=None,
+            lip_sync_mode="lyrics",
+            lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1,
+            scenes_per_batch=3,
+            system_prompts=prompts(),
+            runtime_config=runtime(),
+        )
+        self.assertTrue(result.complete)
+        self.assertIsNotNone(result.content)
+        continuations = [
+            value for _scene, value in result.content.scene_continuations
+        ]
+        self.assertFalse(continuations[0])
+        self.assertTrue(any(continuations[1:]))
+        self.assertTrue(any(not value for value in continuations[1:]))
+        self.assertTrue(result.content.layout_repaired_scenes)
+        self.assertEqual(result.missing, ())
 
     def test_passthrough_retention_is_rendered_exactly(self) -> None:
         template = parse_template_emd(TEMPLATE)
@@ -482,18 +917,50 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         )
         camera_payload = backend.calls[4][1]
         self.assertIn("locked_action", camera_payload["slots"][0])
+        self.assertTrue(camera_payload["slots"][0]["lip_sync_active"])
+        self.assertEqual(
+            camera_payload["slots"][0]["lip_sync_target"],
+            "サブジェクト1",
+        )
         self.assertIn("recent_camera_history", camera_payload)
+        self.assertTrue(camera_payload["arc_required"])
+        self.assertEqual(
+            camera_payload["subject_instance_policy"],
+            "single_subject_exactly_one_visible_instance",
+        )
         action_payload = backend.calls[3][1]
         self.assertIn("visual_beat", action_payload["slots"][0])
+        self.assertEqual(
+            action_payload["slots"][0]["performance_role"],
+            "expressive_hand_arm_performance",
+        )
+        self.assertEqual(
+            camera_payload["slots"][0]["editorial_role"],
+            "upper_body_performance_coverage",
+        )
+        self.assertEqual(result.content.actions[0][2], FACE_PERFORMANCE_CUT_ACTION)
+        self.assertEqual(result.content.cameras[0][2], FACE_PERFORMANCE_CUT_CAMERA)
+        visual_payload = backend.calls[0][1]
+        expected_roster = [
+            {"concept_id": "サブジェクト1", "subject_ref": "<Subject 1>"}
+        ]
+        self.assertEqual(visual_payload["subject_roster"], expected_roster)
+        self.assertEqual(action_payload["subject_roster"], expected_roster)
+        self.assertNotIn("concept_emd", visual_payload)
+        self.assertNotIn("concept_emd", action_payload)
+        self.assertNotIn("長い黒髪", json.dumps(visual_payload, ensure_ascii=False))
+        self.assertNotIn("長い黒髪", json.dumps(action_payload, ensure_ascii=False))
         self.assertNotIn("lip_sync_mode", action_payload)
         self.assertNotIn("lip_sync_audio_slot", action_payload)
         self.assertEqual(action_payload["primary_action_concept"], "サブジェクト1")
-        self.assertIsNone(action_payload["slots"][0]["previous_shot"])
         self.assertEqual(
-            action_payload["slots"][1]["previous_shot"],
+            action_payload["subject_instance_policy"],
+            "single_subject_exactly_one_visible_instance",
+        )
+        self.assertEqual(
+            action_payload["slots"][0]["previous_shot"],
             {"scene_number": 1, "shot_index": 1},
         )
-        self.assertEqual(action_payload["slots"][0]["previous_batch_action"], "")
 
     def test_missing_action_retries_only_affected_scene_once(self) -> None:
         backend = FakePlannerBackend(miss_action_slot_two=1)
@@ -512,6 +979,396 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertTrue(result.complete)
         self.assertEqual([task for task, _ in backend.calls].count("actions"), 2)
         self.assertEqual(result.content.retried_scenes, (1,))
+
+    def test_missing_camera_records_are_retried_as_is_one_slot_at_a_time(self) -> None:
+        class IsolatedCameraRetryBackend(FakePlannerBackend):
+            def complete_planner(
+                self,
+                *,
+                task,
+                system_prompt,
+                payload,
+                config,
+                interrupt_callback=None,
+            ):
+                value = json.loads(payload)
+                if task != "cameras":
+                    return super().complete_planner(
+                        task=task,
+                        system_prompt=system_prompt,
+                        payload=payload,
+                        config=config,
+                        interrupt_callback=interrupt_callback,
+                    )
+                self.calls.append((task, value))
+                retry = value.get("retry")
+                if retry is None:
+                    return ""
+                if retry == "missing_slots_only":
+                    return "protocol wrapper failed"
+                self.assert_single_slot(value)
+                slot = value["slots"][0]["slot"]
+                return f"Static Shot 顔の演技を保持する。slot{slot}"
+
+            @staticmethod
+            def assert_single_slot(value):
+                if len(value["slots"]) != 1:
+                    raise AssertionError("isolated retry must contain one slot")
+
+        backend = IsolatedCameraRetryBackend()
+        result = plan_timeline(
+            backend,
+            template_emd=TEMPLATE,
+            concept_emd=CONCEPT,
+            direction=None,
+            lip_sync_mode="lyrics",
+            lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1,
+            scenes_per_batch=3,
+            system_prompts=prompts(),
+            runtime_config=runtime(),
+        )
+        self.assertTrue(result.complete)
+        self.assertFalse(result.missing)
+        camera_calls = [
+            payload for task, payload in backend.calls if task == "cameras"
+        ]
+        self.assertEqual(len(camera_calls), 3)
+        self.assertEqual(camera_calls[1]["retry"], "missing_slots_only")
+        self.assertEqual(
+            [payload["retry"] for payload in camera_calls[2:]],
+            ["isolated_missing_slot"],
+        )
+        self.assertEqual(result.content.protocol_recovered_count, 1)
+
+    def test_face_insert_is_structurally_owned_and_not_sent_to_llm(self) -> None:
+        backend = FakePlannerBackend()
+        result = plan_timeline(
+            backend,
+            template_emd=TEMPLATE,
+            concept_emd=CONCEPT,
+            direction=None,
+            lip_sync_mode="lyrics",
+            lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1,
+            scenes_per_batch=3,
+            system_prompts=prompts(),
+            runtime_config=runtime(),
+        )
+        self.assertTrue(result.complete)
+        self.assertEqual(result.content.actions[0][2], FACE_PERFORMANCE_CUT_ACTION)
+        self.assertEqual(result.content.cameras[0][2], FACE_PERFORMANCE_CUT_CAMERA)
+        action_payload = next(
+            payload for task, payload in backend.calls if task == "actions"
+        )
+        camera_payload = next(
+            payload for task, payload in backend.calls if task == "cameras"
+        )
+        self.assertEqual(
+            [item["shot_index"] for item in action_payload["slots"]], [2]
+        )
+        self.assertEqual(
+            [item["shot_index"] for item in camera_payload["slots"]], [2]
+        )
+        payload_text = json.dumps(
+            [action_payload, camera_payload], ensure_ascii=False
+        )
+        self.assertNotIn(FACE_PERFORMANCE_CUT_ACTION, payload_text)
+        self.assertNotIn(FACE_PERFORMANCE_CUT_CAMERA, payload_text)
+
+    def test_face_insert_role_requires_first_appearance_of_section_in_cut(self) -> None:
+        base = {
+            "shot_index": 1,
+            "scene_shot_count": 2,
+            "scene_continuation": False,
+            "section_entry": True,
+        }
+        self.assertEqual(
+            _performance_role(base, lip_sync_active=True),
+            "face_and_upper_body_accent",
+        )
+        self.assertEqual(
+            _camera_editorial_role(base, lip_sync_active=True),
+            "face_performance_cut",
+        )
+
+        repeated_section_cut = {**base, "section_entry": False}
+        self.assertEqual(
+            _performance_role(repeated_section_cut, lip_sync_active=True),
+            "new_scene_physical_hook",
+        )
+        self.assertEqual(
+            _camera_editorial_role(repeated_section_cut, lip_sync_active=True),
+            "new_scene_establishing_edit",
+        )
+
+        continued_new_section = {**base, "scene_continuation": True}
+        self.assertEqual(
+            _performance_role(continued_new_section, lip_sync_active=True),
+            "continuity_transformation",
+        )
+        self.assertEqual(
+            _camera_editorial_role(continued_new_section, lip_sync_active=True),
+            "continuity_bridge",
+        )
+
+    def test_face_insert_moves_to_shot_that_contains_new_section_lyric(self) -> None:
+        backend = FakePlannerBackend()
+        result = plan_timeline(
+            backend,
+            template_emd=LATE_SECTION_TEMPLATE,
+            concept_emd=CONCEPT,
+            direction=None,
+            lip_sync_mode="lyrics",
+            lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1,
+            scenes_per_batch=3,
+            system_prompts=prompts(),
+            runtime_config=runtime(),
+        )
+        self.assertTrue(result.complete)
+        self.assertEqual(
+            [(scene, shot) for scene, shot, text in result.content.actions
+             if text == FACE_PERFORMANCE_CUT_ACTION],
+            [(1, 3)],
+        )
+        self.assertEqual(
+            [(scene, shot) for scene, shot, text in result.content.cameras
+             if text == FACE_PERFORMANCE_CUT_CAMERA],
+            [(1, 3)],
+        )
+
+    def test_unrequested_foot_camera_is_retried_without_rewriting(self) -> None:
+        class FootCameraBackend(FakePlannerBackend):
+            def complete_planner(
+                self,
+                *,
+                task,
+                system_prompt,
+                payload,
+                config,
+                interrupt_callback=None,
+            ):
+                value = json.loads(payload)
+                if task != "cameras":
+                    return super().complete_planner(
+                        task=task,
+                        system_prompt=system_prompt,
+                        payload=payload,
+                        config=config,
+                        interrupt_callback=interrupt_callback,
+                    )
+                self.calls.append((task, value))
+                if value.get("retry") == "camera_quality_budget":
+                    return "CAMERA\t1\tStatic Shot 正面から顔と両手の演技を捉える。"
+                return (
+                    "CAMERA\t1\tTracking Shot at slow speed "
+                    "人物の足元と履物だけを追う。"
+                )
+
+        backend = FootCameraBackend()
+        result = plan_timeline(
+            backend,
+            template_emd=TEMPLATE,
+            concept_emd=CONCEPT,
+            direction=None,
+            lip_sync_mode="lyrics",
+            lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1,
+            scenes_per_batch=3,
+            system_prompts=prompts(),
+            runtime_config=runtime(),
+        )
+        self.assertTrue(result.complete)
+        camera_calls = [
+            payload for task, payload in backend.calls if task == "cameras"
+        ]
+        self.assertEqual(len(camera_calls), 2)
+        self.assertEqual(camera_calls[1]["retry"], "camera_quality_budget")
+        self.assertIn(
+            "Static Shot 正面から顔と両手の演技を捉える。",
+            [text for _scene, _shot, text in result.content.cameras],
+        )
+
+    def test_generic_hand_action_is_retried_without_rewriting(self) -> None:
+        class GenericHandBackend(FakePlannerBackend):
+            def complete_planner(
+                self,
+                *,
+                task,
+                system_prompt,
+                payload,
+                config,
+                interrupt_callback=None,
+            ):
+                value = json.loads(payload)
+                if task != "actions":
+                    return super().complete_planner(
+                        task=task,
+                        system_prompt=system_prompt,
+                        payload=payload,
+                        config=config,
+                        interrupt_callback=interrupt_callback,
+                    )
+                self.calls.append((task, value))
+                if value.get("retry") == "action_quality_budget":
+                    return "ACTION\t1\t主人公は鳥居へ身体を返し、肩越しに見据えて袖を払う。"
+                return "\n".join(
+                    (
+                        f"ACTION\t{item['slot']}\t主人公は両手を上げる。"
+                        if index == 0
+                        else f"ACTION\t{item['slot']}\t主人公は身を翻して鳥居へ踏み込む。{index}"
+                    )
+                    for index, item in enumerate(value["slots"])
+                )
+
+        backend = GenericHandBackend()
+        result = plan_timeline(
+            backend,
+            template_emd=TEMPLATE,
+            concept_emd=CONCEPT,
+            direction=None,
+            lip_sync_mode="off",
+            lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1,
+            scenes_per_batch=3,
+            system_prompts=prompts(),
+            runtime_config=runtime(),
+        )
+        self.assertTrue(result.complete)
+        action_calls = [
+            payload for task, payload in backend.calls if task == "actions"
+        ]
+        self.assertEqual(len(action_calls), 2)
+        self.assertEqual(action_calls[1]["retry"], "action_quality_budget")
+        self.assertEqual(
+            action_calls[1]["slots"][0]["action_quality_violations"],
+            ["generic_hand_raise_or_lower"],
+        )
+        self.assertIn(
+            "主人公は鳥居へ身体を返し、肩越しに見据えて袖を払う。",
+            [text for _scene, _shot, text in result.content.actions],
+        )
+
+    def test_repeated_action_is_retried_as_is_for_only_affected_scene(self) -> None:
+        repeated = (
+            "主人公は鳥居の前で両手を広げたまま正面を向き、"
+            "同じ姿勢を保ってその場に立ち続ける。"
+        )
+
+        class RepetitionBackend(FakePlannerBackend):
+            def complete_planner(
+                self,
+                *,
+                task,
+                system_prompt,
+                payload,
+                config,
+                interrupt_callback=None,
+            ):
+                value = json.loads(payload)
+                if task != "actions":
+                    return super().complete_planner(
+                        task=task,
+                        system_prompt=system_prompt,
+                        payload=payload,
+                        config=config,
+                        interrupt_callback=interrupt_callback,
+                    )
+                self.calls.append((task, value))
+                if "diversity_retry" in value:
+                    return (
+                        "ACTION\t1\t主人公は鳥居へ背を向けて踏み出し、"
+                        "肩越しに振り返って片手を狐火へ伸ばす。"
+                    )
+                return "\n".join(
+                    f"ACTION\t{item['slot']}\t{repeated}"
+                    for item in value["slots"]
+                )
+
+        backend = RepetitionBackend()
+        result = plan_timeline(
+            backend,
+            template_emd=TEMPLATE,
+            concept_emd=CONCEPT,
+            direction=None,
+            lip_sync_mode="off",
+            lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1,
+            scenes_per_batch=3,
+            system_prompts=prompts(),
+            runtime_config=runtime(),
+        )
+        self.assertTrue(result.complete)
+        action_calls = [
+            payload for task, payload in backend.calls if task == "actions"
+        ]
+        self.assertEqual(len(action_calls), 2)
+        self.assertNotIn("diversity_retry", action_calls[0])
+        self.assertIn("diversity_retry", action_calls[1])
+        self.assertEqual(len(action_calls[1]["slots"]), 1)
+        self.assertEqual(action_calls[1]["slots"][0]["rejected_output"], repeated)
+        self.assertIn(repeated, action_calls[1]["forbidden_recent_outputs"])
+        actions = [text for _scene, _shot, text in result.content.actions]
+        self.assertEqual(actions[0], repeated)
+        self.assertIn("肩越しに振り返って", actions[1])
+        self.assertEqual(result.content.retried_scenes, (1,))
+        self.assertEqual(result.content.repetition_warning_count, 0)
+        self.assertEqual(result.content.action_repetition_warning_count, 0)
+
+    def test_repetition_after_quality_retry_is_warning_not_blocker(self) -> None:
+        repeated = (
+            "主人公は鳥居の前で両手を広げたまま正面を向き、"
+            "同じ姿勢を保ってその場に立ち続ける。"
+        )
+
+        class PersistentRepetitionBackend(FakePlannerBackend):
+            def complete_planner(
+                self,
+                *,
+                task,
+                system_prompt,
+                payload,
+                config,
+                interrupt_callback=None,
+            ):
+                value = json.loads(payload)
+                if task != "actions":
+                    return super().complete_planner(
+                        task=task,
+                        system_prompt=system_prompt,
+                        payload=payload,
+                        config=config,
+                        interrupt_callback=interrupt_callback,
+                    )
+                self.calls.append((task, value))
+                return "\n".join(
+                    f"ACTION\t{item['slot']}\t{repeated}"
+                    for item in value["slots"]
+                )
+
+        result = plan_timeline(
+            PersistentRepetitionBackend(),
+            template_emd=TEMPLATE,
+            concept_emd=CONCEPT,
+            direction=None,
+            lip_sync_mode="off",
+            lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1,
+            scenes_per_batch=3,
+            system_prompts=prompts(),
+            runtime_config=runtime(),
+        )
+        self.assertTrue(result.complete)
+        self.assertFalse(result.missing)
+        self.assertEqual(result.content.repetition_warning_count, 1)
+        self.assertEqual(result.content.beat_repetition_warning_count, 0)
+        self.assertEqual(result.content.action_repetition_warning_count, 1)
+        self.assertEqual(result.content.camera_repetition_warning_count, 0)
+        self.assertEqual(
+            [text for _scene, _shot, text in result.content.actions],
+            [repeated, repeated],
+        )
 
     def test_later_batches_receive_recent_history_and_timeline_position(self) -> None:
         backend = FakePlannerBackend()
@@ -559,17 +1416,68 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertEqual(len(action_calls[1]["recent_action_history"]), 2)
         final_action = action_calls[1]["slots"][0]
         self.assertEqual(final_action["scene_shot_count"], 1)
-        self.assertEqual(final_action["shot_end_ms"], 11833)
-        self.assertEqual(final_action["shot_duration_ms"], 1708)
+        self.assertEqual(final_action["shot_end_ms"], 12250)
+        self.assertEqual(final_action["shot_duration_ms"], 2125)
 
         camera_calls = [
-            payload for task, payload in backend.calls if task == "cameras"
+            payload
+            for task, payload in backend.calls
+            if task == "cameras" and "retry" not in payload
         ]
         self.assertEqual(len(camera_calls), 2)
         self.assertEqual(len(camera_calls[1]["recent_camera_history"]), 2)
 
+    def test_camera_profile_is_routed_only_to_camera_stage(self) -> None:
+        direction = DirectionArtifact(
+            style_direction=("style constraint",),
+            environment_direction=("environment constraint",),
+            time_lighting_direction=("time lighting constraint",),
+            motion_direction=("motion constraint",),
+            camera_direction=("camera constraint",),
+            other_direction=("other constraint",),
+        )
+        backend = FakePlannerBackend()
+        result = plan_timeline(
+            backend,
+            template_emd=TEMPLATE,
+            concept_emd=CONCEPT,
+            direction=direction,
+            lip_sync_mode="off",
+            lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1,
+            scenes_per_batch=3,
+            system_prompts=prompts(),
+            runtime_config=runtime(),
+        )
+        self.assertTrue(result.complete)
+        expected = {
+            "style": ["style constraint"],
+            "environment": ["environment constraint"],
+            "time_lighting": ["time lighting constraint"],
+            "motion": ["motion constraint"],
+            "camera": ["camera constraint"],
+            "other": ["other constraint"],
+        }
+        performance_expected = dict(expected)
+        performance_expected.pop("camera")
+        for task in ("visual-beats", "actions"):
+            payloads = [
+                payload for called_task, payload in backend.calls
+                if called_task == task
+            ]
+            self.assertTrue(payloads)
+            for payload in payloads:
+                self.assertEqual(payload["direction"], performance_expected)
+        camera_payloads = [
+            payload for called_task, payload in backend.calls
+            if called_task == "cameras"
+        ]
+        self.assertTrue(camera_payloads)
+        for payload in camera_payloads:
+            self.assertEqual(payload["direction"], expected)
+
     def test_missing_after_retry_returns_template_artifact(self) -> None:
-        backend = FakePlannerBackend(miss_action_slot_two=2)
+        backend = FakePlannerBackend(miss_action_slot_two=3)
         result = plan_timeline(
             backend,
             template_emd=TEMPLATE,
@@ -685,7 +1593,7 @@ class TimelinePlannerCoreTests(unittest.TestCase):
                             for candidate in item["candidates"]
                             if candidate["source"] in {"scene_start", "existing_shot"}
                         )
-                        rows.append(f"LAYOUT\t{item['slot']}\t{selected}")
+                        rows.append(f"LAYOUT\t{item['slot']}\tCUT,{selected}")
                         continue
                     echo = " __MVD_LOCKED_DIALOGUE_0001__" if task == "actions" else ""
                     rows.append(f"{record_type}\t{item['slot']}\t有効な記述{echo}")
@@ -728,6 +1636,70 @@ class TimelinePlannerCoreTests(unittest.TestCase):
 
 
 class TimelinePlannerNodeTests(unittest.TestCase):
+    def test_llama_backend_reports_task_batch_and_timing_progress(self) -> None:
+        from nodes.node_timeline_planner.node import _LlamaPlannerBackend
+
+        class ProgressLifecycle:
+            effective_n_ctx = 4096
+
+            @staticmethod
+            def count_serialized_prompt(_prompt):
+                return type("Count", (), {"count": 321, "estimated": False})()
+
+            @staticmethod
+            def complete_chat(_messages, _config, *, interrupt_callback=None):
+                return "BEAT\t1\tvisual beat"
+
+        backend = _LlamaPlannerBackend(ProgressLifecycle())
+        backend.configure_progress(scene_count=6, scenes_per_batch=3)
+        payload = json.dumps(
+            {
+                "slots": [
+                    {"slot": 1, "scene_number": 1},
+                    {"slot": 2, "scene_number": 2},
+                ]
+            }
+        )
+        with self.assertLogs("mv_director.nodes", level="INFO") as captured:
+            backend.complete_planner(
+                task="visual-beats",
+                system_prompt="system",
+                payload=payload,
+                config=runtime(),
+            )
+        output = "\n".join(captured.output)
+        self.assertIn("inference started; task=visual-beats", output)
+        self.assertIn("batch=1/2", output)
+        self.assertIn("scenes=1-2; slots=2", output)
+        self.assertIn("prompt_tokens=321; max_tokens=512", output)
+        self.assertIn("call_seed=", output)
+        self.assertIn("inference completed; task=visual-beats", output)
+        self.assertIn("response_chars=18", output)
+
+        retry_payload = json.dumps(
+            {
+                "retry": "missing_slots_only",
+                "slots": [{"slot": 1, "scene_number": 1}],
+            }
+        )
+        with self.assertLogs("mv_director.nodes", level="INFO") as captured:
+            backend.complete_planner(
+                task="visual-beats",
+                system_prompt="system",
+                payload=retry_payload,
+                config=runtime(),
+            )
+        output = "\n".join(captured.output)
+        self.assertIn("batch=retry; call=2; retry=missing_slots", output)
+        self.assertNotEqual(
+            _LlamaPlannerBackend._call_seed(1, "visual-beats", 1, payload),
+            _LlamaPlannerBackend._call_seed(1, "visual-beats", 2, payload),
+        )
+        self.assertEqual(
+            _LlamaPlannerBackend._call_seed(1, "visual-beats", 1, payload),
+            _LlamaPlannerBackend._call_seed(1, "visual-beats", 1, payload),
+        )
+
     def test_public_mapping_and_complete_socket_surface(self) -> None:
         from nodes import NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS
 

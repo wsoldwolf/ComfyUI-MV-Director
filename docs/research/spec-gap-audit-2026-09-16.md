@@ -80,7 +80,7 @@ V1で記録するのは入力の供給、妥当なLLM行の採用、空・完全
 
 人物動作を先に生成し、camera taskは確定actionを読み取り専用contextとして受ける。同一Shotの両者は全区間で並行し、rendererはaction、cameraの順に置く。`while`、`as`、`then`又は終端を示す自然な相対表現は許すが、数値sub-timeを生成しない。
 
-Shot枠はLyric Segmentationが所有するため、camera taskは新しい時刻又はShotを作らない。cutは既存Shot境界でだけ表現し、一つのShot内にmid-shot cutを置かない。cameraはactionの内容、開始、終了又は順序を変更しない。
+Shot枠はPythonが所有するため、camera taskは新しい時刻又はShotを作らない。後続仕様更新によりhard cutはScene境界の明示`CUT`だけで表現し、内部Shot境界は同一H3生成内の時刻付きprompt変化とする。一つのShot内にmid-shot cutを置かず、cameraはactionの内容、開始、終了又は順序を変更しない。
 
 ### Phase 8再確認: Audio参照のsource境界adapter（解決済み）
 

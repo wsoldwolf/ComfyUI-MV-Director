@@ -1,5 +1,9 @@
 """Pinned external ComfyUI and H3/Context Loop contracts."""
 
+from .camera import (
+    FACE_PERFORMANCE_CUT_ACTION,
+    FACE_PERFORMANCE_CUT_CAMERA,
+)
 from .context_loop_0_6_9 import (
     COMFYUI_BASELINE_COMMIT,
     COMFYUI_BASELINE_VERSION,
@@ -20,6 +24,8 @@ __all__ = [
     "CONTEXT_LOOP_BASELINE_VERSION",
     "ContextLoopContract",
     "DEFAULT_H3_TIMING_PROFILE",
+    "FACE_PERFORMANCE_CUT_ACTION",
+    "FACE_PERFORMANCE_CUT_CAMERA",
     "H3TimingProfile",
     "TIMING_SCHEMA",
 ]

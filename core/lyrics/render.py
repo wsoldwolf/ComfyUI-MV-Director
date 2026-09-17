@@ -27,10 +27,11 @@ def render_template_emd(timeline: TimelineArtifact) -> EMDTextArtifact:
     for scene in timeline.scenes:
         if lines:
             lines.append("")
+        continuation = " 継続" if scene.context_length > 0 else ""
         lines.extend(
             [
                 f"> `シーン` {scene.scene_number}",
-                f"# シーン {format_emd_time(scene.start_ms)} --> {format_emd_time(scene.end_ms)}",
+                f"# シーン {format_emd_time(scene.start_ms)} --> {format_emd_time(scene.end_ms)}{continuation}",
                 f"* `H3長` {scene.raw_length}",
             ]
         )

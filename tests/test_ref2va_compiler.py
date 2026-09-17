@@ -3,7 +3,11 @@ import json
 import unittest
 
 from core.compiler import CompilerError, compile_ref2va
-from core.h3_contract import H3TimingProfile
+from core.h3_contract import (
+    FACE_PERFORMANCE_CUT_ACTION,
+    FACE_PERFORMANCE_CUT_CAMERA,
+    H3TimingProfile,
+)
 
 
 FIXTURES = Path(__file__).parent / "fixtures" / "emd"
@@ -21,7 +25,32 @@ class ShortTranslator:
 
 class ReferenceMutatingTranslator:
     def translate(self, units):
+        if any("<Video 1>" in unit for unit in units):
+            raise AssertionError("protected video reference reached translator")
         return tuple(unit.replace("<Video 1>", "<Video 9>") for unit in units)
+
+
+class CameraDirectiveMutatingTranslator:
+    def translate(self, units):
+        if any(
+            directive in unit
+            for unit in units
+            for directive in (
+                FACE_PERFORMANCE_CUT_ACTION,
+                FACE_PERFORMANCE_CUT_CAMERA,
+                "Arc Shot",
+                "with large amplitude",
+                "at fast speed",
+            )
+        ):
+            raise AssertionError("protected H3 camera directive reached translator")
+        return tuple(
+            "EN:"
+            + unit.replace("Arc Shot", "Orbiting camera")
+            .replace("with large amplitude", "widely")
+            .replace("at fast speed", "quickly")
+            for unit in units
+        )
 
 
 class Ref2VACompilerTests(unittest.TestCase):
@@ -73,7 +102,7 @@ class Ref2VACompilerTests(unittest.TestCase):
             line for line in scene["prompt"] if line.startswith("[Shot 2]")
         )
         self.assertIn(
-            "[Shot 2] At 00:05.000, EN:<Subject 1>は立ち止まり正面を向く。",
+            "[Shot 2] At 00:05.000, <Subject 1> EN:は立ち止まり正面を向く。",
             second_shot,
         )
         self.assertIn(
@@ -141,7 +170,15 @@ class Ref2VACompilerTests(unittest.TestCase):
         prompt = compile_ref2va(source, EchoTranslator()).plan["shots"][0]["prompt"]
         self.assertIn(
             "<Subject 1> is described here: EN:狐耳の少女. "
-            "Use these connected references for it: <Picture 1>.",
+            "Use these connected references only for its visual identity and "
+            "design: <Picture 1>. Treat every panel or alternate view as identity "
+            "material for the same single physical instance. Render exactly one "
+            "physical instance of this Subject, with one head and one body. Never "
+            "show a duplicate, twin, clone, reflection, background lookalike, "
+            "inset view, split-screen copy, or second representation of this "
+            "Subject. "
+            "Do not copy a reference pose, framing, composition, panel layout, "
+            "or background; follow the current Shot instead.",
             prompt,
         )
         summary_index = prompt.index("summary:")
@@ -213,6 +250,37 @@ class Ref2VACompilerTests(unittest.TestCase):
         self.assertNotIn("<Video 9>", prompt)
         self.assertEqual(result.required_references.references, ())
 
+    def test_h3_camera_directives_are_opaque_translation_spans(self) -> None:
+        source = """# サブジェクト
+* 人物。
+> `シーン` 1
+# シーン 00:00.000 --> 00:01.000
+* `H3長` 22
+## ショット 00:00.000
+* Arc Shot with large amplitude at fast speed で人物の側面を通る。
+"""
+        result = compile_ref2va(source, CameraDirectiveMutatingTranslator())
+        prompt = "\n".join(result.plan["shots"][0]["prompt"])
+        self.assertIn("Arc Shot with large amplitude at fast speed", prompt)
+        self.assertNotIn("Orbiting camera", prompt)
+        self.assertNotIn("widely", prompt)
+        self.assertNotIn("quickly", prompt)
+
+    def test_face_performance_cut_prompts_are_opaque_translation_spans(self) -> None:
+        source = f"""# サブジェクト
+* 人物。
+> `シーン` 1
+# シーン 00:00.000 --> 00:01.000
+* `H3長` 22
+## ショット 00:00.000
+* {FACE_PERFORMANCE_CUT_ACTION}
+* {FACE_PERFORMANCE_CUT_CAMERA}
+"""
+        result = compile_ref2va(source, CameraDirectiveMutatingTranslator())
+        prompt = "\n".join(result.plan["shots"][0]["prompt"])
+        self.assertIn(FACE_PERFORMANCE_CUT_ACTION, prompt)
+        self.assertIn(FACE_PERFORMANCE_CUT_CAMERA, prompt)
+
     def test_context_loop_mode_sets_only_its_fixed_fields(self) -> None:
         source = """# サブジェクト
 * 人物。
@@ -248,7 +316,7 @@ class Ref2VACompilerTests(unittest.TestCase):
 ## ショット 00:00.000
 * 歩く。
 > `シーン` 2
-# シーン 00:01.000 --> 00:02.000
+# シーン 00:01.000 --> 00:02.000 継続
 * `H3長` 22
 ## ショット 00:01.000
 * 止まる。
@@ -263,7 +331,31 @@ class Ref2VACompilerTests(unittest.TestCase):
         ).plan["shots"]
         self.assertEqual(shots[0]["context_length"], 0)
         self.assertEqual(shots[1]["context_length"], 5)
-        self.assertEqual([shot["audio_context_length"] for shot in shots], [3, 3])
+        self.assertEqual([shot["audio_context_length"] for shot in shots], [0, 3])
+        self.assertNotIn("continuation_mode", shots[0])
+        self.assertEqual(shots[1]["continuation_mode"], "guide")
+
+
+    def test_later_scene_without_continuation_compiles_as_cut(self) -> None:
+        source = """# サブジェクト
+* 人物。
+> `シーン` 1
+# シーン 00:00.000 --> 00:01.000
+* `H3長` 22
+## ショット 00:00.000
+* 歩く。
+> `シーン` 2
+# シーン 00:01.000 --> 00:02.000
+* `H3長` 22
+## ショット 00:01.000
+* 顔のアップへ切り替える。
+"""
+        shots = compile_ref2va(source, EchoTranslator()).plan["shots"]
+        self.assertEqual(
+            [(shot["context_length"], shot["audio_context_length"]) for shot in shots],
+            [(0, 0), (0, 0)],
+        )
+        self.assertNotIn("continuation_mode", shots[1])
 
 
 if __name__ == "__main__":

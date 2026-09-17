@@ -543,6 +543,11 @@ class VadAndTimelineTests(unittest.TestCase):
         )
         self.assertEqual(timeline.plan_duration_ms, 20042)
         self.assertEqual(timeline.lyrics[1].section, "VERSE1")
+        template = render_template_emd(timeline).text
+        self.assertIn(
+            "> `シーン` 2\n# シーン 00:10.125 --> 00:20.042 継続",
+            template,
+        )
 
     def test_template_and_srt_share_canonical_segments(self) -> None:
         source = parse_plain_lyrics("[CHORUS]\n千年鳥居 月明かり\n")

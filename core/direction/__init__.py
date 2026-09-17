@@ -22,6 +22,14 @@ from .profiles import (
     MOTION_PROFILES,
     STYLE_PROFILES,
 )
+from .profile_loader import (
+    PROFILE_ROOT,
+    DirectionProfile,
+    DirectionProfileCatalog,
+    DirectionProfileError,
+    load_direction_profile,
+    load_direction_profiles,
+)
 
 __all__ = [
     "CAMERA_PROFILES",
@@ -32,12 +40,18 @@ __all__ = [
     "DirectionEnhancerResult",
     "DirectionPassthrough",
     "DirectionPassthroughError",
+    "DirectionProfile",
+    "DirectionProfileCatalog",
+    "DirectionProfileError",
     "MOTION_PROFILES",
     "PASSTHROUGH_PROFILE",
+    "PROFILE_ROOT",
     "RETENTION_POLICIES",
     "STYLE_PROFILES",
     "build_direction_payload",
     "enhance_direction",
     "parse_direction_passthrough",
+    "load_direction_profile",
+    "load_direction_profiles",
     "render_direction_emd_preview",
 ]

@@ -33,6 +33,10 @@ class FakeLifecycle:
         japanese_response_once: bool = False,
         invalid_last_slot_once: bool = False,
         invalid_last_slot_always: bool = False,
+        unknown_type_response: bool = False,
+        duplicate_response: bool = False,
+        conflicting_duplicate_once: bool = False,
+        unknown_slot_response: bool = False,
     ) -> None:
         self.effective_n_ctx = 1120
         self.invalid_response = invalid_response
@@ -41,6 +45,10 @@ class FakeLifecycle:
         self.japanese_response_once = japanese_response_once
         self.invalid_last_slot_once = invalid_last_slot_once
         self.invalid_last_slot_always = invalid_last_slot_always
+        self.unknown_type_response = unknown_type_response
+        self.duplicate_response = duplicate_response
+        self.conflicting_duplicate_once = conflicting_duplicate_once
+        self.unknown_slot_response = unknown_slot_response
         self.invalid_last_slot_used = False
         self.chat_calls: list[dict[str, object]] = []
         self.ensure_calls = 0
@@ -96,6 +104,14 @@ class FakeLifecycle:
             rows.append("TRANSLATION\tseven\tbroken")
         if self.invalid_response:
             rows.append("extra commentary")
+        if self.unknown_type_response:
+            rows.append("NOTE\t1\ttranslation complete")
+        if self.duplicate_response:
+            rows.extend(list(rows))
+        if self.conflicting_duplicate_once and len(self.chat_calls) == 1:
+            rows.append("TRANSLATION\t1\tDifferent English translation")
+        if self.unknown_slot_response:
+            rows.append("TRANSLATION\t99\tUnknown slot")
         return "\n".join(rows)
 
     def ensure_loaded(self, model_path, config):
@@ -154,8 +170,65 @@ class LlamaPromptTranslatorTests(unittest.TestCase):
         self.assertEqual(translator.batch_count, 2)
         self.assertEqual(len(lifecycle.chat_calls), 2)
 
-    def test_invalid_translation_line_stops_without_retry(self) -> None:
+    def test_complete_translation_ignores_nonrecord_commentary(self) -> None:
         lifecycle = FakeLifecycle(invalid_response=True)
+        translator = LlamaPromptTranslator(
+            lifecycle,
+            system_prompt="translate",
+            runtime_config=LlamaRuntimeConfig(max_tokens=32, n_ctx=1100),
+        )
+        with self.assertLogs("mv_director.compiler", level="WARNING"):
+            translated = translator.translate(("一",))
+        self.assertEqual(translated, ("English 1",))
+        self.assertEqual(len(lifecycle.chat_calls), 1)
+
+    def test_complete_translation_ignores_only_unknown_record_types(self) -> None:
+        lifecycle = FakeLifecycle(unknown_type_response=True)
+        translator = LlamaPromptTranslator(
+            lifecycle,
+            system_prompt="translate",
+            runtime_config=LlamaRuntimeConfig(max_tokens=32, n_ctx=1100),
+        )
+        with self.assertLogs("mv_director.compiler", level="WARNING") as captured:
+            translated = translator.translate(("一", "二"))
+        self.assertEqual(translated, ("English 1", "English 2"))
+        self.assertEqual(len(lifecycle.chat_calls), 1)
+        self.assertIn(
+            "unknown_type=1",
+            "\n".join(captured.output),
+        )
+
+    def test_identical_duplicate_translations_are_ignored(self) -> None:
+        lifecycle = FakeLifecycle(duplicate_response=True)
+        translator = LlamaPromptTranslator(
+            lifecycle,
+            system_prompt="translate",
+            runtime_config=LlamaRuntimeConfig(max_tokens=32, n_ctx=1100),
+        )
+        with self.assertLogs("mv_director.compiler", level="WARNING") as captured:
+            translated = translator.translate(("一", "二"))
+        self.assertEqual(translated, ("English 1", "English 2"))
+        self.assertEqual(len(lifecycle.chat_calls), 1)
+        self.assertIn("duplicate=2", "\n".join(captured.output))
+
+    def test_conflicting_duplicate_translation_is_retried_in_isolation(self) -> None:
+        lifecycle = FakeLifecycle(conflicting_duplicate_once=True)
+        translator = LlamaPromptTranslator(
+            lifecycle,
+            system_prompt="translate",
+            runtime_config=LlamaRuntimeConfig(max_tokens=32, n_ctx=1100),
+        )
+        with self.assertLogs("mv_director.compiler", level="INFO") as captured:
+            translated = translator.translate(("一", "二"))
+        self.assertEqual(translated, ("English 1", "English 2"))
+        self.assertEqual([len(call["slots"]) for call in lifecycle.chat_calls], [2, 1])
+        self.assertIn(
+            "retrying conflicting duplicate translation slots in isolation: 1",
+            "\n".join(captured.output),
+        )
+
+    def test_unknown_translation_slot_remains_fatal(self) -> None:
+        lifecycle = FakeLifecycle(unknown_slot_response=True)
         translator = LlamaPromptTranslator(
             lifecycle,
             system_prompt="translate",
@@ -163,7 +236,6 @@ class LlamaPromptTranslatorTests(unittest.TestCase):
         )
         with self.assertRaisesRegex(CompilerError, "line protocol"):
             translator.translate(("一",))
-        self.assertEqual(len(lifecycle.chat_calls), 1)
 
     def test_missing_slot_is_retried_once_as_an_isolated_unit(self) -> None:
         lifecycle = FakeLifecycle(invalid_last_slot_once=True)

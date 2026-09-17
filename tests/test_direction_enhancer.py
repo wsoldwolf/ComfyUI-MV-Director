@@ -3,6 +3,7 @@ import json
 import unittest
 from unittest.mock import patch
 
+from core.artifacts import ObservationsArtifact, SubjectFeature
 from core.direction import (
     CAMERA_PROFILES,
     DIRECTION_PRESETS,
@@ -53,6 +54,14 @@ class DirectionEnhancerTests(unittest.TestCase):
         )
         self.assertEqual(len(backend.calls), 1)
         self.assertEqual(result.direction.style_direction[0], "実写映画として自然な材質と奥行きで描く。")
+        self.assertEqual(
+            result.direction.motion_direction,
+            (MOTION_PROFILES["natural_performance"],),
+        )
+        self.assertEqual(
+            result.direction.camera_direction,
+            (CAMERA_PROFILES["readable_depth"],),
+        )
         self.assertIn("## スタイル", result.direction_emd_preview)
         self.assertIn("## その他", result.direction_emd_preview)
         input_records = [
@@ -64,7 +73,7 @@ class DirectionEnhancerTests(unittest.TestCase):
     def test_normalizes_observed_qwen4b_record_formatting(self) -> None:
         backend = FakeDirectionBackend(
             "<think>\n</think>\n"
-            "STYLE\t1\t画風。\tMOTION\t2\t動作。\tCAMERA\t3\tカメラ。"
+            "STYLE\t1\t画風。\tENVIRONMENT\t2\t森。\tTIME_LIGHTING\t3\t夜。"
         )
         result = enhance_direction(
             backend,
@@ -74,8 +83,16 @@ class DirectionEnhancerTests(unittest.TestCase):
         )
         self.assertEqual(len(backend.calls), 1)
         self.assertEqual(result.direction.style_direction, ("画風。",))
-        self.assertEqual(result.direction.motion_direction, ("動作。",))
-        self.assertEqual(result.direction.camera_direction, ("カメラ。",))
+        self.assertEqual(
+            result.direction.motion_direction,
+            (MOTION_PROFILES["natural_performance"],),
+        )
+        self.assertEqual(
+            result.direction.camera_direction,
+            (CAMERA_PROFILES["readable_depth"],),
+        )
+        self.assertEqual(result.direction.environment_direction, ("森。",))
+        self.assertEqual(result.direction.time_lighting_direction, ("夜。",))
         self.assertFalse(result.issues)
         self.assertFalse(result.retried_missing)
 
@@ -110,7 +127,53 @@ class DirectionEnhancerTests(unittest.TestCase):
         for source_medium_term in ("アニメ", "イラスト", "セル影", "線画", "保持しない"):
             self.assertNotIn(source_medium_term, style)
 
-    def test_locked_photoreal_conversion_mechanically_overrides_llm_paraphrase(self) -> None:
+    def test_direction_receives_scene_context_but_not_reference_pose(self) -> None:
+        observations = ObservationsArtifact(
+            overview="人物が両手を広げて立っている参照画像。",
+            primary_subject="狼娘",
+            hint_status="consistent",
+            hint_reason="特徴が一致する。",
+            subject_features=(
+                SubjectFeature("ears", "狼耳", "clear"),
+            ),
+            subject_pose="両手を広げた正面立ち。",
+            scene_setting="森の鳥居。",
+            scene_elements=("石段", "木々"),
+            lighting="月光。",
+            time_weather="夜。",
+            shot_size="全身。",
+            viewpoint="正面。",
+            subject_placement="中央。",
+            depth="浅い。",
+            style_medium="イラスト。",
+            style_rendering="セル塗り。",
+            style_palette="黒と赤。",
+            visible_text=(),
+            uncertainties=(),
+        )
+        payload = json.loads(
+            build_direction_payload(
+                DirectionEnhancerInput(
+                    concept_emd="# サブジェクト\n* 狼耳の人物。\n",
+                    observations_json=observations.to_json(),
+                )
+            )
+        )
+        self.assertEqual(
+            payload["vision_scene_context"],
+            {
+                "setting": "森の鳥居。",
+                "elements": ["石段", "木々"],
+                "lighting": "月光。",
+                "time_weather": "夜。",
+            },
+        )
+        serialized = json.dumps(payload, ensure_ascii=False)
+        self.assertNotIn("両手を広げた", serialized)
+        self.assertNotIn("shot_size", serialized)
+        self.assertNotIn("subject_pose", serialized)
+
+    def test_locked_photoreal_conversion_is_not_requested_from_llm(self) -> None:
         backend = FakeDirectionBackend(
             "\n".join(
                 (
@@ -130,13 +193,8 @@ class DirectionEnhancerTests(unittest.TestCase):
         self.assertEqual(style, STYLE_PROFILES["illust_to_photoreal"])
         self.assertNotIn("アニメ", style)
         self.assertNotIn("イラスト", style)
-        self.assertTrue(
-            any(
-                item.record_kind == "discard"
-                and item.reason == "profile_overridden"
-                for item in result.direction.provenance
-            )
-        )
+        payload = json.loads(backend.calls[0]["payload"])
+        self.assertEqual(payload["requested_records"], [])
         style_output = next(
             item
             for item in result.direction.provenance
@@ -144,6 +202,46 @@ class DirectionEnhancerTests(unittest.TestCase):
         )
         self.assertEqual(style_output.source, "profile")
         self.assertEqual(style_output.reason, "profile_enforced")
+
+    def test_motion_and_camera_profiles_own_their_typed_fields(self) -> None:
+        backend = FakeDirectionBackend(
+            "\n".join(
+                (
+                    "STYLE\t1\t映画的なセルアニメとして描く。",
+                    "MOTION\t1\t足袋を地面へ滑らせる。",
+                    "CAMERA\t1\t足袋を固定カメラで拡大する。",
+                )
+            )
+        )
+        result = enhance_direction(
+            backend,
+            value=DirectionEnhancerInput(
+                style_profile="anime_mv",
+                motion_profile="anime_mv",
+                camera_profile="anime_mv",
+            ),
+            system_prompt="fixed",
+            runtime_config=LlamaRuntimeConfig(),
+        )
+        self.assertEqual(
+            result.direction.motion_direction,
+            (MOTION_PROFILES["anime_mv"],),
+        )
+        self.assertEqual(
+            result.direction.camera_direction,
+            (CAMERA_PROFILES["anime_mv"],),
+        )
+        enforced = {
+            item.source_ref
+            for item in result.direction.provenance
+            if item.record_kind == "output"
+            and item.reason == "profile_enforced"
+        }
+        self.assertEqual(enforced, {"anime_mv"})
+        self.assertEqual(
+            json.loads(backend.calls[0]["payload"])["requested_records"],
+            [],
+        )
 
     def test_reference_cinematic_keeps_generated_style_and_is_not_locked(self) -> None:
         payload = json.loads(
@@ -169,6 +267,23 @@ class DirectionEnhancerTests(unittest.TestCase):
             system_prompt,
         )
         self.assertIn("profiles.style.locked is true", system_prompt)
+        self.assertIn("Python-owned exact output", system_prompt)
+        self.assertIn("Do not emit MOTION or CAMERA", system_prompt)
+        self.assertIn("Never put a reference-image", system_prompt)
+        self.assertIn("foxfire", system_prompt)
+
+    def test_anime_mv_profiles_keep_local_costume_details_out_of_direction(self) -> None:
+        self.assertIn("最低一つ", CAMERA_PROFILES["anime_mv"])
+        self.assertIn("Arc Shot", CAMERA_PROFILES["anime_mv"])
+        combined = " ".join(
+            (
+                STYLE_PROFILES["anime_mv"],
+                MOTION_PROFILES["anime_mv"],
+                CAMERA_PROFILES["anime_mv"],
+            )
+        ).casefold()
+        for local_detail in ("足袋", "足指", "つま先", "裸足", "tabi", "toe"):
+            self.assertNotIn(local_detail, combined)
 
     def test_all_passthrough_skips_inference_and_keeps_exact_text(self) -> None:
         backend = FakeDirectionBackend()
@@ -235,7 +350,7 @@ class DirectionEnhancerTests(unittest.TestCase):
             runtime_config=LlamaRuntimeConfig(),
         )
         payload = json.loads(backend.calls[0]["payload"])
-        self.assertEqual(payload["requested_records"], ["MOTION", "CAMERA"])
+        self.assertEqual(payload["requested_records"], [])
         self.assertNotIn("style", payload["profiles"])
         self.assertEqual(result.direction.style_direction, ("手書きの固定文。",))
 
@@ -289,31 +404,31 @@ class DirectionEnhancerTests(unittest.TestCase):
 
     def test_missing_required_slot_gets_one_local_retry(self) -> None:
         backend = FakeDirectionBackend(
-            "STYLE\t1\t画風。\nCAMERA\t1\tカメラ。",
-            "STYLE\t1\t再掲しない。\nMOTION\t1\t動作。",
+            "CAMERA\t1\tカメラ。",
+            "STYLE\t1\t画風。",
         )
         result = enhance_direction(
             backend,
-            value=DirectionEnhancerInput(),
+            value=DirectionEnhancerInput(style_profile="reference_cinematic"),
             system_prompt="fixed",
             runtime_config=LlamaRuntimeConfig(),
         )
         self.assertEqual(len(backend.calls), 2)
         retry = json.loads(backend.calls[1]["payload"])
         self.assertEqual(retry["retry"], "missing_slots_only")
-        self.assertEqual(retry["missing"], [["MOTION", 1]])
-        self.assertEqual(result.retried_missing, (("MOTION", 1),))
-        self.assertEqual(result.direction.motion_direction, ("動作。",))
+        self.assertEqual(retry["missing"], [["STYLE", 1]])
+        self.assertEqual(result.retried_missing, (("STYLE", 1),))
+        self.assertEqual(result.direction.style_direction, ("画風。",))
         self.assertEqual(len(result.issues), 1)
         self.assertEqual(result.issues[0].reason, "unknown_type")
-        self.assertNotIn("再掲しない", result.direction_emd_preview)
+        self.assertIn("画風。", result.direction_emd_preview)
 
     def test_missing_after_retry_stops(self) -> None:
-        backend = FakeDirectionBackend("STYLE\t1\t画風。", "CAMERA\t1\tカメラ。")
-        with self.assertRaisesRegex(DirectionEnhancerError, "MOTION:1"):
+        backend = FakeDirectionBackend("CAMERA\t1\tカメラ。", "OTHER\t1\tその他。")
+        with self.assertRaisesRegex(DirectionEnhancerError, "STYLE:1"):
             enhance_direction(
                 backend,
-                value=DirectionEnhancerInput(),
+                value=DirectionEnhancerInput(style_profile="reference_cinematic"),
                 system_prompt="fixed",
                 runtime_config=LlamaRuntimeConfig(),
             )
@@ -333,8 +448,14 @@ class DirectionEnhancerTests(unittest.TestCase):
             for item in result.direction.provenance
             if item.record_kind == "discard"
         ]
-        self.assertEqual(len(discarded), 2)
-        self.assertTrue(all(item.reason == "invalid_line_record" for item in discarded))
+        self.assertEqual(
+            sum(item.reason == "invalid_line_record" for item in discarded),
+            4,
+        )
+        self.assertEqual(
+            sum(item.reason == "profile_overridden" for item in discarded),
+            0,
+        )
         self.assertNotIn("preamble", result.direction_emd_preview)
         self.assertNotIn("別案", result.direction_emd_preview)
 
@@ -358,17 +479,36 @@ class DirectionEnhancerTests(unittest.TestCase):
         )
         self.assertEqual(
             set(MOTION_PROFILES),
-            {"natural_performance", "expressive_mv", "limited_animation", "anime_mv"},
+            {
+                "natural_performance", "expressive_mv", "limited_animation",
+                "cinema_mv", "anime_mv",
+            },
         )
         self.assertEqual(
             set(CAMERA_PROFILES),
-            {"readable_depth", "cinematic_depth", "rhythmic_mv", "anime_mv"},
+            {
+                "readable_depth", "cinematic_depth", "rhythmic_mv",
+                "cinema_mv", "anime_mv",
+            },
         )
         camera = CAMERA_PROFILES["anime_mv"]
-        self.assertIn("arc又はclose-upを全体へ一律に要求しない", camera)
+        self.assertIn("Arc Shotを連続Shotへ割り当てず", camera)
+        self.assertIn("30度から90度の経路", camera)
+        self.assertIn("Tracking Shot", camera)
+        self.assertIn("Pedestal Up", camera)
+        self.assertIn("両目、眉、鼻、口全体", camera)
         self.assertIn("二コマ打ち又は三コマ打ち", MOTION_PROFILES["anime_mv"])
+        self.assertIn("明確な加速", MOTION_PROFILES["anime_mv"])
+        self.assertIn("地面から明確に持ち上げ", MOTION_PROFILES["anime_mv"])
+        self.assertIn("時間方向に連続", MOTION_PROFILES["anime_mv"])
+        self.assertIn("痙攣状motion", MOTION_PROFILES["anime_mv"])
+        self.assertIn("短いポーズ保持", MOTION_PROFILES["cinema_mv"])
+        self.assertIn("移動が不要なら静止構図", CAMERA_PROFILES["cinema_mv"])
         self.assertIn("reference_anime", STYLE_PROFILES)
-        self.assertGreaterEqual(len(DIRECTION_PRESETS), 4)
+        self.assertIn("動物耳、耳内部、尾", STYLE_PROFILES["anime_mv"])
+        self.assertIn("局所的なglow、bloom", STYLE_PROFILES["anime_mv"])
+        self.assertIn("cinema_mv", DIRECTION_PRESETS)
+        self.assertGreaterEqual(len(DIRECTION_PRESETS), 5)
 
     def test_environment_and_time_lighting_records_are_separate(self) -> None:
         backend = FakeDirectionBackend(

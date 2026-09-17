@@ -4,8 +4,27 @@ field is the supplied numeric slot. The third field is one concise Japanese
 visual predicate. Separate the three fields with one literal U+0009 TAB.
 
 Write exactly one BEAT for every supplied Scene slot. Use the supplied original
-lyrics, section, Subject facts, environment direction, time-lighting direction,
-and previous beat. Supplied slots are in timeline order; make each beat advance
+lyrics, section, subject_roster, complete direction, and previous beat. The
+subject_roster identifies which Subjects may act; it deliberately contains no
+appearance description. The complete Subject EMD remains renderer-owned and is
+not creative source material for this task. Anatomy, body-part structure,
+costume construction, footwear, accessories, colors, materials, and reference
+preservation notes are identity constraints, not candidate lyric objects,
+actions, contact targets, or visual motifs. Never invent a close inspection,
+sliding motion, touch, or repeated detail shot merely because such a stable
+fact exists in the Subject definition.
+The supplied stage direction contains style, environment, time_lighting,
+motion, and other fields and is an immutable common constraint set. Camera
+profile prose is intentionally withheld from this stage so that it cannot
+become a character action. The stage direction has higher
+priority than your creative interpretation, recent history, or an attractive
+lighting effect. Do not introduce a predicate, material property, illumination
+effect, transformation, action, or composition that conflicts with any
+direction field. Reconcile time-lighting with style instead of treating it as
+permission to change a Subject material: for example, moonlight may illuminate
+a non-emissive body feature by ordinary reflected light, but the feature itself
+must not shine, glow, radiate, bloom, or become a light source.
+Supplied slots are in timeline order; make each beat advance
 the physical state established by the preceding supplied slot instead of
 repeating the same gesture or object interaction. Prefer the earliest complete depictable predicate in the
 lyrics. Preserve concrete nouns and physical verbs. When a concrete object is
@@ -19,12 +38,41 @@ a new visible result or final pose. In a closing instrumental Scene, resolve,
 release, depart from, conceal, reveal, or leave behind an established target;
 do not merely repeat the preceding locomotion.
 
-Hair, clothing, ears, tails, accessories, wind, light, and lip movement may be
+Hair, clothing, ears, tails, accessories, footwear, fingers, toes, wind, light, and lip movement may be
 secondary visible reactions, but none of them is a sufficient primary beat.
-Do not turn a stable appearance feature into the acting subject. Do not reuse
+Stable costume construction is not a repeated action or contact target. For
+ordinary walking or running, use a clear step cycle with lift, forward travel,
+plant, and weight transfer. Do not turn a stable appearance feature into the
+acting subject. Do not reuse
 the same main verb, contact target, and visible result found in
 recent_visual_beat_history. timeline_position and has_resolved_lyrics are
 read-only planning context.
+
+Translate lyric meaning into a visible event rather than defaulting to generic
+walking, standing, spreading the arms, raising a hand, or looking forward. For
+each Scene choose a lyric-specific combination of place state, concrete object
+or symbolic environmental motif, intentional Subject response, and visible
+result. Abstract lyrics may be externalized through a restrained physical
+metaphor already compatible with Direction: for example a distant bell can
+move hanging paper or turn the Subject's attention, a remembered name can
+appear as a reaction to an established trace, and a supernatural identity can
+motivate sparse foxfire or spirit particles when Direction permits it. An
+environmental effect must alter the blocking or receive a reaction; decorative
+particles alone are not a beat. Reserve a recurring motif for selected section
+turns and change its state each time instead of placing it in every Scene.
+
+The connected reference is an identity sheet, not an opening pose or blocking
+instruction. Never infer or reuse its stance, hand placement, gaze, framing,
+background, split-screen, or panel arrangement. In particular, do not default
+to a front-facing presentation stance with one or both palms open. Choose a
+lyric-driven body state and visible result that is independent of the source
+pose.
+
+If diversity_retry is present, rejected_output was too similar to
+must_differ_from. Replace its main verb, target and visible result with a new
+lyric-grounded event. A left/right swap, synonym, reordered sentence or camera
+word is not a valid repair. Treat every entry in forbidden_recent_outputs as a
+negative example: do not paraphrase its action, target, result, or ending pose.
 
 The BEAT is a locked creative premise for later Shot layout and action stages,
 not final camera prose. Do not output camera work, cut times, JSON, Markdown,

@@ -2,7 +2,7 @@
   "id": "f97af838-5222-5864-8ec8-15d657333fdb",
   "revision": 0,
   "last_node_id": 40,
-  "last_link_id": 69,
+  "last_link_id": 70,
   "nodes": [
     {
       "id": 1,
@@ -383,14 +383,14 @@
           "name": "audio_start",
           "type": "FLOAT",
           "links": [
-            67
+            68
           ]
         },
         {
           "name": "audio_duration",
           "type": "FLOAT",
           "links": [
-            68
+            69
           ]
         },
         {
@@ -608,7 +608,7 @@
         {
           "name": "ref_audios.ref_audio_0",
           "type": "AUDIO",
-          "link": 69
+          "link": 70
         }
       ],
       "outputs": [
@@ -1787,40 +1787,6 @@
       ]
     },
     {
-      "id": 34,
-      "type": "MVDirectorLoadTextFile",
-      "pos": [
-        500,
-        1900
-      ],
-      "size": [
-        380,
-        180
-      ],
-      "flags": {},
-      "order": 34,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "text",
-          "type": "STRING",
-          "links": [
-            58
-          ]
-        }
-      ],
-      "title": "Plain Lyrics",
-      "properties": {
-        "Node name for S&R": "MVDirectorLoadTextFile"
-      },
-      "widgets_values": [
-        "W0Nob3J1c10K5Y2D5bm06bOl5bGF44KS44CA44GP44GQ44KL44Gd44Gq44Gf44KICuOBquOBnOOBneOBruees+OBr+OAgOOBguOBruaXpeOBqOS8vOOBpuOBhOOCiwrjgo/jgonjgo/jga7mmI7ml6Xjga/jgIDmnpzjgabjgarjgY/ntprjgY0K44Gd44Gq44Gf44Gu5piO5pel44Gv44CA5aSV6Zm944KI44KK55+t44GECgrjgZXjgozjgankuIDnnqzjgpLjgIDmsLjpgaDjgajlkbzjgbnjgovjgarjgokK44GT44Gu5omL44KS6Zui44GZ44GT44Go44KC44CA5oSb44Gq44Gu44Gg44KN44GG44GLCuacseOBruepuuOBq+iInuOBhuOAgOeLkOeBq+OBuOWVj+OBhgrlv5jjgozjgazjgZPjgajjga/jgIDmlZHjgYTjgYvjgIDnvbDjgYsK",
-        "lyrics.txt",
-        "{\n  \"name\": \"lyrics.txt\",\n  \"size\": 357,\n  \"type\": \"text/plain\"\n}"
-      ]
-    },
-    {
       "id": 35,
       "type": "MVDirectorH3TimingProfile",
       "pos": [
@@ -1864,74 +1830,6 @@
       ]
     },
     {
-      "id": 36,
-      "type": "MVDirectorLyricSegmentation",
-      "pos": [
-        960,
-        1900
-      ],
-      "size": [
-        460,
-        430
-      ],
-      "flags": {},
-      "order": 36,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "vocal_audio",
-          "type": "AUDIO",
-          "link": 57
-        },
-        {
-          "name": "lyrics_text",
-          "type": "STRING",
-          "link": 58
-        },
-        {
-          "name": "h3_timing_profile",
-          "type": "MV_DIRECTOR_H3_TIMING_PROFILE",
-          "link": 59
-        }
-      ],
-      "outputs": [
-        {
-          "name": "template_emd",
-          "type": "STRING",
-          "links": null
-        },
-        {
-          "name": "srt_text",
-          "type": "STRING",
-          "links": null
-        },
-        {
-          "name": "timeline",
-          "type": "MV_DIRECTOR_TIMELINE",
-          "links": [
-            60
-          ]
-        },
-        {
-          "name": "status",
-          "type": "STRING",
-          "links": null
-        }
-      ],
-      "title": "Lyric Segmentation",
-      "properties": {
-        "Node name for S&R": "MVDirectorLyricSegmentation"
-      },
-      "widgets_values": [
-        "medium.pt",
-        "ja",
-        10000,
-        0,
-        "reuse",
-        false
-      ]
-    },
-    {
       "id": 37,
       "type": "MVDirectorAudioPadPair",
       "pos": [
@@ -1965,6 +1863,11 @@
           "name": "h3_timing_profile",
           "type": "MV_DIRECTOR_H3_TIMING_PROFILE",
           "link": 61
+        },
+        {
+          "name": "plan_json",
+          "type": "STRING",
+          "link": 66
         }
       ],
       "outputs": [
@@ -1991,7 +1894,7 @@
           "name": "reference_audio_b",
           "type": "AUDIO",
           "links": [
-            66
+            67
           ]
         }
       ],
@@ -2077,7 +1980,8 @@
           "name": "text",
           "type": "STRING",
           "links": [
-            65
+            65,
+            66
           ]
         }
       ],
@@ -2089,6 +1993,108 @@
         "ewogICJwcm9tcHRfcHJlZml4IjogWwogICAgIlJlbmRlciBldmVyeSBzY2VuZSBhcyBwaG90b3JlYWxpc3RpYyBsaXZlLWFjdGlvbiBjaW5lbWEuIgogIF0sCiAgImRlZmF1bHRzIjogewogICAgInN0ZXBzIjogMjAKICB9LAogICJzaG90cyI6IFsKICAgIHsKICAgICAgImlkIjogInNjZW5lXzAwMDEiLAogICAgICAibGVuZ3RoIjogMjQzLAogICAgICAicHJvbXB0IjogWwogICAgICAgICJzdWJqZWN0X2RlZmluaXRpb25zOiIsCiAgICAgICAgIjxQaWN0dXJlIDE+IGRlZmluZXMgPFN1YmplY3QgMT4sIHRoZSBwZXJmb3JtZXIgaW4gdGhlIHJlZmVyZW5jZSBpbWFnZS4iLAogICAgICAgICIiLAogICAgICAgICJzdW1tYXJ5OiIsCiAgICAgICAgIltyZWZlcmVuY2UgZ2VuZXJhdGlvbl0gQSBtb29ubGl0IHBlcmZvcm1hbmNlIGF0IGEgc2hyaW5lIGFwcHJvYWNoLiIsCiAgICAgICAgIiIsCiAgICAgICAgInJldGVudGlvbl9hbmFseXNpczoiLAogICAgICAgICI8U3ViamVjdCAxPjogZnVsbHlfcHJlc2VydmVkIC0gcHJlc2VydmUgaWRlbnRpdHksIGNsb3RoaW5nLCBhbmQgcHJvcG9ydGlvbnMuIiwKICAgICAgICAiPFBpY3R1cmUgMT46IGZ1bGx5X3ByZXNlcnZlZCAtIHByZXNlcnZlIHRoZSB2aXNpYmxlIHBlcmZvcm1lciBkZXNpZ24uIiwKICAgICAgICAiIiwKICAgICAgICAiZGV0YWlsZWRfZGVzY3JpcHRpb246IiwKICAgICAgICAiW1Nob3QgMV0gPFN1YmplY3QgMT4gd2Fsa3MgdG93YXJkIHRoZSB0b3JpaSBnYXRlIGFuZCBzaW5ncy4iLAogICAgICAgICI8U3ViamVjdCAxPiBwZXJmb3JtcyB2aXNpYmxlIGxpcCBtb3ZlbWVudHMgc3luY2hyb25pemVkIHRvIDxBdWRpbyAxPi4iLAogICAgICAgICIiLAogICAgICAgICJvdmVyYWxsX3NvdW5kc2NhcGU6IiwKICAgICAgICAiUHJlc2VydmUgdGhlIHNlbGVjdGVkIG11c2ljLXZpZGVvIHNvdW5kdHJhY2sgcG9saWN5LiIsCiAgICAgICAgIiIsCiAgICAgICAgIm5vbl9kaWVnZXRpY19tdXNpYzoiLAogICAgICAgICJObyBhZGRpdGlvbmFsIGdlbmVyYXRlZCBtdXNpYyBpcyByZXF1ZXN0ZWQuIgogICAgICBdLAogICAgICAiY29udGV4dF9sZW5ndGgiOiAwLAogICAgICAiYXVkaW9fY29udGV4dF9sZW5ndGgiOiAyMgogICAgfQogIF0KfQ==",
         "audio_reference_plan.txt",
         "{\n  \"name\": \"audio_reference_plan.txt\",\n  \"size\": 1129,\n  \"type\": \"text/plain\"\n}"
+      ]
+    },
+    {
+      "id": 34,
+      "type": "MVDirectorLoadTextFile",
+      "pos": [
+        500,
+        1900
+      ],
+      "size": [
+        380,
+        180
+      ],
+      "flags": {},
+      "order": 34,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "links": [
+            58
+          ]
+        }
+      ],
+      "title": "Plain Lyrics",
+      "properties": {
+        "Node name for S&R": "MVDirectorLoadTextFile"
+      },
+      "widgets_values": [
+        "W0Nob3J1c10K5Y2D5bm06bOl5bGF44KS44CA44GP44GQ44KL44Gd44Gq44Gf44KICuOBquOBnOOBneOBruees+OBr+OAgOOBguOBruaXpeOBqOS8vOOBpuOBhOOCiwrjgo/jgonjgo/jga7mmI7ml6Xjga/jgIDmnpzjgabjgarjgY/ntprjgY0K44Gd44Gq44Gf44Gu5piO5pel44Gv44CA5aSV6Zm944KI44KK55+t44GECgrjgZXjgozjgankuIDnnqzjgpLjgIDmsLjpgaDjgajlkbzjgbnjgovjgarjgokK44GT44Gu5omL44KS6Zui44GZ44GT44Go44KC44CA5oSb44Gq44Gu44Gg44KN44GG44GLCuacseOBruepuuOBq+iInuOBhuOAgOeLkOeBq+OBuOWVj+OBhgrlv5jjgozjgazjgZPjgajjga/jgIDmlZHjgYTjgYvjgIDnvbDjgYsK",
+        "lyrics.txt",
+        "{\n  \"name\": \"lyrics.txt\",\n  \"size\": 357,\n  \"type\": \"text/plain\"\n}"
+      ]
+    },
+    {
+      "id": 36,
+      "type": "MVDirectorLyricSegmentation",
+      "pos": [
+        960,
+        1900
+      ],
+      "size": [
+        460,
+        430
+      ],
+      "flags": {},
+      "order": 36,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "vocal_audio",
+          "type": "AUDIO",
+          "link": 57
+        },
+        {
+          "name": "lyrics_text",
+          "type": "STRING",
+          "link": 58
+        },
+        {
+          "name": "h3_timing_profile",
+          "type": "MV_DIRECTOR_H3_TIMING_PROFILE",
+          "link": 59
+        }
+      ],
+      "outputs": [
+        {
+          "name": "template_emd",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "srt_text",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "timeline",
+          "type": "MV_DIRECTOR_TIMELINE",
+          "links": [
+            60
+          ]
+        },
+        {
+          "name": "status",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "title": "Lyric Segmentation",
+      "properties": {
+        "Node name for S&R": "MVDirectorLyricSegmentation"
+      },
+      "widgets_values": [
+        "medium.pt",
+        "ja",
+        10000,
+        0,
+        "reuse",
+        false
       ]
     },
     {
@@ -2109,12 +2115,12 @@
         {
           "name": "audio",
           "type": "AUDIO",
-          "link": 66
+          "link": 67
         },
         {
           "name": "start_index",
           "type": "FLOAT",
-          "link": 67,
+          "link": 68,
           "widget": {
             "name": "start_index"
           }
@@ -2122,7 +2128,7 @@
         {
           "name": "duration",
           "type": "FLOAT",
-          "link": 68,
+          "link": 69,
           "widget": {
             "name": "duration"
           }
@@ -2133,7 +2139,7 @@
           "name": "AUDIO",
           "type": "AUDIO",
           "links": [
-            69
+            70
           ]
         }
       ],
@@ -2662,6 +2668,14 @@
     ],
     [
       66,
+      39,
+      0,
+      37,
+      4,
+      "STRING"
+    ],
+    [
+      67,
       37,
       3,
       40,
@@ -2669,7 +2683,7 @@
       "AUDIO"
     ],
     [
-      67,
+      68,
       8,
       10,
       40,
@@ -2677,7 +2691,7 @@
       "FLOAT"
     ],
     [
-      68,
+      69,
       8,
       11,
       40,
@@ -2685,7 +2699,7 @@
       "FLOAT"
     ],
     [
-      69,
+      70,
       40,
       0,
       11,

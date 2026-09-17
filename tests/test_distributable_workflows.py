@@ -119,14 +119,15 @@ class DistributableWorkflowTests(unittest.TestCase):
                 ],
             )
             seed_controls = {
-                "MVDirectorImageToSubjectEMD": (21, 22),
-                "MVDirectorDirectionEnhancer": (18, 19),
+                "MVDirectorImageToSubjectEMD": (23, 24),
+                "MVDirectorDirectionEnhancer": (17, 18),
                 "MVDirectorTimelinePlanner": (16, 17),
             }
             for node_type, (seed_index, control_index) in seed_controls.items():
                 values = only_type(workflow, node_type)["widgets_values"]
                 self.assertEqual(values[seed_index], 1)
                 self.assertEqual(values[control_index], "randomize")
+            self.assertEqual(planner["widgets_values"][19], "reuse")
             lyrics = next(
                 node
                 for node in workflow["nodes"]
@@ -185,6 +186,23 @@ class DistributableWorkflowTests(unittest.TestCase):
             self.assertEqual(profile["widgets_values"][1], profiles[mode])
             pad = only_type(workflow, "MVDirectorAudioPadPair")
             self.assertEqual(pad["widgets_values"][3], alignments[mode])
+            self.assertEqual(
+                input_link(workflow, pad, "plan_json")[1:3],
+                [plan_loader["id"], 0],
+            )
+            lyric_nodes = [
+                node
+                for node in workflow["nodes"]
+                if node["type"] == "MVDirectorLyricSegmentation"
+            ]
+            plain_lyrics = [
+                node
+                for node in workflow["nodes"]
+                if node.get("title") == "Plain Lyrics"
+            ]
+            expected_count = 1 if mode == "audio_reference" else 0
+            self.assertEqual(len(lyric_nodes), expected_count)
+            self.assertEqual(len(plain_lyrics), expected_count)
             tracks = only_type(workflow, "MiniMaxH3AudioTracks")
             loop = only_type(workflow, "MiniMaxH3ChainLoopStart")
             self.assertEqual(

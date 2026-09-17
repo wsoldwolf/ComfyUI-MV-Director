@@ -1,4 +1,9 @@
-"""Mechanical protection for tokens and author-authored dialogue."""
+"""Mechanical protection for tokens and author-authored dialogue.
+
+Protected spans are split out of translation input entirely. They are never
+represented by placeholders which a small language model could edit, omit, or
+reorder.
+"""
 
 from __future__ import annotations
 
@@ -6,9 +11,10 @@ import re
 from dataclasses import dataclass
 
 from ..emd.ast import Subject
-
-from .errors import CompilerError
-
+from ..h3_contract import (
+    FACE_PERFORMANCE_CUT_ACTION,
+    FACE_PERFORMANCE_CUT_CAMERA,
+)
 
 _CONCEPT_RE = re.compile(r"`(サブジェクト[1-4])`")
 _MEDIA_RE = re.compile(r"`(画像([1-9])|動画([1-3])|音声([1-3]))`")
@@ -17,23 +23,91 @@ _REFERENCE_RE = re.compile(
 )
 _D_SPAN_RE = re.compile(r"<d(?:\[[^\]\r\n]+\])?>.*?</d>")
 _DIALOGUE_RE = re.compile(r"「([^「」]*)」")
-_PLACEHOLDER_RE = re.compile(r"⟪MVD_PROTECTED_[0-9]{4}⟫")
+_H3_CAMERA_DIRECTIVES = (
+    FACE_PERFORMANCE_CUT_ACTION,
+    FACE_PERFORMANCE_CUT_CAMERA,
+    "Roll Counterclockwise",
+    "Roll Clockwise",
+    "Shake Slightly",
+    "Shake Strongly",
+    "Pedestal Down",
+    "Pedestal Up",
+    "Tracking Shot",
+    "Static Shot",
+    "Arc Shot",
+    "Truck Right",
+    "Truck Left",
+    "Push In",
+    "Pull Out",
+    "Zoom In",
+    "Zoom Out",
+    "Pan Left",
+    "Pan Right",
+    "Tilt Up",
+    "Tilt Down",
+    "with small amplitude",
+    "with large amplitude",
+    "at slow speed",
+    "at fast speed",
+    "POV",
+)
+_H3_CAMERA_DIRECTIVE_RE = re.compile(
+    "(?:" + "|".join(re.escape(value) for value in _H3_CAMERA_DIRECTIVES) + ")"
+)
 
 
 @dataclass(frozen=True, slots=True)
 class ProtectedUnit:
-    text: str
+    fragments: tuple[str, ...]
     values: tuple[str, ...]
 
-    def restore(self, translated: str) -> str:
-        actual = _PLACEHOLDER_RE.findall(translated)
-        expected = [f"⟪MVD_PROTECTED_{index:04d}⟫" for index in range(len(self.values))]
-        if actual != expected:
-            raise CompilerError("translator changed, removed, or reordered a protected span")
-        result = translated
-        for placeholder, value in zip(expected, self.values):
-            result = result.replace(placeholder, value, 1)
-        return result
+    @property
+    def text(self) -> str:
+        """Return the converted source text, including the protected spans."""
+
+        output: list[str] = []
+        for index, fragment in enumerate(self.fragments):
+            output.append(fragment)
+            if index < len(self.values):
+                output.append(self.values[index])
+        return "".join(output)
+
+    def restore(self, translated_fragments: dict[int, str] | None = None) -> str:
+        """Interleave translated ordinary fragments with untouched spans."""
+
+        translated_fragments = translated_fragments or {}
+        output: list[str] = []
+
+        def append(piece: str, *, protected_boundary: bool) -> None:
+            if (
+                protected_boundary
+                and output
+                and output[-1]
+                and piece
+                and not output[-1][-1].isspace()
+                and not piece[0].isspace()
+                and (
+                    (
+                        output[-1][-1] == ">"
+                        and re.match(r"[A-Za-z0-9]", piece[0])
+                    )
+                    or (
+                        piece[0] == "<"
+                        and re.match(r"[A-Za-z0-9>]", output[-1][-1])
+                    )
+                )
+            ):
+                output.append(" ")
+            output.append(piece)
+
+        for index, fragment in enumerate(self.fragments):
+            append(
+                translated_fragments.get(index, fragment),
+                protected_boundary=index > 0,
+            )
+            if index < len(self.values):
+                append(self.values[index], protected_boundary=True)
+        return "".join(output)
 
 
 def protect_unit(text: str, subjects: tuple[Subject, ...]) -> ProtectedUnit:
@@ -53,12 +127,16 @@ def protect_unit(text: str, subjects: tuple[Subject, ...]) -> ProtectedUnit:
     )
     text = _DIALOGUE_RE.sub(lambda match: f"<d>[Japanese]{match.group(1)}</d>", text)
 
+    combined = re.compile(
+        f"(?:{_D_SPAN_RE.pattern}|{_REFERENCE_RE.pattern}|"
+        f"{_H3_CAMERA_DIRECTIVE_RE.pattern})"
+    )
+    fragments: list[str] = []
     values: list[str] = []
-
-    def replace(match: re.Match[str]) -> str:
-        placeholder = f"⟪MVD_PROTECTED_{len(values):04d}⟫"
+    cursor = 0
+    for match in combined.finditer(text):
+        fragments.append(text[cursor : match.start()])
         values.append(match.group(0))
-        return placeholder
-
-    combined = re.compile(f"(?:{_D_SPAN_RE.pattern}|{_REFERENCE_RE.pattern})")
-    return ProtectedUnit(combined.sub(replace, text), tuple(values))
+        cursor = match.end()
+    fragments.append(text[cursor:])
+    return ProtectedUnit(tuple(fragments), tuple(values))

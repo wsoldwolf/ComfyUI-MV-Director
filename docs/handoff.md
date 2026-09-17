@@ -70,7 +70,7 @@ stash番号は将来変わり得るため、後続調査では上記object IDを
 
 新プロジェクトではこの有限な時間処理を公開support node `MVDirectorLyricSegmentation`へ抽出します。歌詞とpadding前のボーカルだけから新形式のTemplate EMD、標準SRT、`MVD_TIMELINE_V1`、statusを返し、LLM、Image to Subject EMD、Planner、H3実行なしで字幕用途に単独利用できます。MV用TemplateではH3 Timing Profileに従いContext Loop互換raw `length`を上流で確定し、`` `H3長` ``として書く。Plannerはこれを保持し、Compilerは再計算しません。
 
-旧`node_mv_prompt_planner/timeline_parser.py`はこのSceneのduration、絶対ソース範囲、歌詞、lip-sync、soundscapeを固定します。一方、`PlannedShot.start_ms`は旧PlannerのLLM生成物で、`renderer.py`が`## ショット N秒`として書き出していました。新EMDは旧表記を受理せず、各Sceneの直前へ必須の``> `シーン` N``を置き、Sceneを`# シーン START --> END`、全Shotを`## ショット TIME`として絶対`MM:SS.mmm`で記録します。CompilerはScene番号を`scene_NNNN` IDへ写し、エラーとログでも時刻範囲と併記します。
+旧`node_mv_prompt_planner/timeline_parser.py`はこのSceneのduration、絶対ソース範囲、歌詞、lip-sync、soundscapeを固定します。一方、`PlannedShot.start_ms`は旧PlannerのLLM生成物で、`renderer.py`が`## ショット N秒`として書き出していました。新EMDは旧表記を受理せず、各Sceneの直前へ必須の``> `シーン` N``を置き、Sceneを`# シーン START --> END [継続]`、全Shotを`## ショット TIME`として絶対`MM:SS.mmm`で記録します。`継続`省略はカットです。CompilerはScene番号を`scene_NNNN` IDへ写し、エラーとログでも時刻範囲と併記します。
 
 従って「SceneとShotの時間枠がどちらも既存の音声由来」という扱いは誤りです。新方式では要求SceneをWhisper整列とVAD境界から作った後、Lyric SegmentationがContext Loopのraw格子とcontinuation contextへ合わせてplan Sceneを確定する。Shotは整列済み歌詞時刻からPythonが作る。CompilerはH3 prompt用Shot相対時刻を機械計算するだけで、Scene `length`はEMDの`` `H3長` ``を無変換で使います。
 
@@ -110,7 +110,7 @@ EnhancerとPlannerのLLM出力にJSONを使いません。`MVD_LLM_RECORDS_V1`�
 
 `MVD_DIRECTION_V2`はEnhancerからPlannerへの任意typed artifactです。四方向、profile ID、保持方針、任意の機械的パススルー行とprovenanceを持ちます。各profile comboを`passthrough`にした区分はLLMへ渡さず、三区分すべてがパススルーならGGUFをロードしません。Enhancerは確認用EMD previewも返しますがPlannerはartifactだけを読み、未接続でも動作します。
 
-人物動作を先に生成し、camera taskは確定actionを読み取り専用contextとして受けます。同じShotでは両者を全区間で並行させ、action、cameraの順に出力します。数値sub-timeとmid-shot cutは生成せず、cutはLyric Segmentationが既に確定したShot境界でだけ表現します。
+人物動作を先に生成し、camera taskは確定actionを読み取り専用contextとして受けます。同じShotでは両者を全区間で並行させ、action、cameraの順に出力します。数値sub-timeとmid-shot cutは生成しません。PlannerはSceneごとに`CUT`又は`CONTINUE`を選び、hard cutはScene境界だけで表現します。隣接歌詞とVisual Beatを比較し、同じ物理動作の次段階は`CONTINUE`、内面的・感情的な転換はユーザー指定なしで顔のclose-up cutへ結び付けます。全後続境界が一方のmodeだけなら一度再計画し、LAYOUTのmodeが認識不能な場合だけ`CUT,B0`へfallbackします。内部Shot境界は同一H3生成内の時刻付きprompt変化です。
 
 Plannerでは作者由来の`「...」`と明示`<d>...</d>`をLLM前に`__MVD_LOCKED_DIALOGUE_NNNN__`へ置換し、Python side tableへ退避します。採用したLLM行recordの本文に新規の引用台詞、dialogue tag又はplaceholder echoがあればspan全体を無条件削除します。作者原文はSubject、Direction又は作者Shot本文のPython所有位置から一度だけ出力し、引用出現、削除又は未使用placeholderを理由にLLMをretryしません。Plannerが歌詞から作る``リップシンク 歌詞``はこのfilter後にPythonが挿入します。
 

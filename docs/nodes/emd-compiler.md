@@ -31,10 +31,13 @@
 
 - Subjectは`# サブジェクト`直下のlist item順で`<Subject 1..4>`へ割り当てます。
 - ``画像1``、``動画1``、``音声1``等を`<Picture 1>`、`<Video 1>`、`<Audio 1>`へ変換します。
-- `<d>...</d>`と予約directiveは翻訳LLMへ渡しません。
+- `<d>...</d>`、参照ID及びMiniMax H3正式Camera Motion Typeは自由文から分離し、翻訳LLMへ渡しません。前後の日本語fragmentだけを翻訳して原位置へ再結合するため、`Arc Shot`、`Tracking Shot`、`with large amplitude`、`at fast speed`等はLLMのplaceholder出力に依存せず完全一致でPlanへ残ります。
 - 英語だけの行は完全pass-throughします。
 - `already_english`ではmodelの選択が古くてもGGUFをresolve/loadしません。
 - 必須Ref2VA六セクションは固定templateで組み立てます。
-- 翻訳slotの欠落又は日本語echoだけは、該当unitを一度だけ隔離再翻訳します。再失敗、重複、未知行、protected token破損は推測修復せず停止します。
+- 全Subjectへ一つの頭と一つの身体からなる物理instanceを一体だけ描き、duplicate、twin、clone、reflection、background lookalike、inset view、split-screen copy及びsecond representationを禁止する固定文を付けます。参照付きSubjectではPicture/Videoの全panelとalternate viewを同じ一体のidentity資料としてだけ扱い、参照ポーズ、画角、構図、左右panel及び背景を現在Shotへ複製しません。
+- Scene見出し末尾に`継続`がある場合だけtiming profileのvisual/audio contextと`continuation_mode=guide`を出します。省略Sceneは`context_length=0`、`audio_context_length=0`のカットです。
+- `H3長`はPlanner又は作者が境界modeに合わせて確定したraw lengthを無変換で`length`へ写します。
+- 翻訳slotの欠落又は日本語echoは、該当unitを一度だけ隔離再翻訳します。全必須slotが揃った後の非record行及び未知record型は翻訳行から分離し、同一slotの完全一致重複は一件として扱います。異なる本文を持つ重複slotは一方を選ばず、そのunitだけを一度隔離再翻訳します。不正slot、未知slot、空本文、再翻訳後の競合又は欠落、protected token破損は停止します。
 
 JSONは機械入力ですが、レビューしやすいようpretty-printが仕様です。T2VA/I2VAはこのCompilerの対象外です。

@@ -74,18 +74,24 @@ class _TranslationTable:
                     add(f"scene.{scene_index}.shot.{shot_index}.body.{index}", text)
 
         protected = [protect_unit(text, self.document.subjects) for text in units]
-        translated_indices = [
-            index
-            for index, item in enumerate(protected)
-            if _TRANSLATION_REQUIRED_RE.search(item.text)
-        ]
+        fragment_locations: list[tuple[int, int]] = []
+        fragment_units: list[str] = []
+        for unit_index, item in enumerate(protected):
+            for fragment_index, fragment in enumerate(item.fragments):
+                if _TRANSLATION_REQUIRED_RE.search(fragment):
+                    fragment_locations.append((unit_index, fragment_index))
+                    fragment_units.append(fragment)
         translated = translate_exact(
             self.translator,
-            [protected[index].text for index in translated_indices],
+            fragment_units,
         )
-        translated_by_index = dict(zip(translated_indices, translated))
+        translated_fragments: dict[int, dict[int, str]] = {}
+        for (unit_index, fragment_index), text in zip(
+            fragment_locations, translated
+        ):
+            translated_fragments.setdefault(unit_index, {})[fragment_index] = text
         self._values = {
-            key: item.restore(translated_by_index.get(index, item.text))
+            key: item.restore(translated_fragments.get(index))
             for index, (key, item) in enumerate(zip(keys, protected))
         }
 
@@ -97,8 +103,16 @@ def _subject_definition(
     subject: Subject, index: int, translations: _TranslationTable
 ) -> list[str]:
     description = translations.get(f"subject.{index}.description")
+    singleton = (
+        " Render exactly one physical instance of this Subject, with one head "
+        "and one body. Never show a duplicate, twin, clone, reflection, "
+        "background lookalike, inset view, split-screen copy, or second "
+        "representation of this Subject."
+    )
     if not subject.references:
-        return [f"{subject.subject_ref} is described here: {description}"]
+        return [
+            f"{subject.subject_ref} is described here: {description}{singleton}"
+        ]
     separator = (
         ""
         if description.rstrip().endswith((".", "!", "?", "。", "！", "？"))
@@ -107,7 +121,11 @@ def _subject_definition(
     references = ", ".join(subject.references)
     return [
         f"{subject.subject_ref} is described here: {description.rstrip()}{separator} "
-        f"Use these connected references for it: {references}."
+        f"Use these connected references only for its visual identity and design: "
+        f"{references}. Treat every panel or alternate view as identity material "
+        f"for the same single physical instance.{singleton} Do not copy a "
+        "reference pose, framing, composition, panel layout, or background; "
+        "follow the current Shot instead."
     ]
 
 
@@ -319,17 +337,22 @@ def compile_ref2va(
         prompt, audio_fields = _scene_prompt(
             document, scene, index, translations
         )
+        continuation = index > 0 and scene.continuation
         scene_plan: dict[str, Any] = {
             "id": f"scene_{scene.scene_number:04d}",
             "length": scene.h3_length,
             "prompt": prompt,
             "context_length": (
-                timing_profile.first_scene_context_length
-                if index == 0
-                else timing_profile.continuation_context_length
+                timing_profile.continuation_context_length
+                if continuation
+                else 0
             ),
-            "audio_context_length": timing_profile.audio_context_length,
+            "audio_context_length": (
+                timing_profile.audio_context_length if continuation else 0
+            ),
         }
+        if continuation:
+            scene_plan["continuation_mode"] = "guide"
         scene_plan.update(audio_fields)
         plan["shots"].append(scene_plan)
     return CompileResult(plan, _required_references(document))

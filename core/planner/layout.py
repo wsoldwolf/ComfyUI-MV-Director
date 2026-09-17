@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import math
+import re
 
 from ..emd.ast import Scene, Shot
+from ..h3_contract import DEFAULT_H3_TIMING_PROFILE, H3TimingProfile
 from .errors import TimelinePlannerError
 from .template import PlannerTemplate
 
@@ -94,6 +97,64 @@ def parse_layout_selection(
     return starts
 
 
+def parse_scene_layout_selection(
+    text: str,
+    candidates: tuple[ShotBoundaryCandidate, ...],
+    *,
+    scene_end_ms: int,
+    first_scene: bool,
+) -> tuple[bool, tuple[int, ...]]:
+    """Parse a Scene cut/continuation flag and Python-owned Shot boundaries."""
+
+    parts = tuple(part.strip() for part in text.split(",") if part.strip())
+    if not parts or parts[0] not in {"CUT", "CONTINUE"}:
+        raise TimelinePlannerError("Shot layout must start with CUT or CONTINUE")
+    continuation = parts[0] == "CONTINUE"
+    if first_scene and continuation:
+        raise TimelinePlannerError("first Scene cannot continue")
+    starts = parse_layout_selection(
+        ",".join(parts[1:]), candidates, scene_end_ms=scene_end_ms
+    )
+    return continuation, starts
+
+
+def repair_scene_layout_selection(
+    text: str,
+    candidates: tuple[ShotBoundaryCandidate, ...],
+    *,
+    scene_end_ms: int,
+    first_scene: bool,
+) -> tuple[bool, tuple[int, ...]]:
+    """Mechanically repair a recognizable LAYOUT without inventing intent."""
+
+    tokens = re.findall(
+        r"(?<![A-Z0-9_])(?:CUT|CONTINUE|B[0-9]+)(?![A-Z0-9_])",
+        text.upper(),
+    )
+    mode = next(
+        (token for token in tokens if token in {"CUT", "CONTINUE"}),
+        None,
+    )
+    if mode is None:
+        raise TimelinePlannerError("Shot layout has no recognizable boundary mode")
+    continuation = mode == "CONTINUE" and not first_scene
+    by_id = {item.candidate_id: item.start_ms for item in candidates}
+    selected_ids = {
+        token for token in tokens
+        if token.startswith("B") and token in by_id
+    }
+    selected_ids.add("B0")
+    ordered_ids = sorted(selected_ids, key=by_id.__getitem__)[
+        :MAX_SHOTS_PER_SCENE
+    ]
+    starts = parse_layout_selection(
+        ",".join(ordered_ids),
+        candidates,
+        scene_end_ms=scene_end_ms,
+    )
+    return continuation, starts
+
+
 def _destination_index(starts: tuple[int, ...], original_start: int) -> int:
     return max(
         index
@@ -150,6 +211,131 @@ def apply_shot_layouts(
                 shots=shots,
                 audio_directives=scene.audio_directives,
                 line_number=scene.line_number,
+                continuation=scene.continuation,
             )
         )
     return PlannerTemplate(tuple(scenes))
+
+
+def _valid_raw_at_or_above(
+    profile: H3TimingProfile, value: float, minimum: int
+) -> int:
+    k = max(
+        0,
+        math.ceil(
+            (max(value, minimum) - profile.length_remainder)
+            / profile.length_modulus
+        ),
+    )
+    result = k * profile.length_modulus + profile.length_remainder
+    while result < max(profile.min_raw_length, minimum):
+        result += profile.length_modulus
+    profile.validate_raw_length(result)
+    return result
+
+
+def _nearest_valid_raw(
+    profile: H3TimingProfile, value: float, minimum: int
+) -> int:
+    upper = _valid_raw_at_or_above(profile, value, minimum)
+    lower = upper - profile.length_modulus
+    if lower < max(profile.min_raw_length, minimum):
+        return upper
+    return lower if abs(value - lower) < abs(upper - value) else upper
+
+
+def apply_scene_continuations(
+    template: PlannerTemplate,
+    continuations: dict[int, bool],
+    *,
+    timing_profile: H3TimingProfile = DEFAULT_H3_TIMING_PROFILE,
+) -> PlannerTemplate:
+    """Apply Scene boundary modes and reassign H3 lengths cumulatively.
+
+    Continued Scenes lose the visual head overlap; cut Scenes do not. The raw
+    17k+5 lengths and absolute Plan timestamps therefore have to be reassigned
+    together when Planner changes a boundary mode.
+    """
+
+    timing_profile.validate()
+    scenes = template.scenes
+    if not scenes:
+        return template
+    modes = [False]
+    modes.extend(
+        bool(continuations.get(scene.scene_number, scene.continuation))
+        for scene in scenes[1:]
+    )
+    target_end_frames = [
+        round(scene.end_ms * timing_profile.fps / 1000) for scene in scenes
+    ]
+    delivered_cumulative = 0
+    result: list[Scene] = []
+    for index, scene in enumerate(scenes):
+        continuation = modes[index]
+        overlap = (
+            timing_profile.continuation_context_length if continuation else 0
+        )
+        next_context = (
+            timing_profile.continuation_context_length
+            if index + 1 < len(scenes) and modes[index + 1]
+            else 1
+        )
+        minimum_raw = overlap + max(1, next_context)
+        ideal_raw = target_end_frames[index] - delivered_cumulative + overlap
+        raw_length = (
+            _valid_raw_at_or_above(timing_profile, ideal_raw, minimum_raw)
+            if index + 1 == len(scenes)
+            else _nearest_valid_raw(timing_profile, ideal_raw, minimum_raw)
+        )
+        delivered = raw_length - overlap
+        start_frame = delivered_cumulative
+        end_frame = start_frame + delivered
+        start_ms = round(start_frame * 1000 / timing_profile.fps)
+        end_ms = round(end_frame * 1000 / timing_profile.fps)
+        old_duration = scene.end_ms - scene.start_ms
+        new_duration = end_ms - start_ms
+        shot_starts = [start_ms]
+        shot_count = len(scene.shots)
+        for shot_index, shot in enumerate(scene.shots[1:], 1):
+            relative = (shot.start_ms - scene.start_ms) / old_duration
+            candidate_frame = round(
+                (start_ms + relative * new_duration) * timing_profile.fps / 1000
+            )
+            candidate = round(candidate_frame * 1000 / timing_profile.fps)
+            candidate = max(shot_starts[-1] + MIN_SHOT_DURATION_MS, candidate)
+            remaining_shots = shot_count - shot_index
+            candidate = min(
+                end_ms - remaining_shots * MIN_SHOT_DURATION_MS,
+                candidate,
+            )
+            if candidate <= shot_starts[-1] or candidate >= end_ms:
+                raise TimelinePlannerError(
+                    "retimed Shot boundary is not representable"
+                )
+            shot_starts.append(candidate)
+        shots = tuple(
+            Shot(
+                start_ms=shot_starts[shot_index],
+                body=shot.body,
+                lyric_annotations=shot.lyric_annotations,
+                lyric_lip_sync=shot.lyric_lip_sync,
+                line_number=shot.line_number,
+            )
+            for shot_index, shot in enumerate(scene.shots)
+        )
+        result.append(
+            Scene(
+                scene_number=scene.scene_number,
+                start_ms=start_ms,
+                end_ms=end_ms,
+                h3_length=raw_length,
+                descriptions=scene.descriptions,
+                shots=shots,
+                audio_directives=scene.audio_directives,
+                line_number=scene.line_number,
+                continuation=continuation,
+            )
+        )
+        delivered_cumulative = end_frame
+    return PlannerTemplate(tuple(result))

@@ -23,17 +23,17 @@
 - `image00002.jpg`: `<Picture 1>`用の参照画像
 - `short_bgm_millennium_torii.mp3`: 完成動画へ使うfull mix
 - `short_bgm_millennium_torii_vocal.mp3`: 整列・口形駆動用vocal stem
-- plain lyrics `.txt`
-- Vision GGUF、Text GGUF、ローカルWhisper `.pt`
+- plain lyrics `.txt`（Plan/Compiler WFとAudio Reference動画WF）
+- Vision GGUF、Text GGUF、ローカルWhisper `.pt`（Plan/Compiler WFとAudio Reference動画WF）
 - MiniMax H3 diffusion model、text encoder、video VAE、audio VAE
 
-同梱検証素材を既定値にしているが、ComfyUIの`input`へ存在しない場合は各Loadノードで選択し直す。Plan/Compilerと動画生成で同じ歌詞、vocal、Whisper及びtiming profileを使うとLyric Segmentationの成功cacheを再利用できる。
+同梱検証素材を既定値にしているが、ComfyUIの`input`へ存在しない場合は各Loadノードで選択し直す。Context Loop方式とLyrics方式の動画WFは、コンパイル済みPlanから最終frame尺と歌詞directiveを得るためLyric Segmentationを再実行しない。Audio Reference方式だけは元音声のScene区間をPlan位置へ並べ直すため、Plan/Compiler側と同じ歌詞、vocal、Whisper及びtiming profileでLyric Segmentationを実行し、成功cacheを再利用する。
 
 ## 方式ごとの音声経路
 
 ### Context Loop
 
-`MiniMaxH3AudioTracks`へfull mixとvocalを分離して渡す。`MiniMaxH3LipSyncOptions`はvocalを受け、optionsをGeneration Profileへ、同じvoiceをChain Contextへ渡す。Generation Profileは`Lip-sync to source audio`で、最終動画にはsource full mixを使用する。
+`MiniMaxH3AudioTracks`へfull mixとvocalを分離して渡す。`MiniMaxH3LipSyncOptions`はvocalを受け、optionsをGeneration Profileへ、同じvoiceをChain Contextへ渡す。Generation Profileは`Lip-sync to source audio`で、最終動画にはsource full mixを使用する。Audio Pad PairはCompilerと同じPlan JSONから最終delivered frame尺を取得するため、Plain Lyrics、Whisper及びLyric Segmentationは動画WFに置かない。
 
 これはContext Loop標準方式であり、8GB VRAM環境でモデル初期化停止が起きるかを他方式と分離して検証する。
 
@@ -45,7 +45,7 @@ Compilerが出す`<Audio 1>`を変更せず、Context Loop Lip-Sync Optionsを�
 
 ### Lyrics
 
-CompilerがShotへ展開した歌詞directiveだけで口形を誘導する。`MiniMaxH3LipSyncOptions`と`ref_audio_0`は接続しない。Generation Profileは`Use source soundtrack only`で、最終動画にはfull mixを使用する。これは音素単位の完全同期を保証する方式ではない。
+CompilerがShotへ展開した歌詞directiveだけで口形を誘導する。`MiniMaxH3LipSyncOptions`と`ref_audio_0`は接続せず、動画WFではLyric Segmentationも再実行しない。Generation Profileは`Use source soundtrack only`で、最終動画にはfull mixを使用する。これは音素単位の完全同期を保証する方式ではない。
 
 ## SRT
 

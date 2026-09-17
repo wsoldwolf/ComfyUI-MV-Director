@@ -8,6 +8,7 @@ from core.audio import (
     SceneAudioWindow,
     align_audio_to_plan_scenes,
     pad_audio_pair,
+    plan_delivered_frames,
     target_sample_counts,
 )
 from core.h3_contract import CONTRACT_ID
@@ -47,6 +48,17 @@ class FakeWaveform:
 
 
 class AudioPadPairTests(unittest.TestCase):
+    def test_plan_delivered_frames_subtracts_visual_context(self) -> None:
+        plan = json.dumps(
+            {
+                "shots": [
+                    {"id": "scene_0001", "length": 209, "context_length": 0},
+                    {"id": "scene_0002", "length": 209, "context_length": 22},
+                ]
+            }
+        )
+        self.assertEqual(plan_delivered_frames(plan), 396)
+
     def test_common_duration_uses_exact_rate_conversion(self) -> None:
         targets = target_sample_counts(
             AudioShape(48000, 48000),
@@ -112,6 +124,46 @@ class AudioPadPairTests(unittest.TestCase):
         self.assertIn("timeline_frames=719", status)
         self.assertIn("target_frames=719", status)
 
+    def test_node_uses_compiled_plan_when_planner_retimes_scene_modes(self) -> None:
+        class TimelineStub:
+            plan_duration_ms = 192_167
+            scenes = (SimpleNamespace(delivered_frames=4_612),)
+
+            def validate(self) -> None:
+                return None
+
+        audio_a = {
+            "waveform": FakeWaveform((1, 2, 192_167)),
+            "sample_rate": 1_000,
+        }
+        audio_b = {
+            "waveform": FakeWaveform((1, 1, 192_167)),
+            "sample_rate": 1_000,
+        }
+        plan_json = json.dumps(
+            {
+                "shots": [
+                    {"length": 4_400, "context_length": 0},
+                    {"length": 243, "context_length": 22},
+                ]
+            }
+        )
+        padded_a, padded_b, status, _reference = MVDirectorAudioPadPair().pad_pair(
+            audio_a,
+            audio_b,
+            extra_padding_ms=0,
+            target_h3_frames=0,
+            pad_position="end",
+            reference_alignment="off",
+            timeline=TimelineStub(),
+            plan_json=plan_json,
+        )
+        self.assertEqual(padded_a["waveform"].shape[-1], 192_542)
+        self.assertEqual(padded_b["waveform"].shape[-1], 192_542)
+        self.assertIn("timeline_frames=4612", status)
+        self.assertIn("plan_frames=4621", status)
+        self.assertIn("target_frames=4621", status)
+
     def test_reference_alignment_places_source_scenes_on_plan_frames(self) -> None:
         waveform = FakeWaveform((1, 1, 800), range(1, 801))
         aligned, gaps = align_audio_to_plan_scenes(
@@ -150,6 +202,11 @@ class AudioPadPairTests(unittest.TestCase):
             "reference_alignment"
         ][0]
         self.assertEqual(alignment, ["off", "source_scenes_to_plan"])
+        self.assertTrue(
+            MVDirectorAudioPadPair.INPUT_TYPES()["optional"]["plan_json"][1][
+                "forceInput"
+            ]
+        )
 
 
 class UtilityProtocolTests(unittest.TestCase):

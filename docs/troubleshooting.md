@@ -32,7 +32,7 @@ Compilerの日本語→英語翻訳には8B級Text GGUFを推奨します。`tem
 
 ## Context Loopが音声長不足で停止する
 
-H3はframe境界を正本にするため、表示上ほぼ同じ長さでも1 frame不足する場合があります。Audio Pad PairへTimelineとH3 Timing Profileを接続し、full mixとvocalの両方を末尾PCM無音でそろえます。
+H3はframe境界を正本にするため、表示上ほぼ同じ長さでも不足する場合があります。さらにPlannerがカット／継続を変更すると、合法なH3格子への再配分によりLyric Segmentationの初期timelineより最終Planが長くなることがあります。Audio Pad PairへTimeline、H3 Timing Profile及びCompiler出力と同じ`plan_json`を接続し、full mixとvocalの両方を最終Planの正確なdelivered frame尺まで末尾PCM無音でそろえます。
 
 ## workflowのwidget値がずれている
 

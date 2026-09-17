@@ -125,6 +125,8 @@
         "manual",
         "person",
         1,
+        1,
+        1,
         1024,
         1024,
         0.1,
@@ -371,9 +373,8 @@
         "Node name for S&R": "MVDirectorDirectionEnhancer"
       },
       "widgets_values": [
-        "profile",
         "",
-        "illust_to_photoreal",
+        "reference_cinematic",
         "natural_performance",
         "readable_depth",
         "Qwen3-4B-abliterated/Qwen3-4B-abliterated-q5_k_m.gguf",
@@ -456,7 +457,7 @@
       },
       "widgets_values": [
         "lyrics",
-        "サブジェクト1",
+        "人物1",
         1,
         "Qwen3-4B-abliterated/Qwen3-4B-abliterated-q5_k_m.gguf",
         "auto",

@@ -5,6 +5,7 @@ from .pad_pair import (
     SceneAudioWindow,
     align_audio_to_plan_scenes,
     pad_audio_pair,
+    plan_delivered_frames,
     target_sample_counts,
 )
 
@@ -13,5 +14,6 @@ __all__ = [
     "SceneAudioWindow",
     "align_audio_to_plan_scenes",
     "pad_audio_pair",
+    "plan_delivered_frames",
     "target_sample_counts",
 ]

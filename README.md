@@ -25,6 +25,8 @@ EMDは **Easy MarkDown** の略です。Extended Markdownではありません�
 | [`docs/implementation/`](docs/implementation/README.md) | 内部構造、公開surface、実装順序 |
 | [`docs/research/`](docs/research/README.md) | Context Loop調査と仕様監査の記録 |
 | [`docs/assets/`](docs/assets/README.md) | READMEや文書で使うPNG/SVG図版 |
+| [`profiles/`](profiles/README.md) | ユーザー拡張可能なStyle、Motion、Camera profile EMD |
+| [Direction / Planner処理フロー](docs/architecture/direction-planner-flow.md) | LLM task、Python所有処理、AS IS境界の図解 |
 | [`workflows/`](workflows/README.md) | 三つのリップシンク方式に対応する6 workflow |
 
 ## 公開ノード

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from fractions import Fraction
+import json
 from typing import Any, Mapping
 
 
@@ -48,6 +49,41 @@ def _ceil_fraction(value: Fraction) -> int:
 
 def _round_fraction(value: Fraction) -> int:
     return round(value)
+
+
+def plan_delivered_frames(plan_json: str) -> int:
+    """Return the exact delivered-frame duration of a Context Loop Plan."""
+
+    if not isinstance(plan_json, str):
+        raise ValueError("plan_json must be a string")
+    try:
+        plan = json.loads(plan_json)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"plan_json is not valid JSON: {exc.msg}") from exc
+    if not isinstance(plan, Mapping):
+        raise ValueError("plan_json root must be an object")
+    shots = plan.get("shots")
+    if not isinstance(shots, list) or not shots:
+        raise ValueError("plan_json.shots must be a non-empty array")
+
+    total = 0
+    for index, scene in enumerate(shots, 1):
+        if not isinstance(scene, Mapping):
+            raise ValueError(f"plan_json.shots[{index}] must be an object")
+        length = scene.get("length")
+        context = scene.get("context_length", 0)
+        for name, value in (("length", length), ("context_length", context)):
+            if isinstance(value, bool) or not isinstance(value, int):
+                raise ValueError(
+                    f"plan_json.shots[{index}].{name} must be an integer"
+                )
+        delivered = length - context
+        if delivered < 1:
+            raise ValueError(
+                f"plan_json.shots[{index}] must deliver at least one frame"
+            )
+        total += delivered
+    return total
 
 
 def target_sample_counts(

@@ -26,7 +26,7 @@ from .profiles import (
 from .passthrough import DirectionPassthrough, parse_direction_passthrough
 
 
-DIRECTION_PROMPT_VERSION = "mvd-direction-enhancer-v14"
+DIRECTION_PROMPT_VERSION = "mvd-direction-enhancer-v18"
 PASSTHROUGH_PROFILE = "passthrough"
 RETENTION_POLICIES = ("profile", "compiler_default", "passthrough")
 _ALLOWED = {
@@ -160,19 +160,23 @@ class DirectionEnhancerInput:
 
     @property
     def requested_record_types(self) -> tuple[str, ...]:
-        return tuple(
-            record_type
-            for record_type, profile in (
-                ("STYLE", self.style_profile),
-                ("MOTION", self.motion_profile),
-                ("CAMERA", self.camera_profile),
-            )
-            if profile != PASSTHROUGH_PROFILE
-        )
+        if (
+            self.style_profile != PASSTHROUGH_PROFILE
+            and self.style_profile not in LOCKED_STYLE_PROFILES
+        ):
+            return ("STYLE",)
+        return ()
 
     @property
     def requires_inference(self) -> bool:
-        return bool(self.requested_record_types)
+        return any(
+            profile != PASSTHROUGH_PROFILE
+            for profile in (
+                self.style_profile,
+                self.motion_profile,
+                self.camera_profile,
+            )
+        )
 
 
 _PASSTHROUGH_HEADING = {
@@ -227,9 +231,19 @@ def build_direction_payload(value: DirectionEnhancerInput) -> str:
             "text": CAMERA_PROFILES[value.camera_profile],
         }
     if value.normalized_observations_json:
-        payload["vision_observations"] = json.loads(
-            value.normalized_observations_json
+        observations = ObservationsArtifact.from_dict(
+            json.loads(value.normalized_observations_json)
         )
+        # Direction may use the photographed place and ambient conditions, but
+        # never the reference-sheet pose or composition. Passing the complete
+        # observation made small models promote a presentation pose into a
+        # whole-video direction, which then forced every Scene to repeat it.
+        payload["vision_scene_context"] = {
+            "setting": observations.scene_setting,
+            "elements": list(observations.scene_elements),
+            "lighting": observations.lighting,
+            "time_weather": observations.time_weather,
+        }
     return canonical_json(payload)
 
 
@@ -460,6 +474,33 @@ def enhance_direction(
         "camera_direction": list(passthrough.camera),
         "other_direction": list(passthrough.other),
     }
+    profile_owned: dict[str, tuple[str, str]] = {}
+    if (
+        not values["style_direction"]
+        and value.style_profile in LOCKED_STYLE_PROFILES
+    ):
+        profile_owned["style_direction"] = (
+            value.style_profile,
+            STYLE_PROFILES[value.style_profile],
+        )
+    if (
+        not values["motion_direction"]
+        and value.motion_profile != PASSTHROUGH_PROFILE
+    ):
+        profile_owned["motion_direction"] = (
+            value.motion_profile,
+            MOTION_PROFILES[value.motion_profile],
+        )
+    if (
+        not values["camera_direction"]
+        and value.camera_profile != PASSTHROUGH_PROFILE
+    ):
+        profile_owned["camera_direction"] = (
+            value.camera_profile,
+            CAMERA_PROFILES[value.camera_profile],
+        )
+    for field, (_, text) in profile_owned.items():
+        values[field].append(text)
     provenance = _input_provenance(value)
     provenance.extend(_discard_provenance(all_issues))
     output_counts = {field: 0 for field in values}
@@ -486,6 +527,21 @@ def enhance_direction(
                     sha256=sha256_text(text),
                 )
             )
+    for field, (profile_id, text) in profile_owned.items():
+        output_counts[field] += 1
+        provenance.append(
+            ProvenanceRecord(
+                record_id=f"out_{field}_{output_counts[field]:04d}",
+                record_kind="output",
+                source="profile",
+                source_ref=profile_id,
+                source_position=0,
+                target=f"{field}[0]",
+                disposition="accepted",
+                reason="profile_enforced",
+                sha256=sha256_text(text),
+            )
+        )
     for record in records:
         field = _FIELD_BY_TYPE[record.record_type]
         if values[field]:
@@ -494,27 +550,6 @@ def enhance_direction(
         output_source = "generated"
         output_source_ref = f"{record.record_type}:{record.slot}"
         output_reason = "valid_line_record"
-        if (
-            record.record_type == "STYLE"
-            and value.style_profile in LOCKED_STYLE_PROFILES
-        ):
-            provenance.append(
-                ProvenanceRecord(
-                    record_id="drop_locked_style_0001",
-                    record_kind="discard",
-                    source="generated",
-                    source_ref=f"{record.record_type}:{record.slot}",
-                    source_position=record.line_number - 1,
-                    target=None,
-                    disposition="discarded",
-                    reason="profile_overridden",
-                    sha256=sha256_text(record.text),
-                )
-            )
-            output_text = STYLE_PROFILES[value.style_profile]
-            output_source = "profile"
-            output_source_ref = value.style_profile
-            output_reason = "profile_enforced"
         target_index = len(values[field])
         values[field].append(output_text)
         output_counts[field] += 1

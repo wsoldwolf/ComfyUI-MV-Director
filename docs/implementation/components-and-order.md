@@ -85,8 +85,9 @@ ComfyUI-MV-Director/
 │  ├─ node_connected_combo/
 │  └─ node_load_text_file/
 ├─ profiles/
-│  ├─ creative/
-│  └─ execution/
+│  ├─ style/
+│  ├─ motion/
+│  └─ camera/
 ├─ prompts/
 │  ├─ enhancer/
 │  ├─ planner/
@@ -110,7 +111,7 @@ ComfyUI-MV-Director/
 
 - `MVD_OBSERVATIONS_V1`、`MVD_EMD_FRAGMENT_V1`、`MVD_REFERENCE_BINDINGS_V1`、`MVD_DIRECTION_V2`、`MVD_TIMELINE_V1`、`MVD_EMD_TEMPLATE_V1`、`MVD_EMD_V1`、`MVD_REQUIRED_REFERENCES_V1`
 - EMD（Easy MarkDown）canonical exampleとinvalid fixture。共通プロンプトとStyle、Motion、Camera、Otherはすべて任意で、存在する本文だけを固定順に持つ
-- 必須の``> `シーン` N``、`# シーン START --> END`と全`## ショット TIME`の絶対`MM:SS.mmm` fixture、`scene_NNNN` ID及びScene相対H3時刻への固定変換fixture
+- 必須の``> `シーン` N``、`# シーン START --> END [継続]`と全`## ショット TIME`の絶対`MM:SS.mmm` fixture、cut/continue JSON写像、`scene_NNNN` ID及びScene相対H3時刻への固定変換fixture
 - Lyric Segmentationが要求msとH3 Timing Profileからraw `length`、delivered frames、plan Scene境界、量子化差分を得るfixture。Compilerが`` `H3長` ``を無変換で写し、`duration_seconds`と`duration_ms`をPlanへ出さないことも固定する
 - `MVDirector...` node type、`MV Director/...` category、`MV_DIRECTOR_...` socketのnamespace fixture
 - 日本語描写から英語promptへの一対一変換、保護span、`「...」`、明示`<d>...</d>`／`<d>[English]...</d>` pass-through、3種類のリップシンク駆動、各音響directive、省略音響、`無音`併記、不正文法のfixture
@@ -243,7 +244,7 @@ ComfyUI-MV-Director/
 
 - 全歌詞と全過去出力を各Sceneへ再投入しない。
 - actionをcamera LLMに再出力させない。
-- 同じShotではactionとcameraを全区間で並行させ、action、cameraの順でrenderする。cameraは数値sub-time、mid-shot cut、新規Shot又はaction変更を生成せず、cutは既存Shot境界だけに置く。
+- 同じShotではactionとcameraを全区間で並行させ、action、cameraの順でrenderする。cameraは数値sub-time、mid-shot cut、新規Shot又はaction変更を生成しない。hard cutはScene境界の`CUT`だけが所有し、内部Shot境界は時刻付きprompt変化とする。
 - 行protocolの必須slot欠落以外の品質理由で自動retryしない。
 - LLMが引用台詞、dialogue tag又はplaceholder echoを生成してもretryせず、生成spanを機械削除する。作者台詞は原位置から一回だけ出力し、placeholderを最終EMDへ漏らさない。
 - Template EMD入力時にWhisper又は音声解析を再実行しない。

@@ -481,7 +481,7 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
                 1,
                 "randomize",
                 3,
-                "use",
+                "reuse",
                 False,
             ],
         ),
@@ -504,7 +504,7 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
                 "ja_to_en",
                 TEXT_MODEL,
                 "auto",
-                20,
+                4,
                 4096,
                 0.0,
                 0.9,
@@ -518,6 +518,7 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
                 False,
                 1,
                 "randomize",
+                "reuse",
             ],
         ),
         _save_text_node(
@@ -591,6 +592,7 @@ def _audio_pad_node(node_id: int, alignment: str) -> dict[str, Any]:
             _input("audio_b", "AUDIO"),
             _input("timeline", "MV_DIRECTOR_TIMELINE"),
             _input("h3_timing_profile", "MV_DIRECTOR_H3_TIMING_PROFILE"),
+            _input("plan_json", "STRING"),
         ],
         outputs=[
             _output("padded_audio_a", "AUDIO"),
@@ -630,13 +632,23 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
 
     note = _node_by_id(workflow, 31)
     note["title"] = f"START HERE • MV Director • {spec['label']}"
+    preparation = (
+        "full mix、vocal stem、歌詞、参照画像、Whisper"
+        if mode == "audio_reference"
+        else "full mix、vocal stem、参照画像"
+    )
+    segmentation_note = (
+        "4. Plan/Compiler側と同じ歌詞・vocalを使うとsegmentation cacheを再利用できます。\n\n"
+        if mode == "audio_reference"
+        else "4. 動画生成側ではLyric Segmentationを再実行しません。\n\n"
+    )
     note["widgets_values"] = [
         (
             f"{spec['summary']}。\n\n"
             f"1. {mode}_plan_*.txtをPlan JSONノードへD&Dします。\n"
-            "2. full mix、vocal stem、歌詞、参照画像、Whisperを確認します。\n"
+            f"2. {preparation}を確認します。\n"
             "3. H3モデル/VAEを確認してQueueします。\n"
-            "4. Plan/Compiler側と同じ歌詞・vocalを使うとsegmentation cacheを再利用できます。\n\n"
+            f"{segmentation_note}"
             "Audio Referenceだけは整列済みvocalをCurrent Scene時刻で切り出し、"
             "固定ref_audio_0へ渡します。\n"
             f"Baseline: {CONTRACT_ID}"
@@ -660,7 +672,6 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
     ref_node["title"] = "Reference Conditioning • MV Director Plan"
     ref_node["widgets_values"][0] = "\n".join(_fallback_plan(mode)["shots"][0]["prompt"])
 
-    lyrics = _lyrics_text()
     additions = [
         _node(
             32,
@@ -680,9 +691,7 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
             outputs=[_output("AUDIO", "AUDIO")],
             widgets=["short_bgm_millennium_torii_vocal.mp3"],
         ),
-        _load_text_node(34, (500, 1900), "Plain Lyrics", lyrics, "lyrics.txt"),
         _timing_node(35, (500, 2130)),
-        _lyric_node(36, (960, 1900)),
         _audio_pad_node(37, spec["alignment"]),
         _audio_tracks_node(38),
         _load_text_node(
@@ -693,22 +702,33 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
             f"{mode}_plan.txt",
         ),
     ]
+    if mode == "audio_reference":
+        lyrics = _lyrics_text()
+        additions.extend(
+            [
+                _load_text_node(
+                    34, (500, 1900), "Plain Lyrics", lyrics, "lyrics.txt"
+                ),
+                _lyric_node(36, (960, 1900)),
+            ]
+        )
     workflow["nodes"].extend(additions)
     workflow["last_node_id"] = 39
 
     _connect(workflow, 32, 0, 37, "audio_a", "AUDIO")
     _connect(workflow, 33, 0, 37, "audio_b", "AUDIO")
-    _connect(workflow, 33, 0, 36, "vocal_audio", "AUDIO")
-    _connect(workflow, 34, 0, 36, "lyrics_text", "STRING")
-    _connect(
-        workflow,
-        35,
-        0,
-        36,
-        "h3_timing_profile",
-        "MV_DIRECTOR_H3_TIMING_PROFILE",
-    )
-    _connect(workflow, 36, 2, 37, "timeline", "MV_DIRECTOR_TIMELINE")
+    if mode == "audio_reference":
+        _connect(workflow, 33, 0, 36, "vocal_audio", "AUDIO")
+        _connect(workflow, 34, 0, 36, "lyrics_text", "STRING")
+        _connect(
+            workflow,
+            35,
+            0,
+            36,
+            "h3_timing_profile",
+            "MV_DIRECTOR_H3_TIMING_PROFILE",
+        )
+        _connect(workflow, 36, 2, 37, "timeline", "MV_DIRECTOR_TIMELINE")
     _connect(
         workflow,
         35,
@@ -721,6 +741,7 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
     _connect(workflow, 37, 1, 38, "vocals", "AUDIO")
     _connect(workflow, 38, 0, 7, "source_timeline", "H3_SOURCE_TIMELINE")
     _connect(workflow, 39, 0, 24, "plan_json_input", "STRING")
+    _connect(workflow, 39, 0, 37, "plan_json", "STRING")
 
     if mode == "context_loop":
         lip = _node(

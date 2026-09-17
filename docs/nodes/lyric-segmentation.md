@@ -41,6 +41,8 @@ LRC、SRT、VTT、timestamp、コメント、本文行の不必要な前後空�
 | `timeline` | Audio Pad Pair等へ渡す元音源ms/H3 frame対応 |
 | `status` | resolved、unplaced、音源尺、Plan尺、Scene数、cache |
 
+Template EMDは先頭Sceneをカット、2件目以降を初期値`継続`として明示します。これはPlannerへ渡す暫定境界modeです。PlannerがMV編集上のカットを選ぶと、そのSceneから`継続`を外し、H3格子上の`H3長`とPlan時刻を再配分します。
+
 全歌詞が配置できない場合は赤いERRORを出し、Template EMD、SRT、timelineをExecutionBlockerで停止します。これは音源が歌詞後半を歌っていない場合を黙って成功にしないためです。
 
 INFOログの`targeted retries completed`には、再探索した未解決run数、回収segment数、残数が表示されます。`remaining=0`なら全歌詞が実timestampへ配置されています。

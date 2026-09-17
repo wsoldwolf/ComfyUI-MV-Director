@@ -83,11 +83,12 @@ def render_completed_emd(
                 lines.extend(f"* {value}" for value in values)
 
     for scene in template.scenes:
+        continuation = " 継続" if scene.continuation else ""
         lines.extend(
             (
                 "",
                 f"> `シーン` {scene.scene_number}",
-                f"# シーン {format_emd_time(scene.start_ms)} --> {format_emd_time(scene.end_ms)}",
+                f"# シーン {format_emd_time(scene.start_ms)} --> {format_emd_time(scene.end_ms)}{continuation}",
                 f"* `H3長` {scene.h3_length}",
             )
         )

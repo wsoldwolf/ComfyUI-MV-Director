@@ -3,25 +3,69 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from difflib import SequenceMatcher
 import re
 from typing import Any, Mapping, Protocol
 
 from ..artifacts import DirectionArtifact, EMDTextArtifact, canonical_json, normalize_newlines
+from ..h3_contract import (
+    FACE_PERFORMANCE_CUT_ACTION,
+    FACE_PERFORMANCE_CUT_CAMERA,
+)
 from ..inference import LlamaRuntimeConfig
 from ..protocols import LLMRecordIssue, parse_llm_records
 from .dialogue import DialogueFilter, DialogueProtector
 from .errors import TimelinePlannerError
 from .layout import (
+    apply_scene_continuations,
     apply_shot_layouts,
     build_layout_candidates,
-    parse_layout_selection,
+    parse_scene_layout_selection,
+    repair_scene_layout_selection,
 )
 from .renderer import render_completed_emd
 from .template import PlannerTemplate, normalize_concept_emd, parse_template_emd
 
 
-PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v6"
+PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v27"
 TASKS = ("visual-beats", "song-direction", "shot-layout", "actions", "cameras")
+_CAMERA_MOTION_TYPES = (
+    "Roll Counterclockwise",
+    "Roll Clockwise",
+    "Shake Slightly",
+    "Shake Strongly",
+    "Pedestal Down",
+    "Pedestal Up",
+    "Tracking Shot",
+    "Static Shot",
+    "Arc Shot",
+    "Truck Right",
+    "Truck Left",
+    "Push In",
+    "Pull Out",
+    "Zoom In",
+    "Zoom Out",
+    "Pan Left",
+    "Pan Right",
+    "Tilt Up",
+    "Tilt Down",
+    "POV",
+)
+_LOWER_BODY_DETAIL_RE = re.compile(
+    r"足元|足先|左足|右足|両足|足袋|履物|下駄|草履|toe|foot|feet|footwear",
+    re.IGNORECASE,
+)
+_SLOW_CAMERA_RE = re.compile(r"at slow speed|ゆっくり|緩やか", re.IGNORECASE)
+_SLOW_ACTION_RE = re.compile(
+    r"ゆっくり|緩やか|そっと|静かに|徐々に|slowly|gently|gradually",
+    re.IGNORECASE,
+)
+_GENERIC_HAND_ACTION_RE = re.compile(
+    r"(?:両手|片手|手|腕)(?:を|が)?"
+    r"(?:(?:ゆっくり|そっと|静かに)\s*)?"
+    r"(?:上げ(?:る|た|ている)?|下げ(?:る|た|ている)?|上下(?:させる|する)?)。?$",
+    re.IGNORECASE,
+)
 
 
 class TimelinePlannerBackend(Protocol):
@@ -48,7 +92,15 @@ class PlannerContent:
     retried_scenes: tuple[int, ...]
     removed_generated_dialogue_count: int
     unused_protected_dialogue_ids: tuple[str, ...]
+    scene_continuations: tuple[tuple[int, bool], ...] = ()
+    layout_repaired_scenes: tuple[int, ...] = ()
     layout_fallback_scenes: tuple[int, ...] = ()
+    layout_mix_retry: bool = False
+    protocol_recovered_count: int = 0
+    repetition_warning_count: int = 0
+    beat_repetition_warning_count: int = 0
+    action_repetition_warning_count: int = 0
+    camera_repetition_warning_count: int = 0
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -57,13 +109,24 @@ class PlannerContent:
             "shot_layouts": [
                 [scene, list(starts)] for scene, starts in self.shot_layouts
             ],
+            "scene_continuations": [
+                [scene, continuation]
+                for scene, continuation in self.scene_continuations
+            ],
             "actions": [list(value) for value in self.actions],
             "cameras": [list(value) for value in self.cameras],
             "issue_count": self.issue_count,
             "retried_scenes": list(self.retried_scenes),
             "removed_generated_dialogue_count": self.removed_generated_dialogue_count,
             "unused_protected_dialogue_ids": list(self.unused_protected_dialogue_ids),
+            "layout_repaired_scenes": list(self.layout_repaired_scenes),
             "layout_fallback_scenes": list(self.layout_fallback_scenes),
+            "layout_mix_retry": self.layout_mix_retry,
+            "protocol_recovered_count": self.protocol_recovered_count,
+            "repetition_warning_count": self.repetition_warning_count,
+            "beat_repetition_warning_count": self.beat_repetition_warning_count,
+            "action_repetition_warning_count": self.action_repetition_warning_count,
+            "camera_repetition_warning_count": self.camera_repetition_warning_count,
         }
 
     @classmethod
@@ -77,14 +140,37 @@ class PlannerContent:
                 (int(row[0]), tuple(int(item) for item in row[1]))
                 for row in value["shot_layouts"]
             ),
+            scene_continuations=tuple(
+                (int(row[0]), bool(row[1]))
+                for row in value.get("scene_continuations", ())
+            ),
             actions=tuple((int(row[0]), int(row[1]), str(row[2])) for row in value["actions"]),
             cameras=tuple((int(row[0]), int(row[1]), str(row[2])) for row in value["cameras"]),
             issue_count=int(value["issue_count"]),
             retried_scenes=tuple(int(item) for item in value["retried_scenes"]),
             removed_generated_dialogue_count=int(value["removed_generated_dialogue_count"]),
             unused_protected_dialogue_ids=tuple(str(item) for item in value["unused_protected_dialogue_ids"]),
+            layout_repaired_scenes=tuple(
+                int(item) for item in value.get("layout_repaired_scenes", ())
+            ),
             layout_fallback_scenes=tuple(
                 int(item) for item in value["layout_fallback_scenes"]
+            ),
+            layout_mix_retry=bool(value.get("layout_mix_retry", False)),
+            protocol_recovered_count=int(
+                value.get("protocol_recovered_count", 0)
+            ),
+            repetition_warning_count=int(
+                value.get("repetition_warning_count", 0)
+            ),
+            beat_repetition_warning_count=int(
+                value.get("beat_repetition_warning_count", 0)
+            ),
+            action_repetition_warning_count=int(
+                value.get("action_repetition_warning_count", 0)
+            ),
+            camera_repetition_warning_count=int(
+                value.get("camera_repetition_warning_count", 0)
             ),
         )
 
@@ -149,6 +235,59 @@ def _normalize_small_model_response(response: str, record_type: str) -> str:
     return normalized
 
 
+def _recover_unframed_records(
+    response: str,
+    record_type: str,
+    expected_slots: list[int],
+    *,
+    allow_single_positional: bool = False,
+) -> dict[int, str]:
+    """Recover only unambiguous line wrappers while preserving TEXT AS IS."""
+
+    if not expected_slots:
+        return {}
+    normalized = normalize_newlines(response)
+    normalized = re.sub(r"<think>.*?</think>", "", normalized, flags=re.DOTALL)
+    lines = [
+        line.strip()
+        for line in normalized.split("\n")
+        if line.strip() and not line.strip().startswith("```")
+    ]
+    expected = set(expected_slots)
+    labelled = re.compile(
+        rf"^(?:[-*]\s*)?(?:{re.escape(record_type)}\s*)?"
+        r"(?:slot\s*)?([0-9]+)\s*(?:\t+|[:：.)]\s*|[-–—]\s+|\s+)"
+        r"(.+)$",
+        flags=re.IGNORECASE,
+    )
+    recovered: dict[int, str] = {}
+    for line in lines:
+        match = labelled.fullmatch(line)
+        if not match:
+            continue
+        slot = int(match.group(1))
+        text = match.group(2).strip()
+        if slot in expected and slot not in recovered and text:
+            recovered[slot] = text
+    if recovered:
+        return recovered
+
+    # With multiple requested slots, an exact line count gives a deterministic
+    # side-table mapping. Only Markdown bullet syntax is removed; TEXT is kept.
+    if (
+        len(expected_slots) < 2
+        and not (allow_single_positional and len(expected_slots) == 1)
+    ) or len(lines) != len(expected_slots):
+        return {}
+    positional: dict[int, str] = {}
+    for slot, line in zip(expected_slots, lines):
+        text = re.sub(r"^[-*]\s+", "", line, count=1).strip()
+        if not text or text.startswith(("#", "{", "[")):
+            return {}
+        positional[slot] = text
+    return positional
+
+
 def _request_entities(
     backend: TimelinePlannerBackend,
     *,
@@ -159,7 +298,13 @@ def _request_entities(
     system_prompt: str,
     runtime_config: LlamaRuntimeConfig,
     interrupt_callback: Any,
-) -> tuple[dict[tuple[int, ...], str], list[LLMRecordIssue], tuple[int, ...], tuple[tuple[str, int, int], ...]]:
+) -> tuple[
+    dict[tuple[int, ...], str],
+    list[LLMRecordIssue],
+    tuple[int, ...],
+    tuple[tuple[str, int, int], ...],
+    int,
+]:
     slot_entities = {index: entity for index, entity in enumerate(entities, 1)}
     slots = [dict(entity.value, slot=slot) for slot, entity in slot_entities.items()]
     payload = canonical_json(
@@ -182,8 +327,16 @@ def _request_entities(
     records = {record.slot: record.text for record in parsed.records}
     issues = list(parsed.issues)
     retried_scenes: list[int] = []
+    recovered_count = 0
 
-    missing_slots = [slot for kind, slot in parsed.missing if kind == record_type]
+    first_missing = [slot for slot in slot_entities if slot not in records]
+    recovered = _recover_unframed_records(
+        response, record_type, first_missing
+    )
+    records.update(recovered)
+    recovered_count += len(recovered)
+
+    missing_slots = [slot for slot in slot_entities if slot not in records]
     for scene_number in sorted({slot_entities[slot].scene_number for slot in missing_slots}):
         scene_slots = [
             slot for slot in missing_slots if slot_entities[slot].scene_number == scene_number
@@ -192,8 +345,8 @@ def _request_entities(
             {
                 "protocol": "MVD_LLM_RECORDS_V1",
                 "task": task,
-                "retry": "missing_slots_only",
                 **dict(shared),
+                "retry": "missing_slots_only",
                 "slots": [dict(slot_entities[slot].value, slot=slot) for slot in scene_slots],
             }
         )
@@ -212,8 +365,62 @@ def _request_entities(
             required=retry_required,
         )
         issues.extend(retry.issues)
-        records.update({record.slot: record.text for record in retry.records})
+        retry_records = {record.slot: record.text for record in retry.records}
+        records.update(retry_records)
+        retry_missing = [
+            slot for slot in scene_slots if slot not in retry_records
+        ]
+        recovered = _recover_unframed_records(
+            retry_response, record_type, retry_missing
+        )
+        records.update(recovered)
+        recovered_count += len(recovered)
         retried_scenes.append(scene_number)
+
+    # A small model can still omit one of several records in the scene-local
+    # retry. Isolate each remaining slot so its side-table mapping is unique.
+    # No natural-language content is synthesized or rewritten here.
+    isolated_missing = [slot for slot in slot_entities if slot not in records]
+    for slot in isolated_missing:
+        entity = slot_entities[slot]
+        isolated_payload = canonical_json(
+            {
+                "protocol": "MVD_LLM_RECORDS_V1",
+                "task": task,
+                **dict(shared),
+                "retry": "isolated_missing_slot",
+                "slots": [dict(entity.value, slot=slot)],
+            }
+        )
+        isolated_response = backend.complete_planner(
+            task=task,
+            system_prompt=system_prompt,
+            payload=isolated_payload,
+            config=runtime_config,
+            interrupt_callback=interrupt_callback,
+        )
+        isolated_allowed = {record_type: frozenset({slot})}
+        isolated_required = frozenset({(record_type, slot)})
+        isolated = parse_llm_records(
+            _normalize_small_model_response(isolated_response, record_type),
+            allowed_slots=isolated_allowed,
+            required=isolated_required,
+        )
+        issues.extend(isolated.issues)
+        isolated_records = {
+            record.slot: record.text for record in isolated.records
+        }
+        records.update(isolated_records)
+        if slot not in isolated_records:
+            recovered = _recover_unframed_records(
+                isolated_response,
+                record_type,
+                [slot],
+                allow_single_positional=True,
+            )
+            records.update(recovered)
+            recovered_count += len(recovered)
+        retried_scenes.append(entity.scene_number)
 
     unresolved = tuple(
         (record_type, slot_entities[slot].scene_number, slot)
@@ -221,7 +428,285 @@ def _request_entities(
         if slot not in records
     )
     values = {entity.key: records[slot] for slot, entity in slot_entities.items() if slot in records}
-    return values, issues, tuple(retried_scenes), unresolved
+    return (
+        values,
+        issues,
+        tuple(sorted(set(retried_scenes))),
+        unresolved,
+        recovered_count,
+    )
+
+
+def _comparison_text(value: str) -> str:
+    """Return a language-neutral surface form for repetition validation."""
+
+    if "__MVD_LOCKED_DIALOGUE_" in value:
+        return ""
+    return re.sub(r"[^\w]+", "", value.casefold(), flags=re.UNICODE)
+
+
+def _is_near_duplicate(left: str, right: str) -> bool:
+    left_key = _comparison_text(left)
+    right_key = _comparison_text(right)
+    # Short protocol-test fragments and dialogue-only remnants do not contain
+    # enough semantic surface to support a quality decision.
+    if min(len(left_key), len(right_key)) < 16:
+        return False
+    if left_key == right_key:
+        return True
+    if min(len(left_key), len(right_key)) < 48:
+        return False
+    return (
+        SequenceMatcher(None, left_key, right_key, autojunk=False).ratio()
+        >= 0.92
+    )
+
+
+def _repeated_entities(
+    entities: list[_Entity],
+    values: Mapping[tuple[int, ...], str],
+    history: list[str],
+) -> tuple[list[_Entity], dict[tuple[int, ...], str]]:
+    """Find later repeated records without modifying any accepted LLM text."""
+
+    accepted = [text for text in history if text.strip()]
+    repeated: list[_Entity] = []
+    matched: dict[tuple[int, ...], str] = {}
+    for entity in entities:
+        text = values.get(entity.key, "").strip()
+        if not text:
+            continue
+        prior = next(
+            (
+                candidate
+                for candidate in reversed(accepted)
+                if _is_near_duplicate(text, candidate)
+            ),
+            "",
+        )
+        if prior:
+            repeated.append(entity)
+            matched[entity.key] = prior
+        else:
+            accepted.append(text)
+    return repeated, matched
+
+
+def _request_distinct_entities(
+    backend: TimelinePlannerBackend,
+    *,
+    task: str,
+    record_type: str,
+    entities: list[_Entity],
+    shared: Mapping[str, object],
+    history: list[str],
+    system_prompt: str,
+    runtime_config: LlamaRuntimeConfig,
+    interrupt_callback: Any,
+) -> tuple[
+    dict[tuple[int, ...], str],
+    list[LLMRecordIssue],
+    tuple[int, ...],
+    tuple[tuple[str, int, int], ...],
+    int,
+    int,
+]:
+    """Request records and retry only repeated TEXT while keeping output AS IS."""
+
+    values, issues, retries, missing, recovered = _request_entities(
+        backend,
+        task=task,
+        record_type=record_type,
+        entities=entities,
+        shared=shared,
+        system_prompt=system_prompt,
+        runtime_config=runtime_config,
+        interrupt_callback=interrupt_callback,
+    )
+    if missing:
+        return values, issues, retries, missing, recovered, 0
+    merged = dict(values)
+    retry_scenes_all: set[int] = set(retries)
+    for diversity_attempt in range(1, 3):
+        repeated, matched = _repeated_entities(entities, merged, history)
+        if not repeated:
+            return (
+                merged,
+                issues,
+                tuple(sorted(retry_scenes_all)),
+                (),
+                recovered,
+                0,
+            )
+        forbidden_outputs: list[str] = []
+        for candidate in [
+            *history,
+            *(merged[entity.key] for entity in entities if entity.key in merged),
+        ]:
+            candidate = candidate.strip()
+            if candidate and candidate not in forbidden_outputs:
+                forbidden_outputs.append(candidate)
+        retry_missing_all: list[tuple[str, int, int]] = []
+        retry_scene_numbers = sorted(
+            {entity.scene_number for entity in repeated}
+        )
+        for scene_number in retry_scene_numbers:
+            retry_entities = [
+                _Entity(
+                    entity.scene_number,
+                    entity.key,
+                    {
+                        **entity.value,
+                        "rejected_output": merged[entity.key],
+                        "must_differ_from": matched[entity.key],
+                    },
+                )
+                for entity in repeated
+                if entity.scene_number == scene_number
+            ]
+            (
+                retry_values,
+                retry_issues,
+                retry_scenes,
+                retry_missing,
+                retry_recovered,
+            ) = _request_entities(
+                backend,
+                task=task,
+                record_type=record_type,
+                entities=retry_entities,
+                shared={
+                    **dict(shared),
+                    "retry": "repeated_slots_only",
+                    "diversity_retry_attempt": diversity_attempt,
+                    "diversity_retry": (
+                        "Replace every rejected output with a genuinely different "
+                        "creative choice. Do not merely change left/right, word "
+                        "order, or synonyms."
+                    ),
+                    "forbidden_recent_outputs": forbidden_outputs[-12:],
+                },
+                system_prompt=system_prompt,
+                runtime_config=runtime_config,
+                interrupt_callback=interrupt_callback,
+            )
+            issues.extend(retry_issues)
+            retry_scenes_all.update(retry_scenes)
+            retry_scenes_all.add(scene_number)
+            retry_missing_all.extend(retry_missing)
+            recovered += retry_recovered
+            merged.update(retry_values)
+        if retry_missing_all:
+            return (
+                merged,
+                issues,
+                tuple(sorted(retry_scenes_all)),
+                tuple(retry_missing_all),
+                recovered,
+                0,
+            )
+
+    repeated_after_retry, _ = _repeated_entities(entities, merged, history)
+    return (
+        merged,
+        issues,
+        tuple(sorted(retry_scenes_all)),
+        (),
+        recovered,
+        len(repeated_after_retry),
+    )
+
+
+def _camera_motion_type(text: str) -> str:
+    return next(
+        (motion for motion in _CAMERA_MOTION_TYPES if text.startswith(motion)),
+        "",
+    )
+
+
+def _camera_budget_violations(
+    entities: list[_Entity],
+    values: Mapping[tuple[int, ...], str],
+    *,
+    arc_required: bool,
+) -> dict[tuple[int, ...], tuple[str, ...]]:
+    """Select Camera slots that need an LLM quality retry without rewriting TEXT."""
+
+    motion_counts: dict[str, int] = {}
+    slow_count = 0
+    slow_maximum = max(1, len(entities) // 4)
+    violations: dict[tuple[int, ...], list[str]] = {}
+    for entity in entities:
+        text = values.get(entity.key, "").strip()
+        if not text:
+            continue
+        motion = _camera_motion_type(text)
+        if motion:
+            motion_counts[motion] = motion_counts.get(motion, 0) + 1
+            maximum = (
+                1
+                if motion == "Tracking Shot"
+                else int(arc_required)
+                if motion == "Arc Shot"
+                else 2
+            )
+            if motion_counts[motion] > maximum:
+                violations.setdefault(entity.key, []).append(
+                    f"motion_budget:{motion}"
+                )
+        if _SLOW_CAMERA_RE.search(text):
+            slow_count += 1
+            if slow_count > slow_maximum:
+                violations.setdefault(entity.key, []).append("slow_speed_budget")
+        source_text = canonical_json(
+            {
+                "lyrics": entity.value.get("lyrics", []),
+                "author_body": entity.value.get("author_body", []),
+            }
+        )
+        if (
+            _LOWER_BODY_DETAIL_RE.search(text)
+            and not _LOWER_BODY_DETAIL_RE.search(source_text)
+        ):
+            violations.setdefault(entity.key, []).append(
+                "unrequested_lower_body_detail"
+            )
+    return {key: tuple(value) for key, value in violations.items()}
+
+
+def _action_budget_violations(
+    entities: list[_Entity],
+    values: Mapping[tuple[int, ...], str],
+) -> dict[tuple[int, ...], tuple[str, ...]]:
+    """Select Action slots for one semantic retry without rewriting their TEXT."""
+
+    slow_count = 0
+    slow_maximum = max(1, len(entities) // 4)
+    violations: dict[tuple[int, ...], list[str]] = {}
+    for entity in entities:
+        text = values.get(entity.key, "").strip()
+        if not text:
+            continue
+        if _SLOW_ACTION_RE.search(text):
+            slow_count += 1
+            if slow_count > slow_maximum:
+                violations.setdefault(entity.key, []).append("slow_action_budget")
+        if _GENERIC_HAND_ACTION_RE.search(text):
+            violations.setdefault(entity.key, []).append("generic_hand_raise_or_lower")
+        source_text = canonical_json(
+            {
+                "lyrics": entity.value.get("lyrics", []),
+                "author_body": entity.value.get("author_body", []),
+            }
+        )
+        if (
+            _LOWER_BODY_DETAIL_RE.search(text)
+            and not _LOWER_BODY_DETAIL_RE.search(source_text)
+        ):
+            violations.setdefault(entity.key, []).append(
+                "unrequested_lower_body_primary_action"
+            )
+    return {key: tuple(value) for key, value in violations.items()}
 
 
 def _shot_context(
@@ -229,8 +714,16 @@ def _shot_context(
     protector: DialogueProtector,
 ) -> dict[tuple[int, int], dict[str, object]]:
     shots: dict[tuple[int, int], dict[str, object]] = {}
+    seen_sections: set[str] = set()
     for scene in template.scenes:
         for shot_index, shot in enumerate(scene.shots, 1):
+            shot_sections = {
+                lyric.section
+                for lyric in shot.lyric_annotations
+                if lyric.section
+            }
+            section_entry = bool(shot_sections - seen_sections)
+            seen_sections.update(shot_sections)
             shot_end_ms = (
                 scene.shots[shot_index].start_ms
                 if shot_index < len(scene.shots)
@@ -257,6 +750,8 @@ def _shot_context(
             shots[(scene.scene_number, shot_index)] = {
                 "scene_number": scene.scene_number,
                 "shot_index": shot_index,
+                "scene_continuation": scene.continuation,
+                "section_entry": section_entry,
                 "scene_shot_count": len(scene.shots),
                 "shot_start_ms": shot.start_ms,
                 "shot_end_ms": shot_end_ms,
@@ -265,6 +760,61 @@ def _shot_context(
                 "author_body": author_body,
             }
     return shots
+
+
+def _performance_role(
+    context: Mapping[str, object],
+    *,
+    lip_sync_active: bool,
+) -> str:
+    """Assign a structural performance purpose without writing action prose."""
+
+    shot_index = int(context["shot_index"])
+    shot_count = int(context["scene_shot_count"])
+    continuation = bool(context["scene_continuation"])
+    if (
+        lip_sync_active
+        and not continuation
+        and bool(context.get("section_entry"))
+    ):
+        return "face_and_upper_body_accent"
+    if shot_count == 1:
+        return "lyric_driven_full_body_performance"
+    if shot_index == 1:
+        if continuation:
+            return "continuity_transformation"
+        return "new_scene_physical_hook"
+    if shot_index == 2:
+        return "expressive_hand_arm_performance"
+    if shot_index == 3:
+        return "environment_interaction_or_body_turn"
+    return "expressive_resolution"
+
+
+def _camera_editorial_role(
+    context: Mapping[str, object],
+    *,
+    lip_sync_active: bool,
+) -> str:
+    """Assign edit coverage while leaving the final camera sentence to the LLM."""
+
+    shot_index = int(context["shot_index"])
+    continuation = bool(context["scene_continuation"])
+    if (
+        lip_sync_active
+        and not continuation
+        and bool(context.get("section_entry"))
+    ):
+        return "face_performance_cut"
+    if shot_index == 1:
+        if continuation:
+            return "continuity_bridge"
+        return "new_scene_establishing_edit"
+    if shot_index == 2:
+        return "upper_body_performance_coverage"
+    if shot_index == 3:
+        return "spatial_reveal_or_interaction_coverage"
+    return "expressive_result_coverage"
 
 
 def _protected_context(
@@ -292,12 +842,216 @@ def _protected_context(
     return protector, protected_concept, shots, directions
 
 
+def _decode_layout_texts(
+    template: PlannerTemplate,
+    candidate_map: Mapping[int, tuple[Any, ...]],
+    layout_texts: Mapping[tuple[int, ...], str],
+) -> tuple[
+    dict[int, tuple[int, ...]],
+    dict[int, bool],
+    list[int],
+    list[int],
+]:
+    layouts: dict[int, tuple[int, ...]] = {}
+    continuations: dict[int, bool] = {}
+    repaired: list[int] = []
+    fallback: list[int] = []
+    for scene in template.scenes:
+        try:
+            continuation, starts = parse_scene_layout_selection(
+                layout_texts[(scene.scene_number,)],
+                candidate_map[scene.scene_number],
+                scene_end_ms=scene.end_ms,
+                first_scene=scene.scene_number == 1,
+            )
+        except TimelinePlannerError:
+            try:
+                continuation, starts = repair_scene_layout_selection(
+                    layout_texts[(scene.scene_number,)],
+                    candidate_map[scene.scene_number],
+                    scene_end_ms=scene.end_ms,
+                    first_scene=scene.scene_number == 1,
+                )
+                repaired.append(scene.scene_number)
+            except TimelinePlannerError:
+                continuation = False
+                starts = (scene.start_ms,)
+                fallback.append(scene.scene_number)
+        continuations[scene.scene_number] = continuation
+        layouts[scene.scene_number] = starts
+    return layouts, continuations, repaired, fallback
+
+
+def _satisfies_boundary_contract(
+    template: PlannerTemplate,
+    continuations: Mapping[int, bool],
+) -> bool:
+    """Validate the structural boundary contract sent on the mix retry."""
+
+    if not template.scenes:
+        return False
+    first_scene = template.scenes[0]
+    if continuations.get(first_scene.scene_number, True):
+        return False
+    later = [
+        continuations[scene.scene_number]
+        for scene in template.scenes[1:]
+    ]
+    if not later:
+        return True
+    minimum_cuts = max(1, len(later) // 4)
+    minimum_continuations = max(1, (len(later) + 1) // 2)
+    later_cut_capacity = len(later) - minimum_continuations
+    section_cut_scenes = set(
+        [
+            number
+            for number in _section_entry_scene_numbers(template)
+            if number != first_scene.scene_number
+        ][:later_cut_capacity]
+    )
+    if any(continuations.get(scene_number, True) for scene_number in section_cut_scenes):
+        return False
+    if later.count(False) < minimum_cuts:
+        return False
+    if later.count(True) < minimum_continuations:
+        return False
+    maximum_transitions = max(2, (len(later) * 2 + 2) // 3)
+    transition_count = sum(
+        current != previous for previous, current in zip(later, later[1:])
+    )
+    if transition_count > maximum_transitions:
+        return False
+    run_length = 1
+    for previous, current in zip(later, later[1:]):
+        run_length = run_length + 1 if current == previous else 1
+        if run_length > 3:
+            return False
+    return True
+
+
+def _repair_boundary_contract(
+    template: PlannerTemplate,
+    continuations: Mapping[int, bool],
+) -> tuple[dict[int, bool], tuple[int, ...]]:
+    """Minimally repair only the structural CUT/CONTINUE sequence."""
+
+    scene_numbers = [scene.scene_number for scene in template.scenes]
+    if not scene_numbers:
+        return {}, ()
+    original = [bool(continuations.get(number, False)) for number in scene_numbers]
+    later_original = original[1:]
+    later_count = len(later_original)
+    if later_count == 0:
+        repaired = {scene_numbers[0]: False}
+        changed = () if not original[0] else (scene_numbers[0],)
+        return repaired, changed
+
+    minimum_cuts = max(1, later_count // 4)
+    minimum_continuations = max(1, (later_count + 1) // 2)
+    maximum_transitions = max(2, (later_count * 2 + 2) // 3)
+    later_cut_capacity = later_count - minimum_continuations
+    section_cut_scenes = set(
+        [
+            number
+            for number in _section_entry_scene_numbers(template)
+            if number != scene_numbers[0]
+        ][:later_cut_capacity]
+    )
+    # state -> (edit cost, transition count, sequence)
+    states: dict[
+        tuple[int, int, bool, int],
+        tuple[int, int, tuple[bool, ...]],
+    ] = {}
+    for position, expected in enumerate(later_original):
+        next_states: dict[
+            tuple[int, int, bool, int],
+            tuple[int, int, tuple[bool, ...]],
+        ] = {}
+        if position == 0:
+            prior_items = [(None, (0, 0, ()))]
+        else:
+            prior_items = list(states.items())
+        for state, (cost, transitions, sequence) in prior_items:
+            scene_number = scene_numbers[position + 1]
+            choices = (
+                (False,)
+                if scene_number in section_cut_scenes
+                else (expected, not expected)
+            )
+            for choice in choices:
+                if state is None:
+                    cuts = int(not choice)
+                    continues = int(choice)
+                    run_length = 1
+                else:
+                    cuts, continues, previous, previous_run = state
+                    run_length = previous_run + 1 if choice == previous else 1
+                    if run_length > 3:
+                        continue
+                    cuts += int(not choice)
+                    continues += int(choice)
+                next_state = (cuts, continues, choice, run_length)
+                candidate = (
+                    cost + int(choice != expected),
+                    transitions
+                    + int(bool(sequence) and sequence[-1] != choice),
+                    (*sequence, choice),
+                )
+                current = next_states.get(next_state)
+                if current is None or (
+                    candidate[0], candidate[1], candidate[2]
+                ) < (current[0], current[1], current[2]):
+                    next_states[next_state] = candidate
+        states = next_states
+
+    valid = [
+        value
+        for (cuts, continues, _last, _run), value in states.items()
+        if cuts >= minimum_cuts
+        and continues >= minimum_continuations
+        and value[1] <= maximum_transitions
+    ]
+    if not valid:
+        raise TimelinePlannerError("boundary contract cannot be repaired")
+    _cost, _transitions, later_repaired = min(
+        valid,
+        key=lambda value: (value[0], value[1], value[2]),
+    )
+    repaired_values = (False, *later_repaired)
+    repaired = dict(zip(scene_numbers, repaired_values))
+    changed = tuple(
+        number
+        for number, before, after in zip(scene_numbers, original, repaired_values)
+        if before != after
+    )
+    return repaired, changed
+
+
+def _section_entry_scene_numbers(template: PlannerTemplate) -> tuple[int, ...]:
+    """Return Scenes containing the first annotation of each lyric section."""
+
+    seen_sections: set[str] = set()
+    entries: list[int] = []
+    for scene in template.scenes:
+        scene_sections = {
+            lyric.section
+            for shot in scene.shots
+            for lyric in shot.lyric_annotations
+            if lyric.section
+        }
+        if scene_sections - seen_sections:
+            entries.append(scene.scene_number)
+        seen_sections.update(scene_sections)
+    return tuple(entries)
+
+
 def generate_planner_content(
     backend: TimelinePlannerBackend,
     *,
     template: PlannerTemplate,
     concept_emd: str,
     direction: DirectionArtifact,
+    lip_sync_mode: str,
     lip_sync_target: str,
     scenes_per_batch: int,
     system_prompts: Mapping[str, str],
@@ -306,16 +1060,40 @@ def generate_planner_content(
 ) -> tuple[PlannerContent | None, tuple[tuple[str, int, int], ...]]:
     if not 1 <= scenes_per_batch <= 6:
         raise TimelinePlannerError("scenes_per_batch must be in 1..6")
+    if lip_sync_mode not in {"off", "context_loop", "audio_reference", "lyrics"}:
+        raise TimelinePlannerError("unknown lip_sync_mode")
     if set(system_prompts) != set(TASKS) or any(not value.strip() for value in system_prompts.values()):
         raise TimelinePlannerError("all five Planner system prompts are required")
     direction.validate()
     runtime_config.validate()
-    protector, protected_concept, shot_context, directions = _protected_context(
+    protector, _protected_concept, shot_context, directions = _protected_context(
         template, concept_emd, direction
     )
     dialogue_filter = DialogueFilter(protector.records)
+    subject_count = sum(
+        1 for line in concept_emd.rstrip().split("\n") if line.startswith("* ")
+    )
+    subject_roster = [
+        {
+            "concept_id": f"サブジェクト{index}",
+            "subject_ref": f"<Subject {index}>",
+        }
+        for index in range(1, subject_count + 1)
+    ]
+    subject_instance_policy = (
+        "single_subject_exactly_one_visible_instance"
+        if subject_count == 1
+        else "defined_subjects_only_no_duplicate_instances"
+    )
     all_issues: list[LLMRecordIssue] = []
     all_retries: set[int] = set()
+    protocol_recovered_count = 0
+    beat_repetition_warning_count = 0
+    action_repetition_warning_count = 0
+    camera_repetition_warning_count = 0
+    performance_directions = {
+        key: value for key, value in directions.items() if key != "camera"
+    }
 
     beat_values: dict[tuple[int, ...], str] = {}
     previous_beat = ""
@@ -350,26 +1128,32 @@ def generate_planner_content(
                     },
                 )
             )
-        values, issues, retries, missing = _request_entities(
+        (
+            values,
+            issues,
+            retries,
+            missing,
+            recovered,
+            repetition_warnings,
+        ) = _request_distinct_entities(
             backend,
             task="visual-beats",
             record_type="BEAT",
             entities=entities,
             shared={
-                "concept_emd": protected_concept,
-                "direction": {
-                    "environment": directions["environment"],
-                    "time_lighting": directions["time_lighting"],
-                    "other": directions["other"],
-                },
+                "subject_roster": subject_roster,
+                "direction": performance_directions,
                 "recent_visual_beat_history": recent_beat_history[-4:],
             },
+            history=recent_beat_history[-4:],
             system_prompt=system_prompts["visual-beats"],
             runtime_config=runtime_config,
             interrupt_callback=interrupt_callback,
         )
         all_issues.extend(issues)
         all_retries.update(retries)
+        protocol_recovered_count += recovered
+        beat_repetition_warning_count += repetition_warnings
         if missing:
             return None, missing
         beat_values.update(
@@ -386,7 +1170,7 @@ def generate_planner_content(
     direction_entity = _Entity(0, (1,), {"visual_beats": [
         {"scene_number": key[0], "text": value} for key, value in sorted(beat_values.items())
     ]})
-    song_values, issues, retries, missing = _request_entities(
+    song_values, issues, retries, missing, recovered = _request_entities(
         backend,
         task="song-direction",
         record_type="DIRECTION",
@@ -398,6 +1182,7 @@ def generate_planner_content(
     )
     all_issues.extend(issues)
     all_retries.update(retries)
+    protocol_recovered_count += recovered
     if missing:
         return None, missing
     song_direction = dialogue_filter.filter(song_values[(1,)])
@@ -406,33 +1191,80 @@ def generate_planner_content(
         scene.scene_number: build_layout_candidates(scene)
         for scene in template.scenes
     }
-    layout_entities = [
-        _Entity(
-            scene.scene_number,
-            (scene.scene_number,),
+    layout_entities: list[_Entity] = []
+    previous_layout_lyrics: list[dict[str, object]] = []
+    seen_layout_sections: set[str] = set()
+    for scene_index, scene in enumerate(template.scenes):
+        lyric_groups = [
             {
-                "scene_number": scene.scene_number,
-                "scene_start_ms": scene.start_ms,
-                "scene_end_ms": scene.end_ms,
-                "visual_beat": beat_values[(scene.scene_number,)],
-                "lyric_groups": [
-                    {
-                        "shot_index": shot_index,
-                        "lyrics": shot_context[
-                            (scene.scene_number, shot_index)
-                        ]["lyrics"],
-                    }
-                    for shot_index, _ in enumerate(scene.shots, 1)
-                ],
-                "candidates": [
-                    candidate.to_dict()
-                    for candidate in candidate_map[scene.scene_number]
-                ],
-            },
+                "shot_index": shot_index,
+                "lyrics": shot_context[
+                    (scene.scene_number, shot_index)
+                ]["lyrics"],
+            }
+            for shot_index, _ in enumerate(scene.shots, 1)
+        ]
+        current_layout_lyrics = [
+            lyric
+            for group in lyric_groups
+            for lyric in group["lyrics"]
+        ]
+        current_sections = {
+            str(lyric["section"])
+            for lyric in current_layout_lyrics
+            if lyric["section"]
+        }
+        unseen_sections = current_sections - seen_layout_sections
+        section_entry_shot_index = next(
+            (
+                int(group["shot_index"])
+                for group in lyric_groups
+                if any(
+                    str(lyric["section"]) in unseen_sections
+                    for lyric in group["lyrics"]
+                    if lyric["section"]
+                )
+            ),
+            0,
         )
-        for scene in template.scenes
-    ]
-    layout_texts, issues, retries, missing = _request_entities(
+        previous_sections = {
+            str(lyric["section"])
+            for lyric in previous_layout_lyrics
+            if lyric["section"]
+        }
+        layout_entities.append(
+            _Entity(
+                scene.scene_number,
+                (scene.scene_number,),
+                {
+                    "scene_number": scene.scene_number,
+                    "scene_start_ms": scene.start_ms,
+                    "scene_end_ms": scene.end_ms,
+                    "visual_beat": beat_values[(scene.scene_number,)],
+                    "previous_visual_beat": (
+                        ""
+                        if scene_index == 0
+                        else beat_values[(template.scenes[scene_index - 1].scene_number,)]
+                    ),
+                    "previous_lyrics": previous_layout_lyrics,
+                    "section_changed": (
+                        bool(current_sections and previous_sections)
+                        and current_sections != previous_sections
+                    ),
+                    "first_section_appearance": bool(unseen_sections),
+                    "new_sections": sorted(unseen_sections),
+                    "section_entry_shot_index": section_entry_shot_index,
+                    "lyric_groups": lyric_groups,
+                    "candidates": [
+                        candidate.to_dict()
+                        for candidate in candidate_map[scene.scene_number]
+                    ],
+                },
+            )
+        )
+        seen_layout_sections.update(current_sections)
+        previous_layout_lyrics = current_layout_lyrics
+    layout_texts, issues, retries, missing, recovered = _request_entities(
         backend,
         task="shot-layout",
         record_type="LAYOUT",
@@ -444,21 +1276,102 @@ def generate_planner_content(
     )
     all_issues.extend(issues)
     all_retries.update(retries)
+    protocol_recovered_count += recovered
     if missing:
         return None, missing
-    layouts: dict[int, tuple[int, ...]] = {}
-    layout_fallback_scenes: list[int] = []
-    for scene in template.scenes:
-        try:
-            layouts[scene.scene_number] = parse_layout_selection(
-                layout_texts[(scene.scene_number,)],
-                candidate_map[scene.scene_number],
-                scene_end_ms=scene.end_ms,
+    (
+        layouts,
+        continuations,
+        layout_repaired_scenes,
+        layout_fallback_scenes,
+    ) = _decode_layout_texts(template, candidate_map, layout_texts)
+    layout_mix_retry = False
+    if (
+        len(template.scenes) >= 4
+        and not _satisfies_boundary_contract(template, continuations)
+    ):
+        layout_mix_retry = True
+        later_values = [
+            continuations[scene.scene_number]
+            for scene in template.scenes[1:]
+        ]
+        if later_values and all(later_values):
+            retry_reason = (
+                "Every later boundary was CONTINUE. Keep CONTINUE only for an "
+                "uninterrupted action and introduce lyric-driven CUT edits."
             )
-        except TimelinePlannerError:
-            layouts[scene.scene_number] = (scene.start_ms,)
-            layout_fallback_scenes.append(scene.scene_number)
+        elif later_values and not any(later_values):
+            retry_reason = (
+                "Every boundary was CUT. Compare each Scene with previous_lyrics "
+                "and previous_visual_beat; keep emotional pivots as CUT, but use "
+                "CONTINUE for genuinely uninterrupted action phases."
+            )
+        else:
+            retry_reason = (
+                "The boundary mix did not meet the minimum CUT and CONTINUE "
+                "counts, exceeded the maximum same-mode run, or alternated "
+                "CUT and CONTINUE too mechanically. Re-evaluate "
+                "every adjacent Scene against the supplied boundary contract."
+            )
+        later_count = len(template.scenes) - 1
+        (
+            retry_texts,
+            retry_issues,
+            retry_scenes,
+            retry_missing,
+            recovered,
+        ) = _request_entities(
+            backend,
+            task="shot-layout",
+            record_type="LAYOUT",
+            entities=layout_entities,
+            shared={
+                "song_direction": song_direction,
+                "boundary_mix_retry_reason": retry_reason,
+                "boundary_contract": {
+                    "first_scene": "CUT",
+                    "later_cut_minimum": max(
+                        1, (len(template.scenes) - 1) // 4
+                    ),
+                    "later_continue_minimum": max(
+                        1, len(template.scenes) // 2
+                    ),
+                    "maximum_consecutive_same_mode": 3,
+                    "maximum_mode_transitions": max(
+                        2, (later_count * 2 + 2) // 3
+                    ),
+                },
+            },
+            system_prompt=system_prompts["shot-layout"],
+            runtime_config=runtime_config,
+            interrupt_callback=interrupt_callback,
+        )
+        all_issues.extend(retry_issues)
+        all_retries.update(retry_scenes)
+        protocol_recovered_count += recovered
+        if not retry_missing:
+            (
+                retry_layouts,
+                retry_continuations,
+                retry_repaired,
+                retry_fallback,
+            ) = _decode_layout_texts(template, candidate_map, retry_texts)
+            layouts = retry_layouts
+            continuations = retry_continuations
+            layout_repaired_scenes = retry_repaired
+            layout_fallback_scenes = retry_fallback
+        if not _satisfies_boundary_contract(template, continuations):
+            continuations, boundary_repaired = _repair_boundary_contract(
+                template, continuations
+            )
+            layout_repaired_scenes = sorted(
+                {*layout_repaired_scenes, *boundary_repaired}
+            )
+        layout_mix_retry = True
     planned_template = apply_shot_layouts(template, layouts)
+    planned_template = apply_scene_continuations(
+        planned_template, continuations
+    )
     shot_context = _shot_context(planned_template, protector)
     dialogue_filter.add_records(protector.records)
 
@@ -475,6 +1388,10 @@ def generate_planner_content(
         for key in keys:
             context = dict(shot_context[key])
             context["visual_beat"] = beat_values[(key[0],)]
+            context["performance_role"] = _performance_role(
+                context,
+                lip_sync_active=lip_sync_mode != "off",
+            )
             context["previous_shot"] = (
                 None
                 if prior_key is None
@@ -482,31 +1399,114 @@ def generate_planner_content(
             )
             if prior_key is None:
                 context["previous_batch_action"] = previous_action
-            entities.append(_Entity(key[0], key, context))
+            if context["performance_role"] == "face_and_upper_body_accent":
+                action_values[key] = FACE_PERFORMANCE_CUT_ACTION
+            else:
+                entities.append(_Entity(key[0], key, context))
             prior_key = key
-        values, issues, retries, missing = _request_entities(
-            backend,
-            task="actions",
-            record_type="ACTION",
-            entities=entities,
-            shared={
-                "concept_emd": protected_concept,
-                "direction": {
-                    "environment": directions["environment"],
-                    "time_lighting": directions["time_lighting"],
-                    "motion": directions["motion"],
-                    "other": directions["other"],
+        if entities:
+            (
+                values,
+                issues,
+                retries,
+                missing,
+                recovered,
+                repetition_warnings,
+            ) = _request_distinct_entities(
+                backend,
+                task="actions",
+                record_type="ACTION",
+                entities=entities,
+                shared={
+                    "subject_roster": subject_roster,
+                    "direction": performance_directions,
+                    "song_direction": song_direction,
+                    "primary_action_concept": lip_sync_target,
+                    "subject_instance_policy": subject_instance_policy,
+                    "action_batch_contract": {
+                        "slow_or_gentle_action_maximum": max(
+                            1, len(entities) // 4
+                        ),
+                        "generic_hand_raise_or_lower_maximum": 0,
+                        "unrequested_lower_body_primary_action_maximum": 0,
+                    },
+                    "recent_action_history": recent_action_history[-6:],
                 },
-                "song_direction": song_direction,
-                "primary_action_concept": lip_sync_target,
-                "recent_action_history": recent_action_history[-6:],
-            },
-            system_prompt=system_prompts["actions"],
-            runtime_config=runtime_config,
-            interrupt_callback=interrupt_callback,
-        )
+                history=recent_action_history[-6:],
+                system_prompt=system_prompts["actions"],
+                runtime_config=runtime_config,
+                interrupt_callback=interrupt_callback,
+            )
+            if not missing:
+                budget_violations = _action_budget_violations(entities, values)
+                if budget_violations:
+                    retry_entities = [
+                        _Entity(
+                            entity.scene_number,
+                            entity.key,
+                            {
+                                **entity.value,
+                                "rejected_output": values[entity.key],
+                                "action_quality_violations": list(
+                                    budget_violations[entity.key]
+                                ),
+                            },
+                        )
+                        for entity in entities
+                        if entity.key in budget_violations
+                    ]
+                    (
+                        retry_values,
+                        retry_issues,
+                        retry_scenes,
+                        retry_missing,
+                        retry_recovered,
+                    ) = _request_entities(
+                        backend,
+                        task="actions",
+                        record_type="ACTION",
+                        entities=retry_entities,
+                        shared={
+                            "subject_roster": subject_roster,
+                            "direction": performance_directions,
+                            "song_direction": song_direction,
+                            "primary_action_concept": lip_sync_target,
+                            "subject_instance_policy": subject_instance_policy,
+                            "action_batch_contract": {
+                                "slow_or_gentle_action_maximum": max(
+                                    1, len(entities) // 4
+                                ),
+                                "generic_hand_raise_or_lower_maximum": 0,
+                                "unrequested_lower_body_primary_action_maximum": 0,
+                            },
+                            "recent_action_history": recent_action_history[-6:],
+                            "retry": "action_quality_budget",
+                            "action_quality_retry": (
+                                "Replace the rejected Action choice. Resolve every "
+                                "listed quality violation with a decisive, lyric-linked "
+                                "performance and a visibly different final silhouette."
+                            ),
+                        },
+                        system_prompt=system_prompts["actions"],
+                        runtime_config=runtime_config,
+                        interrupt_callback=interrupt_callback,
+                    )
+                    issues.extend(retry_issues)
+                    all_retries.update(retry_scenes)
+                    recovered += retry_recovered
+                    missing = tuple(retry_missing)
+                    values.update(retry_values)
+                    remaining_budget_violations = _action_budget_violations(
+                        entities, values
+                    )
+                    repetition_warnings += len(remaining_budget_violations)
+        else:
+            values, issues, retries, missing = {}, [], (), ()
+            recovered = repetition_warnings = 0
         all_issues.extend(issues)
         all_retries.update(retries)
+        protocol_recovered_count += recovered
+        action_repetition_warning_count += repetition_warnings
         if missing:
             return None, missing
         for key, text in values.items():
@@ -524,34 +1524,136 @@ def generate_planner_content(
             key for key in planned_template.shot_keys
             if key[0] in {scene.scene_number for scene in scene_batch}
         ]
-        entities = [
-            _Entity(
-                key[0],
-                key,
-                {
-                    **shot_context[key],
-                    "visual_beat": beat_values[(key[0],)],
-                    "locked_action": action_values[key],
-                },
+        entities = []
+        for key in keys:
+            context = {
+                **shot_context[key],
+                "visual_beat": beat_values[(key[0],)],
+                "locked_action": action_values[key],
+                "lip_sync_active": lip_sync_mode != "off",
+                "lip_sync_target": lip_sync_target,
+                "editorial_role": _camera_editorial_role(
+                    shot_context[key],
+                    lip_sync_active=lip_sync_mode != "off",
+                ),
+            }
+            if context["editorial_role"] == "face_performance_cut":
+                camera_values[key] = FACE_PERFORMANCE_CUT_CAMERA
+            else:
+                entities.append(_Entity(key[0], key, context))
+        if entities:
+            arc_required = not any(
+                re.search(r"(?i)\barc(?: shot)?\b", value)
+                for value in recent_camera_history[-4:]
             )
-            for key in keys
-        ]
-        values, issues, retries, missing = _request_entities(
-            backend,
-            task="cameras",
-            record_type="CAMERA",
-            entities=entities,
-            shared={
-                "direction": {"camera": directions["camera"]},
-                "song_direction": song_direction,
-                "recent_camera_history": recent_camera_history[-6:],
-            },
-            system_prompt=system_prompts["cameras"],
-            runtime_config=runtime_config,
-            interrupt_callback=interrupt_callback,
-        )
+            camera_batch_contract = {
+                "arc_shot_maximum": int(arc_required),
+                "tracking_shot_maximum": 1,
+                "same_other_motion_type_maximum": 2,
+                "slow_speed_maximum": max(1, len(entities) // 4),
+                "unrequested_lower_body_detail_maximum": 0,
+            }
+            (
+                values,
+                issues,
+                retries,
+                missing,
+                recovered,
+                repetition_warnings,
+            ) = _request_distinct_entities(
+                backend,
+                task="cameras",
+                record_type="CAMERA",
+                entities=entities,
+                shared={
+                    "direction": directions,
+                    "song_direction": song_direction,
+                    "subject_instance_policy": subject_instance_policy,
+                    "arc_required": arc_required,
+                    "camera_batch_contract": camera_batch_contract,
+                    "recent_camera_history": recent_camera_history[-6:],
+                },
+                history=recent_camera_history[-6:],
+                system_prompt=system_prompts["cameras"],
+                runtime_config=runtime_config,
+                interrupt_callback=interrupt_callback,
+            )
+            if not missing:
+                budget_violations = _camera_budget_violations(
+                    entities,
+                    values,
+                    arc_required=arc_required,
+                )
+                if budget_violations:
+                    retry_entities = [
+                        _Entity(
+                            entity.scene_number,
+                            entity.key,
+                            {
+                                **entity.value,
+                                "rejected_output": values[entity.key],
+                                "camera_quality_violations": list(
+                                    budget_violations[entity.key]
+                                ),
+                                "disallowed_motion_types": sorted(
+                                    {
+                                        reason.split(":", 1)[1]
+                                        for reason in budget_violations[entity.key]
+                                        if reason.startswith("motion_budget:")
+                                    }
+                                ),
+                            },
+                        )
+                        for entity in entities
+                        if entity.key in budget_violations
+                    ]
+                    (
+                        retry_values,
+                        retry_issues,
+                        retry_scenes,
+                        retry_missing,
+                        retry_recovered,
+                    ) = _request_entities(
+                        backend,
+                        task="cameras",
+                        record_type="CAMERA",
+                        entities=retry_entities,
+                        shared={
+                            "direction": directions,
+                            "song_direction": song_direction,
+                            "subject_instance_policy": subject_instance_policy,
+                            "arc_required": False,
+                            "camera_batch_contract": camera_batch_contract,
+                            "recent_camera_history": recent_camera_history[-6:],
+                            "retry": "camera_quality_budget",
+                            "camera_quality_retry": (
+                                "Replace the rejected Camera choice. Obey every "
+                                "listed budget and do not paraphrase the same "
+                                "framing, body-region focus, path, or speed."
+                            ),
+                        },
+                        system_prompt=system_prompts["cameras"],
+                        runtime_config=runtime_config,
+                        interrupt_callback=interrupt_callback,
+                    )
+                    issues.extend(retry_issues)
+                    all_retries.update(retry_scenes)
+                    recovered += retry_recovered
+                    missing = tuple(retry_missing)
+                    values.update(retry_values)
+                    remaining_budget_violations = _camera_budget_violations(
+                        entities,
+                        values,
+                        arc_required=arc_required,
+                    )
+                    repetition_warnings += len(remaining_budget_violations)
+        else:
+            values, issues, retries, missing = {}, [], (), ()
+            recovered = repetition_warnings = 0
         all_issues.extend(issues)
         all_retries.update(retries)
+        protocol_recovered_count += recovered
+        camera_repetition_warning_count += repetition_warnings
         if missing:
             return None, missing
         camera_values.update(
@@ -577,13 +1679,30 @@ def generate_planner_content(
         ),
         song_direction=song_direction,
         shot_layouts=tuple(sorted(layouts.items())),
+        scene_continuations=tuple(sorted(continuations.items())),
         actions=tuple((key[0], key[1], value) for key, value in sorted(action_values.items())),
         cameras=tuple((key[0], key[1], value) for key, value in sorted(camera_values.items())),
-        issue_count=len(all_issues) + len(layout_fallback_scenes),
+        issue_count=(
+            len(all_issues)
+            + len(layout_repaired_scenes)
+            + len(layout_fallback_scenes)
+            + (1 if layout_mix_retry else 0)
+        ),
         retried_scenes=tuple(sorted(all_retries)),
         removed_generated_dialogue_count=dialogue_filter.removed_count,
         unused_protected_dialogue_ids=dialogue_filter.unused_ids,
+        layout_repaired_scenes=tuple(layout_repaired_scenes),
         layout_fallback_scenes=tuple(layout_fallback_scenes),
+        layout_mix_retry=layout_mix_retry,
+        protocol_recovered_count=protocol_recovered_count,
+        repetition_warning_count=(
+            beat_repetition_warning_count
+            + action_repetition_warning_count
+            + camera_repetition_warning_count
+        ),
+        beat_repetition_warning_count=beat_repetition_warning_count,
+        action_repetition_warning_count=action_repetition_warning_count,
+        camera_repetition_warning_count=camera_repetition_warning_count,
     )
     return content, ()
 
@@ -601,6 +1720,10 @@ def render_planner_content(
     planned_template = apply_shot_layouts(
         template,
         {scene: starts for scene, starts in content.shot_layouts},
+    )
+    planned_template = apply_scene_continuations(
+        planned_template,
+        {scene: value for scene, value in content.scene_continuations},
     )
     return render_completed_emd(
         concept_emd=concept_emd,
@@ -636,6 +1759,7 @@ def plan_timeline(
         template=template,
         concept_emd=concept,
         direction=selected_direction,
+        lip_sync_mode=lip_sync_mode,
         lip_sync_target=lip_sync_target,
         scenes_per_batch=scenes_per_batch,
         system_prompts=system_prompts,

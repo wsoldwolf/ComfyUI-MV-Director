@@ -18,7 +18,7 @@ from ..protocols import parse_llm_records
 from .errors import CompilerError
 
 
-TRANSLATION_PROMPT_VERSION = "mvd-prompt-translation-ja-en-v5"
+TRANSLATION_PROMPT_VERSION = "mvd-prompt-translation-ja-en-v7"
 TRANSLATION_RECORD_TYPE = "TRANSLATION"
 TRANSLATION_MAX_BATCH_UNITS = 7
 _JAPANESE_SCRIPT_RE = re.compile(r"[\u3040-\u30ff\u3400-\u9fff]")
@@ -212,6 +212,63 @@ class LlamaPromptTranslator:
             f"issues={reasons}; missing_slots={missing}"
         )
 
+    @staticmethod
+    def _duplicate_conflict_slots(
+        normalized_response: str,
+        allowed_slots: frozenset[int],
+    ) -> tuple[int, ...]:
+        texts: dict[int, list[str]] = {}
+        for raw_line in normalized_response.split("\n"):
+            fields = raw_line.split("\t", 2)
+            if len(fields) != 3 or fields[0] != TRANSLATION_RECORD_TYPE:
+                continue
+            slot_text, text = fields[1], fields[2].replace("\t", " ").strip()
+            if not slot_text.isascii() or not slot_text.isdecimal() or not text:
+                continue
+            slot = int(slot_text)
+            if slot not in allowed_slots:
+                continue
+            texts.setdefault(slot, []).append(text)
+        return tuple(
+            sorted(
+                slot
+                for slot, values in texts.items()
+                if len(values) > 1 and len(set(values)) > 1
+            )
+        )
+
+    @classmethod
+    def _validate_protocol_issues(
+        cls,
+        parsed: Any,
+        *,
+        duplicate_conflict_slots: Sequence[int] = (),
+        allow_conflicting_duplicates: bool = True,
+    ) -> None:
+        if not parsed.issues:
+            return
+        harmless_reasons = {"field_count", "unknown_type", "duplicate"}
+        reasons = {issue.reason for issue in parsed.issues}
+        if (
+            not parsed.missing
+            and reasons <= harmless_reasons
+            and (allow_conflicting_duplicates or not duplicate_conflict_slots)
+        ):
+            counts = ",".join(
+                f"{reason}={sum(issue.reason == reason for issue in parsed.issues)}"
+                for reason in sorted(reasons)
+            )
+            _LOGGER.warning(
+                "[MV Director - EMD Compiler (Ref2VA)] recovered complete "
+                "translation records with extra output; issues=%s; "
+                "conflicting_duplicate_slots=%s",
+                counts,
+                ",".join(str(slot) for slot in duplicate_conflict_slots) or "none",
+            )
+            return
+        if not parsed.missing:
+            raise cls._protocol_error(parsed)
+
     def _translate_batch(
         self,
         units: Sequence[str],
@@ -220,18 +277,26 @@ class LlamaPromptTranslator:
     ) -> tuple[str, ...]:
         response = self._complete_units(units)
         slots = frozenset(range(1, len(units) + 1))
+        normalized_response = _normalize_small_model_response(response)
         parsed = parse_llm_records(
-            _normalize_small_model_response(response),
+            normalized_response,
             allowed_slots={TRANSLATION_RECORD_TYPE: slots},
             required=frozenset((TRANSLATION_RECORD_TYPE, slot) for slot in slots),
         )
-        if parsed.issues and not parsed.missing:
-            raise self._protocol_error(parsed)
+        duplicate_conflict_slots = set(
+            self._duplicate_conflict_slots(normalized_response, slots)
+        )
+        self._validate_protocol_issues(
+            parsed,
+            duplicate_conflict_slots=tuple(sorted(duplicate_conflict_slots)),
+        )
 
         by_slot = {record.slot: record.text for record in parsed.records}
         missing_slots = {slot for _, slot in parsed.missing}
         non_english_slots = set(self._non_english_slots(parsed))
-        retry_slots = sorted(missing_slots | non_english_slots)
+        retry_slots = sorted(
+            missing_slots | non_english_slots | duplicate_conflict_slots
+        )
         if non_english_slots:
             labels = ",".join(
                 str(displayed_slots[slot - 1])
@@ -242,15 +307,43 @@ class LlamaPromptTranslator:
                 "translation slots in isolation: %s",
                 labels,
             )
+        if duplicate_conflict_slots:
+            labels = ",".join(
+                str(displayed_slots[slot - 1])
+                for slot in sorted(duplicate_conflict_slots)
+            )
+            _LOGGER.info(
+                "[MV Director - EMD Compiler (Ref2VA)] retrying conflicting "
+                "duplicate translation slots in isolation: %s",
+                labels,
+            )
 
         for retry_slot in retry_slots:
             retry_response = self._complete_units((units[retry_slot - 1],))
+            normalized_retry = _normalize_small_model_response(retry_response)
             retry = parse_llm_records(
-                _normalize_small_model_response(retry_response),
+                normalized_retry,
                 allowed_slots={TRANSLATION_RECORD_TYPE: frozenset({1})},
                 required=frozenset({(TRANSLATION_RECORD_TYPE, 1)}),
             )
-            if retry.issues or retry.missing:
+            retry_duplicate_conflicts = self._duplicate_conflict_slots(
+                normalized_retry,
+                frozenset({1}),
+            )
+            try:
+                self._validate_protocol_issues(
+                    retry,
+                    duplicate_conflict_slots=retry_duplicate_conflicts,
+                    allow_conflicting_duplicates=False,
+                )
+            except CompilerError as exc:
+                raise CompilerError(
+                    "translation response does not match the line protocol after "
+                    "isolated retry for slot "
+                    f"{displayed_slots[retry_slot - 1]}: "
+                    f"{exc}"
+                ) from exc
+            if retry.missing:
                 raise CompilerError(
                     "translation response does not match the line protocol after "
                     "isolated retry for slot "

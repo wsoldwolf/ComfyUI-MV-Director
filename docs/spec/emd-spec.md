@@ -72,7 +72,7 @@ tokenはdescriptionより前に置く。同じSubject行で同じH3参照を重�
 Compilerはこれを、概念的に次のSubject定義へ変換する。
 
 ```text
-<Subject 1> is described here: ... Use these connected references for it: <Picture 2>, <Video 1>.
+<Subject 1> is described here: ... Use these connected references only for its visual identity and design: <Picture 2>, <Video 1>. Treat every panel or alternate view as identity material for the same single physical instance. Render exactly one physical instance of this Subject, with one head and one body. Never show a duplicate, twin, clone, reflection, background lookalike, inset view, split-screen copy, or second representation of this Subject. Do not copy a reference pose, framing, composition, panel layout, or background; follow the current Shot instead.
 <Subject 2> is described here: ...
 ```
 
@@ -149,6 +149,10 @@ Sceneは番号annotationと見出しを物理的に連続する2行で書く。
 > `シーン` 1
 # シーン 00:00.000 --> 00:10.125
 * `H3長` 243
+
+> `シーン` 2
+# シーン 00:10.125 --> 00:20.042 継続
+* `H3長` 260
 ```
 
 規則:
@@ -156,15 +160,21 @@ Sceneは番号annotationと見出しを物理的に連続する2行で書く。
 - Scene番号は1から連番。
 - 時刻は`MM:SS.mmm`形式。
 - Sceneは正の長さを持ち、前Sceneの終了と次Sceneの開始が一致する。
+- 見出し末尾の`継続`は直前Sceneの映像contextを使う明示フラグ。先頭Sceneでは使用できない。
+- `継続`を省略したSceneはカットであり、前Sceneの映像contextを受け取らない。省略を暗黙継続とは解釈しない。
 - 一Sceneは最大60000 ms。
 - `H3長`はSceneの最初の行であり、選択したH3 timing profileの`17k+5` gridに適合する。
-- `length`は秒又はmsではなく、Context Loopへそのまま渡すraw H3 lengthである。
+- `H3長`は秒又はmsではなく、選択済みのカット／継続modeに対応し、Context Loopへそのまま渡すraw H3 lengthである。Plannerがmodeを変更した場合はPlanner自身が累積H3格子へ再配分し、Compilerは再計算しない。
+
+CompilerはカットSceneへ`context_length: 0`、`audio_context_length: 0`を出す。継続Sceneへtiming profileのvisual/audio context lengthと`continuation_mode: "guide"`を出す。`generated_continuity`は生成音声の別軸であり、この映像境界フラグの代用ではない。
 
 `H3長`の後、最初のShotより前へ通常list itemを置くとScene descriptionになる。
 
 ## 7. Shot
 
-各Sceneは一個以上のShotを持つ。最初のShotはScene開始時刻と一致し、後続Shotは絶対時刻で昇順にする。自動PlannerはPythonが提示した、互いに1500 ms以上離れた境界IDからだけcut位置を選び、最大4 Shot、複数Shot時は各Shot 1500 ms以上とする。Scene全体が1500 ms未満の場合は一Shotのまま許す。LLMは時刻を生成せず、Pythonが境界IDを絶対時刻へ機械変換する。不正な候補列は該当Sceneだけ一Shotへfallbackし、ActionとCameraの処理を継続する。手書きEMDは同じ時刻規則を満たせばよい。
+各Sceneは一個以上のShotを持つ。最初のShotはScene開始時刻と一致し、後続Shotは絶対時刻で昇順にする。自動PlannerはPythonが提示した、互いに1500 ms以上離れた境界IDからだけShot境界を選び、最大4 Shot、複数Shot時は各Shot 1500 ms以上とする。Scene全体が1500 ms未満の場合は一Shotのまま許す。LLMは時刻を生成せず、Pythonが境界IDを絶対msへ機械変換する。不正な候補列は該当Sceneだけ一Shotへfallbackし、ActionとCameraの処理を継続する。手書きEMDは同じ時刻規則を満たせばよい。
+
+Scene内の後続Shotは一回のH3生成に含まれる時刻付きprompt変化であり、編集上のハードカットを保証しない。構図、画角又は視点を不連続に切り替える必要がある場合は、新しいSceneをカットとして開始し、そのScene見出しから`継続`を外す。
 
 ```markdown
 ## ショット 00:00.000

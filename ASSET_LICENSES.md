@@ -33,7 +33,7 @@ Copyright © 2026 wsoldwolf
 - `assets/image/image00004.jpg`
 - `assets/image/image00005.jpg`
 - `assets/image/image00006.jpg`
-- `assets/image/image00007.jpg`
+- `assets/image/image0007.jpg`
 
 ## 適用範囲
 

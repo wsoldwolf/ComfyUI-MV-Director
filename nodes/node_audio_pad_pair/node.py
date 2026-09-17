@@ -5,11 +5,21 @@ from __future__ import annotations
 from typing import Any
 
 try:
-    from ...core.audio import SceneAudioWindow, align_audio_to_plan_scenes, pad_audio_pair
+    from ...core.audio import (
+        SceneAudioWindow,
+        align_audio_to_plan_scenes,
+        pad_audio_pair,
+        plan_delivered_frames,
+    )
     from ...core.artifacts import TimelineArtifact
     from ...core.h3_contract import DEFAULT_H3_TIMING_PROFILE, H3TimingProfile
 except ImportError:
-    from core.audio import SceneAudioWindow, align_audio_to_plan_scenes, pad_audio_pair
+    from core.audio import (
+        SceneAudioWindow,
+        align_audio_to_plan_scenes,
+        pad_audio_pair,
+        plan_delivered_frames,
+    )
     from core.artifacts import TimelineArtifact
     from core.h3_contract import DEFAULT_H3_TIMING_PROFILE, H3TimingProfile
 
@@ -43,6 +53,7 @@ class MVDirectorAudioPadPair:
             "optional": {
                 "timeline": ("MV_DIRECTOR_TIMELINE",),
                 "h3_timing_profile": ("MV_DIRECTOR_H3_TIMING_PROFILE",),
+                "plan_json": ("STRING", {"forceInput": True}),
             },
         }
 
@@ -56,6 +67,7 @@ class MVDirectorAudioPadPair:
         reference_alignment: str,
         timeline: TimelineArtifact | None = None,
         h3_timing_profile: H3TimingProfile | None = None,
+        plan_json: str | None = None,
     ) -> tuple[dict[str, Any], dict[str, Any], str, dict[str, Any]]:
         if pad_position != "end":
             raise ValueError("only end padding is supported")
@@ -65,6 +77,7 @@ class MVDirectorAudioPadPair:
         profile.validate()
         plan_duration_ms = 0
         timeline_h3_frames = 0
+        plan_h3_frames = 0
         if timeline is not None:
             timeline.validate()
             plan_duration_ms = timeline.plan_duration_ms
@@ -76,9 +89,12 @@ class MVDirectorAudioPadPair:
             timeline_h3_frames = sum(
                 scene.delivered_frames for scene in timeline.scenes
             )
+        if plan_json is not None and plan_json.strip():
+            plan_h3_frames = plan_delivered_frames(plan_json)
         effective_target_h3_frames = max(
             target_h3_frames,
             timeline_h3_frames,
+            plan_h3_frames,
         )
         padded_a, padded_b, targets = pad_audio_pair(
             audio_a,
@@ -116,6 +132,7 @@ class MVDirectorAudioPadPair:
         status = (
             f"pad=end; target_samples_a={targets[0]}; target_samples_b={targets[1]}; "
             f"plan_ms={plan_duration_ms}; timeline_frames={timeline_h3_frames}; "
+            f"plan_frames={plan_h3_frames}; "
             f"requested_target_frames={target_h3_frames}; "
             f"target_frames={effective_target_h3_frames}; "
             f"{alignment_status}"
