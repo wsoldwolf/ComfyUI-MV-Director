@@ -1,0 +1,42 @@
+# Lyric Segmentation
+
+UTF-8 plain lyricsとvocal stemをOpenAI Whisper、VAD、文字列照合で整列し、同じcanonical segment列からTemplate EMD、SRT、typed timelineを作ります。PlannerやH3へ接続せず、SRT生成だけにも使えます。
+
+## 入力
+
+| 入力 | 既定 | 説明 |
+|---|---:|---|
+| `vocal_audio` | 必須 | padding前のvocal stem |
+| `lyrics_text` | 必須 | `[SECTION]`を持つplain lyrics |
+| `whisper_model` | 自動列挙 | `models/whisper`以下のローカル`.pt` |
+| `language` | `ja` | 初期版は日本語のみ |
+| `max_scene_duration_ms` | `10000` | H3 Scene分割の最大目安 |
+| `srt_time_offset_ms` | `0` | SRT出力だけへ加えるoffset |
+| `cache_mode` | `reuse` | 成功結果の再利用方針 |
+| `keep_whisper_loaded` | `false` | 8GB VRAMではfalse推奨 |
+| `h3_timing_profile` | 任意 | 未接続時も固定既定profileを使う |
+
+## lyrics形式
+
+```text
+[VERSE1]
+最初の歌詞 次の歌詞
+
+[CHORUS]
+サビの歌詞
+```
+
+角括弧内は`VERSE`に限定されません。ASCIIのsection名であれば`CHORUS`、`BRIDGE`、`OUTRO`等も受け付け、大文字へ正規化します。見出し内側の前後空白は許容します。本文の物理行と空白runからatomic segmentを作ります。
+
+LRC、SRT、VTT、timestamp、コメント、本文行の不必要な前後空白は入力しません。
+
+## 出力
+
+| 出力 | 用途 |
+|---|---|
+| `template_emd` | Timeline Plannerの確定済みScene/Shot枠 |
+| `srt_text` | 外部字幕として保存可能なSRT本文 |
+| `timeline` | Audio Pad Pair等へ渡す元音源ms/H3 frame対応 |
+| `status` | resolved、unplaced、音源尺、Plan尺、Scene数、cache |
+
+全歌詞が配置できない場合は赤いERRORを出し、Template EMD、SRT、timelineをExecutionBlockerで停止します。これは音源が歌詞後半を歌っていない場合を黙って成功にしないためです。

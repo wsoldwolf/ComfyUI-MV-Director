@@ -15,7 +15,7 @@ class MVDirectorH3TimingProfile:
     RETURN_NAMES = ("timing_profile", "profile_json", "status")
     FUNCTION = "build_profile"
     CATEGORY = "MV Director/Utilities"
-    DESCRIPTION = "Share the pinned Context Loop 0.6.6 timing contract."
+    DESCRIPTION = "Share the pinned Context Loop 0.6.9 timing contract."
 
     @classmethod
     def INPUT_TYPES(cls) -> dict[str, Any]:

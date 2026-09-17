@@ -1,83 +1,54 @@
 # ComfyUI-MV-Director
 
-画像、歌詞、ボーカルステム、フルミックスと、空又は短い希望から、MiniMax H3 / Context Loopで試写できるMV計画を作るためのフロントエンドです。利用者にプロンプト記述を要求せず、生成された表現の最終評価と採用は人間が行います。
+画像、歌詞、ボーカルステム、フルミックスから、MiniMax H3 / Context Loop用のMV計画を作るComfyUIカスタムノードです。VisionによるSubject EMD、演出方針、歌詞タイムライン、Shot計画を分離し、最後にRef2VA Plan JSONへコンパイルします。
 
-EMDは**Easy MarkDown**の略です。Extended Markdownではありません。人が読み書きできる`# サブジェクト`、`# 保持分析`、任意の`# 共通プロンプト`、`# シーン`を持ちます。共通プロンプトは任意の`## スタイル`、`## モーション`、`## カメラ`、`## その他`へ分け、存在する本文だけをこの順でContext Loop Planの`prompt_prefix`へ写します。
+EMDは **Easy MarkDown** の略です。Extended Markdownではありません。
 
-## 現在の状態
+![画像、演出、歌詞と音声からEMDを計画・コンパイルし、Context LoopとH3 Ref2VAへ渡す最小パイプライン](docs/assets/minimal-pipeline.svg)
 
-2026-09-16時点で**Phase 0～8と配布用workflow 6本を実装済み**です。ComfyUI非依存のartifact型、canonical JSON、LLM/Vision行protocol、厳密EMD parser、翻訳保護span、Ref2VA六セクションrenderer、Context Loop Plan serializer、GGUF実行基盤に加え、4コア、support 2個、utility 5個の計11ノードを`MVDirector...`名前空間へ登録しました。Phase 8ではPair専用PCM末尾paddingと参照vocalのsource Scene→Plan frame配置、固定H3 Timing Profile、正の32-bit Seed、String／Connected Combo、ブラウザ埋め込みUTF-8 `.txt`入力とfrontend操作を追加しました。Context Loop標準、Audio参照、歌詞の各方式についてPlan/Compilerと動画生成を分離した6 workflowを`workflows/`へ配置しています。実GGUF・実ボーカル・実Whisper checkpointでの品質測定とH3レンダリングはまだ実施していません。
+## はじめに
 
-実行基準はComfyUI v0.36.0 commit `ee71d5c4993f29086b27fde1629a945ae48425bf`とContext Loop 0.6.9 commit `9860a063784c8c23b58e00107f2180e0df3c43d9`です。開発リポジトリは`C:\Software\ComfyUI\custom_nodes\ComfyUI-MV-Director`のdirectory junctionから直接参照するため、リポジトリ内の変更は追加コピーなしでComfyUI側へ反映されます。
+1. [導入マニュアル](docs/installation.md)に従ってカスタムノード、`llama-cpp-python`、Whisper、各モデルを準備します。
+2. [配布workflow](workflows/README.md)から、Context Loop標準、Audio参照、歌詞のいずれか一組を選びます。
+3. [ノードマニュアル](docs/nodes/README.md)で各入力、出力、既定値、接続方法を確認します。
+4. EMDを直接編集する場合は[EMD仕様書](docs/spec/emd-spec.md)を参照します。
 
-開発方針は「互換性ではなく、必要な実装資産だけを再利用する」です。旧workflow、node ID、入力形式、出力schema及び修復経路との互換性は持たせません。一方、PCM padding、GGUF探索、model lifecycle、音声区間処理など、新仕様でも責務が変わらない有限な処理は選別して再利用します。旧実装に存在するという理由だけで、flag、fallback、validator又は補助nodeを新プロジェクトへ持ち込みません。
+基準環境はComfyUI v0.36.0 commit `ee71d5c4993f29086b27fde1629a945ae48425bf`、Context Loop 0.6.9 commit `9860a063784c8c23b58e00107f2180e0df3c43d9`です。
 
-## 選定した最小パイプライン
+## 文書索引
 
-![選定した最小パイプライン。画像、演出、歌詞と音声からEMDを計画・コンパイルし、Context LoopとH3 Ref2VAへ渡す流れ](docs/assets/minimal-pipeline.svg)
+| 場所 | 内容 |
+|---|---|
+| [`docs/`](docs/README.md) | 利用者向け・開発者向け文書の総合索引 |
+| [`docs/nodes/`](docs/nodes/README.md) | 公開11ノードの操作マニュアル |
+| [`docs/spec/`](docs/spec/README.md) | EMD、protocol、最小コアの規範仕様 |
+| [`docs/implementation/`](docs/implementation/README.md) | 内部構造、公開surface、実装順序 |
+| [`docs/research/`](docs/research/README.md) | Context Loop調査と仕様監査の記録 |
+| [`docs/assets/`](docs/assets/README.md) | READMEや文書で使うPNG/SVG図版 |
+| [`workflows/`](workflows/README.md) | 三つのリップシンク方式に対応する6 workflow |
 
-コアはImage to Subject EMD、Enhancer、Planner、Compilerの4ノードを新設します。公開support nodeとして`MV Director - Lyric Segmentation`とAudio Pad Pair、公開utility nodeとしてH3 Timing Profile、32-bit Seed、String Combo、Connected Combo、Load Text Fileを置きます。Load Text Fileは`[VERSE1]`等のsectionを持つplain lyrics `.txt`をブラウザで選択/D&Dし、workflowへ埋め込まれたUTF-8本文をSTRINGとして返します。LRC又はSRTは入力せず、SRTはLyric Segmentationの出力専用です。Lyric Segmentationは歌詞とボーカルだけからTemplate EMD、SRT、typed timelineを返し、PlannerやH3を使わない字幕作成にも利用できます。Image to Subject EMDの主成果は編集可能なEMDサブジェクト断片であり、同じIMAGEをH3の`ref_image_N`へ接続した時だけ対応する`<Picture N+1>`を自動束縛し、解決結果をノード内の読み取り専用テキストへ表示します。初期自動MV経路のEnhancerとPlannerは一個のImage to Subject EMDだけを受け取り、複数断片を統合しません。旧Prompt Mergerは独立ノードとして移植せず、ユーザー指示を最優先に統合する責務をEnhancerへ含めます。
+## 公開ノード
 
-## ComfyUI名前空間
+| 区分 | ノード | マニュアル |
+|---|---|---|
+| Core | Image to Subject EMD | [画像からSubject EMDを作る](docs/nodes/image-to-subject-emd.md) |
+| Core | Direction Enhancer | [全体演出を作る](docs/nodes/direction-enhancer.md) |
+| Core | Timeline Planner | [歌詞と時間枠へShotを計画する](docs/nodes/timeline-planner.md) |
+| Core | EMD Compiler (Ref2VA) | [EMDをPlan JSONへ変換する](docs/nodes/emd-compiler.md) |
+| Input | Lyric Segmentation | [歌詞、SRT、timelineを整列する](docs/nodes/lyric-segmentation.md) |
+| Audio | Audio Pad Pair | [full mixとvocalをPCM無音で整える](docs/nodes/audio-pad-pair.md) |
+| Utilities | H3 Timing Profile | [H3時間契約を共有する](docs/nodes/h3-timing-profile.md) |
+| Utilities | 32-bit Seed | [再現可能なseedを分岐する](docs/nodes/seed32.md) |
+| Utilities | String Combo | [有限文字列リストを選ぶ](docs/nodes/string-combo.md) |
+| Utilities | Connected Combo | [サブグラフ内comboを外へ出す](docs/nodes/connected-combo.md) |
+| Utilities | Load Text File | [UTF-8 lyricsファイルを読む](docs/nodes/load-text-file.md) |
 
-本プロジェクトのノードは既存の`MiniMax H3/...`カテゴリ及び`CL...` node typeを使用しません。workflowへ保存される機械向けIDは`MVDirector...`、表示カテゴリは`MV Director/...`、内部socket型は`MV_DIRECTOR_...`で統一します。4コアのtype IDは`MVDirectorImageToSubjectEMD`、`MVDirectorDirectionEnhancer`、`MVDirectorTimelinePlanner`、`MVDirectorEMDCompiler`、support nodeは`MVDirectorLyricSegmentation`と`MVDirectorAudioPadPair`、utility nodeは`MVDirectorH3TimingProfile`、`MVDirectorSeed32`、`MVDirectorStringCombo`、`MVDirectorConnectedCombo`、`MVDirectorLoadTextFile`です。旧IDの互換aliasは登録しません。
-
-初期方式は次のとおりです。
-
-- Whisperが歌詞の語句・行の位置候補を検出し、20msの粗いVAD区間から波形上の開始・終了をsample-domainで再探索します。確定sample indexを整数msへ変換してtimelineへ保持し、整数秒へ丸めません。これは1ms単位の決定値ですが、音響的な正解はVAD thresholdと入力品質に依存します。
-- EMDの各Sceneはデバッグ用の``> `シーン` N``を直前に必須とし、`# シーン 00:10.000 --> 00:20.000`、Shotは`## ショット 00:15.000`のように、H3 delivered frame累積から得たPlan基準の絶対時刻で記述します。「秒」表記と省略時刻は使いません。歌詞とSRTだけは元音源基準の絶対msを保持し、MV経路のTemplate EMDでは各SceneへContext Loop互換の`` `H3長` ``も記録します。
-- Lyric Segmentationは歌詞の物理改行と空白区切りをatomic segmentとしてWhisper/VADで整列し、その同じsegment列からTemplate EMD、typed timeline、SRTを作ります。Whisperが一物理行を一続きの語として認識してatomic segmentを取りこぼした場合は、前後の確定アンカー内で物理行全体を再照合し、実在するword timestampの区間を元のatomic segmentへ再分配します。各segmentの所属Scene／Shotもここで確定し、歌詞annotationを対応Shot見出しの直前へ置きます。歌詞時刻は元音源基準、Shot見出しはH3 Plan基準なので、PlannerとCompilerは数値包含で再対応付けせず、歌詞も再分割しません。CompilerはH3へ出す時だけScene開始を引いてShot相対時刻へ変換し、EMDの絶対msは変更しません。
-- 人物動作とカメラは別のLLMタスクにし、同じShot枠へPythonが合成します。人物動作の固定文をカメラ生成に再出力させません。
-- Timeline Plannerは`n_ctx`、`n_batch`、GPU layer、Flash Attention、KV cache等のllama.cpp調整値を旧ノード同様に公開します。Direction artifactはEnhancerからスタイル、環境、時間・照明、モーション、カメラ、その他の六方向を型付きで渡す任意の内部socket値で、利用者向けには同内容のEMD previewも出力します。
-- EnhancerとPlannerのLLMにはJSONやEMDを返させません。応答は`TYPE<TAB>SLOT<TAB>TEXT`の一行一recordに限定し、短いslotと実Scene/Shot ID・時刻の対応、typed artifact、EMD及び最終JSONはPythonが組み立てます。4Bが括弧、引用符又はJSON escapeを維持することへ依存しません。
-- Plannerへ渡る作者由来の`「...」`と明示`<d>...</d>`は先にplaceholderへ退避します。LLMが新しい引用台詞又はplaceholderを生成してもretryせず、そのspanを機械削除します。原文はSubject、Direction又は作者Shot本文の決定論的位置から一度だけ出力し、歌詞リップシンクはfilter後にPythonが挿入します。
-- EMDは人間が読める日本語のEasy MarkDown中間言語です。`# サブジェクト`直下の各list itemを行順で`<Subject 1..4>`へ割り当て、行頭の``画像N``、``動画N``、``音声N``を任意のH3参照へ変換します。任意の`# 共通プロンプト`はスタイル、モーション、カメラ、その他を構造的に分離し、Compilerは見出しを除いた存在する本文をこの固定順でPlanの`prompt_prefix`へ出力します。スタイルがあれば必ず先頭です。
-- CompilerはEMD parser、限定翻訳orchestrator、JSON serializerです。H3へ渡す日本語の描写文だけを英訳し、補強・要約・並べ替えはしません。
-- 翻訳処理はCompiler内部の交換可能な`PromptTranslator` adapterとし、初期比較候補は4Bと8Bを想定します。日本語・CJK文字を含まない既存の英語prompt行はモデルへ渡さず完全一致でpass-throughします。
-- Compilerでは従来どおり、ComfyUIの`models/LLM/GGUF`と追加`LLM` pathで見つかった任意のGGUFを`model_name` comboから選択できます。特定modelを組込みません。
-- CompilerはRef2VA専用です。完全EMD文字列と選択GGUFだけで単独コンパイルでき、Vision、Enhancer、Plannerのcustom socketや画像・音声tensorを必須入力にしません。Subjectは1行以上必要ですが、media bindingは任意です。参照なしでは文章定義だけのH3内蔵概念としてRef2VAを出力し、`required_references`は実際に記述されたPicture/Video/Audioだけ、又は空配列になります。T2VA、I2VA等は同じCompilerへmode追加せず、必要になった時に別Compilerとして設計します。
-- Lyric SegmentationはMV用Template EMDを作る段階で、基準Context Loop profileに合わせて24fpsとH3の`17k+5`格子へSceneを割り当て、raw `length`を`` `H3長` ``として確定します。Compilerはその整数を再計算・補正せず、Plan JSONの`length`へそのまま写します。SRTと歌詞alignmentは元音源の絶対msを保持します。
-- Compilerは各SceneにContext Loop 0.6.9互換の完全なRef2VA六セクションを英語で出力します。Shotは先頭を`[Shot 1]`、2番目以降を`[Shot N] At MM:SS.mmm,`とします。EMDの構造、Scene/Shot順、情報量、binding、directiveはas-isで保持し、必須欄はLLMではなく固定テンプレートで機械的に満たします。
-- 音響は説明文を解釈せず、予約directiveだけをCompilerが固定変換します。リップシンクは`lip_sync_mode`の`使用しない`、`Context Loop`、`Audio参照`、`歌詞`をPlannerのコンボで切り替え、EMDでは``リップシンク <方式>``へ統一します。歌詞annotationは全方式で完成EMDに保持し、人物動作の材料として使います。`歌詞`の時だけ対応Shotへ対象と原文を持つdirectiveを機械挿入します。`Context Loop`と`Audio参照`は歌詞annotationのあるSceneだけを有効化し、`Audio参照`動画生成WFはLyric Segmentationのsource Scene境界で元vocalを連続sliceして一個の`<Audio 1>`へ渡します。Compilerはannotationをpromptへ出さず、PCMも扱わず、明示directiveだけを固定promptへ写して翻訳LLMへ渡しません。完成動画へ残す音声はEMDやPlannerではなく、対応する動画生成WFのChain Policyが決定します。歌詞方式はH3へShot区間内の歌唱口形を促す粗い時間誘導であり、音素単位の完全同期は保証しません。`無音`は非MV利用のための将来互換directiveとしてoff値とsilence prompt要素だけを出し、PCMゲートは初期MVスコープへ含めません。
-- `「...」`の内容は変更せず`<d>[Japanese]...</d>`へ包みます。作者がShot本文へ直接書いた`<d>...</d>`又は`<d>[English]...</d>`は翻訳・言語推定・二重包装をせず、そのままH3へ渡します。追加発声禁止は`明示台詞のみ`が書かれた場合だけ出力します。
-- LLM生成の成功結果は入力・モデル・生成条件・プロンプト版で固定できます。固定後はContext Loop/H3側のseedだけを変えて比較できます。
-
-## 入力と利用者の負担
-
-初期自動MV経路の必須入力は歌詞、ボーカルステム、フルミックスです。参照画像は任意です。`# サブジェクト`直下は1 list item＝1 Subjectで、行順から`<Subject 1..4>`を導出します。外部参照は行頭の``画像N``、``動画N``、``音声N``で任意指定し、参照なしの行もH3内蔵概念として有効です。PlannerはMV専用で、既定では`lip_sync_mode=lyrics`として歌詞方式のリップシンクdirectiveを出します。標準配布は三方式ごとのPlan/Compiler WFと動画生成WFを一対一にした計6 WFで、最終音声方針は後者が所有します。T2VA、I2VA等は現在のCompilerの責務外です。ユーザー希望は空でも構いません。
-
-画像に写っていない重要特徴をVisionへ推測させません。人物の設定画又は最大9枚のIMAGE batchに含まれる立ち絵、顔、側面、背面は、明らかに別人でない限り一人のキャラクターの複数ビューとして統合します。Image to Subject EMDには`subject_hint`と`additional_instruction`の独立STRING socketを設け、`analysis_profile`、`hint_mode`、`hint_conflict`、`picture_reference_mode`、`concept_type`、Picture番号も外部接続可能にします。Subject番号はfragment内の行順から決まるためsocketを持ちません。名前付きプレフィクスは不要で、`淡い金色の短い丸眉で、狐の尾は一本です。`のような日本語自然文をそのまま入力します。旧`subject_hint:`形式を検出・除去する互換parserは設けません。顔や衣装の重要条件を利用者が明示した場合は、観察結果とprovenanceを分けて全体方針へ統合します。
-
-## 対象環境
-
-- 8GB VRAM
-- 4B又は8B級ローカルGGUFモデル
-- 4Bでは32Kを初期比較値、8Bでは16Kを基準とする実効コンテキスト
-- クラウドLLMやVRAM増設を前提にしない
-
-これらのcontext値は保証ではありません。各タスクで最終的にシリアライズされる入力、出力予約、安全余裕を合算し、実効上限を超える前に有限分割又は明示停止します。分割で呼び出し数や総時間が増える可能性は実測します。
-
-## 文書
-
-- [設計引き継ぎ](docs/handoff.md)
-- [最小コア仕様](docs/spec/minimal-core-spec.md)
-- [EMD（Easy MarkDown）仕様書](docs/spec/emd-spec.md)
-- [プロトコル仕様](docs/spec/protocol-spec.md)
-- [実装仕様](docs/implementation/implementation-spec.md)
-- [既存部品の移植可否と実装順序](docs/implementation/components-and-order.md)
-- [公開ノード一覧と配置](docs/implementation/public-nodes-and-layout.md)
-- [`prompt_prefix`調査](docs/research/context-loop-prompt-prefix.md)
-- [実装前仕様漏れ監査](docs/research/spec-gap-audit-2026-09-16.md)
-- [配布用workflow 6本](workflows/README.md)
+ノードIDは`MVDirector...`、表示カテゴリは`MV Director/...`、内部socket型は`MV_DIRECTOR_...`です。旧プロトタイプとの互換aliasは登録しません。
 
 ## ライセンス
 
 Copyright © 2026 `wsoldwolf`
 
-ソースコードと文書は、別途明記された場合を除き[GNU General Public License v3.0 only](LICENSE)（`GPL-3.0-only`）で公開します。
+ソースコードと文書は、別途明記された場合を除き[GNU General Public License v3.0 only](LICENSE)（`GPL-3.0-only`）です。
 
-`assets/`に収録した検証用楽曲、歌詞、ボーカルステム及び参照画像はソフトウェアライセンスの対象外です。現在収録している素材は[CC BY-NC 4.0](ASSET_LICENSES.md)で公開し、対象ファイル、生成元及び帰属条件は同文書に明記します。将来追加される素材へこの条件は自動適用されません。
-
-## 次の作業
-
-次は6 workflowを実環境で順番に読み込み、ComfyUI v0.36.0 commit `ee71d5c4993f29086b27fde1629a945ae48425bf`及びContext Loop 0.6.9 commit `9860a063784c8c23b58e00107f2180e0df3c43d9`との互換試験を行います。その後、実ボーカルによるWhisper/VAD境界、4B/8Bの英訳品質、各音声方式及び8GB VRAM環境での全体成立性を測ります。
+`assets/`の検証用楽曲、歌詞、ボーカルステム及び参照画像はソフトウェアライセンスの対象外です。対象素材と条件は[ASSET_LICENSES.md](ASSET_LICENSES.md)を参照してください。
