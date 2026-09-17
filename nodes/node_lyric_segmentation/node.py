@@ -19,10 +19,10 @@ try:
         align_lyrics,
         analyze_waveform,
         build_timeline,
-        build_whisper_initial_prompt,
         extract_whisper_words,
         parse_plain_lyrics,
         prepare_whisper_audio,
+        recover_unplaced_lyrics,
         render_srt,
         render_template_emd,
         validate_comfy_audio,
@@ -37,10 +37,10 @@ except ImportError:  # Standalone repository tests.
         align_lyrics,
         analyze_waveform,
         build_timeline,
-        build_whisper_initial_prompt,
         extract_whisper_words,
         parse_plain_lyrics,
         prepare_whisper_audio,
+        recover_unplaced_lyrics,
         render_srt,
         render_template_emd,
         validate_comfy_audio,
@@ -230,7 +230,8 @@ class MVDirectorLyricSegmentation:
                         whisper_audio,
                         language=language,
                         device=device,
-                        initial_prompt=build_whisper_initial_prompt(lyrics),
+                        initial_prompt="",
+                        condition_on_previous_text=False,
                     )
                     words = extract_whisper_words(
                         transcription, audio_duration_ms=duration_ms
@@ -242,6 +243,25 @@ class MVDirectorLyricSegmentation:
                         sample_rate=sample_rate,
                         audio_duration_ms=duration_ms,
                     )
+                    if unplaced:
+                        resolved, unplaced, retry = recover_unplaced_lyrics(
+                            lyrics,
+                            resolved,
+                            whisper_audio,
+                            self._whisper,
+                            language=language,
+                            device=device,
+                            voiced_intervals=voiced,
+                            sample_rate=sample_rate,
+                            audio_duration_ms=duration_ms,
+                        )
+                        _LOGGER.info(
+                            "[MV Director - Lyric Segmentation] targeted retries "
+                            "completed; runs=%d; recovered=%d; remaining=%d",
+                            retry.attempted_runs,
+                            retry.recovered_segments,
+                            len(unplaced),
+                        )
                 else:
                     resolved, unplaced = (), ()
                 timeline = build_timeline(

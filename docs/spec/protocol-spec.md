@@ -223,7 +223,9 @@ issue reasonは`field_count`、`unknown_type`、`invalid_slot`、`unknown_slot`�
 
 Visual BeatはSceneごとの原文歌詞、opening/middle/closing位置、歌詞解決有無及び直近4件の採用beatから具体名詞、物理動詞、接触対象、可視結果及び感情変化を一行へ固定する。`LAYOUT`のTEXTはPythonが提示した境界IDだけを時系列順のcomma区切りで持ち、必ず`B0`から始める。LLMは時刻を生成しない。Pythonは候補同士も1500 ms以上離れた相互互換集合を作り、選択IDを絶対msへ機械変換する。1 Sceneあたり最大4 Shot、複数Shot時は各Shot 1500 ms以上とする。Scene全体が1500 ms未満の場合は`B0`だけの一Shotを許す。未知ID、重複、順序違反又は上限違反が残るSceneはLLMを再試行せず`B0`だけへ機械fallbackし、statusへScene番号を残す。ActionはShot終了・長さ・Scene内Shot数と直近6件の採用action、Cameraは確定actionと直近6件の採用cameraをrequest side tableから受ける。これらの履歴は反復回避用で、LLM応答へ再出力しない。Action及びCameraのcreative textはslot対応後に意味修復せずEMDへ置く。
 
-Compilerの`translation-ja-en`は描写文の一対一翻訳だけを返し、欠落、重複、未知行又は破損行があれば修復・retryせず停止する。slotは各有限batch内で1から振り直し、Pythonが元のtranslation unit順へ戻す。入力JSONはPython所有であり、各slotの原文fieldは`japanese_text`、固定instructionはそのfieldを英訳することを明記する。LLMへJSON出力を要求しない。Qwen3-4Bへはuser message先頭で`/no_think`を指定する。Compiler翻訳に限り、閉じた`<think>...</think>`、文字列`<TAB>`又はTABで囲まれた`TAB`ラベル、`slot N`表記、及び一物理行へ連結された既知`TRANSLATION` recordをparser前に決定論的に正規化する。実測形式の先頭に英訳文が複製されていても、数値slot後の英訳文だけを採用する。slot番号、protected token又は英訳本文の意味は修復しない。採用本文に日本語scriptが残るか本文がslot番号そのものなら、英訳として出力せずretryなしで停止する。
+Compilerの`translation-ja-en`は描写文の一対一翻訳だけを返す。slotは各有限batch内で1から振り直し、Pythonが元のtranslation unit順へ戻す。入力JSONはPython所有であり、各slotの原文fieldは`japanese_text`、固定instructionはそのfieldを英訳することを明記する。LLMへJSON出力を要求しない。Qwen3系へはuser message先頭で`/no_think`を指定する。Compiler翻訳に限り、閉じた`<think>...</think>`、文字列`<TAB>`又はTABで囲まれた`TAB`ラベル、`slot N`表記、及び一物理行へ連結された既知`TRANSLATION` recordをparser前に決定論的に正規化する。実測形式の先頭に英訳文が複製されていても、数値slot後の英訳文だけを採用する。
+
+欠落slot又は採用本文に日本語scriptが残るslotは、正常slotを保持したまま、該当原文だけを`slot 1`として一度だけ隔離再翻訳し元位置へ戻す。隔離再翻訳も欠落・行protocol不正・日本語script残存なら停止する。重複、未知行その他の破損行、slot番号、protected token又は英訳本文の意味は推測修復しない。本文がslot番号そのものの場合も日本語script残存と同じ機械条件で一度だけ隔離再翻訳し、再発すれば停止する。
 
 ### 9.3 Compiler翻訳保護token
 

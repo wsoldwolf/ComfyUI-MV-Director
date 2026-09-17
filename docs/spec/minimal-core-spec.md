@@ -103,7 +103,7 @@ RECORD_TYPE<TAB>SLOT<TAB>TEXT
 - header、終了marker、括弧の対応、Markdown fence及び説明文を要求しない。一物理行を一recordとし、本文改行が必要な構造は作らない。
 - parserはCRLFをLFへ正規化し、空行と単独のMarkdown fenceを無視し、各行を`split("\t", 2)`で読む。残りのTABは本文内空白へ正規化する。
 - 未知type、field不足、数値でないslot、対象外slot及び空本文の行は採用せずstatusへ残す。同じtypeとslotが重複した場合は最初の有効recordだけを採用する。前置き説明や壊れた一行のために、他の有効recordを捨てない。
-- 必須slotがそろえば、未知行、重複又は余分な行だけを理由にretryしない。必須slotが欠けた場合だけ、欠落slotを一回局所retryできる。意味、文章品質、英語らしさ又は演出の好みはparserで検査しない。
+- 必須slotがそろえば、未知行、重複又は余分な行だけを理由にretryしない。必須slotが欠けた場合だけ、欠落slotを一回局所retryできる。意味、文章品質又は演出の好みは共通parserで検査しない。`translation-ja-en`だけはtask adapterが採用本文の日本語script残存又はslot番号echoを決定論的に検査し、該当slotを一度だけ隔離再翻訳できる。
 - 明示debug時はraw応答、採用record、拒否行と理由、slot side table及び欠落slotを保存する。raw応答を成功artifact又はEMDへ混入させない。
 
 初期typeは次へ限定する。
@@ -473,11 +473,13 @@ Template EMDはPlannerの標準入力である。Plannerはこの文字列のann
 初期方式を次で固定する。
 
 1. 歌詞本文の物理改行をhard boundaryとし、各行をASCII空白、tab又は全角空白の一個以上のrunでも分割する。空白run自体は区切りであり、segment本文へ残さない。各非空片へ原文順の不変`segment_id`、元行番号及び文字範囲を与える。section見出しは分割対象にしない。
-2. `openai-whisper`を実行時に遅延importし、解決済みローカル`.pt`を`whisper.load_model()`へ渡す。`task="transcribe"`、`temperature=0.0`、`beam_size=5`、`word_timestamps=True`で一回実行し、各atomic lyric segmentが音源上のどこに現れるかを検出する。歌唱の誤認識を抑えるため、歌詞冒頭を物理行単位へ戻した最大12行・160文字のbounded `initial_prompt`を与える。このpromptは認識補助だけであり、歌唱済みの証拠又は時刻として扱わない。package、model又は更新を自動インストール／ダウンロードしない。`openai-whisper`がなくてもextension全体のimportと他nodeの登録は成功させ、本node実行時だけ明示エラーにする。
+2. `openai-whisper`を実行時に遅延importし、解決済みローカル`.pt`を`whisper.load_model()`へ渡す。`task="transcribe"`、`temperature=0.0`、`beam_size=5`、`word_timestamps=True`、`condition_on_previous_text=False`で全音源を一回認識し、各atomic lyric segmentが音源上のどこに現れるかを検出する。長尺音源で冒頭歌詞を反復する幻覚を避けるため、この全体認識へ歌詞`initial_prompt`は与えない。package、model又は更新を自動インストール／ダウンロードしない。`openai-whisper`がなくてもextension全体のimportと他nodeの登録は成功させ、本node実行時だけ明示エラーにする。
    ComfyUI AUDIOは一batch、1 channel以上、1 sample以上を要求する。VADは元sample rateの全channel中最大RMSを使い、Whisper入力だけはfloat32平均monoへdownmixして16kHzへresampleする。原音tensorを書き換えず、VADのsample-domain境界は元sample rateで保持する。
 3. vocal stemを20ms窓のenergy VADで粗く解析する。旧既定値を比較開始点として、threshold `-45 dBFS`、最小有声120ms、最小無音300ms、前後padding 80msを使う。実測前の最適値とは呼ばない。
 4. 各粗区間の開始・終了近傍だけを、同じthreshold方針の包絡線とhysteresisでsample-domain再探索する。確定したsample indexを`round(sample_index * 1000 / sample_rate)`で整数msへ一度だけ変換する。同じmsへ潰れる場合も内部順序を壊さず、必要なら次のmsへ押し出した事実をstatusへ残す。
-5. sectionとatomic segmentを正規化文字列の単調な順序付き整列でWhisper word列へ対応させる。類似度は旧japanese2jsonと同じ`1 - levenshtein(a,b) / max(len(a),len(b))`、primary閾値0.55、前後アンカー限定閾値0.45を使う。候補長、同点時の早い候補優先、反復歌詞の後続最大4行による確認、次行へ0.15以上よく一致する候補の保留、8文字以上の一意歌詞と後続行による長距離再同期、前後アンカー内だけの近傍救済も旧方式から移植する。探索開始は音源先頭から60秒、最初の確定後は直前の確定終了時刻から20秒以内に制限する。各Whisper wordの中点がrefined VAD有声区間外なら候補から除外し、無音後の反復幻覚を歌詞へ対応付けない。Whisperの実在word timestamp以外から開始・終了を作らない。初期版では未解決箇所だけの追加Whisper retryを行わない。
+5. sectionとatomic segmentを正規化文字列の単調な順序付き整列でWhisper word列へ対応させる。類似度は旧japanese2jsonと同じ`1 - levenshtein(a,b) / max(len(a),len(b))`、primary閾値0.55、前後アンカー限定閾値0.45を使う。候補長、同点時の早い候補優先、反復歌詞の後続最大4行による確認、次行へ0.15以上よく一致する候補の保留、8文字以上の一意歌詞と後続行による長距離再同期、前後アンカー内だけの近傍救済も旧方式から移植する。探索開始は音源先頭から60秒、最初の確定後は直前の確定終了時刻から20秒以内に制限する。各Whisper wordの中点がrefined VAD有声区間外なら候補から除外し、無音後の反復幻覚を歌詞へ対応付けない。Whisperの実在word timestamp以外から開始・終了を作らない。
+
+   全体認識後に未解決segmentが残る場合だけ、直前の解決済み歌詞終了と直後の解決済み歌詞開始（末尾runでは実PCM終端）で範囲を限定し、前2秒・後1秒を含む最大12秒、2秒重複の短窓で有限回再認識する。通常passは歌詞を正解として与えず、物理行へ戻した最大12行・160文字のbounded promptを直前文脈としてだけ使用する。窓端で先頭行だけ欠落し後続行が実認識された場合は、最初の実認識時刻の3秒前から追加の非誘導窓を一回だけ実行する。歌詞を含むguided passは、非誘導passの実在word timestampが各候補区間に重なり、かつ直後の歌詞アンカーが同じ順序・区間に再現された場合だけ採用する。leading runのように前アンカーが無い範囲は再探索しない。これらの条件を満たさない歌詞へ推測時刻を作らず、`unplaced_lyrics`のまま停止する。
    空白分割した同一物理行に未解決segmentが残る場合は、同じ行のsegmentを結合した正規化文字列でも再照合する。候補は直前・直後の解決済みsegmentが作るword範囲内かつ最大20秒へ限定し、すでに同じ行で確定したword spanを全て包含しなければ採用しない。両側に確定アンカーがある場合だけ0.45、それ以外は0.55を要求する。採用した物理行区間は各atomic segmentの正規化文字長と実在Whisper word境界により単調分配し、元の`segment_id`、原文片、section及び文字範囲を維持する。この物理行救済は長い無音をまたぐ時刻、隣接行のword又は音声に存在しない行を補完しない。
 6. 解決できたsegmentは`segment_id`、原文片、section、元行・文字範囲、開始・終了絶対msを保持する。未解決segmentは削除せず`unplaced_lyrics`へ残し、node実行を失敗として停止する。推測時刻を確定値として作らない。
 7. 音源総尺はsample数とsample rateから整数msへ一度だけ変換する。sub-msがある場合は末尾sampleを失わない方向へ丸める。有声境界を整数秒へ量子化せず、refined VADが返した整数msのまま接する有声範囲を結合し、補集合を無音範囲とする。
@@ -819,7 +821,7 @@ CompilerはRef2VA専用のEMD parser、限定翻訳orchestrator、H3 prompt rend
 
 1. EMDの`# サブジェクト`、必須Scene番号annotation、Scene、Shot、`` `H3長` ``及び予約directiveを構文解析する。
 2. Subject/Picture関連、概念ID、`「...」`、明示`<d>...</d>`、annotation、音響directive、Shotの``リップシンク 歌詞``を翻訳対象から分離する。
-3. `# サブジェクト`の説明、任意の`# 共通プロンプト`の六区分本文、`# 保持分析`の説明及びShot本文だけを、区分を保持したtranslation unitとして英訳する。保持mode ``fully_preserved`` / ``partially_preserved``は翻訳unitへ入れず固定tokenのまま保つ。翻訳応答の一部slotだけが行protocol不正又は欠落になった場合、正常slotは保持し、欠落した原文だけを一件の`slot 1`として一度だけ隔離再試行して元位置へ戻す。壊れたslot番号又は本文を推測修復せず、隔離再試行も不正なら停止する。
+3. `# サブジェクト`の説明、任意の`# 共通プロンプト`の六区分本文、`# 保持分析`の説明及びShot本文だけを、区分を保持したtranslation unitとして英訳する。保持mode ``fully_preserved`` / ``partially_preserved``は翻訳unitへ入れず固定tokenのまま保つ。翻訳応答の一部slotが欠落した場合、又は採用本文に日本語scriptが残るかslot番号そのものの場合、正常slotは保持し、該当原文だけを一件の`slot 1`として一度だけ隔離再試行して元位置へ戻す。壊れたslot番号、重複、未知行又は本文の意味を推測修復せず、隔離再試行も行protocol不正、欠落又は非英語なら停止する。
 4. EMD内部IDを対応する`<Subject N>`へ固定変換し、実際に記述された`<Picture N>`と`<Audio N>`だけの必要slot一覧を作る。自由描写中の`<Video N>`は翻訳保護してas-isで渡すが、V1では必要slot一覧を生成しない。
 5. 各Shotの``リップシンク 歌詞``を、そのShot開始位置、対象token、原文`<d>[Japanese]...</d>`を持つ固定prompt要素へ写す。
 6. 通常の`「...」`の内容を変えず`<d>[Japanese]...</d>`へ包む。
@@ -847,7 +849,7 @@ CompilerはRef2VA専用のEMD parser、限定翻訳orchestrator、H3 prompt rend
 
 翻訳へ渡す前に保護spanを一時tokenへ置換し、翻訳後に完全一致で復元する。保護対象はH3 binding、概念ID、`「...」`、作者が明示した`<d>...</d>`、予約annotation、音響directive、Shotの``リップシンク 歌詞``である。日本語括弧の台詞と明示された歌詞方式リップシンクは英訳せず`<d>[Japanese]...</d>`にし、作者が既に書いた`<d>...</d>`はlanguage labelの有無を含めて一文字も変更しない。概念IDは自然名を生成せず、束縛又は固定英語tokenへ変換する。日本語、CJK又はHangul文字を含まない既存英語行は翻訳batchへ入れず完全一致で復元する。
 
-`translation_mode`は`ja_to_en`を既定とする。行単位の決定論的な文字種検査だけを行い、日本語、CJK又はHangul文字を含む行をPromptTranslatorへ渡し、それらを含まない行は既存英語としてpass-throughする。言語の意味推測やLLMによる分類は行わない。annotationはPlanへ出さず原文artifactに保持する。Compiler自身には翻訳品質を理由とするretry経路を置かない。
+`translation_mode`は`ja_to_en`を既定とする。行単位の決定論的な文字種検査だけを行い、日本語、CJK又はHangul文字を含む行をPromptTranslatorへ渡し、それらを含まない行は既存英語としてpass-throughする。言語の意味推測やLLMによる分類は行わない。annotationはPlanへ出さず原文artifactに保持する。翻訳品質、文体又は意味を理由とするretryは行わず、欠落又は日本語script残存という機械条件に限り一度だけ隔離再翻訳する。
 
 ### 9.3 Context Loop出力
 

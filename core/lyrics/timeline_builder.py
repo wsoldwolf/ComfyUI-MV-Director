@@ -17,7 +17,7 @@ from .errors import LyricSegmentationError
 from .plain import SourceLyricSegment
 
 
-ALGORITHM_VERSION = "lyric-timeline-v5"
+ALGORITHM_VERSION = "lyric-timeline-v6"
 
 
 def _split_long_lyrics(

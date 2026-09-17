@@ -68,6 +68,7 @@ class WhisperLifecycle:
         language: str,
         device: str,
         initial_prompt: str = "",
+        condition_on_previous_text: bool = False,
     ) -> dict[str, Any]:
         with self._lock:
             if self._model is None:
@@ -83,7 +84,7 @@ class WhisperLifecycle:
                     fp16=device == "cuda",
                     verbose=None,
                     initial_prompt=initial_prompt or None,
-                    condition_on_previous_text=True,
+                    condition_on_previous_text=condition_on_previous_text,
                 )
             except Exception as exc:
                 raise LyricSegmentationError("OpenAI Whisper transcription failed") from exc

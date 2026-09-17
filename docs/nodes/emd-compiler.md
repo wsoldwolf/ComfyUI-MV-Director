@@ -35,6 +35,6 @@
 - 英語だけの行は完全pass-throughします。
 - `already_english`ではmodelの選択が古くてもGGUFをresolve/loadしません。
 - 必須Ref2VA六セクションは固定templateで組み立てます。
-- EMD文法、翻訳slotの欠落・重複・未知行はretryで推測せず停止します。
+- 翻訳slotの欠落又は日本語echoだけは、該当unitを一度だけ隔離再翻訳します。再失敗、重複、未知行、protected token破損は推測修復せず停止します。
 
 JSONは機械入力ですが、レビューしやすいようpretty-printが仕様です。T2VA/I2VAはこのCompilerの対象外です。

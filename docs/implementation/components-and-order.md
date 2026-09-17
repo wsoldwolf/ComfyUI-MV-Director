@@ -33,7 +33,7 @@
 | Vision `cache.py` | 抽出 | 成功観察cache | pixel、model、projector、推論条件、prompt版を含むkeyと原子的保存は有用。保存先schemaと型を新規化する |
 | Vocal Whisper discovery/runtime | 抽出 | ローカルword timestamps | 遅延import、ローカルcheckpoint限定、自動download禁止を維持する |
 | Vocal VAD | 部分抽出 | voiced/silent候補 | 20ms窓と区間整形は粗探索へ再利用する。境界近傍のsample-domain refinementを新設し、決定sample index、整数ms、threshold条件をartifactへ残す |
-| Vocal lyrics parser/alignment | 抽出 | sectionと歌詞絶対時刻 | 原文・section・時刻を保持する部分を使う。未解決箇所のtargeted Whisper retryは初期経路へ入れず、`unplaced_lyrics`として返す |
+| Vocal lyrics parser/alignment | 抽出＋再利用 | sectionと歌詞絶対時刻 | 原文・section・時刻を保持する。全体認識は前文脈継承なしで行い、未解決runだけ旧実装由来の前後アンカー付きtargeted Whisper retryへ通す。音響証拠を満たさない箇所は`unplaced_lyrics`として停止する |
 | Vocal `build_scenes()` | 部分抽出 | Scene時間枠 | 連続被覆と最大長以下への均等分割だけを使う。旧整数秒量子化は破棄し、元音源msの要求範囲をContext Loop互換raw `17k+5`へ上流で割り当てる |
 | Vocal `normalize_chainable_scenes()` | 抽出して再検証 | 短すぎる中間Sceneの調整 | H3 continuation前提に有用だが、旧定数とerror文が一致しない。新仕様の2000ms基準をテストで固定する |
 | Vocal prompt Markdown renderer | 移植しない | なし | `//` metadata、H3 tag、Shot内lip-syncという旧形式を生成する。新annotation/audio構文と競合する |

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+import logging
 import re
 from typing import Any
 
@@ -17,10 +18,11 @@ from ..protocols import parse_llm_records
 from .errors import CompilerError
 
 
-TRANSLATION_PROMPT_VERSION = "mvd-prompt-translation-ja-en-v4"
+TRANSLATION_PROMPT_VERSION = "mvd-prompt-translation-ja-en-v5"
 TRANSLATION_RECORD_TYPE = "TRANSLATION"
 TRANSLATION_MAX_BATCH_UNITS = 7
 _JAPANESE_SCRIPT_RE = re.compile(r"[\u3040-\u30ff\u3400-\u9fff]")
+_LOGGER = logging.getLogger("mv_director.compiler")
 
 
 def _normalize_small_model_response(response: str) -> str:
@@ -191,6 +193,17 @@ class LlamaPromptTranslator:
         return by_slot
 
     @staticmethod
+    def _non_english_slots(parsed: Any) -> tuple[int, ...]:
+        return tuple(
+            sorted(
+                record.slot
+                for record in parsed.records
+                if _JAPANESE_SCRIPT_RE.search(record.text)
+                or record.text.strip() == str(record.slot)
+            )
+        )
+
+    @staticmethod
     def _protocol_error(parsed: Any) -> CompilerError:
         reasons = ",".join(issue.reason for issue in parsed.issues) or "none"
         missing = ",".join(str(slot) for _, slot in parsed.missing) or "none"
@@ -199,7 +212,12 @@ class LlamaPromptTranslator:
             f"issues={reasons}; missing_slots={missing}"
         )
 
-    def _translate_batch(self, units: Sequence[str]) -> tuple[str, ...]:
+    def _translate_batch(
+        self,
+        units: Sequence[str],
+        *,
+        displayed_slots: Sequence[int],
+    ) -> tuple[str, ...]:
         response = self._complete_units(units)
         slots = frozenset(range(1, len(units) + 1))
         parsed = parse_llm_records(
@@ -207,15 +225,26 @@ class LlamaPromptTranslator:
             allowed_slots={TRANSLATION_RECORD_TYPE: slots},
             required=frozenset((TRANSLATION_RECORD_TYPE, slot) for slot in slots),
         )
-        by_slot = self._english_text_by_slot(
-            parsed,
-            displayed_slots=tuple(range(1, len(units) + 1)),
-        )
         if parsed.issues and not parsed.missing:
             raise self._protocol_error(parsed)
 
-        for _, missing_slot in parsed.missing:
-            retry_response = self._complete_units((units[missing_slot - 1],))
+        by_slot = {record.slot: record.text for record in parsed.records}
+        missing_slots = {slot for _, slot in parsed.missing}
+        non_english_slots = set(self._non_english_slots(parsed))
+        retry_slots = sorted(missing_slots | non_english_slots)
+        if non_english_slots:
+            labels = ",".join(
+                str(displayed_slots[slot - 1])
+                for slot in sorted(non_english_slots)
+            )
+            _LOGGER.info(
+                "[MV Director - EMD Compiler (Ref2VA)] retrying non-English "
+                "translation slots in isolation: %s",
+                labels,
+            )
+
+        for retry_slot in retry_slots:
+            retry_response = self._complete_units((units[retry_slot - 1],))
             retry = parse_llm_records(
                 _normalize_small_model_response(retry_response),
                 allowed_slots={TRANSLATION_RECORD_TYPE: frozenset({1})},
@@ -224,14 +253,27 @@ class LlamaPromptTranslator:
             if retry.issues or retry.missing:
                 raise CompilerError(
                     "translation response does not match the line protocol after "
-                    f"isolated retry for slot {missing_slot}: "
+                    "isolated retry for slot "
+                    f"{displayed_slots[retry_slot - 1]}: "
                     f"{self._protocol_error(retry)}"
                 )
-            retry_by_slot = self._english_text_by_slot(
-                retry,
-                displayed_slots=(missing_slot,),
+            try:
+                retry_by_slot = self._english_text_by_slot(
+                    retry,
+                    displayed_slots=(displayed_slots[retry_slot - 1],),
+                )
+            except CompilerError as exc:
+                raise CompilerError(
+                    "translation response is not English after isolated retry "
+                    f"for slot {displayed_slots[retry_slot - 1]}"
+                ) from exc
+            by_slot[retry_slot] = retry_by_slot[1]
+
+        if not retry_slots:
+            self._english_text_by_slot(
+                parsed,
+                displayed_slots=displayed_slots,
             )
-            by_slot[missing_slot] = retry_by_slot[1]
 
         return tuple(by_slot[slot] for slot in range(1, len(units) + 1))
 
@@ -244,6 +286,13 @@ class LlamaPromptTranslator:
         position = 0
         while position < len(units):
             batch_size = self._largest_batch(units[position:])
-            result.extend(self._translate_batch(units[position : position + batch_size]))
+            result.extend(
+                self._translate_batch(
+                    units[position : position + batch_size],
+                    displayed_slots=tuple(
+                        range(position + 1, position + batch_size + 1)
+                    ),
+                )
+            )
             position += batch_size
         return tuple(result)

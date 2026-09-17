@@ -30,6 +30,7 @@ class FakeLifecycle:
         invalid_response: bool = False,
         small_model_format: bool = False,
         japanese_response: bool = False,
+        japanese_response_once: bool = False,
         invalid_last_slot_once: bool = False,
         invalid_last_slot_always: bool = False,
     ) -> None:
@@ -37,6 +38,7 @@ class FakeLifecycle:
         self.invalid_response = invalid_response
         self.small_model_format = small_model_format
         self.japanese_response = japanese_response
+        self.japanese_response_once = japanese_response_once
         self.invalid_last_slot_once = invalid_last_slot_once
         self.invalid_last_slot_always = invalid_last_slot_always
         self.invalid_last_slot_used = False
@@ -63,7 +65,9 @@ class FakeLifecycle:
                 "TRANSLATION<TAB>SLOT<TAB>ENGLISH_TEXT\n"
                 + "\n".join(rows)
             )
-        if self.japanese_response:
+        if self.japanese_response or (
+            self.japanese_response_once and len(self.chat_calls) == 1
+        ):
             return "\n".join(
                 f"TRANSLATION\t{item['slot']}\t{item['japanese_text']}"
                 for item in payload["slots"]
@@ -102,7 +106,7 @@ class FakeLifecycle:
 
 
 class LlamaPromptTranslatorTests(unittest.TestCase):
-    def test_japanese_echo_is_rejected_without_retry(self) -> None:
+    def test_japanese_echo_is_rejected_after_one_isolated_retry(self) -> None:
         lifecycle = FakeLifecycle(japanese_response=True)
         translator = LlamaPromptTranslator(
             lifecycle,
@@ -111,7 +115,18 @@ class LlamaPromptTranslatorTests(unittest.TestCase):
         )
         with self.assertRaisesRegex(CompilerError, "not English"):
             translator.translate(("少女",))
-        self.assertEqual(len(lifecycle.chat_calls), 1)
+        self.assertEqual(len(lifecycle.chat_calls), 2)
+
+    def test_japanese_echo_is_recovered_by_one_isolated_retry(self) -> None:
+        lifecycle = FakeLifecycle(japanese_response_once=True)
+        translator = LlamaPromptTranslator(
+            lifecycle,
+            system_prompt="translate",
+            runtime_config=LlamaRuntimeConfig(max_tokens=32, n_ctx=1100),
+        )
+        translated = translator.translate(("一", "二"))
+        self.assertEqual(translated, ("English 1", "English 1"))
+        self.assertEqual([len(call["slots"]) for call in lifecycle.chat_calls], [2, 1, 1])
 
     def test_qwen4b_thinking_header_and_literal_tabs_are_normalized(self) -> None:
         lifecycle = FakeLifecycle(small_model_format=True)

@@ -19,6 +19,7 @@ from core.lyrics import (
     extract_whisper_words,
     parse_plain_lyrics,
     refine_voiced_ranges,
+    recover_unplaced_lyrics,
     render_srt,
     render_template_emd,
     match_similarity,
@@ -350,6 +351,152 @@ class AlignmentTests(unittest.TestCase):
             extract_whisper_words(
                 {"segments": [{"text": "歌詞"}]}, audio_duration_ms=1000
             )
+
+
+class TargetedRecoveryTests(unittest.TestCase):
+    class _Transcriber:
+        def __init__(self, result: dict[str, object]) -> None:
+            self.result = result
+            self.calls: list[dict[str, object]] = []
+
+        def transcribe(self, audio, **kwargs):
+            self.calls.append(kwargs)
+            return self.result
+
+    class _SequenceTranscriber:
+        def __init__(self, results: list[dict[str, object]]) -> None:
+            self.results = results
+            self.calls: list[dict[str, object]] = []
+
+        def transcribe(self, audio, **kwargs):
+            self.calls.append(kwargs)
+            return self.results[min(len(self.calls) - 1, len(self.results) - 1)]
+
+    @staticmethod
+    def _result(*words: tuple[str, float, float]) -> dict[str, object]:
+        return {
+            "segments": [
+                {
+                    "text": "".join(word for word, _, _ in words),
+                    "words": [
+                        {"word": word, "start": start, "end": end}
+                        for word, start, end in words
+                    ],
+                }
+            ]
+        }
+
+    def test_bounded_retry_recovers_real_timestamped_words(self) -> None:
+        lyrics = parse_plain_lyrics(
+            "[VERSE]\n前\n白銀の髪 黒い着物\n次\n"
+        )
+        resolved = (
+            AlignedLyric(lyrics[0], 1000, 1500),
+            AlignedLyric(lyrics[3], 7000, 7500),
+        )
+        backend = self._Transcriber(
+            self._result(
+                ("白銀の髪", 2.5, 3.2),
+                ("黒い着物", 3.3, 4.0),
+                ("次", 7.0, 7.5),
+            )
+        )
+        recovered, unplaced, stats = recover_unplaced_lyrics(
+            lyrics,
+            resolved,
+            [0.0] * (10 * 16000),
+            backend,
+            language="ja",
+            device="cpu",
+            voiced_intervals=(),
+            sample_rate=16000,
+            audio_duration_ms=10000,
+        )
+        self.assertFalse(unplaced)
+        self.assertEqual(stats.attempted_runs, 1)
+        self.assertEqual(stats.recovered_segments, 2)
+        self.assertEqual(
+            [(item.source.text, item.start_ms, item.end_ms) for item in recovered],
+            [
+                ("前", 1000, 1500),
+                ("白銀の髪", 2500, 3200),
+                ("黒い着物", 3300, 4000),
+                ("次", 7000, 7500),
+            ],
+        )
+        self.assertTrue(
+            all(
+                call["condition_on_previous_text"] is False
+                for call in backend.calls
+            )
+        )
+
+    def test_guided_retry_cannot_invent_without_unguided_evidence(self) -> None:
+        lyrics = parse_plain_lyrics("[VERSE]\n前\n存在しない歌詞\n次\n")
+        resolved = (
+            AlignedLyric(lyrics[0], 1000, 1500),
+            AlignedLyric(lyrics[2], 7000, 7500),
+        )
+        backend = self._Transcriber(
+            self._result(("無関係", 3.0, 3.8), ("次", 7.0, 7.5))
+        )
+        recovered, unplaced, stats = recover_unplaced_lyrics(
+            lyrics,
+            resolved,
+            [0.0] * (10 * 16000),
+            backend,
+            language="ja",
+            device="cpu",
+            voiced_intervals=(),
+            sample_rate=16000,
+            audio_duration_ms=10000,
+        )
+        self.assertEqual(
+            [item.source.text for item in recovered], ["前", "次"]
+        )
+        self.assertEqual([item.text for item in unplaced], ["存在しない歌詞"])
+        self.assertEqual(stats.recovered_segments, 0)
+        self.assertEqual(len(backend.calls), 2)
+
+    def test_adaptive_unguided_window_recovers_prefix_missed_at_window_edge(self) -> None:
+        lyrics = parse_plain_lyrics("[VERSE]\n前\n先頭歌詞 後半歌詞\n次\n")
+        resolved = (
+            AlignedLyric(lyrics[0], 1000, 1500),
+            AlignedLyric(lyrics[3], 7000, 7500),
+        )
+        backend = self._SequenceTranscriber(
+            [
+                self._result(("後半歌詞", 4.0, 4.5), ("次", 7.0, 7.5)),
+                self._result(
+                    ("先頭歌詞", 1.5, 2.0),
+                    ("後半歌詞", 3.0, 3.5),
+                    ("次", 6.0, 6.5),
+                ),
+            ]
+        )
+        recovered, unplaced, stats = recover_unplaced_lyrics(
+            lyrics,
+            resolved,
+            [0.0] * (10 * 16000),
+            backend,
+            language="ja",
+            device="cpu",
+            voiced_intervals=(),
+            sample_rate=16000,
+            audio_duration_ms=10000,
+        )
+        self.assertFalse(unplaced)
+        self.assertEqual(stats.recovered_segments, 2)
+        self.assertEqual(len(backend.calls), 2)
+        self.assertEqual(
+            [(item.source.text, item.start_ms, item.end_ms) for item in recovered],
+            [
+                ("前", 1000, 1500),
+                ("先頭歌詞", 2500, 3000),
+                ("後半歌詞", 4000, 4500),
+                ("次", 7000, 7500),
+            ],
+        )
 
 
 class VadAndTimelineTests(unittest.TestCase):

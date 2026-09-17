@@ -2,6 +2,8 @@
 
 UTF-8 plain lyricsとvocal stemをOpenAI Whisper、VAD、文字列照合で整列し、同じcanonical segment列からTemplate EMD、SRT、typed timelineを作ります。PlannerやH3へ接続せず、SRT生成だけにも使えます。
 
+長尺音源は前文脈を引き継がない全体認識を行い、未解決部分だけを前後の確定歌詞で囲んだ12秒以下の短窓として再認識します。短窓の歌詞誘導結果は、誘導なし認識の実在word timestampと後続アンカーで確認できた場合だけ採用します。したがって、入力音声に存在しない歌詞へ推測時刻を付けることはありません。
+
 ## 入力
 
 | 入力 | 既定 | 説明 |
@@ -40,3 +42,5 @@ LRC、SRT、VTT、timestamp、コメント、本文行の不必要な前後空�
 | `status` | resolved、unplaced、音源尺、Plan尺、Scene数、cache |
 
 全歌詞が配置できない場合は赤いERRORを出し、Template EMD、SRT、timelineをExecutionBlockerで停止します。これは音源が歌詞後半を歌っていない場合を黙って成功にしないためです。
+
+INFOログの`targeted retries completed`には、再探索した未解決run数、回収segment数、残数が表示されます。`remaining=0`なら全歌詞が実timestampへ配置されています。

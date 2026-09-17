@@ -61,7 +61,7 @@ class WhisperLifecycleTests(unittest.TestCase):
                     "fp16": False,
                     "verbose": None,
                     "initial_prompt": "冒頭歌詞",
-                    "condition_on_previous_text": True,
+                    "condition_on_previous_text": False,
                 },
             )
 

@@ -10,6 +10,7 @@ from .alignment import (
 )
 from .errors import LyricSegmentationError
 from .plain import SourceLyricSegment, normalize_match_text, parse_plain_lyrics
+from .recovery import TargetedRetryStats, recover_unplaced_lyrics
 from .render import format_emd_time, format_srt_time, render_srt, render_template_emd
 from .timeline_builder import ALGORITHM_VERSION, build_timeline
 from .vad import (
@@ -27,6 +28,7 @@ __all__ = [
     "ALGORITHM_VERSION",
     "LyricSegmentationError",
     "SourceLyricSegment",
+    "TargetedRetryStats",
     "VoicedInterval",
     "WhisperWord",
     "WhisperLifecycle",
@@ -43,6 +45,7 @@ __all__ = [
     "parse_plain_lyrics",
     "prepare_whisper_audio",
     "refine_voiced_ranges",
+    "recover_unplaced_lyrics",
     "render_srt",
     "render_template_emd",
     "validate_comfy_audio",
