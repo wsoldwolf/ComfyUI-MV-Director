@@ -59,6 +59,7 @@ class Ref2VACompilerTests(unittest.TestCase):
         result = compile_ref2va(source, EchoTranslator())
 
         rendered = result.plan_json()
+        self.assertEqual(result.plan["defaults"]["steps"], 8)
         self.assertTrue(rendered.endswith("\n"))
         self.assertTrue(rendered.startswith('{\n  "defaults": {\n'))
         self.assertIn('\n  "shots": [\n    {\n', rendered)

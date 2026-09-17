@@ -16,6 +16,8 @@
 | 5 | `05_plan_compiler_lyrics.json` | 歌詞directive用のEMDとPlanを生成 |
 | 6 | `06_video_lyrics.json` | 追加lip-sync経路なしで歌詞promptから動画生成 |
 
+三つの動画生成WFは共通して`UNET → LIGHTX2V TurboLoRA → Model Attention Backend → Sigma Shift`のMODEL経路を使い、既存のSigma ShiftをVideo/Audio Shiftとして一段だけ適用する。既定denoising stepsは8とする。
+
 各方式はPlan/Compilerと動画生成を一対一に分離している。前段をQueueするとComfyUI `output/mv_director`へPlan JSON本文を持つ`.txt`が保存される。対応する動画workflowの`Compiled Plan JSON (.txt handoff)`へ、そのファイルを選択又はD&Dする。
 
 ## 共通入力

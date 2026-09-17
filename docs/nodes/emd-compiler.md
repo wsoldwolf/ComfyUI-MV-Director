@@ -10,7 +10,7 @@
 | `translation_mode` | `ja_to_en` | `ja_to_en` / `already_english` |
 | `model_name` | 自動列挙 | 日本語英訳用Text GGUF。8B級推奨 |
 | `chat_format` | `auto` | `auto` / `qwen` / `gemma` |
-| `steps` | `20` | Plan JSONの既定steps |
+| `steps` | `8` | TurboLoRA動画生成用Plan JSONの既定denoising steps |
 | `max_tokens` | `4096` | 英訳protocolの応答上限 |
 | `temperature` | `0.0` | 英訳は決定的な低温度を使う |
 | `n_ctx` | `32768` | 長いEMD向け既定context |

@@ -1,8 +1,8 @@
 {
   "id": "f97af838-5222-5864-8ec8-15d657333fdb",
   "revision": 0,
-  "last_node_id": 40,
-  "last_link_id": 66,
+  "last_node_id": 44,
+  "last_link_id": 68,
   "nodes": [
     {
       "id": 1,
@@ -24,7 +24,7 @@
           "name": "MODEL",
           "type": "MODEL",
           "links": [
-            43
+            63
           ]
         }
       ],
@@ -159,7 +159,7 @@
           "links": [
             8,
             32,
-            66
+            68
           ]
         }
       ],
@@ -674,7 +674,7 @@
         {
           "name": "audio_vae",
           "type": "VAE",
-          "link": 66
+          "link": 68
         },
         {
           "name": "model",
@@ -689,7 +689,7 @@
         {
           "name": "lip_sync_voice",
           "type": "AUDIO",
-          "link": 65
+          "link": 67
         }
       ],
       "outputs": [
@@ -856,7 +856,7 @@
       },
       "widgets_values": [
         "simple",
-        20,
+        8,
         1
       ]
     },
@@ -1229,7 +1229,7 @@
         {
           "name": "model",
           "type": "MODEL",
-          "link": 43
+          "link": 64
         }
       ],
       "outputs": [
@@ -1393,7 +1393,7 @@
         "Node name for S&R": "MiniMaxH3ChainPlanModern"
       },
       "widgets_values": [
-        "{\n  \"prompt_prefix\": [\n    \"Render every scene as photorealistic live-action cinema.\"\n  ],\n  \"defaults\": {\n    \"steps\": 20\n  },\n  \"shots\": [\n    {\n      \"id\": \"scene_0001\",\n      \"length\": 243,\n      \"prompt\": [\n        \"subject_definitions:\",\n        \"<Picture 1> defines <Subject 1>, the performer in the reference image.\",\n        \"\",\n        \"summary:\",\n        \"[reference generation] A moonlit performance at a shrine approach.\",\n        \"\",\n        \"retention_analysis:\",\n        \"<Subject 1>: fully_preserved - preserve identity, clothing, and proportions.\",\n        \"<Picture 1>: fully_preserved - preserve the visible performer design.\",\n        \"\",\n        \"detailed_description:\",\n        \"[Shot 1] <Subject 1> walks toward the torii gate and sings.\",\n        \"<Subject 1> performs visible lip movements synchronized to the locked source vocal.\",\n        \"\",\n        \"overall_soundscape:\",\n        \"Preserve the selected music-video soundtrack policy.\",\n        \"\",\n        \"non_diegetic_music:\",\n        \"No additional generated music is requested.\"\n      ],\n      \"context_length\": 0,\n      \"audio_context_length\": 22,\n      \"source_reference\": \"off\",\n      \"generated_continuity\": \"off\",\n      \"source_audio_target\": \"locked\"\n    }\n  ]\n}",
+        "{\n  \"prompt_prefix\": [\n    \"Render every scene as photorealistic live-action cinema.\"\n  ],\n  \"defaults\": {\n    \"steps\": 8\n  },\n  \"shots\": [\n    {\n      \"id\": \"scene_0001\",\n      \"length\": 243,\n      \"prompt\": [\n        \"subject_definitions:\",\n        \"<Picture 1> defines <Subject 1>, the performer in the reference image.\",\n        \"\",\n        \"summary:\",\n        \"[reference generation] A moonlit performance at a shrine approach.\",\n        \"\",\n        \"retention_analysis:\",\n        \"<Subject 1>: fully_preserved - preserve identity, clothing, and proportions.\",\n        \"<Picture 1>: fully_preserved - preserve the visible performer design.\",\n        \"\",\n        \"detailed_description:\",\n        \"[Shot 1] <Subject 1> walks toward the torii gate and sings.\",\n        \"<Subject 1> performs visible lip movements synchronized to the locked source vocal.\",\n        \"\",\n        \"overall_soundscape:\",\n        \"Preserve the selected music-video soundtrack policy.\",\n        \"\",\n        \"non_diegetic_music:\",\n        \"No additional generated music is requested.\"\n      ],\n      \"context_length\": 0,\n      \"audio_context_length\": 22,\n      \"source_reference\": \"off\",\n      \"generated_continuity\": \"off\",\n      \"source_audio_target\": \"locked\"\n    }\n  ]\n}",
         "mv_director_context_loop",
         "mv-director-context_loop-context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9",
         896,
@@ -1401,7 +1401,7 @@
         "video",
         "disabled",
         10.0,
-        20,
+        8,
         0,
         20,
         0
@@ -1668,7 +1668,7 @@
         {
           "name": "lip_sync_options",
           "type": "H3_LIP_SYNC_OPTIONS",
-          "link": 64
+          "link": 66
         }
       ],
       "outputs": [
@@ -1878,7 +1878,7 @@
           "type": "AUDIO",
           "links": [
             59,
-            63
+            65
           ]
         },
         {
@@ -1984,9 +1984,64 @@
         "Node name for S&R": "MVDirectorLoadTextFile"
       },
       "widgets_values": [
-        "ewogICJwcm9tcHRfcHJlZml4IjogWwogICAgIlJlbmRlciBldmVyeSBzY2VuZSBhcyBwaG90b3JlYWxpc3RpYyBsaXZlLWFjdGlvbiBjaW5lbWEuIgogIF0sCiAgImRlZmF1bHRzIjogewogICAgInN0ZXBzIjogMjAKICB9LAogICJzaG90cyI6IFsKICAgIHsKICAgICAgImlkIjogInNjZW5lXzAwMDEiLAogICAgICAibGVuZ3RoIjogMjQzLAogICAgICAicHJvbXB0IjogWwogICAgICAgICJzdWJqZWN0X2RlZmluaXRpb25zOiIsCiAgICAgICAgIjxQaWN0dXJlIDE+IGRlZmluZXMgPFN1YmplY3QgMT4sIHRoZSBwZXJmb3JtZXIgaW4gdGhlIHJlZmVyZW5jZSBpbWFnZS4iLAogICAgICAgICIiLAogICAgICAgICJzdW1tYXJ5OiIsCiAgICAgICAgIltyZWZlcmVuY2UgZ2VuZXJhdGlvbl0gQSBtb29ubGl0IHBlcmZvcm1hbmNlIGF0IGEgc2hyaW5lIGFwcHJvYWNoLiIsCiAgICAgICAgIiIsCiAgICAgICAgInJldGVudGlvbl9hbmFseXNpczoiLAogICAgICAgICI8U3ViamVjdCAxPjogZnVsbHlfcHJlc2VydmVkIC0gcHJlc2VydmUgaWRlbnRpdHksIGNsb3RoaW5nLCBhbmQgcHJvcG9ydGlvbnMuIiwKICAgICAgICAiPFBpY3R1cmUgMT46IGZ1bGx5X3ByZXNlcnZlZCAtIHByZXNlcnZlIHRoZSB2aXNpYmxlIHBlcmZvcm1lciBkZXNpZ24uIiwKICAgICAgICAiIiwKICAgICAgICAiZGV0YWlsZWRfZGVzY3JpcHRpb246IiwKICAgICAgICAiW1Nob3QgMV0gPFN1YmplY3QgMT4gd2Fsa3MgdG93YXJkIHRoZSB0b3JpaSBnYXRlIGFuZCBzaW5ncy4iLAogICAgICAgICI8U3ViamVjdCAxPiBwZXJmb3JtcyB2aXNpYmxlIGxpcCBtb3ZlbWVudHMgc3luY2hyb25pemVkIHRvIHRoZSBsb2NrZWQgc291cmNlIHZvY2FsLiIsCiAgICAgICAgIiIsCiAgICAgICAgIm92ZXJhbGxfc291bmRzY2FwZToiLAogICAgICAgICJQcmVzZXJ2ZSB0aGUgc2VsZWN0ZWQgbXVzaWMtdmlkZW8gc291bmR0cmFjayBwb2xpY3kuIiwKICAgICAgICAiIiwKICAgICAgICAibm9uX2RpZWdldGljX211c2ljOiIsCiAgICAgICAgIk5vIGFkZGl0aW9uYWwgZ2VuZXJhdGVkIG11c2ljIGlzIHJlcXVlc3RlZC4iCiAgICAgIF0sCiAgICAgICJjb250ZXh0X2xlbmd0aCI6IDAsCiAgICAgICJhdWRpb19jb250ZXh0X2xlbmd0aCI6IDIyLAogICAgICAic291cmNlX3JlZmVyZW5jZSI6ICJvZmYiLAogICAgICAiZ2VuZXJhdGVkX2NvbnRpbnVpdHkiOiAib2ZmIiwKICAgICAgInNvdXJjZV9hdWRpb190YXJnZXQiOiAibG9ja2VkIgogICAgfQogIF0KfQ==",
+        "ewogICJwcm9tcHRfcHJlZml4IjogWwogICAgIlJlbmRlciBldmVyeSBzY2VuZSBhcyBwaG90b3JlYWxpc3RpYyBsaXZlLWFjdGlvbiBjaW5lbWEuIgogIF0sCiAgImRlZmF1bHRzIjogewogICAgInN0ZXBzIjogOAogIH0sCiAgInNob3RzIjogWwogICAgewogICAgICAiaWQiOiAic2NlbmVfMDAwMSIsCiAgICAgICJsZW5ndGgiOiAyNDMsCiAgICAgICJwcm9tcHQiOiBbCiAgICAgICAgInN1YmplY3RfZGVmaW5pdGlvbnM6IiwKICAgICAgICAiPFBpY3R1cmUgMT4gZGVmaW5lcyA8U3ViamVjdCAxPiwgdGhlIHBlcmZvcm1lciBpbiB0aGUgcmVmZXJlbmNlIGltYWdlLiIsCiAgICAgICAgIiIsCiAgICAgICAgInN1bW1hcnk6IiwKICAgICAgICAiW3JlZmVyZW5jZSBnZW5lcmF0aW9uXSBBIG1vb25saXQgcGVyZm9ybWFuY2UgYXQgYSBzaHJpbmUgYXBwcm9hY2guIiwKICAgICAgICAiIiwKICAgICAgICAicmV0ZW50aW9uX2FuYWx5c2lzOiIsCiAgICAgICAgIjxTdWJqZWN0IDE+OiBmdWxseV9wcmVzZXJ2ZWQgLSBwcmVzZXJ2ZSBpZGVudGl0eSwgY2xvdGhpbmcsIGFuZCBwcm9wb3J0aW9ucy4iLAogICAgICAgICI8UGljdHVyZSAxPjogZnVsbHlfcHJlc2VydmVkIC0gcHJlc2VydmUgdGhlIHZpc2libGUgcGVyZm9ybWVyIGRlc2lnbi4iLAogICAgICAgICIiLAogICAgICAgICJkZXRhaWxlZF9kZXNjcmlwdGlvbjoiLAogICAgICAgICJbU2hvdCAxXSA8U3ViamVjdCAxPiB3YWxrcyB0b3dhcmQgdGhlIHRvcmlpIGdhdGUgYW5kIHNpbmdzLiIsCiAgICAgICAgIjxTdWJqZWN0IDE+IHBlcmZvcm1zIHZpc2libGUgbGlwIG1vdmVtZW50cyBzeW5jaHJvbml6ZWQgdG8gdGhlIGxvY2tlZCBzb3VyY2Ugdm9jYWwuIiwKICAgICAgICAiIiwKICAgICAgICAib3ZlcmFsbF9zb3VuZHNjYXBlOiIsCiAgICAgICAgIlByZXNlcnZlIHRoZSBzZWxlY3RlZCBtdXNpYy12aWRlbyBzb3VuZHRyYWNrIHBvbGljeS4iLAogICAgICAgICIiLAogICAgICAgICJub25fZGllZ2V0aWNfbXVzaWM6IiwKICAgICAgICAiTm8gYWRkaXRpb25hbCBnZW5lcmF0ZWQgbXVzaWMgaXMgcmVxdWVzdGVkLiIKICAgICAgXSwKICAgICAgImNvbnRleHRfbGVuZ3RoIjogMCwKICAgICAgImF1ZGlvX2NvbnRleHRfbGVuZ3RoIjogMjIsCiAgICAgICJzb3VyY2VfcmVmZXJlbmNlIjogIm9mZiIsCiAgICAgICJnZW5lcmF0ZWRfY29udGludWl0eSI6ICJvZmYiLAogICAgICAic291cmNlX2F1ZGlvX3RhcmdldCI6ICJsb2NrZWQiCiAgICB9CiAgXQp9",
         "context_loop_plan.txt",
-        "{\n  \"name\": \"context_loop_plan.txt\",\n  \"size\": 1252,\n  \"type\": \"text/plain\"\n}"
+        "{\n  \"name\": \"context_loop_plan.txt\",\n  \"size\": 1251,\n  \"type\": \"text/plain\"\n}"
+      ]
+    },
+    {
+      "id": 44,
+      "type": "LoraLoaderModelOnly",
+      "pos": [
+        2185,
+        3046
+      ],
+      "size": [
+        650,
+        100
+      ],
+      "flags": {},
+      "order": 44,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 63
+        },
+        {
+          "name": "lora_name",
+          "type": "COMBO",
+          "link": null,
+          "widget": {
+            "name": "lora_name"
+          }
+        },
+        {
+          "name": "strength_model",
+          "type": "FLOAT",
+          "link": null,
+          "widget": {
+            "name": "strength_model"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            64
+          ]
+        }
+      ],
+      "title": "LIGHTX2V TURBO — 4 STEP v0.1",
+      "properties": {
+        "Node name for S&R": "LoraLoaderModelOnly"
+      },
+      "widgets_values": [
+        "MiniMaxH3\\minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors",
+        1.0
       ]
     },
     {
@@ -2007,7 +2062,7 @@
         {
           "name": "voice",
           "type": "AUDIO",
-          "link": 63
+          "link": 65
         }
       ],
       "outputs": [
@@ -2015,14 +2070,14 @@
           "name": "lip_sync_options",
           "type": "H3_LIP_SYNC_OPTIONS",
           "links": [
-            64
+            66
           ]
         },
         {
           "name": "voice",
           "type": "AUDIO",
           "links": [
-            65
+            67
           ]
         },
         {
@@ -2374,14 +2429,6 @@
       "H3_CHAIN_MANIFEST"
     ],
     [
-      43,
-      1,
-      0,
-      22,
-      0,
-      "MODEL"
-    ],
-    [
       44,
       7,
       0,
@@ -2535,6 +2582,22 @@
     ],
     [
       63,
+      1,
+      0,
+      44,
+      0,
+      "MODEL"
+    ],
+    [
+      64,
+      44,
+      0,
+      22,
+      0,
+      "MODEL"
+    ],
+    [
+      65,
       37,
       1,
       40,
@@ -2542,7 +2605,7 @@
       "AUDIO"
     ],
     [
-      64,
+      66,
       40,
       0,
       30,
@@ -2550,7 +2613,7 @@
       "H3_LIP_SYNC_OPTIONS"
     ],
     [
-      65,
+      67,
       40,
       1,
       12,
@@ -2558,7 +2621,7 @@
       "AUDIO"
     ],
     [
-      66,
+      68,
       5,
       0,
       12,

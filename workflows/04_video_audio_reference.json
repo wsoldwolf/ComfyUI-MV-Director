@@ -1,8 +1,8 @@
 {
   "id": "f97af838-5222-5864-8ec8-15d657333fdb",
   "revision": 0,
-  "last_node_id": 40,
-  "last_link_id": 70,
+  "last_node_id": 44,
+  "last_link_id": 72,
   "nodes": [
     {
       "id": 1,
@@ -24,7 +24,7 @@
           "name": "MODEL",
           "type": "MODEL",
           "links": [
-            43
+            67
           ]
         }
       ],
@@ -383,14 +383,14 @@
           "name": "audio_start",
           "type": "FLOAT",
           "links": [
-            68
+            70
           ]
         },
         {
           "name": "audio_duration",
           "type": "FLOAT",
           "links": [
-            69
+            71
           ]
         },
         {
@@ -608,7 +608,7 @@
         {
           "name": "ref_audios.ref_audio_0",
           "type": "AUDIO",
-          "link": 70
+          "link": 72
         }
       ],
       "outputs": [
@@ -859,7 +859,7 @@
       },
       "widgets_values": [
         "simple",
-        20,
+        8,
         1
       ]
     },
@@ -1232,7 +1232,7 @@
         {
           "name": "model",
           "type": "MODEL",
-          "link": 43
+          "link": 68
         }
       ],
       "outputs": [
@@ -1396,7 +1396,7 @@
         "Node name for S&R": "MiniMaxH3ChainPlanModern"
       },
       "widgets_values": [
-        "{\n  \"prompt_prefix\": [\n    \"Render every scene as photorealistic live-action cinema.\"\n  ],\n  \"defaults\": {\n    \"steps\": 20\n  },\n  \"shots\": [\n    {\n      \"id\": \"scene_0001\",\n      \"length\": 243,\n      \"prompt\": [\n        \"subject_definitions:\",\n        \"<Picture 1> defines <Subject 1>, the performer in the reference image.\",\n        \"\",\n        \"summary:\",\n        \"[reference generation] A moonlit performance at a shrine approach.\",\n        \"\",\n        \"retention_analysis:\",\n        \"<Subject 1>: fully_preserved - preserve identity, clothing, and proportions.\",\n        \"<Picture 1>: fully_preserved - preserve the visible performer design.\",\n        \"\",\n        \"detailed_description:\",\n        \"[Shot 1] <Subject 1> walks toward the torii gate and sings.\",\n        \"<Subject 1> performs visible lip movements synchronized to <Audio 1>.\",\n        \"\",\n        \"overall_soundscape:\",\n        \"Preserve the selected music-video soundtrack policy.\",\n        \"\",\n        \"non_diegetic_music:\",\n        \"No additional generated music is requested.\"\n      ],\n      \"context_length\": 0,\n      \"audio_context_length\": 22\n    }\n  ]\n}",
+        "{\n  \"prompt_prefix\": [\n    \"Render every scene as photorealistic live-action cinema.\"\n  ],\n  \"defaults\": {\n    \"steps\": 8\n  },\n  \"shots\": [\n    {\n      \"id\": \"scene_0001\",\n      \"length\": 243,\n      \"prompt\": [\n        \"subject_definitions:\",\n        \"<Picture 1> defines <Subject 1>, the performer in the reference image.\",\n        \"\",\n        \"summary:\",\n        \"[reference generation] A moonlit performance at a shrine approach.\",\n        \"\",\n        \"retention_analysis:\",\n        \"<Subject 1>: fully_preserved - preserve identity, clothing, and proportions.\",\n        \"<Picture 1>: fully_preserved - preserve the visible performer design.\",\n        \"\",\n        \"detailed_description:\",\n        \"[Shot 1] <Subject 1> walks toward the torii gate and sings.\",\n        \"<Subject 1> performs visible lip movements synchronized to <Audio 1>.\",\n        \"\",\n        \"overall_soundscape:\",\n        \"Preserve the selected music-video soundtrack policy.\",\n        \"\",\n        \"non_diegetic_music:\",\n        \"No additional generated music is requested.\"\n      ],\n      \"context_length\": 0,\n      \"audio_context_length\": 22\n    }\n  ]\n}",
         "mv_director_audio_reference",
         "mv-director-audio_reference-context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9",
         896,
@@ -1404,7 +1404,7 @@
         "video",
         "disabled",
         10.0,
-        20,
+        8,
         0,
         20,
         0
@@ -1894,7 +1894,7 @@
           "name": "reference_audio_b",
           "type": "AUDIO",
           "links": [
-            67
+            69
           ]
         }
       ],
@@ -1990,9 +1990,64 @@
         "Node name for S&R": "MVDirectorLoadTextFile"
       },
       "widgets_values": [
-        "ewogICJwcm9tcHRfcHJlZml4IjogWwogICAgIlJlbmRlciBldmVyeSBzY2VuZSBhcyBwaG90b3JlYWxpc3RpYyBsaXZlLWFjdGlvbiBjaW5lbWEuIgogIF0sCiAgImRlZmF1bHRzIjogewogICAgInN0ZXBzIjogMjAKICB9LAogICJzaG90cyI6IFsKICAgIHsKICAgICAgImlkIjogInNjZW5lXzAwMDEiLAogICAgICAibGVuZ3RoIjogMjQzLAogICAgICAicHJvbXB0IjogWwogICAgICAgICJzdWJqZWN0X2RlZmluaXRpb25zOiIsCiAgICAgICAgIjxQaWN0dXJlIDE+IGRlZmluZXMgPFN1YmplY3QgMT4sIHRoZSBwZXJmb3JtZXIgaW4gdGhlIHJlZmVyZW5jZSBpbWFnZS4iLAogICAgICAgICIiLAogICAgICAgICJzdW1tYXJ5OiIsCiAgICAgICAgIltyZWZlcmVuY2UgZ2VuZXJhdGlvbl0gQSBtb29ubGl0IHBlcmZvcm1hbmNlIGF0IGEgc2hyaW5lIGFwcHJvYWNoLiIsCiAgICAgICAgIiIsCiAgICAgICAgInJldGVudGlvbl9hbmFseXNpczoiLAogICAgICAgICI8U3ViamVjdCAxPjogZnVsbHlfcHJlc2VydmVkIC0gcHJlc2VydmUgaWRlbnRpdHksIGNsb3RoaW5nLCBhbmQgcHJvcG9ydGlvbnMuIiwKICAgICAgICAiPFBpY3R1cmUgMT46IGZ1bGx5X3ByZXNlcnZlZCAtIHByZXNlcnZlIHRoZSB2aXNpYmxlIHBlcmZvcm1lciBkZXNpZ24uIiwKICAgICAgICAiIiwKICAgICAgICAiZGV0YWlsZWRfZGVzY3JpcHRpb246IiwKICAgICAgICAiW1Nob3QgMV0gPFN1YmplY3QgMT4gd2Fsa3MgdG93YXJkIHRoZSB0b3JpaSBnYXRlIGFuZCBzaW5ncy4iLAogICAgICAgICI8U3ViamVjdCAxPiBwZXJmb3JtcyB2aXNpYmxlIGxpcCBtb3ZlbWVudHMgc3luY2hyb25pemVkIHRvIDxBdWRpbyAxPi4iLAogICAgICAgICIiLAogICAgICAgICJvdmVyYWxsX3NvdW5kc2NhcGU6IiwKICAgICAgICAiUHJlc2VydmUgdGhlIHNlbGVjdGVkIG11c2ljLXZpZGVvIHNvdW5kdHJhY2sgcG9saWN5LiIsCiAgICAgICAgIiIsCiAgICAgICAgIm5vbl9kaWVnZXRpY19tdXNpYzoiLAogICAgICAgICJObyBhZGRpdGlvbmFsIGdlbmVyYXRlZCBtdXNpYyBpcyByZXF1ZXN0ZWQuIgogICAgICBdLAogICAgICAiY29udGV4dF9sZW5ndGgiOiAwLAogICAgICAiYXVkaW9fY29udGV4dF9sZW5ndGgiOiAyMgogICAgfQogIF0KfQ==",
+        "ewogICJwcm9tcHRfcHJlZml4IjogWwogICAgIlJlbmRlciBldmVyeSBzY2VuZSBhcyBwaG90b3JlYWxpc3RpYyBsaXZlLWFjdGlvbiBjaW5lbWEuIgogIF0sCiAgImRlZmF1bHRzIjogewogICAgInN0ZXBzIjogOAogIH0sCiAgInNob3RzIjogWwogICAgewogICAgICAiaWQiOiAic2NlbmVfMDAwMSIsCiAgICAgICJsZW5ndGgiOiAyNDMsCiAgICAgICJwcm9tcHQiOiBbCiAgICAgICAgInN1YmplY3RfZGVmaW5pdGlvbnM6IiwKICAgICAgICAiPFBpY3R1cmUgMT4gZGVmaW5lcyA8U3ViamVjdCAxPiwgdGhlIHBlcmZvcm1lciBpbiB0aGUgcmVmZXJlbmNlIGltYWdlLiIsCiAgICAgICAgIiIsCiAgICAgICAgInN1bW1hcnk6IiwKICAgICAgICAiW3JlZmVyZW5jZSBnZW5lcmF0aW9uXSBBIG1vb25saXQgcGVyZm9ybWFuY2UgYXQgYSBzaHJpbmUgYXBwcm9hY2guIiwKICAgICAgICAiIiwKICAgICAgICAicmV0ZW50aW9uX2FuYWx5c2lzOiIsCiAgICAgICAgIjxTdWJqZWN0IDE+OiBmdWxseV9wcmVzZXJ2ZWQgLSBwcmVzZXJ2ZSBpZGVudGl0eSwgY2xvdGhpbmcsIGFuZCBwcm9wb3J0aW9ucy4iLAogICAgICAgICI8UGljdHVyZSAxPjogZnVsbHlfcHJlc2VydmVkIC0gcHJlc2VydmUgdGhlIHZpc2libGUgcGVyZm9ybWVyIGRlc2lnbi4iLAogICAgICAgICIiLAogICAgICAgICJkZXRhaWxlZF9kZXNjcmlwdGlvbjoiLAogICAgICAgICJbU2hvdCAxXSA8U3ViamVjdCAxPiB3YWxrcyB0b3dhcmQgdGhlIHRvcmlpIGdhdGUgYW5kIHNpbmdzLiIsCiAgICAgICAgIjxTdWJqZWN0IDE+IHBlcmZvcm1zIHZpc2libGUgbGlwIG1vdmVtZW50cyBzeW5jaHJvbml6ZWQgdG8gPEF1ZGlvIDE+LiIsCiAgICAgICAgIiIsCiAgICAgICAgIm92ZXJhbGxfc291bmRzY2FwZToiLAogICAgICAgICJQcmVzZXJ2ZSB0aGUgc2VsZWN0ZWQgbXVzaWMtdmlkZW8gc291bmR0cmFjayBwb2xpY3kuIiwKICAgICAgICAiIiwKICAgICAgICAibm9uX2RpZWdldGljX211c2ljOiIsCiAgICAgICAgIk5vIGFkZGl0aW9uYWwgZ2VuZXJhdGVkIG11c2ljIGlzIHJlcXVlc3RlZC4iCiAgICAgIF0sCiAgICAgICJjb250ZXh0X2xlbmd0aCI6IDAsCiAgICAgICJhdWRpb19jb250ZXh0X2xlbmd0aCI6IDIyCiAgICB9CiAgXQp9",
         "audio_reference_plan.txt",
-        "{\n  \"name\": \"audio_reference_plan.txt\",\n  \"size\": 1129,\n  \"type\": \"text/plain\"\n}"
+        "{\n  \"name\": \"audio_reference_plan.txt\",\n  \"size\": 1128,\n  \"type\": \"text/plain\"\n}"
+      ]
+    },
+    {
+      "id": 44,
+      "type": "LoraLoaderModelOnly",
+      "pos": [
+        2185,
+        3046
+      ],
+      "size": [
+        650,
+        100
+      ],
+      "flags": {},
+      "order": 44,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 67
+        },
+        {
+          "name": "lora_name",
+          "type": "COMBO",
+          "link": null,
+          "widget": {
+            "name": "lora_name"
+          }
+        },
+        {
+          "name": "strength_model",
+          "type": "FLOAT",
+          "link": null,
+          "widget": {
+            "name": "strength_model"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            68
+          ]
+        }
+      ],
+      "title": "LIGHTX2V TURBO — 4 STEP v0.1",
+      "properties": {
+        "Node name for S&R": "LoraLoaderModelOnly"
+      },
+      "widgets_values": [
+        "MiniMaxH3\\minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors",
+        1.0
       ]
     },
     {
@@ -2115,12 +2170,12 @@
         {
           "name": "audio",
           "type": "AUDIO",
-          "link": 67
+          "link": 69
         },
         {
           "name": "start_index",
           "type": "FLOAT",
-          "link": 68,
+          "link": 70,
           "widget": {
             "name": "start_index"
           }
@@ -2128,7 +2183,7 @@
         {
           "name": "duration",
           "type": "FLOAT",
-          "link": 69,
+          "link": 71,
           "widget": {
             "name": "duration"
           }
@@ -2139,7 +2194,7 @@
           "name": "AUDIO",
           "type": "AUDIO",
           "links": [
-            70
+            72
           ]
         }
       ],
@@ -2483,14 +2538,6 @@
       "H3_CHAIN_MANIFEST"
     ],
     [
-      43,
-      1,
-      0,
-      22,
-      0,
-      "MODEL"
-    ],
-    [
       44,
       7,
       0,
@@ -2676,6 +2723,22 @@
     ],
     [
       67,
+      1,
+      0,
+      44,
+      0,
+      "MODEL"
+    ],
+    [
+      68,
+      44,
+      0,
+      22,
+      0,
+      "MODEL"
+    ],
+    [
+      69,
       37,
       3,
       40,
@@ -2683,7 +2746,7 @@
       "AUDIO"
     ],
     [
-      68,
+      70,
       8,
       10,
       40,
@@ -2691,7 +2754,7 @@
       "FLOAT"
     ],
     [
-      69,
+      71,
       8,
       11,
       40,
@@ -2699,7 +2762,7 @@
       "FLOAT"
     ],
     [
-      70,
+      72,
       40,
       0,
       11,

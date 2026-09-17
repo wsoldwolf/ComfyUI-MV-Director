@@ -315,7 +315,7 @@ def compile_ref2va(
     source: str,
     translator: PromptTranslator,
     *,
-    steps: int = 20,
+    steps: int = 8,
     timing_profile: H3TimingProfile = DEFAULT_H3_TIMING_PROFILE,
 ) -> CompileResult:
     if not isinstance(steps, int) or isinstance(steps, bool) or steps < 1:

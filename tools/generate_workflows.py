@@ -18,6 +18,10 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT_ID = "context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9"
+VIDEO_DENOISING_STEPS = 8
+TURBO_LORA_NAME = (
+    "MiniMaxH3\\minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors"
+)
 TEXT_MODEL = "Qwen3-4B-abliterated/Qwen3-4B-abliterated-q5_k_m.gguf"
 VISION_MODEL = "Qwen3-VL-4B-Instruct/Qwen3-VL-4B-Instruct-Q4_K_M.gguf"
 WHISPER_MODEL = "medium.pt"
@@ -191,6 +195,26 @@ def _remove_nodes(workflow: dict[str, Any], node_ids: set[int]) -> None:
                 ] or None
 
 
+def _disconnect_input(
+    workflow: dict[str, Any], target_id: int, target_name: str
+) -> None:
+    target = _node_by_id(workflow, target_id)
+    target_slot = _input_index(target, target_name)
+    link_id = target["inputs"][target_slot].get("link")
+    if link_id is None:
+        return
+    workflow["links"] = [
+        link for link in workflow["links"] if int(link[0]) != int(link_id)
+    ]
+    target["inputs"][target_slot]["link"] = None
+    for node in workflow["nodes"]:
+        for output in node.get("outputs", []):
+            if output.get("links"):
+                output["links"] = [
+                    value for value in output["links"] if int(value) != int(link_id)
+                ] or None
+
+
 def _fallback_plan(mode: str) -> dict[str, Any]:
     audio_line = {
         "context_loop": (
@@ -242,7 +266,7 @@ def _fallback_plan(mode: str) -> dict[str, Any]:
         )
     return {
         "prompt_prefix": ["Render every scene as photorealistic live-action cinema."],
-        "defaults": {"steps": 20},
+        "defaults": {"steps": VIDEO_DENOISING_STEPS},
         "shots": [scene],
     }
 
@@ -504,7 +528,7 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
                 "ja_to_en",
                 TEXT_MODEL,
                 "auto",
-                4,
+                VIDEO_DENOISING_STEPS,
                 4096,
                 0.0,
                 0.9,
@@ -627,6 +651,7 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
     spec = MODES[mode]
     workflow = json.loads(base_path.read_text(encoding="utf-8"))
     _remove_nodes(workflow, {27})
+    _disconnect_input(workflow, 22, "model")
     workflow["last_node_id"] = max(int(node["id"]) for node in workflow["nodes"])
     workflow["last_link_id"] = max(int(link[0]) for link in workflow["links"])
 
@@ -664,6 +689,8 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
     plan["widgets_values"][0] = plan_json
     plan["widgets_values"][1] = f"mv_director_{mode}"
     plan["widgets_values"][2] = f"mv-director-{mode}-{CONTRACT_ID}"
+    plan["widgets_values"][8] = VIDEO_DENOISING_STEPS
+    _node_by_id(workflow, 15)["widgets_values"][1] = VIDEO_DENOISING_STEPS
 
     profile = _node_by_id(workflow, 30)
     profile["widgets_values"] = ["Visual continuity", spec["audio_profile"]]
@@ -701,6 +728,20 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
             plan_json,
             f"{mode}_plan.txt",
         ),
+        _node(
+            44,
+            "LoraLoaderModelOnly",
+            (2185, 3046),
+            (650, 100),
+            "LIGHTX2V TURBO — 4 STEP v0.1",
+            inputs=[
+                _input("model", "MODEL"),
+                _widget_input("lora_name", "COMBO"),
+                _widget_input("strength_model", "FLOAT"),
+            ],
+            outputs=[_output("MODEL", "MODEL")],
+            widgets=[TURBO_LORA_NAME, 1.0],
+        ),
     ]
     if mode == "audio_reference":
         lyrics = _lyrics_text()
@@ -713,7 +754,7 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
             ]
         )
     workflow["nodes"].extend(additions)
-    workflow["last_node_id"] = 39
+    workflow["last_node_id"] = 44
 
     _connect(workflow, 32, 0, 37, "audio_a", "AUDIO")
     _connect(workflow, 33, 0, 37, "audio_b", "AUDIO")
@@ -742,6 +783,8 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
     _connect(workflow, 38, 0, 7, "source_timeline", "H3_SOURCE_TIMELINE")
     _connect(workflow, 39, 0, 24, "plan_json_input", "STRING")
     _connect(workflow, 39, 0, 37, "plan_json", "STRING")
+    _connect(workflow, 1, 0, 44, "model", "MODEL")
+    _connect(workflow, 44, 0, 22, "model", "MODEL")
 
     if mode == "context_loop":
         lip = _node(
@@ -759,7 +802,7 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
             widgets=[1.0, 0.2, 0.0, 0.15, 0.2],
         )
         workflow["nodes"].append(lip)
-        workflow["last_node_id"] = 40
+        workflow["last_node_id"] = 44
         _connect(workflow, 37, 1, 40, "voice", "AUDIO")
         _connect(workflow, 40, 0, 30, "lip_sync_options", "H3_LIP_SYNC_OPTIONS")
         _connect(workflow, 40, 1, 12, "lip_sync_voice", "AUDIO")
@@ -780,7 +823,7 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
             widgets=[0.0, 60.0],
         )
         workflow["nodes"].append(trim)
-        workflow["last_node_id"] = 40
+        workflow["last_node_id"] = 44
         _connect(workflow, 37, 3, 40, "audio", "AUDIO")
         _connect(workflow, 8, 10, 40, "start_index", "FLOAT")
         _connect(workflow, 8, 11, 40, "duration", "FLOAT")

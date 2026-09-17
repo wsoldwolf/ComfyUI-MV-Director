@@ -101,7 +101,7 @@ class DistributableWorkflowTests(unittest.TestCase):
                     "ja_to_en",
                     "Qwen3-4B-abliterated/Qwen3-4B-abliterated-q5_k_m.gguf",
                     "auto",
-                    4,
+                    8,
                     4096,
                     0.0,
                     0.9,
@@ -177,6 +177,9 @@ class DistributableWorkflowTests(unittest.TestCase):
                 and "Compiled Plan" in node.get("title", "")
             )
             plan = only_type(workflow, "MiniMaxH3ChainPlanModern")
+            fallback_plan = json.loads(plan["widgets_values"][0])
+            self.assertEqual(fallback_plan["defaults"]["steps"], 8)
+            self.assertEqual(plan["widgets_values"][8], 8)
             self.assertEqual(
                 input_link(workflow, plan, "plan_json_input")[1:3],
                 [plan_loader["id"], 0],
@@ -209,6 +212,31 @@ class DistributableWorkflowTests(unittest.TestCase):
                 input_link(workflow, loop, "source_timeline")[1:3],
                 [tracks["id"], 0],
             )
+
+            lora = only_type(workflow, "LoraLoaderModelOnly")
+            shifts = [
+                node
+                for node in workflow["nodes"]
+                if node["type"] == "MiniMaxH3SigmaShift"
+            ]
+            self.assertEqual(len(shifts), 1)
+            sigma_shift = shifts[0]
+            attention = only_type(workflow, "ModelAttentionBackend")
+            unet = only_type(workflow, "UNETLoader")
+            self.assertEqual(
+                input_link(workflow, lora, "model")[1:3], [unet["id"], 0]
+            )
+            self.assertEqual(
+                input_link(workflow, attention, "model")[1:3],
+                [lora["id"], 0],
+            )
+            self.assertEqual(
+                input_link(workflow, sigma_shift, "model")[1:3],
+                [attention["id"], 0],
+            )
+            self.assertEqual(sigma_shift["widgets_values"], [12, 3])
+            scheduler = only_type(workflow, "BasicScheduler")
+            self.assertEqual(scheduler["widgets_values"][1], 8)
 
     def test_context_loop_video_wires_options_voice_and_audio_vae(self) -> None:
         workflow = load(FILES["context_loop"][1])

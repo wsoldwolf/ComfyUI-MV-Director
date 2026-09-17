@@ -532,7 +532,7 @@
         "ja_to_en",
         "Qwen3-4B-abliterated/Qwen3-4B-abliterated-q5_k_m.gguf",
         "auto",
-        4,
+        8,
         4096,
         0.0,
         0.9,

@@ -882,7 +882,7 @@ CompilerはRef2VA専用のEMD parser、限定翻訳orchestrator、H3 prompt rend
     "Use continuous grounded movement with readable weight shifts and delayed follow-through in the hair and clothing.",
     "Keep the face and full-body action readable while using parallax across the foreground, middle ground, and background."
   ],
-  "defaults": {"steps": 20},
+  "defaults": {"steps": 8},
   "shots": [
     {
       "id": "scene_0001",

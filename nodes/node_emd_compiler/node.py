@@ -110,7 +110,7 @@ class MVDirectorEMDCompiler:
                 "translation_mode": (list(TRANSLATION_MODES), {"default": "ja_to_en"}),
                 "model_name": (models, {"default": models[0]}),
                 "chat_format": (list(CHAT_FORMATS), {"default": "auto"}),
-                "steps": ("INT", {"default": 20, "min": 1, "max": 100}),
+                "steps": ("INT", {"default": 8, "min": 1, "max": 100}),
                 "max_tokens": ("INT", {"default": 4096, "min": 32, "max": 16384, "step": 32}),
                 "temperature": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.05}),
                 "top_p": ("FLOAT", {"default": 0.9, "min": 0.0, "max": 1.0, "step": 0.01}),
