@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+import json
 import logging
 import re
 from typing import Any
@@ -18,10 +19,13 @@ from ..protocols import parse_llm_records
 from .errors import CompilerError
 
 
-TRANSLATION_PROMPT_VERSION = "mvd-prompt-translation-ja-en-v7"
+TRANSLATION_PROMPT_VERSION = "mvd-prompt-translation-ja-en-v11"
 TRANSLATION_RECORD_TYPE = "TRANSLATION"
 TRANSLATION_MAX_BATCH_UNITS = 7
+TRANSLATION_RECOVERY_CHUNK_CHARS = 120
+TRANSLATION_PROACTIVE_SPLIT_CHARS = 360
 _JAPANESE_SCRIPT_RE = re.compile(r"[\u3040-\u30ff\u3400-\u9fff]")
+_JAPANESE_SPAN_RE = re.compile(r"[\u3040-\u30ff\u3400-\u9fff]+")
 _LOGGER = logging.getLogger("mv_director.compiler")
 
 
@@ -71,6 +75,128 @@ def _normalize_small_model_response(response: str) -> str:
     return normalized
 
 
+def _recover_isolated_translation(response: str) -> str | None:
+    """Recover one unambiguous translation from a one-slot retry.
+
+    This adapter is intentionally unavailable to multi-slot batches. It
+    removes only structural wrappers and returns the model's text AS IS.
+    """
+
+    normalized = normalize_newlines(response)
+    normalized = re.sub(r"<think>.*?</think>", "", normalized, flags=re.DOTALL)
+    stripped = normalized.strip()
+    if not stripped:
+        return None
+
+    fenced = re.sub(r"^\x60\x60\x60(?:json|text)?\s*\n?", "", stripped, flags=re.IGNORECASE)
+    fenced = re.sub(r"\n?\x60\x60\x60$", "", fenced).strip()
+    try:
+        value = json.loads(fenced)
+    except (TypeError, ValueError):
+        value = None
+    if isinstance(value, dict):
+        slot = value.get("slot", 1)
+        if slot not in {1, "1"}:
+            return None
+        candidates = [
+            value[key].strip()
+            for key in ("translation", "english_text", "text")
+            if isinstance(value.get(key), str) and value[key].strip()
+        ]
+        if len(candidates) == 1:
+            return candidates[0]
+        return None
+    if isinstance(value, list) and len(value) == 1 and isinstance(value[0], str):
+        return value[0].strip() or None
+
+    lines = [
+        line.strip()
+        for line in fenced.split("\n")
+        if line.strip()
+        and line.strip().lower()
+        not in {
+            "translation:",
+            "english translation:",
+            "translation",
+            "english translation",
+        }
+    ]
+    if len(lines) != 1:
+        return None
+    text = re.sub(r"^[-*]\s+", "", lines[0], count=1).strip()
+    explicit = re.fullmatch(
+        r"TRANSLATION\s+(?:slot\s*)?1\s*(?::|[-–—])?\s+(.+)",
+        text,
+        flags=re.IGNORECASE,
+    )
+    if explicit:
+        text = explicit.group(1).strip()
+    else:
+        labelled = re.fullmatch(
+            r"(?:TRANSLATION|English translation)\s*:\s*(.+)",
+            text,
+            flags=re.IGNORECASE,
+        )
+        if labelled:
+            text = labelled.group(1).strip()
+    if (
+        not text
+        or text.startswith(("#", "{", "["))
+        or re.match(r"^TRANSLATION(?:\s|\t|:|$)", text, flags=re.IGNORECASE)
+    ):
+        return None
+    return text
+
+
+def _translation_recovery_chunks(text: str) -> tuple[str, ...]:
+    """Split one long failed unit at existing Japanese prose boundaries.
+
+    The splitter neither rewrites nor drops source text. It is used only after
+    the intact unit and its isolated retry both returned non-English text.
+    """
+
+    if len(text) <= TRANSLATION_RECOVERY_CHUNK_CHARS:
+        return (text,)
+
+    def split_after(pattern: str, value: str) -> list[str]:
+        pieces: list[str] = []
+        cursor = 0
+        for match in re.finditer(pattern, value):
+            pieces.append(value[cursor : match.end()])
+            cursor = match.end()
+        if cursor < len(value):
+            pieces.append(value[cursor:])
+        return [piece for piece in pieces if piece]
+
+    sentence_pieces = split_after(r"[。！？]+", text)
+    atomic: list[str] = []
+    for piece in sentence_pieces:
+        if len(piece) <= TRANSLATION_RECOVERY_CHUNK_CHARS:
+            atomic.append(piece)
+            continue
+        clause_pieces = split_after(r"[、，,；;]+", piece)
+        atomic.extend(clause_pieces if len(clause_pieces) > 1 else (piece,))
+
+    chunks: list[str] = []
+    current = ""
+    for piece in atomic:
+        if current and len(current) + len(piece) > TRANSLATION_RECOVERY_CHUNK_CHARS:
+            chunks.append(current)
+            current = ""
+        current += piece
+    if current:
+        chunks.append(current)
+    if len(chunks) <= 1 or "".join(chunks) != text:
+        return (text,)
+    return tuple(chunks)
+
+
+def _is_mostly_english_with_residual_japanese(text: str) -> bool:
+    japanese_count = len(_JAPANESE_SCRIPT_RE.findall(text))
+    latin_count = len(re.findall(r"[A-Za-z]", text))
+    return japanese_count > 0 and latin_count >= max(12, japanese_count * 2)
+
+
 class LlamaPromptTranslator:
     """Translate ordered units with one isolated retry for missing slots."""
 
@@ -91,6 +217,9 @@ class LlamaPromptTranslator:
         self.interrupt_callback = interrupt_callback
         self.batch_count = 0
         self.estimated_token_batches = 0
+        self.protocol_recovered_count = 0
+        self.segmented_recovered_count = 0
+        self.cleanup_recovered_count = 0
 
     @staticmethod
     def _payload(units: Sequence[str]) -> str:
@@ -101,7 +230,10 @@ class LlamaPromptTranslator:
                 "instruction": (
                     "Translate each slots[].japanese_text value into English. "
                     "The output text field must be English, never the slot number "
-                    "or the Japanese source."
+                    "or the Japanese source. Preserve concrete local visual "
+                    "geometry, including shape, count, placement, scale, color, "
+                    "material, and exclusions; never generalize an unusual "
+                    "identity feature into a conventional default."
                 ),
                 "slots": [
                     {"slot": index, "japanese_text": text}
@@ -274,6 +406,8 @@ class LlamaPromptTranslator:
         units: Sequence[str],
         *,
         displayed_slots: Sequence[int],
+        allow_segmented_recovery: bool = True,
+        allow_cleanup: bool = True,
     ) -> tuple[str, ...]:
         response = self._complete_units(units)
         slots = frozenset(range(1, len(units) + 1))
@@ -319,6 +453,30 @@ class LlamaPromptTranslator:
             )
 
         for retry_slot in retry_slots:
+            displayed_slot = displayed_slots[retry_slot - 1]
+            source_unit = units[retry_slot - 1]
+            first_candidate = by_slot.get(retry_slot, "")
+            if allow_cleanup and _is_mostly_english_with_residual_japanese(
+                first_candidate
+            ):
+                cleaned = self._cleanup_mixed_translation(
+                    first_candidate,
+                    displayed_slot=displayed_slot,
+                )
+                if cleaned is not None:
+                    by_slot[retry_slot] = cleaned
+                    continue
+            _LOGGER.info(
+                "[MV Director - EMD Compiler (Ref2VA)] isolated translation "
+                "retry started; slot=%d; source_chars=%d; reason=%s",
+                displayed_slot,
+                len(source_unit),
+                "non_english"
+                if retry_slot in non_english_slots
+                else "duplicate_conflict"
+                if retry_slot in duplicate_conflict_slots
+                else "missing",
+            )
             retry_response = self._complete_units((units[retry_slot - 1],))
             normalized_retry = _normalize_small_model_response(retry_response)
             retry = parse_llm_records(
@@ -330,6 +488,45 @@ class LlamaPromptTranslator:
                 normalized_retry,
                 frozenset({1}),
             )
+            retry_reasons = {issue.reason for issue in retry.issues}
+            recovered_text = (
+                _recover_isolated_translation(retry_response)
+                if retry.missing and retry_reasons <= {"field_count"}
+                else None
+            )
+            if recovered_text is not None:
+                if (
+                    _JAPANESE_SCRIPT_RE.search(recovered_text)
+                    or recovered_text.strip() == "1"
+                ):
+                    cleaned = self._cleanup_mixed_translation(
+                        recovered_text,
+                        displayed_slot=displayed_slot,
+                    ) if allow_cleanup else None
+                    if cleaned is not None:
+                        by_slot[retry_slot] = cleaned
+                        continue
+                    segmented = self._recover_segmented_unit(
+                        source_unit,
+                        displayed_slot=displayed_slot,
+                        allow=allow_segmented_recovery,
+                        trigger="after_isolated_retry",
+                    )
+                    if segmented is None:
+                        raise CompilerError(
+                            "translation response is not English after isolated "
+                            f"retry for slot {displayed_slot}"
+                        )
+                    by_slot[retry_slot] = segmented
+                    continue
+                by_slot[retry_slot] = recovered_text
+                self.protocol_recovered_count += 1
+                _LOGGER.warning(
+                    "[MV Director - EMD Compiler (Ref2VA)] recovered bare "
+                    "one-to-one translation after isolated retry for slot %d",
+                    displayed_slots[retry_slot - 1],
+                )
+                continue
             try:
                 self._validate_protocol_issues(
                     retry,
@@ -356,10 +553,29 @@ class LlamaPromptTranslator:
                     displayed_slots=(displayed_slots[retry_slot - 1],),
                 )
             except CompilerError as exc:
-                raise CompilerError(
-                    "translation response is not English after isolated retry "
-                    f"for slot {displayed_slots[retry_slot - 1]}"
-                ) from exc
+                retry_candidate = {
+                    record.slot: record.text for record in retry.records
+                }.get(1, "")
+                cleaned = self._cleanup_mixed_translation(
+                    retry_candidate,
+                    displayed_slot=displayed_slot,
+                ) if allow_cleanup else None
+                if cleaned is not None:
+                    by_slot[retry_slot] = cleaned
+                    continue
+                segmented = self._recover_segmented_unit(
+                    source_unit,
+                    displayed_slot=displayed_slot,
+                    allow=allow_segmented_recovery,
+                    trigger="after_isolated_retry",
+                )
+                if segmented is None:
+                    raise CompilerError(
+                        "translation response is not English after isolated retry "
+                        f"for slot {displayed_slot}"
+                    ) from exc
+                by_slot[retry_slot] = segmented
+                continue
             by_slot[retry_slot] = retry_by_slot[1]
 
         if not retry_slots:
@@ -370,6 +586,158 @@ class LlamaPromptTranslator:
 
         return tuple(by_slot[slot] for slot in range(1, len(units) + 1))
 
+    def _cleanup_mixed_translation(
+        self,
+        candidate: str,
+        *,
+        displayed_slot: int,
+    ) -> str | None:
+        if not _is_mostly_english_with_residual_japanese(candidate):
+            return None
+        residual_count = len(_JAPANESE_SCRIPT_RE.findall(candidate))
+        residual_spans = tuple(dict.fromkeys(_JAPANESE_SPAN_RE.findall(candidate)))
+        _LOGGER.info(
+            "[MV Director - EMD Compiler (Ref2VA)] residual-Japanese cleanup "
+            "started; slot=%d; candidate_chars=%d; residual_chars=%d; spans=%d",
+            displayed_slot,
+            len(candidate),
+            residual_count,
+            len(residual_spans),
+        )
+        if not residual_spans:
+            return None
+        try:
+            translated_spans = self._translate_batch(
+                residual_spans,
+                displayed_slots=(displayed_slot,) * len(residual_spans),
+                allow_segmented_recovery=False,
+                allow_cleanup=False,
+            )
+        except CompilerError:
+            _LOGGER.info(
+                "[MV Director - EMD Compiler (Ref2VA)] residual-Japanese cleanup "
+                "failed; slot=%d",
+                displayed_slot,
+            )
+            return None
+        replacements = dict(zip(residual_spans, translated_spans))
+
+        def replace_span(match: re.Match[str]) -> str:
+            replacement = replacements[match.group(0)].strip()
+            if not replacement:
+                return match.group(0)
+            if (
+                match.start() > 0
+                and candidate[match.start() - 1].isascii()
+                and candidate[match.start() - 1].isalnum()
+                and replacement[0].isascii()
+                and replacement[0].isalnum()
+            ):
+                replacement = " " + replacement
+            if (
+                match.end() < len(candidate)
+                and candidate[match.end()].isascii()
+                and candidate[match.end()].isalnum()
+                and replacement[-1].isascii()
+                and replacement[-1].isalnum()
+            ):
+                replacement += " "
+            return replacement
+
+        translated = _JAPANESE_SPAN_RE.sub(replace_span, candidate).strip()
+        if _JAPANESE_SCRIPT_RE.search(translated):
+            _LOGGER.info(
+                "[MV Director - EMD Compiler (Ref2VA)] residual-Japanese cleanup "
+                "failed; slot=%d; reason=non_english_output",
+                displayed_slot,
+            )
+            return None
+        self.cleanup_recovered_count += 1
+        _LOGGER.info(
+            "[MV Director - EMD Compiler (Ref2VA)] residual-Japanese cleanup "
+            "completed; slot=%d; output_chars=%d",
+            displayed_slot,
+            len(translated),
+        )
+        return translated
+
+    def _recover_segmented_unit(
+        self,
+        source: str,
+        *,
+        displayed_slot: int,
+        allow: bool,
+        trigger: str,
+    ) -> str | None:
+        if not allow:
+            return None
+        chunks = _translation_recovery_chunks(source)
+        if len(chunks) <= 1:
+            _LOGGER.info(
+                "[MV Director - EMD Compiler (Ref2VA)] segmented translation "
+                "recovery unavailable; slot=%d; source_chars=%d; reason=no_safe_boundaries",
+                displayed_slot,
+                len(source),
+            )
+            return None
+        _LOGGER.info(
+            "[MV Director - EMD Compiler (Ref2VA)] segmented translation "
+            "recovery started; slot=%d; trigger=%s; source_chars=%d; chunks=%d; "
+            "chunk_chars=%s",
+            displayed_slot,
+            trigger,
+            len(source),
+            len(chunks),
+            ",".join(str(len(chunk)) for chunk in chunks),
+        )
+        translated_chunks: list[str] = []
+        position = 0
+        try:
+            while position < len(chunks):
+                batch_size = self._largest_batch(chunks[position:])
+                _LOGGER.info(
+                    "[MV Director - EMD Compiler (Ref2VA)] segmented translation "
+                    "batch; slot=%d; chunks=%d..%d/%d",
+                    displayed_slot,
+                    position + 1,
+                    position + batch_size,
+                    len(chunks),
+                )
+                translated_chunks.extend(
+                    self._translate_batch(
+                        chunks[position : position + batch_size],
+                        displayed_slots=(displayed_slot,) * batch_size,
+                        allow_segmented_recovery=False,
+                    )
+                )
+                position += batch_size
+        except CompilerError:
+            _LOGGER.info(
+                "[MV Director - EMD Compiler (Ref2VA)] segmented translation "
+                "recovery failed; slot=%d; completed_chunks=%d/%d",
+                displayed_slot,
+                position,
+                len(chunks),
+            )
+            raise
+        translated = " ".join(chunk.strip() for chunk in translated_chunks if chunk.strip())
+        if not translated or _JAPANESE_SCRIPT_RE.search(translated):
+            _LOGGER.info(
+                "[MV Director - EMD Compiler (Ref2VA)] segmented translation "
+                "recovery failed; slot=%d; reason=non_english_output",
+                displayed_slot,
+            )
+            return None
+        self.segmented_recovered_count += 1
+        _LOGGER.info(
+            "[MV Director - EMD Compiler (Ref2VA)] segmented translation "
+            "recovery completed; slot=%d; chunks=%d; output_chars=%d",
+            displayed_slot,
+            len(chunks),
+            len(translated),
+        )
+        return translated
+
     def translate(self, units: Sequence[str]) -> Sequence[str]:
         if not units:
             return ()
@@ -378,7 +746,38 @@ class LlamaPromptTranslator:
         result: list[str] = []
         position = 0
         while position < len(units):
-            batch_size = self._largest_batch(units[position:])
+            unit = units[position]
+            proactive_chunks = (
+                _translation_recovery_chunks(unit)
+                if len(unit) > TRANSLATION_PROACTIVE_SPLIT_CHARS
+                else (unit,)
+            )
+            if len(proactive_chunks) > 1:
+                translated = self._recover_segmented_unit(
+                    unit,
+                    displayed_slot=position + 1,
+                    allow=True,
+                    trigger="proactive_long_unit",
+                )
+                if translated is None:
+                    raise CompilerError(
+                        "long translation unit could not be segmented safely for "
+                        f"slot {position + 1}"
+                    )
+                result.append(translated)
+                position += 1
+                continue
+
+            run_end = position + 1
+            while run_end < len(units):
+                candidate = units[run_end]
+                if (
+                    len(candidate) > TRANSLATION_PROACTIVE_SPLIT_CHARS
+                    and len(_translation_recovery_chunks(candidate)) > 1
+                ):
+                    break
+                run_end += 1
+            batch_size = self._largest_batch(units[position:run_end])
             result.extend(
                 self._translate_batch(
                     units[position : position + batch_size],

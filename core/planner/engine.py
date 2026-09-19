@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from difflib import SequenceMatcher
+import json
 import re
 from typing import Any, Mapping, Protocol
 
@@ -27,7 +28,7 @@ from .renderer import render_completed_emd
 from .template import PlannerTemplate, normalize_concept_emd, parse_template_emd
 
 
-PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v27"
+PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v34"
 TASKS = ("visual-beats", "song-direction", "shot-layout", "actions", "cameras")
 _CAMERA_MOTION_TYPES = (
     "Roll Counterclockwise",
@@ -66,6 +67,11 @@ _GENERIC_HAND_ACTION_RE = re.compile(
     r"(?:上げ(?:る|た|ている)?|下げ(?:る|た|ている)?|上下(?:させる|する)?)。?$",
     re.IGNORECASE,
 )
+_RUNNING_ACTION_RE = re.compile(
+    r"走(?:る|り|った|って)|駆け(?:る|出す|抜ける|寄る)?|疾走|全力疾走|"
+    r"\brun(?:ning|s)?\b|\bsprint(?:ing|s)?\b",
+    re.IGNORECASE,
+)
 
 
 class TimelinePlannerBackend(Protocol):
@@ -101,6 +107,7 @@ class PlannerContent:
     beat_repetition_warning_count: int = 0
     action_repetition_warning_count: int = 0
     camera_repetition_warning_count: int = 0
+    song_direction_fallback: bool = False
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -127,6 +134,7 @@ class PlannerContent:
             "beat_repetition_warning_count": self.beat_repetition_warning_count,
             "action_repetition_warning_count": self.action_repetition_warning_count,
             "camera_repetition_warning_count": self.camera_repetition_warning_count,
+            "song_direction_fallback": self.song_direction_fallback,
         }
 
     @classmethod
@@ -171,6 +179,9 @@ class PlannerContent:
             ),
             camera_repetition_warning_count=int(
                 value.get("camera_repetition_warning_count", 0)
+            ),
+            song_direction_fallback=bool(
+                value.get("song_direction_fallback", False)
             ),
         )
 
@@ -271,6 +282,101 @@ def _recover_unframed_records(
             recovered[slot] = text
     if recovered:
         return recovered
+
+    # Isolated retries have a unique side-table mapping.  Small models often
+    # wrap that single record in JSON, a Markdown table, or slot/text labels
+    # even when instructed to emit TSV.  Accept only wrappers that identify
+    # one unambiguous text value; never synthesize or rewrite the value.
+    if allow_single_positional and len(expected_slots) == 1:
+        expected_slot = expected_slots[0]
+
+        json_candidates: list[str] = []
+        json_text = normalized.strip()
+        if json_text.startswith("```") and json_text.endswith("```"):
+            json_text = re.sub(r"^```(?:json)?\s*", "", json_text)
+            json_text = re.sub(r"\s*```$", "", json_text)
+        try:
+            decoded = json.loads(json_text)
+        except (json.JSONDecodeError, TypeError):
+            decoded = None
+        objects = decoded if isinstance(decoded, list) else [decoded]
+        for item in objects:
+            if not isinstance(item, dict):
+                continue
+            item_type = item.get("record_type", item.get("type", record_type))
+            item_slot = item.get("slot", expected_slot)
+            item_text = item.get("text")
+            if (
+                str(item_type).upper() == record_type.upper()
+                and str(item_slot).isascii()
+                and str(item_slot).isdecimal()
+                and int(item_slot) == expected_slot
+                and isinstance(item_text, str)
+                and item_text.strip()
+            ):
+                json_candidates.append(item_text.strip())
+        if len(json_candidates) == 1:
+            return {expected_slot: json_candidates[0]}
+
+        pipe_candidates: list[str] = []
+        pipe_line = re.compile(
+            rf"^\|?\s*{re.escape(record_type)}\s*\|\s*"
+            rf"{expected_slot}\s*\|\s*(.+?)\s*\|?$",
+            flags=re.IGNORECASE,
+        )
+        for line in lines:
+            match = pipe_line.fullmatch(line)
+            if match and match.group(1).strip():
+                pipe_candidates.append(match.group(1).strip())
+        if len(pipe_candidates) == 1:
+            return {expected_slot: pipe_candidates[0]}
+
+        labelled_texts: list[str] = []
+        labelled_slots: list[int] = []
+        labelled_types: list[str] = []
+        for line in lines:
+            field = re.fullmatch(
+                r"(?:[-*]\s*)?(record_type|type|slot|text)\s*[:：]\s*(.+)",
+                line,
+                flags=re.IGNORECASE,
+            )
+            if not field:
+                continue
+            name, value = field.group(1).lower(), field.group(2).strip()
+            if name in {"record_type", "type"}:
+                labelled_types.append(value)
+            elif name == "slot" and value.isascii() and value.isdecimal():
+                labelled_slots.append(int(value))
+            elif name == "text" and value:
+                labelled_texts.append(value)
+        type_matches = not labelled_types or all(
+            value.upper() == record_type.upper() for value in labelled_types
+        )
+        slot_matches = not labelled_slots or all(
+            value == expected_slot for value in labelled_slots
+        )
+        if type_matches and slot_matches and len(labelled_texts) == 1:
+            return {expected_slot: labelled_texts[0]}
+
+        # The isolated request itself is the slot side table.  If the model
+        # answers with several plain prose lines, preserve every line in order
+        # and only normalize the forbidden physical newlines to spaces.  This
+        # is deliberately unavailable to normal or multi-slot batches.
+        wrapper_line = re.compile(
+            rf"^(?:{re.escape(record_type)}|MVD_LLM_RECORDS_V1|"
+            rf"slot\s*[:：]?\s*{expected_slot}|{expected_slot})$",
+            flags=re.IGNORECASE,
+        )
+        prose_lines = [line for line in lines if not wrapper_line.fullmatch(line)]
+        if type_matches and slot_matches and len(prose_lines) > 1 and not any(
+            line.startswith(("#", "{", "[", "|")) for line in prose_lines
+        ):
+            text = " ".join(
+                re.sub(r"^[-*]\s+", "", line, count=1).strip()
+                for line in prose_lines
+            ).strip()
+            if text:
+                return {expected_slot: text}
 
     # With multiple requested slots, an exact line count gives a deterministic
     # side-table mapping. Only Markdown bullet syntax is removed; TEXT is kept.
@@ -433,6 +539,67 @@ def _request_entities(
         issues,
         tuple(sorted(set(retried_scenes))),
         unresolved,
+        recovered_count,
+    )
+
+
+def _request_entity_batches(
+    backend: TimelinePlannerBackend,
+    *,
+    task: str,
+    record_type: str,
+    entities: list[_Entity],
+    batch_size: int,
+    shared: Mapping[str, object],
+    system_prompt: str,
+    runtime_config: LlamaRuntimeConfig,
+    interrupt_callback: Any,
+) -> tuple[
+    dict[tuple[int, ...], str],
+    list[LLMRecordIssue],
+    tuple[int, ...],
+    tuple[tuple[str, int, int], ...],
+    int,
+]:
+    """Request a long entity list without duplicating the whole timeline.
+
+    Each entity already carries its immediately preceding lyric and visual-beat
+    context.  Keeping the batch boundary identical to the other Planner tasks
+    therefore preserves the editorial context while bounding prompt growth.
+    """
+
+    values: dict[tuple[int, ...], str] = {}
+    issues: list[LLMRecordIssue] = []
+    retried_scenes: set[int] = set()
+    missing: list[tuple[str, int, int]] = []
+    recovered_count = 0
+    for entity_batch in _chunks(entities, batch_size):
+        (
+            batch_values,
+            batch_issues,
+            batch_retries,
+            batch_missing,
+            batch_recovered,
+        ) = _request_entities(
+            backend,
+            task=task,
+            record_type=record_type,
+            entities=entity_batch,
+            shared=shared,
+            system_prompt=system_prompt,
+            runtime_config=runtime_config,
+            interrupt_callback=interrupt_callback,
+        )
+        values.update(batch_values)
+        issues.extend(batch_issues)
+        retried_scenes.update(batch_retries)
+        missing.extend(batch_missing)
+        recovered_count += batch_recovered
+    return (
+        values,
+        issues,
+        tuple(sorted(retried_scenes)),
+        tuple(missing),
         recovered_count,
     )
 
@@ -628,7 +795,7 @@ def _camera_budget_violations(
     entities: list[_Entity],
     values: Mapping[tuple[int, ...], str],
     *,
-    arc_required: bool,
+    arc_maximum: int,
 ) -> dict[tuple[int, ...], tuple[str, ...]]:
     """Select Camera slots that need an LLM quality retry without rewriting TEXT."""
 
@@ -646,7 +813,7 @@ def _camera_budget_violations(
             maximum = (
                 1
                 if motion == "Tracking Shot"
-                else int(arc_required)
+                else arc_maximum
                 if motion == "Arc Shot"
                 else 2
             )
@@ -654,6 +821,21 @@ def _camera_budget_violations(
                 violations.setdefault(entity.key, []).append(
                     f"motion_budget:{motion}"
                 )
+        if (
+            entity.value.get("face_arc_transition")
+            and motion != "Arc Shot"
+        ):
+            violations.setdefault(entity.key, []).append(
+                "required_face_arc_transition"
+            )
+        if entity.value.get("long_arc_emphasis") and motion != "Arc Shot":
+            violations.setdefault(entity.key, []).append(
+                "required_long_arc_emphasis"
+            )
+        if entity.value.get("face_zoom_emphasis") and motion != "Zoom In":
+            violations.setdefault(entity.key, []).append(
+                "required_face_zoom_emphasis"
+            )
         if _SLOW_CAMERA_RE.search(text):
             slow_count += 1
             if slow_count > slow_maximum:
@@ -672,6 +854,80 @@ def _camera_budget_violations(
                 "unrequested_lower_body_detail"
             )
     return {key: tuple(value) for key, value in violations.items()}
+
+
+def _anime_mv_long_arc_keys(entities: list[_Entity]) -> set[tuple[int, ...]]:
+    """Choose a sparse, deterministic set of long Arc slots for anime_mv."""
+
+    if not entities:
+        return set()
+    target = 2 if len(entities) >= 4 else 1
+    selected_indices = {
+        index
+        for index, entity in enumerate(entities)
+        if entity.value.get("face_arc_transition")
+    }
+    role_priority = {
+        "spatial_reveal_or_interaction_coverage": 0,
+        "continuity_bridge": 1,
+        "new_scene_establishing_edit": 2,
+        "upper_body_performance_coverage": 3,
+        "expressive_result_coverage": 4,
+    }
+    candidates = sorted(
+        range(len(entities)),
+        key=lambda index: (
+            -int(entities[index].value.get("shot_duration_ms", 0)),
+            role_priority.get(str(entities[index].value.get("editorial_role")), 9),
+            index,
+        ),
+    )
+    for index in candidates:
+        if len(selected_indices) >= target:
+            break
+        if index in selected_indices:
+            continue
+        if any(abs(index - selected) == 1 for selected in selected_indices):
+            continue
+        selected_indices.add(index)
+    if len(selected_indices) < target:
+        for index in candidates:
+            if len(selected_indices) >= target:
+                break
+            if index not in selected_indices:
+                selected_indices.add(index)
+    return {entities[index].key for index in selected_indices}
+
+
+def _anime_mv_face_zoom_key(
+    entities: list[_Entity],
+    long_arc_keys: set[tuple[int, ...]],
+) -> tuple[int, ...] | None:
+    """Select one non-Arc performance slot for a readable face Zoom In."""
+
+    role_priority = {
+        "expressive_result_coverage": 0,
+        "upper_body_performance_coverage": 1,
+        "continuity_bridge": 2,
+        "new_scene_establishing_edit": 3,
+    }
+    candidates = [
+        entity
+        for entity in entities
+        if entity.key not in long_arc_keys
+        and str(entity.value.get("editorial_role")) in role_priority
+    ]
+    if not candidates:
+        return None
+    selected = min(
+        candidates,
+        key=lambda entity: (
+            role_priority[str(entity.value.get("editorial_role"))],
+            -int(entity.value.get("shot_duration_ms", 0)),
+            entity.key,
+        ),
+    )
+    return selected.key
 
 
 def _action_budget_violations(
@@ -705,6 +961,13 @@ def _action_budget_violations(
         ):
             violations.setdefault(entity.key, []).append(
                 "unrequested_lower_body_primary_action"
+            )
+        if (
+            _RUNNING_ACTION_RE.search(text)
+            and not _RUNNING_ACTION_RE.search(source_text)
+        ):
+            violations.setdefault(entity.key, []).append(
+                "unrequested_running"
             )
     return {key: tuple(value) for key, value in violations.items()}
 
@@ -815,6 +1078,34 @@ def _camera_editorial_role(
     if shot_index == 3:
         return "spatial_reveal_or_interaction_coverage"
     return "expressive_result_coverage"
+
+
+def _face_arc_transitions(
+    shot_keys: list[tuple[int, int]],
+    face_cut_keys: set[tuple[int, int]],
+) -> dict[tuple[int, int], str]:
+    """Pair each structural face insert with one same-Scene Arc coverage Shot."""
+
+    transitions: dict[tuple[int, int], str] = {}
+    for index, face_key in enumerate(shot_keys):
+        if face_key not in face_cut_keys:
+            continue
+        candidates: list[tuple[tuple[int, int], str]] = []
+        if index + 1 < len(shot_keys):
+            next_key = shot_keys[index + 1]
+            if next_key[0] == face_key[0] and next_key not in face_cut_keys:
+                candidates.append((next_key, "arc_out_of_previous_face_cut"))
+        if index > 0:
+            previous_key = shot_keys[index - 1]
+            if previous_key[0] == face_key[0] and previous_key not in face_cut_keys:
+                candidates.append((previous_key, "arc_into_next_face_cut"))
+        if face_key[1] > 1:
+            candidates.reverse()
+        for candidate, relation in candidates:
+            if candidate not in transitions:
+                transitions[candidate] = relation
+                break
+    return transitions
 
 
 def _protected_context(
@@ -1143,9 +1434,9 @@ def generate_planner_content(
             shared={
                 "subject_roster": subject_roster,
                 "direction": performance_directions,
-                "recent_visual_beat_history": recent_beat_history[-4:],
+                "recent_visual_beat_history": recent_beat_history[-12:],
             },
-            history=recent_beat_history[-4:],
+            history=recent_beat_history,
             system_prompt=system_prompts["visual-beats"],
             runtime_config=runtime_config,
             interrupt_callback=interrupt_callback,
@@ -1183,9 +1474,12 @@ def generate_planner_content(
     all_issues.extend(issues)
     all_retries.update(retries)
     protocol_recovered_count += recovered
-    if missing:
-        return None, missing
-    song_direction = dialogue_filter.filter(song_values[(1,)])
+    song_direction_fallback = bool(missing)
+    song_direction = (
+        ""
+        if song_direction_fallback
+        else dialogue_filter.filter(song_values[(1,)])
+    )
 
     candidate_map = {
         scene.scene_number: build_layout_candidates(scene)
@@ -1264,11 +1558,12 @@ def generate_planner_content(
         )
         seen_layout_sections.update(current_sections)
         previous_layout_lyrics = current_layout_lyrics
-    layout_texts, issues, retries, missing, recovered = _request_entities(
+    layout_texts, issues, retries, missing, recovered = _request_entity_batches(
         backend,
         task="shot-layout",
         record_type="LAYOUT",
         entities=layout_entities,
+        batch_size=scenes_per_batch,
         shared={"song_direction": song_direction},
         system_prompt=system_prompts["shot-layout"],
         runtime_config=runtime_config,
@@ -1320,11 +1615,12 @@ def generate_planner_content(
             retry_scenes,
             retry_missing,
             recovered,
-        ) = _request_entities(
+        ) = _request_entity_batches(
             backend,
             task="shot-layout",
             record_type="LAYOUT",
             entities=layout_entities,
+            batch_size=scenes_per_batch,
             shared={
                 "song_direction": song_direction,
                 "boundary_mix_retry_reason": retry_reason,
@@ -1429,10 +1725,11 @@ def generate_planner_content(
                         ),
                         "generic_hand_raise_or_lower_maximum": 0,
                         "unrequested_lower_body_primary_action_maximum": 0,
+                        "unrequested_running_maximum": 0,
                     },
-                    "recent_action_history": recent_action_history[-6:],
+                    "recent_action_history": recent_action_history[-18:],
                 },
-                history=recent_action_history[-6:],
+                history=recent_action_history,
                 system_prompt=system_prompts["actions"],
                 runtime_config=runtime_config,
                 interrupt_callback=interrupt_callback,
@@ -1478,8 +1775,9 @@ def generate_planner_content(
                                 ),
                                 "generic_hand_raise_or_lower_maximum": 0,
                                 "unrequested_lower_body_primary_action_maximum": 0,
+                                "unrequested_running_maximum": 0,
                             },
-                            "recent_action_history": recent_action_history[-6:],
+                            "recent_action_history": recent_action_history[-18:],
                             "retry": "action_quality_budget",
                             "action_quality_retry": (
                                 "Replace the rejected Action choice. Resolve every "
@@ -1519,6 +1817,18 @@ def generate_planner_content(
 
     camera_values: dict[tuple[int, ...], str] = {}
     recent_camera_history: list[str] = []
+    all_shot_keys = list(planned_template.shot_keys)
+    face_cut_keys = {
+        key
+        for key in all_shot_keys
+        if _camera_editorial_role(
+            shot_context[key], lip_sync_active=lip_sync_mode != "off"
+        )
+        == "face_performance_cut"
+    }
+    face_arc_transitions = _face_arc_transitions(
+        all_shot_keys, face_cut_keys
+    )
     for scene_batch in _chunks(list(planned_template.scenes), scenes_per_batch):
         keys = [
             key for key in planned_template.shot_keys
@@ -1536,18 +1846,63 @@ def generate_planner_content(
                     shot_context[key],
                     lip_sync_active=lip_sync_mode != "off",
                 ),
+                "face_arc_transition": face_arc_transitions.get(key, ""),
             }
             if context["editorial_role"] == "face_performance_cut":
                 camera_values[key] = FACE_PERFORMANCE_CUT_CAMERA
             else:
                 entities.append(_Entity(key[0], key, context))
         if entities:
-            arc_required = not any(
-                re.search(r"(?i)\barc(?: shot)?\b", value)
-                for value in recent_camera_history[-4:]
+            anime_mv = direction.camera_profile_id == "anime_mv"
+            long_arc_keys = (
+                _anime_mv_long_arc_keys(entities) if anime_mv else set()
+            )
+            batch_has_face_cut = any(key in face_cut_keys for key in keys)
+            face_zoom_key = (
+                _anime_mv_face_zoom_key(entities, long_arc_keys)
+                if anime_mv
+                and lip_sync_mode != "off"
+                and not batch_has_face_cut
+                else None
+            )
+            if long_arc_keys or face_zoom_key is not None:
+                entities = [
+                    _Entity(
+                        entity.scene_number,
+                        entity.key,
+                        {
+                            **entity.value,
+                            "long_arc_emphasis": entity.key in long_arc_keys,
+                            "long_arc_duration_fraction": "70-90%",
+                            "face_zoom_emphasis": entity.key == face_zoom_key,
+                        },
+                    )
+                    for entity in entities
+                ]
+            face_arc_count = sum(
+                bool(entity.value.get("face_arc_transition"))
+                for entity in entities
+            )
+            arc_required = (
+                not anime_mv
+                and face_arc_count == 0
+                and not any(
+                    re.search(r"(?i)\barc(?: shot)?\b", value)
+                    for value in recent_camera_history[-4:]
+                )
+            )
+            arc_maximum = max(
+                face_arc_count,
+                len(long_arc_keys),
+                int(arc_required),
             )
             camera_batch_contract = {
-                "arc_shot_maximum": int(arc_required),
+                "camera_profile_id": direction.camera_profile_id,
+                "arc_shot_maximum": arc_maximum,
+                "face_arc_transition_count": face_arc_count,
+                "long_arc_emphasis_count": len(long_arc_keys),
+                "long_arc_duration_fraction": "70-90%" if long_arc_keys else "none",
+                "face_zoom_emphasis_count": int(face_zoom_key is not None),
                 "tracking_shot_maximum": 1,
                 "same_other_motion_type_maximum": 2,
                 "slow_speed_maximum": max(1, len(entities) // 4),
@@ -1571,9 +1926,9 @@ def generate_planner_content(
                     "subject_instance_policy": subject_instance_policy,
                     "arc_required": arc_required,
                     "camera_batch_contract": camera_batch_contract,
-                    "recent_camera_history": recent_camera_history[-6:],
+                    "recent_camera_history": recent_camera_history[-12:],
                 },
-                history=recent_camera_history[-6:],
+                history=recent_camera_history,
                 system_prompt=system_prompts["cameras"],
                 runtime_config=runtime_config,
                 interrupt_callback=interrupt_callback,
@@ -1582,7 +1937,7 @@ def generate_planner_content(
                 budget_violations = _camera_budget_violations(
                     entities,
                     values,
-                    arc_required=arc_required,
+                    arc_maximum=arc_maximum,
                 )
                 if budget_violations:
                     retry_entities = [
@@ -1624,7 +1979,7 @@ def generate_planner_content(
                             "subject_instance_policy": subject_instance_policy,
                             "arc_required": False,
                             "camera_batch_contract": camera_batch_contract,
-                            "recent_camera_history": recent_camera_history[-6:],
+                            "recent_camera_history": recent_camera_history[-12:],
                             "retry": "camera_quality_budget",
                             "camera_quality_retry": (
                                 "Replace the rejected Camera choice. Obey every "
@@ -1644,7 +1999,7 @@ def generate_planner_content(
                     remaining_budget_violations = _camera_budget_violations(
                         entities,
                         values,
-                        arc_required=arc_required,
+                        arc_maximum=arc_maximum,
                     )
                     repetition_warnings += len(remaining_budget_violations)
         else:
@@ -1687,6 +2042,7 @@ def generate_planner_content(
             + len(layout_repaired_scenes)
             + len(layout_fallback_scenes)
             + (1 if layout_mix_retry else 0)
+            + (1 if song_direction_fallback else 0)
         ),
         retried_scenes=tuple(sorted(all_retries)),
         removed_generated_dialogue_count=dialogue_filter.removed_count,
@@ -1703,6 +2059,7 @@ def generate_planner_content(
         beat_repetition_warning_count=beat_repetition_warning_count,
         action_repetition_warning_count=action_repetition_warning_count,
         camera_repetition_warning_count=camera_repetition_warning_count,
+        song_direction_fallback=song_direction_fallback,
     )
     return content, ()
 

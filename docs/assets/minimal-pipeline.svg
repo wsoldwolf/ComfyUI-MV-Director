@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-labelledby="title description">
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1180" viewBox="0 0 1600 1180" role="img" aria-labelledby="title description">
   <title id="title">ComfyUI-MV-Director 最小パイプライン</title>
-  <desc id="description">参照画像、短い希望、歌詞、ボーカル、フルミックスからサブジェクトEMD、演出方針、時間枠、完全EMD、Context Loop Plan JSONを作り、参照画像と音声トラックとともにH3 Ref2VAへ渡す流れ。手書き完全EMDからCompilerを単独利用する経路とSRT単独出力も示す。</desc>
+  <desc id="description">人物参照と背景参照を分離し、背景は計画時にVision観察をDirectionへ、動画生成時に環境専用PictureをH3へ渡す。歌詞、ボーカル、フルミックスから完全EMDとContext Loop Plan JSONを作る流れ、Compiler単独経路及びSRT単独出力も示す。</desc>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#526273"/>
@@ -25,7 +25,7 @@
     </style>
   </defs>
 
-  <rect class="canvas" x="0" y="0" width="1600" height="1000" rx="18"/>
+  <rect class="canvas" x="0" y="0" width="1600" height="1180" rx="18"/>
   <text class="title" x="800" y="44">ComfyUI-MV-Director — 選定した最小パイプライン</text>
 
   <text class="lane" x="45" y="82">入力</text>
@@ -35,11 +35,12 @@
   <text class="lane" x="1360" y="82">Context Loop / H3</text>
 
   <rect class="section" x="22" y="94" width="1556" height="542" rx="16"/>
-  <rect class="section" x="22" y="662" width="1556" height="234" rx="16"/>
+  <rect class="section" x="22" y="662" width="1556" height="430" rx="16"/>
 
   <!-- Image branch -->
   <rect class="input" x="45" y="120" width="220" height="72" rx="12"/>
-  <text class="label" x="155" y="163">参照画像</text>
+  <text class="label" x="155" y="153">人物参照画像</text>
+  <text class="small" x="155" y="178">identity専用</text>
 
   <rect class="node" x="325" y="108" width="300" height="96" rx="12"/>
   <text class="label" x="475" y="147">Image to Subject EMD</text>
@@ -64,7 +65,7 @@
 
   <rect class="node" x="325" y="257" width="300" height="96" rx="12"/>
   <text class="label" x="475" y="296">Direction Enhancer</text>
-  <text class="small" x="475" y="326">短い全体演出方針</text>
+  <text class="small" x="475" y="326">希望 + 背景観察 → 全体方針</text>
 
   <rect class="artifact" x="680" y="282" width="255" height="72" rx="12"/>
   <text class="label" x="807.5" y="326">Direction</text>
@@ -156,15 +157,45 @@
   <path class="edge" d="M265 834 H325"/>
   <path class="edge" d="M625 785 C652 785 652 836 680 836"/>
 
+  <!-- Separate background branch -->
+  <rect class="input" x="45" y="910" width="220" height="82" rx="12"/>
+  <text class="label" x="155" y="941">背景参照画像</text>
+  <text class="small" x="155" y="968">人物画像とは別ファイル</text>
+
+  <rect class="node" x="325" y="900" width="300" height="102" rx="12"/>
+  <text class="label" x="475" y="932">Background Vision</text>
+  <text class="small" x="475" y="958">計画時: scene_only / location</text>
+  <text class="small" x="475" y="982">Picture束縛なし</text>
+
+  <rect class="artifact" x="680" y="900" width="255" height="102" rx="12"/>
+  <text class="label" x="807.5" y="932">環境observations_json</text>
+  <text class="small" x="807.5" y="958">Directionへ環境証拠</text>
+  <text class="small" x="807.5" y="982">人物Subjectへ結合しない</text>
+
+  <rect class="node" x="1010" y="900" width="280" height="102" rx="12"/>
+  <text class="label" x="1150" y="932">H3 Background Reference</text>
+  <text class="small" x="1150" y="958">生成時: &lt;Picture 2&gt;</text>
+  <text class="small" x="1150" y="982">環境条件を独立して保持</text>
+
+  <path class="edge" d="M265 951 H325"/>
+  <path class="edge" d="M625 951 H680"/>
+  <path class="edge-dashed" d="M680 940 H650 V343 H625"/>
+  <text class="edge-label" x="642" y="626">observations_json</text>
+  <path class="edge-dashed" d="M265 980 V1050 H980 C1000 1050 1000 974 1010 974"/>
+  <text class="edge-label" x="617" y="1042">同じ背景IMAGEをpass-through</text>
+  <path class="edge" d="M1462.5 474 V1060 H1150 V1002"/>
+  <text class="edge-label" x="1362" y="1052">Compiled Plan JSON</text>
+  <path class="edge" d="M1150 900 V888"/>
+
   <!-- Final target -->
   <rect class="target" x="1110" y="760" width="455" height="128" rx="14"/>
   <text class="target-label" x="1337.5" y="808">Context Loop / MiniMax H3</text>
   <text class="target-label" x="1337.5" y="838">Ref2VA</text>
   <text class="target-small" x="1337.5" y="866">Plan JSON + 参照画像 + Source Timeline</text>
 
-  <path class="edge" d="M1462.5 474 V720 C1462.5 742 1435 742 1435 760"/>
   <path class="edge" d="M935 234 C970 234 970 660 1045 660 H1380 C1405 660 1405 738 1405 760"/>
   <path class="edge" d="M935 836 H1110"/>
 
-  <text class="small" x="800" y="947">独立利用: 手書き完全EMD → Compiler ／ 画像なしサブジェクトEMD → Enhancer・Planner ／ Lyric Segmentation → SRT</text>
+  <text class="small" x="800" y="1130">人物 &lt;Picture 1&gt; と背景 &lt;Picture 2&gt; を分離すると、人物identityによる条件占有を避けて背景再現率を高められる</text>
+  <text class="small" x="800" y="1155">独立利用: 手書き完全EMD → Compiler ／ 画像なしサブジェクトEMD → Enhancer・Planner ／ Lyric Segmentation → SRT</text>
 </svg>

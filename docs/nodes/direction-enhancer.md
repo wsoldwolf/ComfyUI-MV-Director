@@ -16,13 +16,15 @@ Subject EMD、Vision観察、ユーザー希望、三つのprofileを統合し�
 | `direction_emd_passthrough` | 任意 | profileを使わず、利用者が直接書く演出EMD |
 | `cache_mode` | `reuse` | 成功結果の再利用方針 |
 
+`max_tokens`は利用者が指定する生成上限ですが、Directionの応答は少数の型付き行に限定されます。そのため実推論では入力を削らず、出力予約だけを最大1024 tokenへ自動調整します。さらにcontextが狭い場合は、安全余白を維持したまま128 token以上の範囲で縮小します。調整時は`requested_max_tokens`と`effective_max_tokens`をINFOログへ出します。128 tokenも確保できない場合だけ、入力を黙って切り詰めず`ContextBudgetError`で停止します。
+
 profileには`reference_anime`、`anime_mv`、`reference_cinematic`、`illust_to_photoreal`、`reference_painterly`等があります。Motion/Cameraにも`anime_mv`があります。profile本文は[`profiles/style`、`profiles/motion`、`profiles/camera`](../../profiles/README.md)の外部EMDから起動時に読み込み、ファイル名をnode comboのIDとして自動列挙します。利用者はPythonを編集せず独自profileを追加できます。追加・変更後はComfyUIを再起動してください。
 
 選択したMotion及びCamera profileは、それぞれ完成Directionの`## モーション`及び`## カメラ`を機械的に所有します。これらのrecordはLLMへ要求せず、外部profile EMD本文をそのまま採用します。locked Styleも同様です。LLMには未固定Style及び環境・時間・照明・その他の統合判断だけを担当させるため、profile本文の欠落や言い換えを理由に停止しません。ユーザーが本文を直接管理する場合だけ、対応comboを`passthrough`にして外部Direction EMDを入力します。
 
 DirectionはCompiler後の全Scene `prompt_prefix`へ共通適用されます。Plannerでは型別に経路を分け、Visual BeatとActionへStyle、Environment、Time/Lighting、Motion、Otherを渡し、Camera profileはCamera taskだけへ渡します。特定の衣装部品、身体部位又は小物の局所形状をprofileへ書くと、全Shotで反復されて演技やCameraの主題になり得ます。これらは参照画像、`# サブジェクト`又は必要な作者Shot本文へ置き、Direction profileには画風、全体的な身体演技、Camera運用等のMV全体へ本当に共通する方針だけを置きます。
 
-Vision観察の`subject_pose`、shot size、viewpoint、subject placement及びdepthはDirection LLMへ渡しません。参照設定画の立ち姿、両手を広げたポーズ又は左右panel構図が`## その他`へ入り、全Sceneで固定反復されることを防ぐためです。背景のsetting/elements、照明及び時刻・天候だけを`vision_scene_context`へ縮約します。`## その他`は必要なら、歌詞転換で選択的に使う物語モチーフ又は環境効果を定義できます。狐火等の超自然効果は環境側へ置き、人物の髪、耳、尾、目、皮膚又は衣装自体を発光体にしません。
+Vision観察の`subject_pose`、shot size、viewpoint、subject placement及びdepthはDirection LLMへ渡しません。参照設定画の立ち姿、両手を広げたポーズ又は左右panel構図が`## その他`へ入り、全Sceneで固定反復されることを防ぐためです。背景のsetting/elements、照明及び時刻・天候だけを`vision_scene_context`へ縮約します。背景Visionが`scene_only + lock_identity`で非空`subject_hint`を持つ場合、その原文は`locked_user_hint`としてLLMへ渡すと同時に、完成Directionの`## 環境`へ一文字も言い換えず保持します。例えば`赤い鳥居。`は観察側が単に「鳥居」と返しても失われません。`## その他`は必要なら、歌詞転換で選択的に使う物語モチーフ又は環境効果を定義できます。狐火等の超自然効果は環境側へ置き、人物の髪、耳、尾、目、皮膚又は衣装自体を発光体にしません。
 
 ## 出力
 

@@ -70,7 +70,10 @@ def build_whisper_initial_prompt(
 
 
 def extract_whisper_words(
-    result: dict[str, Any], *, audio_duration_ms: int
+    result: dict[str, Any],
+    *,
+    audio_duration_ms: int,
+    allow_partial_word_timestamps: bool = False,
 ) -> tuple[WhisperWord, ...]:
     segments = result.get("segments")
     if not isinstance(segments, list):
@@ -108,7 +111,12 @@ def extract_whisper_words(
             normalized = normalize_match_text(text)
             if normalized and 0 <= start_ms < end_ms <= audio_duration_ms:
                 words.append(WhisperWord(text, normalized, start_ms, end_ms, order))
-    if missing or (any(str(item.get("text", "")).strip() for item in segments if isinstance(item, dict)) and not words):
+    has_text = any(
+        str(item.get("text", "")).strip()
+        for item in segments
+        if isinstance(item, dict)
+    )
+    if (missing and not allow_partial_word_timestamps) or (has_text and not words):
         raise LyricSegmentationError(
             "Whisper returned text without usable word_timestamps"
         )

@@ -4,6 +4,7 @@ from .camera import (
     FACE_PERFORMANCE_CUT_ACTION,
     FACE_PERFORMANCE_CUT_CAMERA,
 )
+from .background_reference import bind_h3_background_reference
 from .context_loop_0_6_9 import (
     COMFYUI_BASELINE_COMMIT,
     COMFYUI_BASELINE_VERSION,
@@ -27,5 +28,6 @@ __all__ = [
     "FACE_PERFORMANCE_CUT_ACTION",
     "FACE_PERFORMANCE_CUT_CAMERA",
     "H3TimingProfile",
+    "bind_h3_background_reference",
     "TIMING_SCHEMA",
 ]

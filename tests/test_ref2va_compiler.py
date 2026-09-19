@@ -171,6 +171,10 @@ class Ref2VACompilerTests(unittest.TestCase):
         prompt = compile_ref2va(source, EchoTranslator()).plan["shots"][0]["prompt"]
         self.assertIn(
             "<Subject 1> is described here: EN:狐耳の少女. "
+            "Every explicitly described local shape, count, placement, scale, "
+            "color, material, and exclusion is a literal identity constraint. "
+            "Never normalize an unusual facial, anatomical, garment, or "
+            "accessory feature into a conventional default. "
             "Use these connected references only for its visual identity and "
             "design: <Picture 1>. Treat every panel or alternate view as identity "
             "material for the same single physical instance. Render exactly one "
@@ -179,7 +183,33 @@ class Ref2VACompilerTests(unittest.TestCase):
             "inset view, split-screen copy, or second representation of this "
             "Subject. "
             "Do not copy a reference pose, framing, composition, panel layout, "
-            "or background; follow the current Shot instead.",
+            "or background; follow the current Shot instead. The reference is "
+            "identity evidence, not a storyboard, montage, or layout template. "
+            "Render one unified full-frame continuous camera view that fills the "
+            "entire image. Never create an internal border, seam, divider, panel, "
+            "inset, picture-in-picture, side-by-side view, or simultaneous "
+            "alternate angle. If the reference contains multiple views, fuse "
+            "only compatible identity features into this one view. Camera angle "
+            "and framing changes must happen over time or at a scene cut, never "
+            "simultaneously within one frame. The current Scene environment and "
+            "time-lighting directions are the sole authority for the rendered "
+            "world and fully replace every background and illumination visible "
+            "inside this identity reference. Treat any blank or white studio field, daylight, "
+            "backdrop, panel-specific setting, or other conflicting reference "
+            "environment as non-renderable source residue. Continue the specified "
+            "Scene environment across the entire frame, including behind and "
+            "around the Subject. Generate a newly staged Shot from the current "
+            "action and camera instructions. The first output frame must already "
+            "use the new Shot-specific body pose, gaze, blocking, framing, "
+            "viewpoint, camera height, and camera distance. Never show, "
+            "reconstruct, paste, hold, or transition from the reference image "
+            "itself as a frame, still, plate, poster, inset, background, or "
+            "composition. Keep visible skin and clothing clean and intact "
+            "unless an author-written Shot explicitly requires a physical "
+            "condition. Lyric text inside <d> is vocal content only: figurative "
+            "words about wounds, scars, pain, blood, or a broken heart never "
+            "authorize a visible cut, scar, bruise, bleeding, bandage, lesion, "
+            "stain, tattoo-like mark, torn skin, or damaged clothing.",
             prompt,
         )
         summary_index = prompt.index("summary:")
@@ -191,10 +221,49 @@ class Ref2VACompilerTests(unittest.TestCase):
             retention,
             [
                 "<Subject 1>: fully_preserved - preserve the described identity "
-                "and attributes across shots."
+                "and attributes across shots. Preserve every stated local shape, "
+                "count, placement, scale, color, material, and exclusion literally; "
+                "never replace an unusual feature with a conventional default."
             ],
         )
         self.assertNotIn("<Picture 1>", "\n".join(retention))
+
+    def test_scene_time_lighting_replaces_reference_background(self) -> None:
+        source = """# サブジェクト
+* `画像1` 狐耳の少女
+# 共通プロンプト
+## 時間・照明
+* シーン全編を通して時刻は夜間である。
+* 月明りが照している。
+> `シーン` 1
+# シーン 00:00.000 --> 00:01.000
+* `H3長` 22
+## ショット 00:00.000
+* 鳥居の前で歌う。
+"""
+        plan = compile_ref2va(source, EchoTranslator()).plan
+
+        self.assertEqual(
+            plan["prompt_prefix"],
+            [
+                "EN:シーン全編を通して時刻は夜間である。",
+                "EN:月明りが照している。",
+            ],
+        )
+        subject_definition = plan["shots"][0]["prompt"][1]
+        self.assertIn(
+            "time-lighting directions are the sole authority",
+            subject_definition,
+        )
+        self.assertIn(
+            "fully replace every background and illumination visible inside this identity reference",
+            subject_definition,
+        )
+        self.assertIn("blank or white studio field", subject_definition)
+        self.assertIn("across the entire frame", subject_definition)
+        self.assertIn("Generate a newly staged Shot", subject_definition)
+        self.assertIn("The first output frame must already use", subject_definition)
+        self.assertIn("reference image itself", subject_definition)
 
     def test_silence_is_an_explicit_flag(self) -> None:
         source = """# サブジェクト

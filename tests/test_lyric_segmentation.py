@@ -352,6 +352,25 @@ class AlignmentTests(unittest.TestCase):
                 {"segments": [{"text": "歌詞"}]}, audio_duration_ms=1000
             )
 
+    def test_targeted_mode_keeps_timestamped_words_from_partial_result(self) -> None:
+        result = extract_whisper_words(
+            {
+                "segments": [
+                    {
+                        "text": "有効",
+                        "words": [{"word": "有効", "start": 0.1, "end": 0.5}],
+                    },
+                    {"text": "時刻なし"},
+                ]
+            },
+            audio_duration_ms=1000,
+            allow_partial_word_timestamps=True,
+        )
+        self.assertEqual(
+            [(item.text, item.start_ms, item.end_ms) for item in result],
+            [("有効", 100, 500)],
+        )
+
 
 class TargetedRecoveryTests(unittest.TestCase):
     class _Transcriber:
@@ -431,6 +450,105 @@ class TargetedRecoveryTests(unittest.TestCase):
             )
         )
 
+    def test_bounded_retry_recovers_leading_unplaced_lyric(self) -> None:
+        lyrics = parse_plain_lyrics("[INTRO]\n遠い鈴の音\n次の歌詞\n")
+        resolved = (AlignedLyric(lyrics[1], 3000, 3500),)
+        backend = self._Transcriber(
+            self._result(
+                ("遠い鈴の音", 0.5, 1.2),
+                ("次の歌詞", 3.0, 3.5),
+            )
+        )
+
+        recovered, unplaced, stats = recover_unplaced_lyrics(
+            lyrics,
+            resolved,
+            [0.0] * (5 * 16000),
+            backend,
+            language="ja",
+            device="cpu",
+            voiced_intervals=(),
+            sample_rate=16000,
+            audio_duration_ms=5000,
+        )
+
+        self.assertFalse(unplaced)
+        self.assertEqual(stats.attempted_runs, 1)
+        self.assertEqual(stats.recovered_segments, 1)
+        self.assertEqual(
+            [(item.source.text, item.start_ms, item.end_ms) for item in recovered],
+            [("遠い鈴の音", 500, 1200), ("次の歌詞", 3000, 3500)],
+        )
+        self.assertFalse(backend.calls[0]["initial_prompt"].startswith("\n"))
+
+    def test_bounded_retry_clips_small_whisper_anchor_overlap(self) -> None:
+        lyrics = parse_plain_lyrics("[CHORUS]\n前の歌詞\n狐火へ問う\n次の歌詞\n")
+        resolved = (
+            AlignedLyric(lyrics[0], 1000, 2000),
+            AlignedLyric(lyrics[2], 4000, 4500),
+        )
+        backend = self._Transcriber(
+            self._result(
+                ("狐火へ問う", 1.9, 2.5),
+                ("次の歌詞", 4.0, 4.5),
+            )
+        )
+
+        recovered, unplaced, stats = recover_unplaced_lyrics(
+            lyrics,
+            resolved,
+            [0.0] * (6 * 16000),
+            backend,
+            language="ja",
+            device="cpu",
+            voiced_intervals=(),
+            sample_rate=16000,
+            audio_duration_ms=6000,
+        )
+
+        self.assertFalse(unplaced)
+        self.assertEqual(stats.recovered_segments, 1)
+        self.assertEqual(
+            [(item.source.text, item.start_ms, item.end_ms) for item in recovered],
+            [
+                ("前の歌詞", 1000, 2000),
+                ("狐火へ問う", 2000, 2500),
+                ("次の歌詞", 4000, 4500),
+            ],
+        )
+
+    def test_bounded_retry_rejects_candidate_mostly_outside_anchor(self) -> None:
+        lyrics = parse_plain_lyrics("[CHORUS]\n前の歌詞\n対象歌詞\n次の歌詞\n")
+        resolved = (
+            AlignedLyric(lyrics[0], 1000, 2000),
+            AlignedLyric(lyrics[2], 4000, 4500),
+        )
+        backend = self._Transcriber(
+            self._result(
+                ("対象歌詞", 1.5, 2.1),
+                ("次の歌詞", 4.0, 4.5),
+            )
+        )
+
+        recovered, unplaced, stats = recover_unplaced_lyrics(
+            lyrics,
+            resolved,
+            [0.0] * (6 * 16000),
+            backend,
+            language="ja",
+            device="cpu",
+            voiced_intervals=(),
+            sample_rate=16000,
+            audio_duration_ms=6000,
+        )
+
+        self.assertEqual(
+            [item.source.text for item in recovered],
+            ["前の歌詞", "次の歌詞"],
+        )
+        self.assertEqual([item.text for item in unplaced], ["対象歌詞"])
+        self.assertEqual(stats.recovered_segments, 0)
+
     def test_guided_retry_cannot_invent_without_unguided_evidence(self) -> None:
         lyrics = parse_plain_lyrics("[VERSE]\n前\n存在しない歌詞\n次\n")
         resolved = (
@@ -496,6 +614,83 @@ class TargetedRecoveryTests(unittest.TestCase):
                 ("後半歌詞", 4000, 4500),
                 ("次", 7000, 7500),
             ],
+        )
+
+    def test_targeted_retry_skips_one_timestampless_window(self) -> None:
+        lyrics = parse_plain_lyrics("[VERSE]\n後半歌詞\n")
+        backend = self._SequenceTranscriber(
+            [
+                {"segments": [{"text": "時刻のない誤認識"}]},
+                self._result(("後半歌詞", 1.0, 1.8)),
+            ]
+        )
+        with self.assertLogs("mv_director.lyrics", level=logging.WARNING) as captured:
+            recovered, unplaced, stats = recover_unplaced_lyrics(
+                lyrics,
+                (),
+                [0.0] * (20 * 16000),
+                backend,
+                language="ja",
+                device="cpu",
+                voiced_intervals=(),
+                sample_rate=16000,
+                audio_duration_ms=20000,
+            )
+        self.assertFalse(unplaced)
+        self.assertEqual(stats.recovered_segments, 1)
+        self.assertEqual(
+            [(item.source.text, item.start_ms, item.end_ms) for item in recovered],
+            [("後半歌詞", 11000, 11800)],
+        )
+        self.assertTrue(any("skipped 1/2 window" in item for item in captured.output))
+
+    def test_targeted_retry_refines_internal_gap_with_new_anchors(self) -> None:
+        lyrics = parse_plain_lyrics(
+            "[FINAL_CHORUS]\n前 A B C D 次\n"
+        )
+        resolved = (
+            AlignedLyric(lyrics[0], 1000, 1500),
+            AlignedLyric(lyrics[5], 7000, 7500),
+        )
+        first_pass = self._result(
+            ("A", 2.0, 2.5),
+            ("D", 5.0, 5.5),
+            ("次", 7.0, 7.5),
+        )
+        backend = self._SequenceTranscriber(
+            [
+                first_pass,
+                first_pass,
+                self._result(
+                    ("B", 2.5, 3.0),
+                    ("C", 3.5, 4.0),
+                    ("D", 4.5, 5.0),
+                ),
+            ]
+        )
+
+        with self.assertLogs("mv_director.lyrics", level=logging.INFO) as captured:
+            recovered, unplaced, stats = recover_unplaced_lyrics(
+                lyrics,
+                resolved,
+                [0.0] * (10 * 16000),
+                backend,
+                language="ja",
+                device="cpu",
+                voiced_intervals=(),
+                sample_rate=16000,
+                audio_duration_ms=10000,
+            )
+
+        self.assertFalse(unplaced)
+        self.assertEqual(stats.attempted_runs, 2)
+        self.assertEqual(stats.recovered_segments, 4)
+        self.assertEqual(
+            [item.source.text for item in recovered],
+            ["前", "A", "B", "C", "D", "次"],
+        )
+        self.assertTrue(
+            any("targeted refinement pass 2" in item for item in captured.output)
         )
 
 

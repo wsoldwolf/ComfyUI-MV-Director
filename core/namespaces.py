@@ -14,6 +14,7 @@ PUBLIC_NODE_TYPES = (
     "MVDirectorEMDCompiler",
     "MVDirectorLyricSegmentation",
     "MVDirectorAudioPadPair",
+    "MVDirectorH3BackgroundReference",
     "MVDirectorH3TimingProfile",
     "MVDirectorSeed32",
     "MVDirectorStringCombo",
@@ -34,6 +35,7 @@ PUBLIC_CATEGORIES = (
     "MV Director/Core",
     "MV Director/Input",
     "MV Director/Audio",
+    "MV Director/Video",
     "MV Director/Utilities",
 )
 
@@ -53,4 +55,3 @@ def validate_namespace_contract() -> None:
         raise ValueError("all public categories must use MV Director/")
     if any(value.startswith(("CL", "MiniMaxH3")) for value in PUBLIC_NODE_TYPES):
         raise ValueError("legacy public node aliases are forbidden")
-

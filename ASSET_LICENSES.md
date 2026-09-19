@@ -14,6 +14,9 @@ Copyright © 2026 wsoldwolf
 
 以下のファイルはSuno Pro契約中に生成し、Sunoの正規のダウンロード機能を使用して取得したものです。歌詞アラインメント、ボーカルタイミング、字幕生成、音声パディング及びMV計画の検証素材として提供します。
 
+- `assets/bgm/autumn_fox_shrine.mp3`
+- `assets/bgm/autumn_fox_shrine_vocal.mp3`
+- `assets/bgm/autumn_fox_shrine.txt`
 - `assets/bgm/bgm_millennium_torii.mp3`
 - `assets/bgm/bgm_millennium_torii_vocal.mp3`
 - `assets/bgm/bgm_millennium_torii_lyrics.txt`
@@ -26,17 +29,15 @@ Copyright © 2026 wsoldwolf
 
 ## 参照画像
 
-以下のファイルは`wsoldwolf`がWAI Illustrious及びAnimaを使用して生成したものです。画像認識、Subject EMD生成、参照バインディング及びRef2VA workflowの検証素材として提供します。
+以下のファイルは`wsoldwolf`がWAI Illustrious及びAnimaを使用して生成したものです。画像認識、Subject EMD生成、参照バインディング及びRef2VA workflowの検証素材として提供します。現在の配布workflowでは人物と背景を別参照へ分離し、前者を`<Picture 1>`、後者を`<Picture 2>`として使用します。
 
-- `assets/image/image00002.jpg`
-- `assets/image/image00003.jpg`
-- `assets/image/image00004.jpg`
-- `assets/image/image00005.jpg`
-- `assets/image/image00006.jpg`
-- `assets/image/image0007.jpg`
+- `assets/image/image001_mikofox.jpg` — 人物参照、`<Picture 1>`
+- `assets/image/image002_keinai.jpg` — 背景・環境参照、`<Picture 2>`
 
 ## 適用範囲
 
 リポジトリルートの`GPL-3.0-only`ライセンスは、上記のアセットには適用されません。同様に、`CC BY-NC 4.0`はプロジェクトのソースコードには適用されません。
 
 今後追加されるアセットには、このライセンスは自動的に適用されません。そのライセンスと出自を本書へ明示的に追記する必要があります。第三者の商標、キャラクター、肖像その他`wsoldwolf`が管理していない権利については、いかなる許諾も行いません。
+
+Suno、WAI Illustrious、Animaその他の生成サービス又はモデルに関する名称、ソフトウェア及びサービス自体は各権利者に帰属します。本書は、それらのサービス又はモデルの利用規約を変更したり、それら自体を再許諾したりするものではありません。

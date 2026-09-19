@@ -43,6 +43,36 @@ VALID = "\n".join(
 
 
 class DirectionEnhancerTests(unittest.TestCase):
+    def test_llama_backend_caps_oversized_output_reservation(self) -> None:
+        from nodes.node_direction_enhancer.node import _LlamaDirectionBackend
+
+        class BudgetLifecycle:
+            effective_n_ctx = 8_192
+            called_config = None
+
+            @staticmethod
+            def count_serialized_prompt(_prompt):
+                return type("Count", (), {"count": 3_077, "estimated": False})()
+
+            @classmethod
+            def complete_chat(cls, _messages, config, *, interrupt_callback=None):
+                cls.called_config = config
+                return "STYLE\t1\t画風。"
+
+        lifecycle = BudgetLifecycle()
+        backend = _LlamaDirectionBackend(lifecycle)
+        with self.assertLogs("mv_director.nodes", level="INFO") as captured:
+            response = backend.complete_direction(
+                system_prompt="system",
+                payload="payload",
+                config=LlamaRuntimeConfig(max_tokens=4_096, n_ctx=8_192),
+            )
+        self.assertEqual(response, "STYLE\t1\t画風。")
+        self.assertEqual(lifecycle.called_config.max_tokens, 1_024)
+        output = "\n".join(captured.output)
+        self.assertIn("requested_max_tokens=4096", output)
+        self.assertIn("effective_max_tokens=1024", output)
+
     def test_empty_user_and_concept_use_profiles(self) -> None:
         backend = FakeDirectionBackend(VALID)
         value = DirectionEnhancerInput()
@@ -173,6 +203,74 @@ class DirectionEnhancerTests(unittest.TestCase):
         self.assertNotIn("shot_size", serialized)
         self.assertNotIn("subject_pose", serialized)
 
+    def test_locked_scene_hint_is_preserved_exactly_in_environment(self) -> None:
+        observations = ObservationsArtifact(
+            overview="森の神社。",
+            primary_subject="",
+            hint_status="consistent",
+            hint_reason="赤い鳥居を確認できる。",
+            subject_features=(),
+            subject_pose="",
+            scene_setting="森の中の神社境内",
+            scene_elements=("鳥居", "石畳"),
+            lighting="月光",
+            time_weather="夜",
+            shot_size="",
+            viewpoint="",
+            subject_placement="",
+            depth="",
+            style_medium="",
+            style_rendering="",
+            style_palette="",
+            visible_text=(),
+            uncertainties=(),
+            provenance=(
+                {
+                    "kind": "analysis_controls",
+                    "analysis_profile": "scene_only",
+                    "hint_mode": "lock_identity",
+                    "hint_conflict": "warn",
+                },
+                {
+                    "kind": "subject_hint",
+                    "role": "user_authority",
+                    "raw": "赤い鳥居。",
+                    "normalized": "赤い鳥居。",
+                    "sent_to_vision": True,
+                },
+            ),
+        )
+        backend = FakeDirectionBackend(
+            "STYLE\t1\t映画的なアニメ映像。\n"
+            "ENVIRONMENT\t1\t森の神社境内と石畳を描く。"
+        )
+        value = DirectionEnhancerInput(
+            observations_json=observations.to_json(),
+        )
+        payload = json.loads(build_direction_payload(value))
+        self.assertEqual(
+            payload["vision_scene_context"]["locked_user_hint"],
+            "赤い鳥居。",
+        )
+        result = enhance_direction(
+            backend,
+            value=value,
+            system_prompt="fixed",
+            runtime_config=LlamaRuntimeConfig(),
+        )
+        self.assertEqual(
+            result.direction.environment_direction,
+            ("森の神社境内と石畳を描く。", "赤い鳥居。"),
+        )
+        locked = next(
+            item
+            for item in result.direction.provenance
+            if item.source_ref == "vision_scene_context.locked_user_hint"
+        )
+        self.assertEqual(locked.source, "user")
+        self.assertEqual(locked.reason, "passthrough_enforced")
+        self.assertEqual(locked.target, "environment_direction[1]")
+
     def test_locked_photoreal_conversion_is_not_requested_from_llm(self) -> None:
         backend = FakeDirectionBackend(
             "\n".join(
@@ -270,10 +368,15 @@ class DirectionEnhancerTests(unittest.TestCase):
         self.assertIn("Python-owned exact output", system_prompt)
         self.assertIn("Do not emit MOTION or CAMERA", system_prompt)
         self.assertIn("Never put a reference-image", system_prompt)
+        self.assertIn("source residue, not scene authority", system_prompt)
+        self.assertIn("reference-capture condition", system_prompt)
+        self.assertIn("keep ENVIRONMENT free of lighting", system_prompt)
         self.assertIn("foxfire", system_prompt)
+        self.assertIn("locked_user_hint", system_prompt)
 
     def test_anime_mv_profiles_keep_local_costume_details_out_of_direction(self) -> None:
-        self.assertIn("最低一つ", CAMERA_PROFILES["anime_mv"])
+        self.assertIn("一又は二Shot", CAMERA_PROFILES["anime_mv"])
+        self.assertIn("70%から90%", CAMERA_PROFILES["anime_mv"])
         self.assertIn("Arc Shot", CAMERA_PROFILES["anime_mv"])
         combined = " ".join(
             (
@@ -492,11 +595,12 @@ class DirectionEnhancerTests(unittest.TestCase):
             },
         )
         camera = CAMERA_PROFILES["anime_mv"]
-        self.assertIn("Arc Shotを連続Shotへ割り当てず", camera)
-        self.assertIn("30度から90度の経路", camera)
+        self.assertIn("隣接ShotでArcを反復しない", camera)
+        self.assertIn("60度から120度の経路", camera)
+        self.assertIn("続くZoom Inへ接続", camera)
         self.assertIn("Tracking Shot", camera)
         self.assertIn("Pedestal Up", camera)
-        self.assertIn("両目、眉、鼻、口全体", camera)
+        self.assertIn("両目、両眉、鼻、口全体", camera)
         self.assertIn("二コマ打ち又は三コマ打ち", MOTION_PROFILES["anime_mv"])
         self.assertIn("明確な加速", MOTION_PROFILES["anime_mv"])
         self.assertIn("地面から明確に持ち上げ", MOTION_PROFILES["anime_mv"])
@@ -507,6 +611,8 @@ class DirectionEnhancerTests(unittest.TestCase):
         self.assertIn("reference_anime", STYLE_PROFILES)
         self.assertIn("動物耳、耳内部、尾", STYLE_PROFILES["anime_mv"])
         self.assertIn("局所的なglow、bloom", STYLE_PROFILES["anime_mv"])
+        self.assertIn("古傷", STYLE_PROFILES["anime_mv"])
+        self.assertIn("皮膚と衣装を清潔で損傷のない状態", STYLE_PROFILES["anime_mv"])
         self.assertIn("cinema_mv", DIRECTION_PRESETS)
         self.assertGreaterEqual(len(DIRECTION_PRESETS), 5)
 

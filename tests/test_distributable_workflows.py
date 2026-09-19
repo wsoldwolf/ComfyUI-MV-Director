@@ -8,6 +8,7 @@ from core.utilities import decode_embedded_text
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / "workflows"
+DEVELOPMENT_WORKFLOWS = WORKFLOWS / "development"
 CONTRACT_ID = "context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9"
 
 FILES = {
@@ -38,6 +39,13 @@ def only_type(workflow: dict, type_name: str) -> dict:
     values = [node for node in workflow["nodes"] if node["type"] == type_name]
     if len(values) != 1:
         raise AssertionError(f"expected one {type_name}; got {len(values)}")
+    return values[0]
+
+
+def titled_node(workflow: dict, title: str) -> dict:
+    values = [node for node in workflow["nodes"] if node.get("title") == title]
+    if len(values) != 1:
+        raise AssertionError(f"expected one node titled {title}; got {len(values)}")
     return values[0]
 
 
@@ -88,11 +96,26 @@ class DistributableWorkflowTests(unittest.TestCase):
             )
             planner = only_type(workflow, "MVDirectorTimelinePlanner")
             self.assertEqual(planner["widgets_values"][0], mode)
+            character_vision = titled_node(
+                workflow, "Character Vision / Subject EMD"
+            )
+            background_vision = titled_node(
+                workflow, "Background Vision (Scene Only)"
+            )
+            self.assertEqual(character_vision["widgets_values"][1], "subject_only")
+            self.assertEqual(character_vision["widgets_values"][6], "manual")
+            self.assertEqual(background_vision["widgets_values"][1], "scene_only")
+            self.assertEqual(background_vision["widgets_values"][4], "lock_identity")
+            self.assertEqual(background_vision["widgets_values"][6], "none")
+            self.assertEqual(background_vision["widgets_values"][7], "location")
+            direction = only_type(workflow, "MVDirectorDirectionEnhancer")
             self.assertEqual(
-                only_type(workflow, "MVDirectorImageToSubjectEMD")[
-                    "widgets_values"
-                ][6],
-                "manual",
+                input_link(workflow, direction, "concept_emd")[1:3],
+                [character_vision["id"], 0],
+            )
+            self.assertEqual(
+                input_link(workflow, direction, "observations_json")[1:3],
+                [background_vision["id"], 3],
             )
             compiler = only_type(workflow, "MVDirectorEMDCompiler")
             self.assertEqual(
@@ -108,25 +131,35 @@ class DistributableWorkflowTests(unittest.TestCase):
                     1.05,
                     -1,
                     256,
-                    32768,
+                    16384,
                     True,
                     "q8_0",
                     True,
                     False,
                     1,
-                    "randomize",
+                    "fixed",
                     "reuse",
                 ],
             )
             seed_controls = {
-                "MVDirectorImageToSubjectEMD": (23, 24),
-                "MVDirectorDirectionEnhancer": (17, 18),
+                "MVDirectorDirectionEnhancer": (18, 19),
                 "MVDirectorTimelinePlanner": (16, 17),
             }
             for node_type, (seed_index, control_index) in seed_controls.items():
                 values = only_type(workflow, node_type)["widgets_values"]
                 self.assertEqual(values[seed_index], 1)
-                self.assertEqual(values[control_index], "randomize")
+                self.assertEqual(values[control_index], "fixed")
+            for vision in (character_vision, background_vision):
+                self.assertEqual(vision["widgets_values"][21], 1)
+                self.assertEqual(vision["widgets_values"][22], "fixed")
+                self.assertEqual(vision["widgets_values"][16], 16384)
+            self.assertEqual(planner["widgets_values"][1], "サブジェクト1")
+            self.assertEqual(planner["widgets_values"][5], 1536)
+            self.assertEqual(planner["widgets_values"][11], 16384)
+            self.assertEqual(direction["widgets_values"][2:5], ["anime_mv"] * 3)
+            self.assertEqual(direction["widgets_values"][13], 16384)
+            self.assertIn("眉毛は丸く", character_vision["widgets_values"][2])
+            self.assertIn("木製台全体は黒色", character_vision["widgets_values"][2])
             self.assertEqual(planner["widgets_values"][19], "reuse")
             lyrics = next(
                 node
@@ -138,7 +171,7 @@ class DistributableWorkflowTests(unittest.TestCase):
             embedded_lyrics = decode_embedded_text(*lyrics["widgets_values"][:3])
             lyric_segments = parse_plain_lyrics(embedded_lyrics)
             self.assertTrue(lyric_segments)
-            self.assertEqual(lyric_segments[0].section, "CHORUS")
+            self.assertEqual(lyric_segments[0].section, "INTRO")
             self.assertEqual(
                 len([n for n in workflow["nodes"] if n["type"] == "SaveText"]),
                 3,
@@ -151,6 +184,74 @@ class DistributableWorkflowTests(unittest.TestCase):
             )
             link = input_link(workflow, plan_save, "text")
             self.assertEqual(link[1:3], [compiler["id"], 0])
+
+    def test_context_loop_debug_workflow_separates_character_and_background_vision(self) -> None:
+        workflow = json.loads(
+            (DEVELOPMENT_WORKFLOWS / "01_plan_compiler_context_loop_debug.json")
+            .read_text(encoding="utf-8")
+        )
+        character_vision = titled_node(
+            workflow, "Character Vision / Subject EMD"
+        )
+        background_vision = titled_node(
+            workflow, "Background Vision (Scene Only)"
+        )
+        direction = only_type(workflow, "MVDirectorDirectionEnhancer")
+        self.assertEqual(character_vision["widgets_values"][1], "subject_only")
+        self.assertIn("赤い鼻緒の黒い木下駄", character_vision["widgets_values"][2])
+        self.assertIn("木製台全体は黒色", character_vision["widgets_values"][2])
+        self.assertEqual(background_vision["widgets_values"][1], "scene_only")
+        self.assertEqual(background_vision["widgets_values"][4], "lock_identity")
+        self.assertEqual(background_vision["widgets_values"][2], "")
+        self.assertEqual(background_vision["widgets_values"][6:8], ["none", "location"])
+        self.assertEqual(
+            only_type(workflow, "MVDirectorTimelinePlanner")["widgets_values"][3],
+            "Qwen3-4B-abliterated/Qwen3-4B-abliterated-q5_k_m.gguf",
+        )
+        self.assertEqual(
+            only_type(workflow, "MVDirectorTimelinePlanner")["widgets_values"][11],
+            16384,
+        )
+        self.assertEqual(
+            only_type(workflow, "MVDirectorEMDCompiler")["widgets_values"][10],
+            16384,
+        )
+        for node_type in (
+            "MVDirectorImageToSubjectEMD",
+            "MVDirectorDirectionEnhancer",
+            "MVDirectorTimelinePlanner",
+            "MVDirectorEMDCompiler",
+        ):
+            for node in [value for value in workflow["nodes"] if value["type"] == node_type]:
+                named = node.get("widgets_values_named", {})
+                self.assertEqual(named.get("cache_mode"), "reuse")
+                self.assertEqual(named.get("randomize"), "fixed")
+        self.assertEqual(
+            input_link(workflow, direction, "concept_emd")[1:3],
+            [character_vision["id"], 0],
+        )
+        self.assertEqual(
+            input_link(workflow, direction, "observations_json")[1:3],
+            [background_vision["id"], 3],
+        )
+        video = json.loads(
+            (DEVELOPMENT_WORKFLOWS / "02_video_context_loop_debug.json")
+            .read_text(encoding="utf-8")
+        )
+        binder = only_type(video, "MVDirectorH3BackgroundReference")
+        background_image = titled_node(
+            video, "Background Reference • <Picture 2>"
+        )
+        ref2va = only_type(video, "MiniMaxH3ReferenceToVideo")
+        self.assertEqual(binder["widgets_values"], [2])
+        self.assertEqual(
+            input_link(video, binder, "background_image")[1:3],
+            [background_image["id"], 0],
+        )
+        self.assertEqual(
+            input_link(video, ref2va, "ref_images.ref_image_1")[1:3],
+            [binder["id"], 1],
+        )
 
     def test_video_workflows_share_plan_handoff_and_full_mix_timeline(self) -> None:
         profiles = {
@@ -177,12 +278,36 @@ class DistributableWorkflowTests(unittest.TestCase):
                 and "Compiled Plan" in node.get("title", "")
             )
             plan = only_type(workflow, "MiniMaxH3ChainPlanModern")
+            background_binder = only_type(
+                workflow, "MVDirectorH3BackgroundReference"
+            )
+            background_image = titled_node(
+                workflow, "Background Reference • <Picture 2>"
+            )
+            ref2va = only_type(workflow, "MiniMaxH3ReferenceToVideo")
             fallback_plan = json.loads(plan["widgets_values"][0])
             self.assertEqual(fallback_plan["defaults"]["steps"], 8)
             self.assertEqual(plan["widgets_values"][8], 8)
             self.assertEqual(
                 input_link(workflow, plan, "plan_json_input")[1:3],
+                [background_binder["id"], 0],
+            )
+            self.assertEqual(
+                input_link(workflow, background_binder, "plan_json")[1:3],
                 [plan_loader["id"], 0],
+            )
+            self.assertEqual(
+                input_link(
+                    workflow, background_binder, "background_image"
+                )[1:3],
+                [background_image["id"], 0],
+            )
+            self.assertEqual(background_binder["widgets_values"], [2])
+            self.assertEqual(
+                input_link(
+                    workflow, ref2va, "ref_images.ref_image_1"
+                )[1:3],
+                [background_binder["id"], 1],
             )
 
             profile = only_type(workflow, "MiniMaxH3GenerationProfile")
@@ -191,7 +316,7 @@ class DistributableWorkflowTests(unittest.TestCase):
             self.assertEqual(pad["widgets_values"][3], alignments[mode])
             self.assertEqual(
                 input_link(workflow, pad, "plan_json")[1:3],
-                [plan_loader["id"], 0],
+                [background_binder["id"], 0],
             )
             lyric_nodes = [
                 node

@@ -12,14 +12,27 @@ performance_role is a mandatory structural assignment for the current Shot, not 
 Across every multi-Shot Scene, at least one Shot must be led by arms or hands and at least one other Shot must change torso orientation, body level, gaze relationship or environmental contact. Do not append a token hand movement to an otherwise unchanged walking sentence; the assigned performance must be the primary event.
 action_batch_contract is a hard batch budget. Do not exceed
 slow_or_gentle_action_maximum, generic_hand_raise_or_lower_maximum, or
-unrequested_lower_body_primary_action_maximum. A hand-led performance must
+unrequested_lower_body_primary_action_maximum, or
+unrequested_running_maximum. A hand-led performance must
 communicate a specific intention through reach, gather, refusal, invitation,
 contact, recoil, release or another lyric-linked result; merely raising or
 lowering a hand is generic and invalid. Unless the lyric or author body names a
 lower-body detail, feet and stepping are support mechanics rather than the
 primary event. Reserve slow or gentle motion for the strongest quiet beat in
 the batch and give the other Shots decisive timing changes.
+Running, sprinting, dashing, and fleeing are prohibited unless the original
+lyric or author body explicitly asks for that travel. Never invent running to
+fill an instrumental Shot or to simulate MV energy. In an instrumental Shot,
+create energy through torso rotation, a look-back, level change, decisive arm
+phrase, interaction with an established environment element, a sharp stop, or
+a visibly changed held pose. Camera motion may carry momentum independently.
 Use recent_action_history as a strict negative history: do not paraphrase its main action, target, or final pose. When several supplied slots belong to one Scene, give each slot a different phase and purpose instead of repeating the complete Scene premise in every slot.
+The history may cover several earlier Scenes. A motif becoming absent from the
+immediately preceding Shot does not make it new again. Do not cycle back to an
+earlier reach, leaf touch, footstep, waist-level hand, arm spread, or light-wave
+formula by changing only side, object adjective, or sentence order. Prefer a
+new physical verb, spatial relationship, emotional tactic, and ending
+silhouette that the lyric and established environment can actually support.
 If diversity_retry is present, rejected_output was too similar to
 must_differ_from. Replace it with a genuinely different physical phase: change
 the intentional verb, interaction target and final silhouette while remaining
@@ -35,6 +48,12 @@ changing left to right. Change the intentional verb, interaction target,
 timing contrast, body organization and final silhouette while preserving the
 locked lyric and visual beat.
 Within the one record, describe a readable flow of anticipation or emotional preparation, the main bodily action or contact, and reaction, release or settling into a visibly changed final pose. Use gaze, head angle, shoulders, torso orientation, hands, support foot, weight transfer and body level when relevant. A mere hand raise, hand lowering, swaying, blinking, breathing, lip movement, hair movement, clothing movement or camera movement is not a complete performance. Use natural relative sequencing such as while, as, or then; never invent numeric sub-times, shots, cuts, camera work, speech, quoted text, or dialogue tags. Do not output JSON, Markdown, headings, or extra commentary. Never change slot numbers.
+Fit the performance to shot_duration_ms. Give a short Shot one decisive action
+and one readable result, not several unrelated gestures. Do not pack walking,
+reaching, turning, touching, recoiling, and posing into the same two-second
+record. When the Scene has multiple Shots, distribute preparation, contact,
+reaction, and resolution across the assigned roles instead of making every
+Shot replay the complete visual beat.
 For an MV accent, prefer a decisive initiation, readable acceleration, sharp weight transfer, directional change, recoil or sudden held stop over uniformly slow and even motion. Give the beginning and ending silhouettes clear contrast. Do not make every Shot frantic: quiet lyrics may use stillness or a restrained preparation, but the next accent must break that stillness with a purposeful change. Avoid slowly, gently and gradually as defaults unless the supplied lyric or song direction explicitly calls for calmness.
 Obey subject_instance_policy. Never invent an extra performer, clone, twin, alternate-view copy, background lookalike or second instance of a defined Subject. When it is single_subject_exactly_one_visible_instance, the primary Subject acts alone and remains the only person represented by the action.
 Never turn a stable appearance attribute into an action. Stable eye color, hair color, clothing color, facial identity, costume design, and accessory identity remain unchanged. Hair, clothing, ears, tails, and accessories may physically follow body motion without changing identity. Eyes may blink or change gaze, but their color cannot move.
@@ -44,10 +63,21 @@ The connected reference is an identity sheet, not the initial body state. Do
 not recreate its front-facing presentation pose, open palms, spread hands,
 head tilt, panel composition, or background unless the lyric or author body
 explicitly requests that exact action. Start and finish in body poses caused by
-the current lyric-driven performance.
+the current lyric-driven performance. The first output frame must already use
+the Shot-specific body pose, gaze, balance, hand placement, and blocking. Never
+write an action that holds, reconstructs, or transitions from a reference pose
+or displays the reference image itself.
 When the visual beat contains an allowed environmental or supernatural effect,
 describe the Subject noticing, approaching, avoiding, guiding, touching, or
 releasing it as a readable physical interaction. Keep the effect external to
 the body unless the author explicitly requests body emission.
 Treat stable anatomy, finger or toe structure, costume construction, footwear, and material behavior as appearance facts, never as the target of performance. Do not make feet, toes, fabric sliding over terrain, or inspection of clothing the main action unless the original lyric or author body explicitly requests that exact subject. For ordinary walking or running, describe the whole-body travel and destination with a clear step cycle, upright balance, lift, forward travel, plant, and body-weight transfer; do not narrate individual toes or cloth-surface contact. Keep the performance centered on the character's intentional whole-body action rather than a static costume detail.
+Lyric words for a wound, scar, broken heart, pain, blood, or bodily damage are
+figurative unless the author body or Subject definition explicitly establishes
+that exact visible physical condition. In the figurative case, do not write
+wound, scar, cut, bruise, blood, bandage, lesion, stain, torn skin, damaged
+clothing, or a hand touching such a mark into ACTION. Perform the emotion with
+intact skin and clothing through gaze, breath, shoulders, torso, hands over
+ordinary clothing, distance from an established object, or a changed final
+pose. A lyric transcript is vocal content, not permission to alter anatomy.
 Never print the five characters <TAB>. Start every record on a new physical line.

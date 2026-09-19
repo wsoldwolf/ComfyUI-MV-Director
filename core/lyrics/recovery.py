@@ -20,6 +20,8 @@ _CONTEXT_BEFORE_MS = 2_000
 _CONTEXT_AFTER_MS = 1_000
 _ADAPTIVE_PREFIX_LEAD_MS = 3_000
 _DUPLICATE_CENTER_MS = 350
+_MIN_ANCHOR_OVERLAP_RATIO = 0.5
+_MAX_REFINEMENT_PASSES = 8
 _PROMPT_MAX_LINES = 12
 _PROMPT_MAX_CHARACTERS = 160
 _LOGGER = logging.getLogger("mv_director.lyrics")
@@ -122,8 +124,9 @@ def _window_prompt(
     duration_ms: int,
     guided: bool,
 ) -> str:
+    prefix = [preceding_line] if preceding_line else []
     if guided:
-        complete = [preceding_line, *run_lines]
+        complete = [*prefix, *run_lines]
         complete_prompt = "\n".join(complete)
         if (
             len(complete) <= _PROMPT_MAX_LINES
@@ -136,10 +139,10 @@ def _window_prompt(
             len(run_lines) - 1,
             math.floor(fraction * len(run_lines)),
         )
-        context = [preceding_line, *run_lines[: approximate + 1]]
+        context = [*prefix, *run_lines[: approximate + 1]]
     else:
         approximate = min(len(run_lines), math.floor(fraction * len(run_lines)))
-        context = [preceding_line, *run_lines[:approximate]]
+        context = [*prefix, *run_lines[:approximate]]
     return _bounded_prompt(context)
 
 
@@ -207,6 +210,42 @@ def _to_absolute(item: AlignedLyric, offset_ms: int) -> AlignedLyric:
     )
 
 
+def _clip_to_anchor_bounds(
+    item: AlignedLyric,
+    *,
+    start_ms: int,
+    end_ms: int,
+) -> AlignedLyric | None:
+    """Clip small Whisper timestamp spill without accepting another anchor.
+
+    Whisper word timestamps can overlap the end of the preceding lyric or the
+    start of the following lyric by a few frames. The textual match remains
+    acoustic evidence, but a recovered lyric must occupy mostly its own
+    anchor-bounded interval before it is accepted.
+    """
+
+    duration_ms = item.end_ms - item.start_ms
+    clipped_start_ms = max(start_ms, item.start_ms)
+    clipped_end_ms = min(end_ms, item.end_ms)
+    overlap_ms = clipped_end_ms - clipped_start_ms
+    if (
+        duration_ms <= 0
+        or overlap_ms <= 0
+        or overlap_ms / duration_ms < _MIN_ANCHOR_OVERLAP_RATIO
+    ):
+        return None
+    return AlignedLyric(
+        item.source,
+        clipped_start_ms,
+        clipped_end_ms,
+        tuple(
+            (index, timestamp)
+            for index, timestamp in item.word_boundaries
+            if clipped_start_ms < timestamp < clipped_end_ms
+        ),
+    )
+
+
 def recover_unplaced_lyrics(
     lyrics: tuple[SourceLyricSegment, ...],
     resolved: tuple[AlignedLyric, ...],
@@ -218,6 +257,7 @@ def recover_unplaced_lyrics(
     voiced_intervals: tuple[VoicedInterval, ...],
     sample_rate: int,
     audio_duration_ms: int,
+    _refinement_pass: int = 1,
 ) -> tuple[
     tuple[AlignedLyric, ...],
     tuple[SourceLyricSegment, ...],
@@ -239,13 +279,11 @@ def recover_unplaced_lyrics(
     recovered_count = 0
 
     for run_start, run_end in _unresolved_runs(slots):
-        if run_start == 0:
-            continue
-        previous = slots[run_start - 1]
+        previous = slots[run_start - 1] if run_start > 0 else None
         following = slots[run_end] if run_end < len(slots) else None
-        if previous is None:
+        if run_start > 0 and previous is None:
             continue
-        anchor_start_ms = previous.end_ms
+        anchor_start_ms = previous.end_ms if previous is not None else 0
         anchor_end_ms = following.start_ms if following is not None else audio_duration_ms
         if anchor_end_ms <= anchor_start_ms:
             continue
@@ -269,7 +307,11 @@ def recover_unplaced_lyrics(
         attempted += 1
         run_lyrics = lyrics[run_start:run_end]
         run_lines = _run_line_texts(run_lyrics, line_texts)
-        preceding_line = line_texts[lyrics[run_start - 1].source_line]
+        preceding_line = (
+            line_texts[lyrics[run_start - 1].source_line]
+            if run_start > 0
+            else ""
+        )
         slice_duration_ms = math.ceil(
             (final_sample - first_sample) * 1000 / _WHISPER_SAMPLE_RATE
         )
@@ -292,6 +334,7 @@ def recover_unplaced_lyrics(
         ) -> tuple[WhisperWord, ...]:
             decoded: list[WhisperWord] = []
             source_order = 0
+            failed_windows: list[tuple[int, int, str]] = []
             for window_start_ms, window_end_ms in decode_windows:
                 window_first = first_sample + math.floor(
                     window_start_ms * _WHISPER_SAMPLE_RATE / 1000
@@ -321,10 +364,17 @@ def recover_unplaced_lyrics(
                     * 1000
                     / _WHISPER_SAMPLE_RATE
                 )
-                local_words = extract_whisper_words(
-                    result,
-                    audio_duration_ms=window_duration_ms,
-                )
+                try:
+                    local_words = extract_whisper_words(
+                        result,
+                        audio_duration_ms=window_duration_ms,
+                        allow_partial_word_timestamps=True,
+                    )
+                except LyricSegmentationError as exc:
+                    failed_windows.append(
+                        (window_start_ms, window_end_ms, str(exc))
+                    )
+                    continue
                 window_offset_ms = math.floor(
                     (window_first - first_sample)
                     * 1000
@@ -341,6 +391,26 @@ def recover_unplaced_lyrics(
                             source_order,
                         )
                     )
+            if failed_windows:
+                first_failed = failed_windows[0]
+                if not decoded:
+                    raise LyricSegmentationError(
+                        "all targeted decode windows lacked usable "
+                        "word_timestamps; "
+                        f"failed={len(failed_windows)}/{len(decode_windows)}; "
+                        f"first={first_failed[0]}..{first_failed[1]}ms"
+                    )
+                _LOGGER.warning(
+                    "[MV Director - Lyric Segmentation] targeted decode "
+                    "skipped %d/%d window(s) without usable word_timestamps; "
+                    "segments=%s..%s; first=%d..%dms",
+                    len(failed_windows),
+                    len(decode_windows),
+                    run_lyrics[0].segment_id,
+                    run_lyrics[-1].segment_id,
+                    first_failed[0],
+                    first_failed[1],
+                )
             return _merge_words(decoded)
 
         local_voiced = _local_voiced_intervals(
@@ -375,11 +445,13 @@ def recover_unplaced_lyrics(
         proposals: dict[str, AlignedLyric] = {}
         for item in unguided_resolved:
             absolute = _to_absolute(item, slice_start_ms)
-            if (
-                absolute.start_ms >= anchor_start_ms
-                and absolute.end_ms <= anchor_end_ms
-            ):
-                proposals[item.source.segment_id] = absolute
+            bounded = _clip_to_anchor_bounds(
+                absolute,
+                start_ms=anchor_start_ms,
+                end_ms=anchor_end_ms,
+            )
+            if bounded is not None:
+                proposals[item.source.segment_id] = bounded
 
         # Whisper can omit a line near a decode-window edge even though the
         # next lines in the same window are recognized. If the recovered
@@ -444,11 +516,13 @@ def recover_unplaced_lyrics(
                     proposals = {}
                     for item in unguided_resolved:
                         absolute = _to_absolute(item, slice_start_ms)
-                        if (
-                            absolute.start_ms >= anchor_start_ms
-                            and absolute.end_ms <= anchor_end_ms
-                        ):
-                            proposals[item.source.segment_id] = absolute
+                        bounded = _clip_to_anchor_bounds(
+                            absolute,
+                            start_ms=anchor_start_ms,
+                            end_ms=anchor_end_ms,
+                        )
+                        if bounded is not None:
+                            proposals[item.source.segment_id] = bounded
                     _LOGGER.info(
                         "[MV Director - Lyric Segmentation] adaptive unguided "
                         "window aligned %d/%d segment(s)",
@@ -516,16 +590,17 @@ def recover_unplaced_lyrics(
                             f"guided retry lacks acoustic evidence for {source.segment_id}"
                         )
                     absolute = _to_absolute(local, slice_start_ms)
-                    if (
-                        absolute.start_ms < previous_end_ms
-                        or absolute.end_ms > anchor_end_ms
-                        or absolute.end_ms <= absolute.start_ms
-                    ):
+                    bounded = _clip_to_anchor_bounds(
+                        absolute,
+                        start_ms=previous_end_ms,
+                        end_ms=anchor_end_ms,
+                    )
+                    if bounded is None:
                         raise LyricSegmentationError(
                             f"guided retry crossed an anchor for {source.segment_id}"
                         )
-                    guided_proposals[source.segment_id] = absolute
-                    previous_end_ms = absolute.end_ms
+                    guided_proposals[source.segment_id] = bounded
+                    previous_end_ms = bounded.end_ms
                 proposals = guided_proposals
             except LyricSegmentationError as exc:
                 _LOGGER.warning(
@@ -554,6 +629,38 @@ def recover_unplaced_lyrics(
     final_unplaced = tuple(
         lyric for lyric, item in zip(lyrics, slots) if item is None
     )
+    if (
+        final_unplaced
+        and recovered_count > 0
+        and _refinement_pass < _MAX_REFINEMENT_PASSES
+    ):
+        _LOGGER.info(
+            "[MV Director - Lyric Segmentation] targeted refinement pass %d; "
+            "new_anchors=%d; remaining=%d",
+            _refinement_pass + 1,
+            recovered_count,
+            len(final_unplaced),
+        )
+        refined_resolved, refined_unplaced, refined_stats = recover_unplaced_lyrics(
+            lyrics,
+            final_resolved,
+            whisper_audio,
+            transcriber,
+            language=language,
+            device=device,
+            voiced_intervals=voiced_intervals,
+            sample_rate=sample_rate,
+            audio_duration_ms=audio_duration_ms,
+            _refinement_pass=_refinement_pass + 1,
+        )
+        return (
+            refined_resolved,
+            refined_unplaced,
+            TargetedRetryStats(
+                attempted + refined_stats.attempted_runs,
+                recovered_count + refined_stats.recovered_segments,
+            ),
+        )
     return (
         final_resolved,
         final_unplaced,

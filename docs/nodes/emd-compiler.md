@@ -13,7 +13,7 @@
 | `steps` | `8` | TurboLoRA動画生成用Plan JSONの既定denoising steps |
 | `max_tokens` | `4096` | 英訳protocolの応答上限 |
 | `temperature` | `0.0` | 英訳は決定的な低温度を使う |
-| `n_ctx` | `32768` | 長いEMD向け既定context |
+| `n_ctx` | `16384` | 既定context。必要な場合だけ手動で拡張する |
 | `cache_mode` | `reuse` | 成功Plan JSONの再利用方針 |
 | `h3_timing_profile` | 任意 | H3時間契約。未接続時も固定既定値 |
 
@@ -35,9 +35,12 @@
 - 英語だけの行は完全pass-throughします。
 - `already_english`ではmodelの選択が古くてもGGUFをresolve/loadしません。
 - 必須Ref2VA六セクションは固定templateで組み立てます。
-- 全Subjectへ一つの頭と一つの身体からなる物理instanceを一体だけ描き、duplicate、twin、clone、reflection、background lookalike、inset view、split-screen copy及びsecond representationを禁止する固定文を付けます。参照付きSubjectではPicture/Videoの全panelとalternate viewを同じ一体のidentity資料としてだけ扱い、参照ポーズ、画角、構図、左右panel及び背景を現在Shotへ複製しません。
+- 翻訳では識別上重要な局所形状、個数、配置、大きさ、色、材質及び否定条件を具体的な物理形状として保持し、特殊な特徴を一般的な解剖・衣装・装飾形状へ丸めません。例えば「丸く横へ線が伸びない」形状は単なる`round`ではなく、長い線を形成しない小さな円形又は楕円形のmarkとして英訳します。
+- Subject定義と既定`fully_preserved`保持文には、記述済みの局所形状を全Shotで文字どおり維持し、通常形へ置換しない固定契約を付けます。
+- 全Subjectへ一つの頭と一つの身体からなる物理instanceを一体だけ描き、duplicate、twin、clone、reflection、background lookalike、inset view、split-screen copy及びsecond representationを禁止する固定文を付けます。Picture/Video参照付きSubjectでは、全panelとalternate viewを同じ一体のidentity資料としてだけ扱い、参照ポーズ、画角、構図、左右panel及び背景を現在Shotへ複製しません。さらに各frameを画面全体に広がる一つの連続したcamera viewとし、内部境界、split screen、picture-in-picture又は複数角度の同時表示を禁止します。画角と視点の変更は時間方向のcamera motion又はscene cutで表します。現在Sceneの環境・時刻・照明を唯一の完成映像世界として参照背景と参照照明を完全に置換し、白背景、無地背景、昼光、撮影用backdrop又はpanel固有背景を入力資料の残滓として描画対象から除外します。各Shotは先頭frameから現在のActionとCameraに基づく新規stagingを使用し、参照画像そのもの又は参照構図を開始画面、静止画、plate、poster、inset若しくは背景として表示せず、参照ポーズからの遷移も行いません。
+- Picture/Video参照付きSubjectでは、`<d>`内の歌詞を口形用の発話内容としてだけ扱う固定文も付けます。作者のShotが可視の身体状態を明示しない限り、傷、古傷、痛み、血又は心の損傷という比喩を、傷跡、切創、痣、出血、包帯、病変、染み、刺青状の印、皮膚又は衣装の損傷へ変換せず、皮膚と衣装を清潔で損傷のない状態に保ちます。
 - Scene見出し末尾に`継続`がある場合だけtiming profileのvisual/audio contextと`continuation_mode=guide`を出します。省略Sceneは`context_length=0`、`audio_context_length=0`のカットです。
 - `H3長`はPlanner又は作者が境界modeに合わせて確定したraw lengthを無変換で`length`へ写します。
-- 翻訳slotの欠落又は日本語echoは、該当unitを一度だけ隔離再翻訳します。全必須slotが揃った後の非record行及び未知record型は翻訳行から分離し、同一slotの完全一致重複は一件として扱います。異なる本文を持つ重複slotは一方を選ばず、そのunitだけを一度隔離再翻訳します。不正slot、未知slot、空本文、再翻訳後の競合又は欠落、protected token破損は停止します。
+- 360文字を超える翻訳unitは、既存の句点・読点境界で120文字以下を目標に機械分割できる場合、初回推論前から短いunitとして翻訳して文書順に再結合します。ほぼ完成した英文に少数の日本語だけが残った場合は、英文候補全体を再翻訳せず、連続する残存日本語spanだけを一意化して同じ翻訳protocolへ渡し、得た英訳を元のspan位置へ機械置換します。同じspanの反復は一度だけ翻訳し、既存英文の語順と内容は保持します。それ以外の翻訳slotで欠落、日本語echo又は競合重複となった場合は、該当unitを一度だけ隔離再翻訳し、長文が隔離後も日本語echoなら同じ分割回復を使います。分割は原文文字列を書き換えず、protected tokenは従来どおり翻訳入力から除外します。隔離、分割及び残存日本語cleanupの開始、batch、完了又は失敗はslot番号、trigger、文字数、span数及びchunk数とともにINFOへ記録し、正常完了statusへ`segmented_recovered`と`cleanup_recovered`を出します。全必須slotが揃った後の非record行及び未知record型は翻訳行から分離し、同一slotの完全一致重複は一件として扱います。不正slot、未知slot、空本文、短文の日本語echo、span cleanup又は分割後も残る日本語、再翻訳後の競合又は欠落、protected token破損は停止します。
 
 JSONは機械入力ですが、レビューしやすいようpretty-printが仕様です。T2VA/I2VAはこのCompilerの対象外です。

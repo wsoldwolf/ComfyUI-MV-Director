@@ -20,6 +20,40 @@ panel borders, view labels, guide lines, or neutral presentation poses as extra
 subjects or persistent character features. Preserve view-specific evidence such
 as rear clothing details without inventing occluded details.
 
+SUBJECT_HINT_DATA is user-authoritative identity information when HINT_MODE is
+lock_identity. The downstream Subject EMD renderer preserves that text verbatim,
+so never restate, paraphrase, summarize, translate, elaborate, or copy any fact
+already present in SUBJECT_HINT_DATA into SUBJECT_FEATURE. SUBJECT_FEATURE is
+only for additional stable visible identity facts absent from the locked hint.
+Keep every feature atomic: one category and one new fact. If a candidate feature
+mixes a locked fact with a new visible fact, emit only the new fact. It is valid
+to emit zero SUBJECT_FEATURE records when the locked hint already exhaustively
+describes the visible identity. A shortened tag, omitted Japanese particles, a
+synonym, or a fragment split from a locked sentence is still a restatement, not
+a new fact. Before emitting each feature, silently complete the check
+"SUBJECT_HINT_DATA does not already state or imply this fact"; if the check is
+false or uncertain, omit the feature. Prefer zero SUBJECT_FEATURE records over
+any duplication. Every retained feature must be self-contained natural Japanese
+that explicitly names the body part, garment, accessory, or material it
+describes. Never emit a dangling adjective, attribute list, or comma fragment
+whose referent appears only in the hint or another feature. Assess whether the pixels support the hint, but
+do not emit a contradictory guessed SUBJECT_FEATURE alongside a locked fact. When a low
+resolution, occlusion, stylization, or unfamiliar cultural item prevents a
+reliable visual decision, retain the locked hint in HINT_STATUS/HINT_REASON,
+omit the conflicting guess from SUBJECT_FEATURE, and add UNCERTAINTY. Never
+silently replace a specific locked color, shape, material, garment, accessory,
+or footwear name with a visually guessed alternative.
+
+Describe eyebrows in the eyebrows category independently from eyes and hair.
+Distinguish short small round or dot-shaped eyebrows from long horizontal or
+arched eyebrows; do not normalize a distinctive round eyebrow design into a
+generic horizontal line. Describe culturally specific footwear with separate
+color, material, construction, and fastening facts when visible. In
+particular, distinguish white tabi from bare toes or tights, and distinguish a
+wooden geta body from its hanao straps. A black wooden geta with red hanao is
+黒い木下駄（赤い鼻緒）, not 赤い木下足, 赤い木足, bare feet, or five-toe socks.
+Use the example only when supported by pixels or locked SUBJECT_HINT_DATA.
+
 Emit these records in this exact order:
 1. OVERVIEW with one nonempty Japanese image summary.
 2. PRIMARY_SUBJECT with only one short Japanese physical-entity class such as
@@ -34,8 +68,13 @@ Emit these records in this exact order:
    one nonempty Japanese stable visible design feature. Do not record pose,
    action, gesture, gaze direction, expression, camera composition, or a fact
    that is not visible. Do not repeat an eyes feature inside face or another
-   category. Category is one of face, hair, eyes,
+   category. With lock_identity, do not use SUBJECT_FEATURE as a rewritten
+   identity summary: omit every locked fact and emit only atomic additions.
+   Category is one of face, hair, eyes,
    eyebrows, ears, body, clothing, accessory, tail, distinctive_feature.
+   Its wire shape has exactly three TAB-separated fields:
+   SUBJECT_FEATURE, one category above, and one nonempty Japanese feature.
+   Never omit the category or feature, and do not append a visibility field.
 6. SUBJECT_POSE with a Japanese value or empty.
 7. SCENE_SETTING with a Japanese value or empty.
 8. Zero or more SCENE_ELEMENT records with one nonempty Japanese value.

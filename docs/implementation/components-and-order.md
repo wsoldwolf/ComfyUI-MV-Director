@@ -101,7 +101,7 @@ ComfyUI-MV-Director/
 
 `core/`はComfyUIをimportせずFake backendでテストできるようにする。初期段階でrepository pattern、plugin system、汎用workflow engineは作らない。
 
-公開node typeは4コアの`MVDirectorImageToSubjectEMD`、`MVDirectorDirectionEnhancer`、`MVDirectorTimelinePlanner`、`MVDirectorEMDCompiler`、supportの`MVDirectorLyricSegmentation`、`MVDirectorAudioPadPair`、utilityの`MVDirectorH3TimingProfile`、`MVDirectorSeed32`、`MVDirectorStringCombo`、`MVDirectorConnectedCombo`、`MVDirectorLoadTextFile`の11個で開始する。全追加nodeは`MVDirector`、custom socketは`MV_DIRECTOR_`を接頭辞とし、表示カテゴリは`MV Director/...`に置く。旧`CL...`又は`MiniMaxH3...`をaliasとして登録しない。Pythonの公開node packageをrepository rootへ散在させず、全て`nodes/node_*/`へ置く。
+公開node typeは4コアの`MVDirectorImageToSubjectEMD`、`MVDirectorDirectionEnhancer`、`MVDirectorTimelinePlanner`、`MVDirectorEMDCompiler`、supportの`MVDirectorLyricSegmentation`、`MVDirectorAudioPadPair`、videoの`MVDirectorH3BackgroundReference`、utilityの`MVDirectorH3TimingProfile`、`MVDirectorSeed32`、`MVDirectorStringCombo`、`MVDirectorConnectedCombo`、`MVDirectorLoadTextFile`の12個とする。全追加nodeは`MVDirector`、custom socketは`MV_DIRECTOR_`を接頭辞とし、表示カテゴリは`MV Director/...`に置く。旧`CL...`又は`MiniMaxH3...`をaliasとして登録しない。Pythonの公開node packageをrepository rootへ散在させず、全て`nodes/node_*/`へ置く。
 
 ## 4. 実装順序
 

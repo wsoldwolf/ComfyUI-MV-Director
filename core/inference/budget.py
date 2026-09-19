@@ -80,3 +80,68 @@ def build_context_budget(
     )
     budget.validate()
     return budget
+
+
+def fit_context_budget(
+    serialized_input_tokens: int,
+    requested_output_tokens: int,
+    effective_context: int,
+    *,
+    minimum_output_tokens: int = 1,
+    maximum_output_tokens: int | None = None,
+    estimated: bool = False,
+) -> ContextBudget:
+    """Fit an output reservation without truncating the serialized input.
+
+    This is intended for bounded line protocols whose configured generation
+    ceiling can be much larger than a valid response. It keeps the normal
+    safety margin and still fails if the protocol minimum cannot fit.
+    """
+
+    for name, value in (
+        ("requested_output_tokens", requested_output_tokens),
+        ("minimum_output_tokens", minimum_output_tokens),
+    ):
+        if not isinstance(value, int) or isinstance(value, bool):
+            raise ValueError(f"{name} must be an integer")
+        if value < 1:
+            raise ValueError(f"{name} must be positive")
+    if maximum_output_tokens is not None:
+        if not isinstance(maximum_output_tokens, int) or isinstance(
+            maximum_output_tokens, bool
+        ):
+            raise ValueError("maximum_output_tokens must be an integer")
+        if maximum_output_tokens < 1:
+            raise ValueError("maximum_output_tokens must be positive")
+    if minimum_output_tokens > requested_output_tokens:
+        raise ValueError(
+            "minimum_output_tokens cannot exceed requested_output_tokens"
+        )
+    if (
+        maximum_output_tokens is not None
+        and minimum_output_tokens > maximum_output_tokens
+    ):
+        raise ValueError(
+            "minimum_output_tokens cannot exceed maximum_output_tokens"
+        )
+
+    minimum_budget = build_context_budget(
+        serialized_input_tokens,
+        minimum_output_tokens,
+        effective_context,
+        estimated=estimated,
+    )
+    desired = requested_output_tokens
+    if maximum_output_tokens is not None:
+        desired = min(desired, maximum_output_tokens)
+    available = (
+        effective_context
+        - serialized_input_tokens
+        - minimum_budget.safety_margin
+    )
+    return build_context_budget(
+        serialized_input_tokens,
+        min(desired, available),
+        effective_context,
+        estimated=estimated,
+    )

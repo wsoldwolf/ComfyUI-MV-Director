@@ -26,7 +26,7 @@ from .profiles import (
 from .passthrough import DirectionPassthrough, parse_direction_passthrough
 
 
-DIRECTION_PROMPT_VERSION = "mvd-direction-enhancer-v18"
+DIRECTION_PROMPT_VERSION = "mvd-direction-enhancer-v19"
 PASSTHROUGH_PROFILE = "passthrough"
 RETENTION_POLICIES = ("profile", "compiler_default", "passthrough")
 _ALLOWED = {
@@ -194,6 +194,27 @@ class DirectionEnhancerResult:
     retried_missing: tuple[tuple[str, int], ...]
 
 
+def _locked_scene_hint(observations: ObservationsArtifact) -> str:
+    analysis_profile = ""
+    hint_mode = ""
+    hint = ""
+    sent_to_vision = False
+    for item in observations.provenance:
+        if item.get("kind") == "analysis_controls":
+            analysis_profile = str(item.get("analysis_profile", ""))
+            hint_mode = str(item.get("hint_mode", ""))
+        elif item.get("kind") == "subject_hint":
+            hint = str(item.get("normalized", "")).strip()
+            sent_to_vision = bool(item.get("sent_to_vision", False))
+    if (
+        analysis_profile == "scene_only"
+        and hint_mode == "lock_identity"
+        and sent_to_vision
+    ):
+        return hint
+    return ""
+
+
 def build_direction_payload(value: DirectionEnhancerInput) -> str:
     value.validate()
     payload: dict[str, object] = {
@@ -238,12 +259,16 @@ def build_direction_payload(value: DirectionEnhancerInput) -> str:
         # never the reference-sheet pose or composition. Passing the complete
         # observation made small models promote a presentation pose into a
         # whole-video direction, which then forced every Scene to repeat it.
-        payload["vision_scene_context"] = {
+        scene_context = {
             "setting": observations.scene_setting,
             "elements": list(observations.scene_elements),
             "lighting": observations.lighting,
             "time_weather": observations.time_weather,
         }
+        locked_hint = _locked_scene_hint(observations)
+        if locked_hint:
+            scene_context["locked_user_hint"] = locked_hint
+        payload["vision_scene_context"] = scene_context
     return canonical_json(payload)
 
 
@@ -566,6 +591,31 @@ def enhance_direction(
                 sha256=sha256_text(output_text),
             )
         )
+    if value.normalized_observations_json and not passthrough.environment:
+        observations = ObservationsArtifact.from_dict(
+            json.loads(value.normalized_observations_json)
+        )
+        locked_hint = _locked_scene_hint(observations)
+        if locked_hint and locked_hint not in values["environment_direction"]:
+            target_index = len(values["environment_direction"])
+            values["environment_direction"].append(locked_hint)
+            output_counts["environment_direction"] += 1
+            provenance.append(
+                ProvenanceRecord(
+                    record_id=(
+                        "out_environment_locked_"
+                        f"{output_counts['environment_direction']:04d}"
+                    ),
+                    record_kind="output",
+                    source="user",
+                    source_ref="vision_scene_context.locked_user_hint",
+                    source_position=0,
+                    target=f"environment_direction[{target_index}]",
+                    disposition="accepted",
+                    reason="passthrough_enforced",
+                    sha256=sha256_text(locked_hint),
+                )
+            )
     for index, text in enumerate(passthrough.retention):
         provenance.append(
             ProvenanceRecord(

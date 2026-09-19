@@ -127,6 +127,41 @@ class VisionPhase3Tests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertIn("character sheet", prompt)
         self.assertIn("rear views as one unique PRIMARY_SUBJECT", prompt)
+        self.assertIn("short small round or dot-shaped eyebrows", prompt)
+        self.assertIn("黒い木下駄（赤い鼻緒）", prompt)
+        self.assertIn("user-authoritative identity information", prompt)
+        self.assertIn("never restate, paraphrase, summarize, translate", prompt)
+        self.assertIn("only for additional stable visible identity facts", prompt)
+        self.assertIn("Keep every feature atomic", prompt)
+        self.assertIn("zero SUBJECT_FEATURE records", prompt)
+        self.assertIn("omitted Japanese particles", prompt)
+        self.assertIn("self-contained natural Japanese", prompt)
+        self.assertIn("Never emit a dangling adjective", prompt)
+
+    def test_locked_hint_request_requires_only_atomic_additional_features(self) -> None:
+        request = build_vision_request(
+            VisionObservationRequest(
+                subject_hint="狐耳の先端は黒い。尾の先端は白い。",
+                hint_mode="lock_identity",
+            )
+        )
+        self.assertIn("LOCKED HINT OUTPUT RULE", request)
+        self.assertIn("preserves SUBJECT_HINT_DATA verbatim", request)
+        self.assertIn("only additional stable visible facts", request)
+        self.assertIn("Never restate, paraphrase, summarize, translate", request)
+        self.assertIn("emit only the new fact", request)
+        self.assertIn("omitted Japanese particles", request)
+        self.assertIn("Prefer zero SUBJECT_FEATURE records", request)
+        self.assertIn("self-contained Japanese", request)
+        self.assertIn("never emit a dangling adjective", request)
+
+        observe_only = build_vision_request(
+            VisionObservationRequest(
+                subject_hint="狐耳の先端は黒い。",
+                hint_mode="observe_only",
+            )
+        )
+        self.assertNotIn("LOCKED HINT OUTPUT RULE", observe_only)
 
     def test_image_batch_is_composed_as_one_reference_sheet(self) -> None:
         try:
@@ -246,6 +281,9 @@ class VisionPhase3Tests(unittest.TestCase):
         self.assertEqual(observations.primary_subject, "長い黒髪の人物")
         self.assertEqual(len(backend.calls), 2)
         self.assertIn("FORMAT RETRY", backend.calls[1]["request"])
+        self.assertIn(
+            "exactly three TAB-separated fields", backend.calls[1]["request"]
+        )
         self.assertTrue(any("format-only retry" in item for item in warnings))
 
     def test_empty_assessed_hint_reason_does_not_retry(self) -> None:
@@ -272,6 +310,38 @@ class VisionPhase3Tests(unittest.TestCase):
         self.assertEqual(observations.hint_reason, "")
         self.assertIn(
             "accepted empty HINT_REASON for consistent HINT_STATUS",
+            warnings,
+        )
+
+    def test_scene_only_omitted_subject_pose_does_not_retry(self) -> None:
+        response = (
+            FIXTURE.read_text(encoding="utf-8")
+            .replace("SUBJECT_POSE\t正面を向いて立っている。\n", "", 1)
+            .replace("HINT_STATUS\tconsistent", "HINT_STATUS\tnot_used", 1)
+            .replace(
+                "HINT_REASON\t短く丸い淡い金色の眉が部分的に確認できる。",
+                "HINT_REASON\t",
+                1,
+            )
+        )
+        backend = FakeObserver(response)
+        prepared = PreparedVisionImage(
+            "data:image/png;base64,AAAA", "f" * 64, 1, 1, 1, 1, 3, 1
+        )
+        observations, warnings = observe_image(
+            backend,
+            prepared=prepared,
+            request=VisionObservationRequest(analysis_profile="scene_only"),
+            model_identity={},
+            system_prompt="fixed prompt",
+            runtime_config=LlamaRuntimeConfig(),
+        )
+        self.assertEqual(len(backend.calls), 1)
+        self.assertIn("SCENE_ONLY FORMAT", backend.calls[0]["request"])
+        self.assertEqual(observations.subject_pose, "")
+        self.assertEqual(observations.scene_setting, "夜の神社の参道")
+        self.assertIn(
+            "restored omitted empty SUBJECT_POSE record",
             warnings,
         )
 

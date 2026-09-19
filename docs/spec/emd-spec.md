@@ -72,7 +72,7 @@ tokenはdescriptionより前に置く。同じSubject行で同じH3参照を重�
 Compilerはこれを、概念的に次のSubject定義へ変換する。
 
 ```text
-<Subject 1> is described here: ... Use these connected references only for its visual identity and design: <Picture 2>, <Video 1>. Treat every panel or alternate view as identity material for the same single physical instance. Render exactly one physical instance of this Subject, with one head and one body. Never show a duplicate, twin, clone, reflection, background lookalike, inset view, split-screen copy, or second representation of this Subject. Do not copy a reference pose, framing, composition, panel layout, or background; follow the current Shot instead.
+<Subject 1> is described here: ... Use these connected references only for its visual identity and design: <Picture 2>, <Video 1>. Treat every panel or alternate view as identity material for the same single physical instance. Render exactly one physical instance of this Subject, with one head and one body. Never show a duplicate, twin, clone, reflection, background lookalike, inset view, split-screen copy, or second representation of this Subject. Do not copy a reference pose, framing, composition, panel layout, or background; follow the current Shot instead. The reference is identity evidence, not a storyboard, montage, or layout template. Render one unified full-frame continuous camera view that fills the entire image. Never create an internal border, seam, divider, panel, inset, picture-in-picture, side-by-side view, or simultaneous alternate angle. If the reference contains multiple views, fuse only compatible identity features into this one view. Camera angle and framing changes must happen over time or at a scene cut, never simultaneously within one frame. The current Scene environment and time-lighting directions are the sole authority for the rendered world and fully replace every background and illumination visible inside this identity reference. Treat any blank or white studio field, daylight, backdrop, panel-specific setting, or other conflicting reference environment as non-renderable source residue. Continue the specified Scene environment across the entire frame, including behind and around the Subject. Generate a newly staged Shot from the current action and camera instructions. The first output frame must already use the new Shot-specific body pose, gaze, blocking, framing, viewpoint, camera height, and camera distance. Never show, reconstruct, paste, hold, or transition from the reference image itself as a frame, still, plate, poster, inset, background, or composition. Keep visible skin and clothing clean and intact unless an author-written Shot explicitly requires a physical condition. Lyric text inside <d> is vocal content only: figurative words about wounds, scars, pain, blood, or a broken heart never authorize a visible cut, scar, bruise, bleeding, bandage, lesion, stain, tattoo-like mark, torn skin, or damaged clothing.
 <Subject 2> is described here: ...
 ```
 
@@ -108,7 +108,7 @@ Shot、保持分析及びlip-syncでSubjectを参照する場合は、派生ID `
 
 同profileの`## スタイル`は、実写風生成に成功した保存Plan `context_loop_plan_00009.txt`の長い英語anchorを完全一致で持つ。さらに各Sceneの最初のShotへ``Shoot as a photorealistic live-action video, depicting the characters as real human actors.``を一回明示する。Compilerは既に英語の両方を翻訳器へ渡さず完全一致で写す。
 
-対象は`# サブジェクト`で定義済みでなければならない。章が省略された場合、Compilerは各Subjectに固定の保持文を出す。Picture参照を持つ場合もPicture自体を独立した保持対象として自動追加しない。
+対象は`# サブジェクト`で定義済みでなければならない。章が省略された場合、Compilerは各Subjectに固定の保持文を出す。この既定文は記述済みの局所形状、個数、配置、大きさ、色、材質及び除外条件を文字どおり保持し、特殊な特徴を一般的な形へ置換しないよう要求する。Picture参照を持つ場合もPicture自体を独立した保持対象として自動追加しない。
 
 ## 5. 共通プロンプト
 
@@ -172,7 +172,7 @@ CompilerはカットSceneへ`context_length: 0`、`audio_context_length: 0`を�
 
 ## 7. Shot
 
-各Sceneは一個以上のShotを持つ。最初のShotはScene開始時刻と一致し、後続Shotは絶対時刻で昇順にする。自動PlannerはPythonが提示した、互いに1500 ms以上離れた境界IDからだけShot境界を選び、最大4 Shot、複数Shot時は各Shot 1500 ms以上とする。Scene全体が1500 ms未満の場合は一Shotのまま許す。LLMは時刻を生成せず、Pythonが境界IDを絶対msへ機械変換する。不正な候補列は該当Sceneだけ一Shotへfallbackし、ActionとCameraの処理を継続する。手書きEMDは同じ時刻規則を満たせばよい。
+各Sceneは一個以上のShotを持つ。最初のShotはScene開始時刻と一致し、後続Shotは絶対時刻で昇順にする。自動PlannerはPythonが提示した、互いに1500 ms以上離れた境界IDからだけShot境界を選び、最大4 Shot、通常は2～3 Shotとし、4 Shotは8秒以上のSceneで四つの異なる視覚目的を各2秒以上確保できる場合だけ選び、複数Shot時は各Shot 1500 ms以上とする。Scene全体が1500 ms未満の場合は一Shotのまま許す。LLMは時刻を生成せず、Pythonが境界IDを絶対msへ機械変換する。不正な候補列は該当Sceneだけ一Shotへfallbackし、ActionとCameraの処理を継続する。手書きEMDは同じ時刻規則を満たせばよい。
 
 Scene内の後続Shotは一回のH3生成に含まれる時刻付きprompt変化であり、編集上のハードカットを保証しない。構図、画角又は視点を不連続に切り替える必要がある場合は、新しいSceneをカットとして開始し、そのScene見出しから`継続`を外す。
 

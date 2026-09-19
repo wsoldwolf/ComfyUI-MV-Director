@@ -1,6 +1,6 @@
 {
-  "last_node_id": 13,
-  "last_link_id": 14,
+  "last_node_id": 15,
+  "last_link_id": 15,
   "nodes": [
     {
       "id": 1,
@@ -23,7 +23,7 @@
         "Node name for S&R": "Note"
       },
       "widgets_values": [
-        "Context Loopのsource-audio lockとLip-Sync Optionsを使用。\n\n1. 参照画像、vocal、歌詞、Vision/Text GGUF、Whisperを確認します。\n2. QueueしてEMD、SRT、Context Loop Planを出力します。\n3. 保存された context_loop_plan_*.txt を同方式のVideo workflowへ読み込みます。\n\nBaseline: context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9"
+        "Context Loopのsource-audio lockとLip-Sync Optionsを使用。\n\n1. 人物参照画像、背景画像、vocal、歌詞、Vision/Text GGUF、Whisperを確認します。\n2. QueueしてEMD、SRT、Context Loop Planを出力します。\n3. 保存された context_loop_plan_*.txt を同方式のVideo workflowへ読み込みます。\n\nBaseline: context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9"
       ]
     },
     {
@@ -55,12 +55,12 @@
           "links": null
         }
       ],
-      "title": "Reference Image",
+      "title": "Character Reference Image",
       "properties": {
         "Node name for S&R": "LoadImage"
       },
       "widgets_values": [
-        "image00002.jpg"
+        "image001_mikofox.jpg"
       ]
     },
     {
@@ -90,7 +90,7 @@
           "type": "STRING",
           "links": [
             5,
-            8
+            9
           ]
         },
         {
@@ -106,26 +106,22 @@
         {
           "name": "observations_json",
           "type": "STRING",
-          "links": [
-            6
-          ]
+          "links": null
         }
       ],
-      "title": "Image to Subject EMD",
+      "title": "Character Vision / Subject EMD",
       "properties": {
         "Node name for S&R": "MVDirectorImageToSubjectEMD"
       },
       "widgets_values": [
         "Qwen3-VL-4B-Instruct/Qwen3-VL-4B-Instruct-Q4_K_M.gguf",
-        "general",
-        "",
+        "subject_only",
+        "狐巫女。狐耳、耳の先端は黒い。狐尻尾、尾の先端は白。白い足袋と、赤い鼻緒の黒い木下駄を着用する。下駄の木製台全体は黒色で、赤いのは鼻緒だけである。目尻は赤い化粧が施されている。眉毛は丸く、横に線が伸びない、色は髪と同じである。",
         "",
         "lock_identity",
         "warn",
         "manual",
         "person",
-        1,
-        1,
         1,
         1024,
         1024,
@@ -140,8 +136,9 @@
         true,
         false,
         1,
-        "randomize",
-        "reuse"
+        "fixed",
+        "reuse",
+        "<Picture 1>"
       ]
     },
     {
@@ -173,7 +170,7 @@
         "Node name for S&R": "LoadAudio"
       },
       "widgets_values": [
-        "short_bgm_millennium_torii_vocal.mp3"
+        "autumn_fox_shrine_vocal.mp3"
       ]
     },
     {
@@ -205,9 +202,9 @@
         "Node name for S&R": "MVDirectorLoadTextFile"
       },
       "widgets_values": [
-        "W0Nob3J1c10K5Y2D5bm06bOl5bGF44KS44CA44GP44GQ44KL44Gd44Gq44Gf44KICuOBquOBnOOBneOBruees+OBr+OAgOOBguOBruaXpeOBqOS8vOOBpuOBhOOCiwrjgo/jgonjgo/jga7mmI7ml6Xjga/jgIDmnpzjgabjgarjgY/ntprjgY0K44Gd44Gq44Gf44Gu5piO5pel44Gv44CA5aSV6Zm944KI44KK55+t44GECgrjgZXjgozjgankuIDnnqzjgpLjgIDmsLjpgaDjgajlkbzjgbnjgovjgarjgokK44GT44Gu5omL44KS6Zui44GZ44GT44Go44KC44CA5oSb44Gq44Gu44Gg44KN44GG44GLCuacseOBruepuuOBq+iInuOBhuOAgOeLkOeBq+OBuOWVj+OBhgrlv5jjgozjgazjgZPjgajjga/jgIDmlZHjgYTjgYvjgIDnvbDjgYsK",
-        "lyrics.txt",
-        "{\n  \"name\": \"lyrics.txt\",\n  \"size\": 357,\n  \"type\": \"text/plain\"\n}"
+        "W0ludHJvXQrlpJzpnLLjgavmv6HjgozjgZ/jgIDnn7Pjga7pgZMK54Gv57Gg44Gu54Gr44GM44CA44Gy44Go44Gk5o+644KM44KLCumBoOOBhOaYlOOBruOAgOi2s+mfs+OCkgrntIXokYnjga7mo67jgYzjgIDmirHjgYTjgabjgYTjgosKCltWZXJzZSAxXQrkurrjga/nlJ/jgb7jgozjgabjgIDlkI3jgpLntZDjgbMK5Ye65Lya44GE5Yil44KM44Gm44CA5Zyf44G46YKE44KLCuefreOBhOWkouOCkuOAgOaDnOOBl+OCgOOCiOOBhuOBqwrkuIDmnprjga7okYnjgYzjgIDnqbrjgpLoiJ7jgYYKCuOCj+OBn+OBl+OBr+W5vuOBpOOAgOeni+OCkui2iuOBiArlub7jgaTjga7lo7DjgpLjgIDopovpgIHjgaPjgZ/jgo3jgYYK6ZW344GP55Sf44GN44KL44GT44Go44Gv44CA5rC46YGg44Gn44Gv44Gq44GPCuOBn+OBoOiomOaGtuOBoOOBkeOBjOOAgOepjeOCguOCi+OBk+OBqAoKW1ByZS1DaG9ydXNdCuWkieOCj+OCieOBrOOCguOBruOCkuOAgOaOouOBmeOBu+OBqQrlpInjgo/jgorjgobjgY/nqbrjgYzjgIDnvo7jgZfjgY/jgaYK5pWj44KL44GT44Go44Gv44CA5aSx44GG44GT44Go44GLCuOBneOCjOOBqOOCguOAgOmChOOCi+OBk+OBqOOBquOBruOBiwoKW0Nob3J1c10K57SF6JGJ44KI44CA57SF6JGJ44KI44CA5aSc6aKo44Gr44G744Gp44GRCuOBguOBquOBn+OBruaZgumWk+OCkuOAgOOCj+OBn+OBl+OBq+mgkOOBkeOBpgrnh4PjgYjjgovjgojjgYbjgarlkb3jgoLjgIDpnZnjgYvjgarliKXjgozjgoIK5ZCM44GY5a2j56+A44Gu44CA44Gy44Go44Gy44KJ44Gn44GX44KH44GGCgrnpZ7mp5jjgafjgZXjgYjjgIDnrZTjgYjjgpLnn6XjgonjgZoK56WI44KK44Gu5YWI44Gn44CA44Gf44Gg6KaL44Gk44KB44Gm44GE44KLCuawuOmBoOOCiOOCiuOCguOAgOeiuuOBi+OBquOCguOBruOBrwrku4rjgZPjgZPjgavjgYLjgovjgIDjgazjgY/jgoLjgorjgafjgZfjgZ8KCltWZXJzZSAyXQrps6XlsYXjga7lkJHjgZPjgYbjgIDmnIjjgYzmmIfjgooK6Kqw44GL44Gu6aGY44GE44GM44CA6Yi044KS6bO044KJ44GZCuWPtuOCj+OBrOmhmOOBhOOCkuOAgOaKseOBhOOBn+OBvuOBvgrkurrjga/mmI7ml6XjgbjjgajjgIDmranjgYTjgabjgobjgY8KCuOCj+OBn+OBl+OBruWwvuOBq+epjeOCguOCi+OAgOWPpOOBhOWto+evgArlpLHjgaPjgZ/lkI3jgpLjgIDlv5jjgozjgazjgb7jgb4K6ZW344GE5bm05pyI44Gv44CA5b+D44KS5a6I44KL55u+44GLCuOBneOCjOOBqOOCguOAgOWIpeOCjOOCkuWil+OChOOBmeW9seOBiwoKW1ByZS1DaG9ydXMgMl0K44Gy44Go44Gy44KJ6JC944Gh44Gm44CA5Zyf44Gr6Kem44KMCuaWsOOBl+OBhOaYpeOBruOAgOezp+OBq+OBquOCiwrntYLjgo/jgorjgajjga/jgIDmtojjgYjjgovjgZPjgajjgYsK44Gd44KM44Go44KC44CA5qyh44G45rih44GZ44GT44Go44GLCgpbQ2hvcnVzIDJdCue0heiRieOCiOOAgOe0heiRieOCiOOAgOmXh+WknOOCkuafk+OCgeOBpgrjgYLjgarjgZ/jga7nn63jgZXjgpLjgIDoqrDjgYzlmIbjgY/jgaDjgo3jgYYK54eD44GI5bC944GN44KL44GL44KJ44GT44Gd44CA5YWJ44Gv5q6L44KKCuWOu+OCiuOChuOBj+iDjOS4reOCkuOAgOaciOOBjOeFp+OCieOBmQoK44KP44Gf44GX44KC44GE44Gk44GL44CA44GT44Gu5qOu44Gu5LitCuWQjeOCguOBquOBhOmiqOOBuOOBqOOAgOOBu+OBqeOBkeOBpuOChuOBj+OBquOCiQrmsLjpgaDjgafjga/jgarjgY/jgIDph43jga3jgZ/kuIDnnqzjgpIK5oSb44Gb44KL54uQ44Gn44CA44GC44KK44Gf44GE44Gu44Gn44GZCgpbSW5zdHJ1bWVudGFsIEludGVybHVkZV0KCltCcmlkZ2VdCuOCguOBl+OCguaZguOCkuOAgOatouOCgeOCieOCjOOBpuOCggrlh7rkvJrjgYTjga7mhI/lkbPjga/jgIDlpLHjgo/jgozjgosK56e744KN44GG44GL44KJ44CA5omL44KS5Ly444Gw44GZCumZkOOCiuOBguOCi+OBi+OCieOAgOeliOOCiuOBq+OBquOCiwoKW0ZpbmFsIENob3J1c10K57SF6JGJ44KI44CA57SF6JGJ44KI44CA5pyd54S844GR44Gr6Iie44GICuS6uuOBruS4luOBruWkouOCkuOAgOWEquOBl+OBj+WMheOCk+OBpwrlub7ljYPjga7liKXjgozjgoLjgIDlub7ljYPjga7poZjjgYTjgoIK44Gy44Go44Gk44Gu5aSn5Zyw44G444CA6YKE44Gj44Gm44KG44GPCgrnpZ7mp5jjgafjgZXjgYjjgIDjgbLjgajjgorjgafjga/jgarjgY8K6Kqw44GL44Gu6KiY5oa244Gr44CA55Sf44GL44GV44KM44Gm44GE44KLCumVt+OBhOWknOOCkui2iuOBiOOAgOOBvuOBn+eni+OBjOadpeOBn+OCiQrjgYLjgarjgZ/jga7lkI3liY3jgpLjgIDpoqjjgavmrYzjgYrjgYYKCltPdXRyb10K5aSc5piO44GR44Gu6bOl5bGF44CA5reh44GP44G744Gp44GRCue0heiRieOBsuOBqOOBsuOCieOAgOaOjOOBq+ecoOOCiwrnn63jgYTlraPnr4DjgpLjgIDmirHjgY3jgZfjgoHjgaYK44KP44Gf44GX44Gv44G+44Gf44CA44GT44GT44Gr44GE44KLCg==",
+        "autumn_fox_shrine.txt",
+        "{\n  \"name\": \"autumn_fox_shrine.txt\",\n  \"size\": 2446,\n  \"type\": \"text/plain\"\n}"
       ]
     },
     {
@@ -231,7 +228,7 @@
           "type": "MV_DIRECTOR_H3_TIMING_PROFILE",
           "links": [
             4,
-            11
+            12
           ]
         },
         {
@@ -289,14 +286,14 @@
           "name": "template_emd",
           "type": "STRING",
           "links": [
-            7
+            8
           ]
         },
         {
           "name": "srt_text",
           "type": "STRING",
           "links": [
-            14
+            15
           ]
         },
         {
@@ -346,7 +343,7 @@
         {
           "name": "observations_json",
           "type": "STRING",
-          "link": 6
+          "link": 7
         }
       ],
       "outputs": [
@@ -354,7 +351,7 @@
           "name": "direction",
           "type": "MV_DIRECTOR_DIRECTION",
           "links": [
-            9
+            10
           ]
         },
         {
@@ -373,10 +370,11 @@
         "Node name for S&R": "MVDirectorDirectionEnhancer"
       },
       "widgets_values": [
+        "profile",
         "",
-        "reference_cinematic",
-        "natural_performance",
-        "readable_depth",
+        "anime_mv",
+        "anime_mv",
+        "anime_mv",
         "Qwen3-4B-abliterated/Qwen3-4B-abliterated-q5_k_m.gguf",
         "",
         768,
@@ -385,14 +383,16 @@
         1.05,
         -1,
         512,
-        32768,
+        16384,
         true,
         "q8_0",
         true,
         false,
         1,
-        "randomize",
-        "reuse"
+        "fixed",
+        "reuse",
+        "",
+        ""
       ]
     },
     {
@@ -413,17 +413,17 @@
         {
           "name": "template_emd",
           "type": "STRING",
-          "link": 7
+          "link": 8
         },
         {
           "name": "concept_emd",
           "type": "STRING",
-          "link": 8
+          "link": 9
         },
         {
           "name": "direction",
           "type": "MV_DIRECTOR_DIRECTION",
-          "link": 9
+          "link": 10
         },
         {
           "name": "model_name_override",
@@ -436,8 +436,8 @@
           "name": "emd_text",
           "type": "STRING",
           "links": [
-            10,
-            13
+            11,
+            14
           ]
         },
         {
@@ -457,23 +457,23 @@
       },
       "widgets_values": [
         "context_loop",
-        "人物1",
+        "サブジェクト1",
         1,
         "Qwen3-4B-abliterated/Qwen3-4B-abliterated-q5_k_m.gguf",
         "auto",
-        4096,
+        1536,
         0.1,
         0.9,
         1.05,
         -1,
         256,
-        32768,
+        16384,
         true,
         "q8_0",
         true,
         false,
         1,
-        "randomize",
+        "fixed",
         3,
         "reuse",
         false
@@ -497,12 +497,12 @@
         {
           "name": "emd_text",
           "type": "STRING",
-          "link": 10
+          "link": 11
         },
         {
           "name": "h3_timing_profile",
           "type": "MV_DIRECTOR_H3_TIMING_PROFILE",
-          "link": 11
+          "link": 12
         }
       ],
       "outputs": [
@@ -510,7 +510,7 @@
           "name": "plan_json",
           "type": "STRING",
           "links": [
-            12
+            13
           ]
         },
         {
@@ -539,13 +539,13 @@
         1.05,
         -1,
         256,
-        32768,
+        16384,
         true,
         "q8_0",
         true,
         false,
         1,
-        "randomize",
+        "fixed",
         "reuse"
       ]
     },
@@ -567,7 +567,7 @@
         {
           "name": "text",
           "type": "STRING",
-          "link": 12
+          "link": 13
         }
       ],
       "outputs": [
@@ -604,7 +604,7 @@
         {
           "name": "text",
           "type": "STRING",
-          "link": 13
+          "link": 14
         }
       ],
       "outputs": [
@@ -641,7 +641,7 @@
         {
           "name": "text",
           "type": "STRING",
-          "link": 14
+          "link": 15
         }
       ],
       "outputs": [
@@ -658,6 +658,120 @@
       "widgets_values": [
         "mv_director/context_loop_lyrics",
         "txt"
+      ]
+    },
+    {
+      "id": 14,
+      "type": "LoadImage",
+      "pos": [
+        40,
+        1740
+      ],
+      "size": [
+        340,
+        360
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            6
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "title": "Background Reference Image",
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "image002_keinai.jpg"
+      ]
+    },
+    {
+      "id": 15,
+      "type": "MVDirectorImageToSubjectEMD",
+      "pos": [
+        440,
+        1700
+      ],
+      "size": [
+        500,
+        800
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 6
+        }
+      ],
+      "outputs": [
+        {
+          "name": "emd_fragment",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "reference_bindings",
+          "type": "MV_DIRECTOR_REFERENCE_BINDINGS",
+          "links": null
+        },
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "observations_json",
+          "type": "STRING",
+          "links": [
+            7
+          ]
+        }
+      ],
+      "title": "Background Vision (Scene Only)",
+      "properties": {
+        "Node name for S&R": "MVDirectorImageToSubjectEMD"
+      },
+      "widgets_values": [
+        "Qwen3-VL-4B-Instruct/Qwen3-VL-4B-Instruct-Q4_K_M.gguf",
+        "scene_only",
+        "",
+        "人物、動物、キャラクター及び画面構成資料としての特徴は記述しない。場所、空間構成、建築、植生、時刻、天候及び環境照明だけを観察する。",
+        "lock_identity",
+        "warn",
+        "none",
+        "location",
+        1,
+        1024,
+        1024,
+        0.1,
+        0.9,
+        1.05,
+        -1,
+        512,
+        16384,
+        true,
+        "q8_0",
+        true,
+        false,
+        1,
+        "fixed",
+        "reuse",
+        "none"
       ]
     }
   ],
@@ -704,14 +818,22 @@
     ],
     [
       6,
-      3,
+      14,
+      0,
+      15,
+      0,
+      "IMAGE"
+    ],
+    [
+      7,
+      15,
       3,
       8,
       1,
       "STRING"
     ],
     [
-      7,
+      8,
       7,
       0,
       9,
@@ -719,7 +841,7 @@
       "STRING"
     ],
     [
-      8,
+      9,
       3,
       0,
       9,
@@ -727,7 +849,7 @@
       "STRING"
     ],
     [
-      9,
+      10,
       8,
       0,
       9,
@@ -735,7 +857,7 @@
       "MV_DIRECTOR_DIRECTION"
     ],
     [
-      10,
+      11,
       9,
       0,
       10,
@@ -743,7 +865,7 @@
       "STRING"
     ],
     [
-      11,
+      12,
       6,
       0,
       10,
@@ -751,7 +873,7 @@
       "MV_DIRECTOR_H3_TIMING_PROFILE"
     ],
     [
-      12,
+      13,
       10,
       0,
       11,
@@ -759,7 +881,7 @@
       "STRING"
     ],
     [
-      13,
+      14,
       9,
       0,
       12,
@@ -767,7 +889,7 @@
       "STRING"
     ],
     [
-      14,
+      15,
       7,
       1,
       13,

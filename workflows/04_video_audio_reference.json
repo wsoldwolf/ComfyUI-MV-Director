@@ -1,8 +1,8 @@
 {
   "id": "f97af838-5222-5864-8ec8-15d657333fdb",
   "revision": 0,
-  "last_node_id": 44,
-  "last_link_id": 72,
+  "last_node_id": 46,
+  "last_link_id": 75,
   "nodes": [
     {
       "id": 1,
@@ -24,7 +24,7 @@
           "name": "MODEL",
           "type": "MODEL",
           "links": [
-            67
+            70
           ]
         }
       ],
@@ -383,14 +383,14 @@
           "name": "audio_start",
           "type": "FLOAT",
           "links": [
-            70
+            73
           ]
         },
         {
           "name": "audio_duration",
           "type": "FLOAT",
           "links": [
-            71
+            74
           ]
         },
         {
@@ -588,7 +588,7 @@
         {
           "name": "ref_images.ref_image_1",
           "type": "IMAGE",
-          "link": null
+          "link": 69
         },
         {
           "name": "ref_images.ref_image_2",
@@ -608,7 +608,7 @@
         {
           "name": "ref_audios.ref_audio_0",
           "type": "AUDIO",
-          "link": 72
+          "link": 75
         }
       ],
       "outputs": [
@@ -1232,7 +1232,7 @@
         {
           "name": "model",
           "type": "MODEL",
-          "link": 68
+          "link": 71
         }
       ],
       "outputs": [
@@ -1349,7 +1349,7 @@
         {
           "name": "plan_json_input",
           "type": "STRING",
-          "link": 65
+          "link": 67
         },
         {
           "name": "project_assets",
@@ -1505,7 +1505,7 @@
         "Node name for S&R": "LoadImage"
       },
       "widgets_values": [
-        "image00002.jpg"
+        "image001_mikofox.jpg"
       ]
     },
     {
@@ -1718,7 +1718,7 @@
         "Node name for S&R": "Note"
       },
       "widgets_values": [
-        "Scene単位に切り出したvocalを固定<Audio 1>参照として使用。\n\n1. audio_reference_plan_*.txtをPlan JSONノードへD&Dします。\n2. full mix、vocal stem、歌詞、参照画像、Whisperを確認します。\n3. H3モデル/VAEを確認してQueueします。\n4. Plan/Compiler側と同じ歌詞・vocalを使うとsegmentation cacheを再利用できます。\n\nAudio Referenceだけは整列済みvocalをCurrent Scene時刻で切り出し、固定ref_audio_0へ渡します。\nBaseline: context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9"
+        "Scene単位に切り出したvocalを固定<Audio 1>参照として使用。\n\n1. audio_reference_plan_*.txtをPlan JSONノードへD&Dします。\n2. full mix、vocal stem、歌詞、人物・背景参照画像、Whisperを確認します。\n3. H3モデル/VAEを確認してQueueします。\n4. Plan/Compiler側と同じ歌詞・vocalを使うとsegmentation cacheを再利用できます。\n\nAudio Referenceだけは整列済みvocalをCurrent Scene時刻で切り出し、固定ref_audio_0へ渡します。\nBaseline: context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9"
       ]
     },
     {
@@ -1750,7 +1750,7 @@
         "Node name for S&R": "LoadAudio"
       },
       "widgets_values": [
-        "short_bgm_millennium_torii.mp3"
+        "autumn_fox_shrine.mp3"
       ]
     },
     {
@@ -1783,7 +1783,7 @@
         "Node name for S&R": "LoadAudio"
       },
       "widgets_values": [
-        "short_bgm_millennium_torii_vocal.mp3"
+        "autumn_fox_shrine_vocal.mp3"
       ]
     },
     {
@@ -1867,7 +1867,7 @@
         {
           "name": "plan_json",
           "type": "STRING",
-          "link": 66
+          "link": 68
         }
       ],
       "outputs": [
@@ -1894,7 +1894,7 @@
           "name": "reference_audio_b",
           "type": "AUDIO",
           "links": [
-            69
+            72
           ]
         }
       ],
@@ -1980,8 +1980,7 @@
           "name": "text",
           "type": "STRING",
           "links": [
-            65,
-            66
+            65
           ]
         }
       ],
@@ -2013,7 +2012,7 @@
         {
           "name": "model",
           "type": "MODEL",
-          "link": 67
+          "link": 70
         },
         {
           "name": "lora_name",
@@ -2037,7 +2036,7 @@
           "name": "MODEL",
           "type": "MODEL",
           "links": [
-            68
+            71
           ]
         }
       ],
@@ -2048,6 +2047,99 @@
       "widgets_values": [
         "MiniMaxH3\\minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors",
         1.0
+      ]
+    },
+    {
+      "id": 45,
+      "type": "LoadImage",
+      "pos": [
+        2380,
+        1430
+      ],
+      "size": [
+        360,
+        360
+      ],
+      "flags": {},
+      "order": 45,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            66
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "title": "Background Reference • <Picture 2>",
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "image002_keinai.jpg"
+      ]
+    },
+    {
+      "id": 46,
+      "type": "MVDirectorH3BackgroundReference",
+      "pos": [
+        1550,
+        600
+      ],
+      "size": [
+        500,
+        180
+      ],
+      "flags": {},
+      "order": 46,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "plan_json",
+          "type": "STRING",
+          "link": 65
+        },
+        {
+          "name": "background_image",
+          "type": "IMAGE",
+          "link": 66
+        }
+      ],
+      "outputs": [
+        {
+          "name": "plan_json",
+          "type": "STRING",
+          "links": [
+            67,
+            68
+          ]
+        },
+        {
+          "name": "background_image",
+          "type": "IMAGE",
+          "links": [
+            69
+          ]
+        },
+        {
+          "name": "status",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "title": "Bind Background • <Picture 2>",
+      "properties": {
+        "Node name for S&R": "MVDirectorH3BackgroundReference"
+      },
+      "widgets_values": [
+        2
       ]
     },
     {
@@ -2079,9 +2171,9 @@
         "Node name for S&R": "MVDirectorLoadTextFile"
       },
       "widgets_values": [
-        "W0Nob3J1c10K5Y2D5bm06bOl5bGF44KS44CA44GP44GQ44KL44Gd44Gq44Gf44KICuOBquOBnOOBneOBruees+OBr+OAgOOBguOBruaXpeOBqOS8vOOBpuOBhOOCiwrjgo/jgonjgo/jga7mmI7ml6Xjga/jgIDmnpzjgabjgarjgY/ntprjgY0K44Gd44Gq44Gf44Gu5piO5pel44Gv44CA5aSV6Zm944KI44KK55+t44GECgrjgZXjgozjgankuIDnnqzjgpLjgIDmsLjpgaDjgajlkbzjgbnjgovjgarjgokK44GT44Gu5omL44KS6Zui44GZ44GT44Go44KC44CA5oSb44Gq44Gu44Gg44KN44GG44GLCuacseOBruepuuOBq+iInuOBhuOAgOeLkOeBq+OBuOWVj+OBhgrlv5jjgozjgazjgZPjgajjga/jgIDmlZHjgYTjgYvjgIDnvbDjgYsK",
+        "W0ludHJvXQrlpJzpnLLjgavmv6HjgozjgZ/jgIDnn7Pjga7pgZMK54Gv57Gg44Gu54Gr44GM44CA44Gy44Go44Gk5o+644KM44KLCumBoOOBhOaYlOOBruOAgOi2s+mfs+OCkgrntIXokYnjga7mo67jgYzjgIDmirHjgYTjgabjgYTjgosKCltWZXJzZSAxXQrkurrjga/nlJ/jgb7jgozjgabjgIDlkI3jgpLntZDjgbMK5Ye65Lya44GE5Yil44KM44Gm44CA5Zyf44G46YKE44KLCuefreOBhOWkouOCkuOAgOaDnOOBl+OCgOOCiOOBhuOBqwrkuIDmnprjga7okYnjgYzjgIDnqbrjgpLoiJ7jgYYKCuOCj+OBn+OBl+OBr+W5vuOBpOOAgOeni+OCkui2iuOBiArlub7jgaTjga7lo7DjgpLjgIDopovpgIHjgaPjgZ/jgo3jgYYK6ZW344GP55Sf44GN44KL44GT44Go44Gv44CA5rC46YGg44Gn44Gv44Gq44GPCuOBn+OBoOiomOaGtuOBoOOBkeOBjOOAgOepjeOCguOCi+OBk+OBqAoKW1ByZS1DaG9ydXNdCuWkieOCj+OCieOBrOOCguOBruOCkuOAgOaOouOBmeOBu+OBqQrlpInjgo/jgorjgobjgY/nqbrjgYzjgIDnvo7jgZfjgY/jgaYK5pWj44KL44GT44Go44Gv44CA5aSx44GG44GT44Go44GLCuOBneOCjOOBqOOCguOAgOmChOOCi+OBk+OBqOOBquOBruOBiwoKW0Nob3J1c10K57SF6JGJ44KI44CA57SF6JGJ44KI44CA5aSc6aKo44Gr44G744Gp44GRCuOBguOBquOBn+OBruaZgumWk+OCkuOAgOOCj+OBn+OBl+OBq+mgkOOBkeOBpgrnh4PjgYjjgovjgojjgYbjgarlkb3jgoLjgIDpnZnjgYvjgarliKXjgozjgoIK5ZCM44GY5a2j56+A44Gu44CA44Gy44Go44Gy44KJ44Gn44GX44KH44GGCgrnpZ7mp5jjgafjgZXjgYjjgIDnrZTjgYjjgpLnn6XjgonjgZoK56WI44KK44Gu5YWI44Gn44CA44Gf44Gg6KaL44Gk44KB44Gm44GE44KLCuawuOmBoOOCiOOCiuOCguOAgOeiuuOBi+OBquOCguOBruOBrwrku4rjgZPjgZPjgavjgYLjgovjgIDjgazjgY/jgoLjgorjgafjgZfjgZ8KCltWZXJzZSAyXQrps6XlsYXjga7lkJHjgZPjgYbjgIDmnIjjgYzmmIfjgooK6Kqw44GL44Gu6aGY44GE44GM44CA6Yi044KS6bO044KJ44GZCuWPtuOCj+OBrOmhmOOBhOOCkuOAgOaKseOBhOOBn+OBvuOBvgrkurrjga/mmI7ml6XjgbjjgajjgIDmranjgYTjgabjgobjgY8KCuOCj+OBn+OBl+OBruWwvuOBq+epjeOCguOCi+OAgOWPpOOBhOWto+evgArlpLHjgaPjgZ/lkI3jgpLjgIDlv5jjgozjgazjgb7jgb4K6ZW344GE5bm05pyI44Gv44CA5b+D44KS5a6I44KL55u+44GLCuOBneOCjOOBqOOCguOAgOWIpeOCjOOCkuWil+OChOOBmeW9seOBiwoKW1ByZS1DaG9ydXMgMl0K44Gy44Go44Gy44KJ6JC944Gh44Gm44CA5Zyf44Gr6Kem44KMCuaWsOOBl+OBhOaYpeOBruOAgOezp+OBq+OBquOCiwrntYLjgo/jgorjgajjga/jgIDmtojjgYjjgovjgZPjgajjgYsK44Gd44KM44Go44KC44CA5qyh44G45rih44GZ44GT44Go44GLCgpbQ2hvcnVzIDJdCue0heiRieOCiOOAgOe0heiRieOCiOOAgOmXh+WknOOCkuafk+OCgeOBpgrjgYLjgarjgZ/jga7nn63jgZXjgpLjgIDoqrDjgYzlmIbjgY/jgaDjgo3jgYYK54eD44GI5bC944GN44KL44GL44KJ44GT44Gd44CA5YWJ44Gv5q6L44KKCuWOu+OCiuOChuOBj+iDjOS4reOCkuOAgOaciOOBjOeFp+OCieOBmQoK44KP44Gf44GX44KC44GE44Gk44GL44CA44GT44Gu5qOu44Gu5LitCuWQjeOCguOBquOBhOmiqOOBuOOBqOOAgOOBu+OBqeOBkeOBpuOChuOBj+OBquOCiQrmsLjpgaDjgafjga/jgarjgY/jgIDph43jga3jgZ/kuIDnnqzjgpIK5oSb44Gb44KL54uQ44Gn44CA44GC44KK44Gf44GE44Gu44Gn44GZCgpbSW5zdHJ1bWVudGFsIEludGVybHVkZV0KCltCcmlkZ2VdCuOCguOBl+OCguaZguOCkuOAgOatouOCgeOCieOCjOOBpuOCggrlh7rkvJrjgYTjga7mhI/lkbPjga/jgIDlpLHjgo/jgozjgosK56e744KN44GG44GL44KJ44CA5omL44KS5Ly444Gw44GZCumZkOOCiuOBguOCi+OBi+OCieOAgOeliOOCiuOBq+OBquOCiwoKW0ZpbmFsIENob3J1c10K57SF6JGJ44KI44CA57SF6JGJ44KI44CA5pyd54S844GR44Gr6Iie44GICuS6uuOBruS4luOBruWkouOCkuOAgOWEquOBl+OBj+WMheOCk+OBpwrlub7ljYPjga7liKXjgozjgoLjgIDlub7ljYPjga7poZjjgYTjgoIK44Gy44Go44Gk44Gu5aSn5Zyw44G444CA6YKE44Gj44Gm44KG44GPCgrnpZ7mp5jjgafjgZXjgYjjgIDjgbLjgajjgorjgafjga/jgarjgY8K6Kqw44GL44Gu6KiY5oa244Gr44CA55Sf44GL44GV44KM44Gm44GE44KLCumVt+OBhOWknOOCkui2iuOBiOOAgOOBvuOBn+eni+OBjOadpeOBn+OCiQrjgYLjgarjgZ/jga7lkI3liY3jgpLjgIDpoqjjgavmrYzjgYrjgYYKCltPdXRyb10K5aSc5piO44GR44Gu6bOl5bGF44CA5reh44GP44G744Gp44GRCue0heiRieOBsuOBqOOBsuOCieOAgOaOjOOBq+ecoOOCiwrnn63jgYTlraPnr4DjgpLjgIDmirHjgY3jgZfjgoHjgaYK44KP44Gf44GX44Gv44G+44Gf44CA44GT44GT44Gr44GE44KLCg==",
         "lyrics.txt",
-        "{\n  \"name\": \"lyrics.txt\",\n  \"size\": 357,\n  \"type\": \"text/plain\"\n}"
+        "{\n  \"name\": \"lyrics.txt\",\n  \"size\": 2446,\n  \"type\": \"text/plain\"\n}"
       ]
     },
     {
@@ -2170,12 +2262,12 @@
         {
           "name": "audio",
           "type": "AUDIO",
-          "link": 69
+          "link": 72
         },
         {
           "name": "start_index",
           "type": "FLOAT",
-          "link": 70,
+          "link": 73,
           "widget": {
             "name": "start_index"
           }
@@ -2183,7 +2275,7 @@
         {
           "name": "duration",
           "type": "FLOAT",
-          "link": 71,
+          "link": 74,
           "widget": {
             "name": "duration"
           }
@@ -2194,7 +2286,7 @@
           "name": "AUDIO",
           "type": "AUDIO",
           "links": [
-            72
+            75
           ]
         }
       ],
@@ -2709,20 +2801,44 @@
       65,
       39,
       0,
+      46,
+      0,
+      "STRING"
+    ],
+    [
+      66,
+      45,
+      0,
+      46,
+      1,
+      "IMAGE"
+    ],
+    [
+      67,
+      46,
+      0,
       24,
       1,
       "STRING"
     ],
     [
-      66,
-      39,
+      68,
+      46,
       0,
       37,
       4,
       "STRING"
     ],
     [
-      67,
+      69,
+      46,
+      1,
+      11,
+      8,
+      "IMAGE"
+    ],
+    [
+      70,
       1,
       0,
       44,
@@ -2730,7 +2846,7 @@
       "MODEL"
     ],
     [
-      68,
+      71,
       44,
       0,
       22,
@@ -2738,7 +2854,7 @@
       "MODEL"
     ],
     [
-      69,
+      72,
       37,
       3,
       40,
@@ -2746,7 +2862,7 @@
       "AUDIO"
     ],
     [
-      70,
+      73,
       8,
       10,
       40,
@@ -2754,7 +2870,7 @@
       "FLOAT"
     ],
     [
-      71,
+      74,
       8,
       11,
       40,
@@ -2762,7 +2878,7 @@
       "FLOAT"
     ],
     [
-      72,
+      75,
       40,
       0,
       11,

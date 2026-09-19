@@ -22,6 +22,29 @@ class VisionLineProtocolTests(unittest.TestCase):
             result.warnings,
         )
 
+    def test_redundant_protocol_id_record_with_marker_is_ignored(self) -> None:
+        source = FIXTURE.read_text(encoding="utf-8").replace(
+            "MVD_VISION_OBSERVATION_LINES_V2\n",
+            "MVD_VISION_OBSERVATION_LINES_V2\n"
+            "protocol_id\tMVD_VISION_OBSERVATION_LINES_V2\n",
+            1,
+        )
+        result = parse_vision_observations(source)
+        self.assertEqual(result.observations.primary_subject, "長い黒髪の人物")
+        self.assertIn(
+            "ignored redundant protocol_id metadata after Vision protocol ID",
+            result.warnings,
+        )
+
+    def test_protocol_id_record_with_observation_payload_is_rejected(self) -> None:
+        source = FIXTURE.read_text(encoding="utf-8").replace(
+            "OVERVIEW\t夜の神社に人物が立っている。",
+            "protocol_id\t人物",
+            1,
+        )
+        with self.assertRaisesRegex(VisionProtocolError, "unknown Vision record"):
+            parse_vision_observations(source)
+
     def test_canonical_fixture_builds_observations(self) -> None:
         result = parse_vision_observations(FIXTURE.read_text(encoding="utf-8"))
         observations = result.observations
@@ -54,6 +77,8 @@ class VisionLineProtocolTests(unittest.TestCase):
         self.assertIn("the word キャラクター", prompt)
         self.assertIn("stable visible design feature", prompt)
         self.assertIn("Do not repeat an eyes feature", prompt)
+        self.assertIn("do not use SUBJECT_FEATURE as a rewritten", prompt)
+        self.assertIn("exactly three TAB-separated fields", prompt)
 
     def test_small_unambiguous_normalizations_do_not_retry(self) -> None:
         source = FIXTURE.read_text(encoding="utf-8").replace(
@@ -200,6 +225,30 @@ class VisionLineProtocolTests(unittest.TestCase):
         result = parse_vision_observations(source)
         self.assertEqual(result.observations.subject_features[1].visibility, "partial")
 
+    def test_missing_feature_category_uses_generic_partial_without_rewriting(self) -> None:
+        source = FIXTURE.read_text(encoding="utf-8").replace(
+            "SUBJECT_FEATURE\teyebrows\t短く丸い淡い金色の眉\tpartial",
+            "SUBJECT_FEATURE\t短く丸い淡い金色の眉",
+            1,
+        )
+        result = parse_vision_observations(source)
+        feature = result.observations.subject_features[1]
+        self.assertEqual(feature.category, "distinctive_feature")
+        self.assertEqual(feature.text, "短く丸い淡い金色の眉")
+        self.assertEqual(feature.visibility, "partial")
+        self.assertTrue(
+            any("missing SUBJECT_FEATURE category" in item for item in result.warnings)
+        )
+
+    def test_feature_category_without_text_is_still_rejected(self) -> None:
+        source = FIXTURE.read_text(encoding="utf-8").replace(
+            "SUBJECT_FEATURE\teyebrows\t短く丸い淡い金色の眉\tpartial",
+            "SUBJECT_FEATURE\teyebrows",
+            1,
+        )
+        with self.assertRaisesRegex(VisionProtocolError, "too few fields"):
+            parse_vision_observations(source)
+
     def test_empty_optional_visible_text_is_ignored_with_warning(self) -> None:
         source = FIXTURE.read_text(encoding="utf-8").replace(
             "VISIBLE_TEXT\t奉納", "VISIBLE_TEXT\t"
@@ -233,10 +282,109 @@ class VisionLineProtocolTests(unittest.TestCase):
             2,
         )
 
-    def test_unknown_or_reordered_record_is_rejected(self) -> None:
+    def test_empty_allowed_scalar_records_are_restored_when_omitted(self) -> None:
+        source = (
+            FIXTURE.read_text(encoding="utf-8")
+            .replace("PRIMARY_SUBJECT\t長い黒髪の人物\n", "", 1)
+            .replace("SUBJECT_POSE\t正面を向いて立っている。\n", "", 1)
+            .replace("SUBJECT_PLACEMENT\t中央\n", "", 1)
+        )
+        result = parse_vision_observations(
+            source,
+            analysis_profile="scene_only",
+        )
+        self.assertEqual(result.observations.primary_subject, "")
+        self.assertEqual(result.observations.subject_pose, "")
+        self.assertEqual(result.observations.subject_placement, "")
+        self.assertEqual(result.observations.scene_setting, "夜の神社の参道")
+        self.assertIn(
+            "restored omitted empty PRIMARY_SUBJECT record",
+            result.warnings,
+        )
+        self.assertIn(
+            "restored omitted empty SUBJECT_POSE record",
+            result.warnings,
+        )
+        self.assertIn(
+            "restored omitted empty SUBJECT_PLACEMENT record",
+            result.warnings,
+        )
+        general = parse_vision_observations(source)
+        self.assertEqual(general.observations.subject_placement, "")
+
+    def test_every_empty_allowed_scalar_record_can_be_omitted(self) -> None:
+        canonical = FIXTURE.read_text(encoding="utf-8")
+        empty_allowed = (
+            "PRIMARY_SUBJECT",
+            "HINT_REASON",
+            "SUBJECT_POSE",
+            "SCENE_SETTING",
+            "LIGHTING",
+            "TIME_WEATHER",
+            "SHOT_SIZE",
+            "VIEWPOINT",
+            "SUBJECT_PLACEMENT",
+            "DEPTH",
+            "STYLE_MEDIUM",
+            "STYLE_RENDERING",
+            "STYLE_PALETTE",
+        )
+        for record_name in empty_allowed:
+            with self.subTest(record_name=record_name):
+                source = "\n".join(
+                    line
+                    for line in canonical.splitlines()
+                    if not line.startswith(f"{record_name}\t")
+                )
+                result = parse_vision_observations(source)
+                self.assertIn(
+                    f"restored omitted empty {record_name} record",
+                    result.warnings,
+                )
+
+    def test_missing_required_hint_status_is_rejected(self) -> None:
         source = FIXTURE.read_text(encoding="utf-8").replace(
-            "OVERVIEW\t夜の神社に人物が立っている。",
-            "PRIMARY_SUBJECT\t人物",
+            "HINT_STATUS\tconsistent\n",
+            "",
+            1,
+        )
+        with self.assertRaises(VisionProtocolError):
+            parse_vision_observations(source)
+
+    def test_known_records_are_reordered_to_canonical_order(self) -> None:
+        source = FIXTURE.read_text(encoding="utf-8")
+        placement = "SUBJECT_PLACEMENT\t中央\n"
+        depth = "DEPTH\t前景から遠景まで見える\n"
+        source = source.replace(placement + depth, depth + placement)
+        result = parse_vision_observations(source)
+        self.assertEqual(result.observations.subject_placement, "中央")
+        self.assertEqual(result.observations.depth, "前景から遠景まで見える")
+        self.assertIn(
+            "normalized known Vision records to canonical order",
+            result.warnings,
+        )
+
+    def test_restarted_response_deduplicates_named_records(self) -> None:
+        source = FIXTURE.read_text(encoding="utf-8")
+        duplicate = (
+            "OVERVIEW\t別の要約。\n"
+            "PRIMARY_SUBJECT\t長い黒髪の人物\n"
+        )
+        source = source.replace(
+            "SUBJECT_POSE\t正面を向いて立っている。\n",
+            duplicate + "SUBJECT_POSE\t正面を向いて立っている。\n",
+        )
+        result = parse_vision_observations(source)
+        self.assertEqual(result.observations.overview, "夜の神社に人物が立っている。")
+        self.assertEqual(result.observations.primary_subject, "長い黒髪の人物")
+        self.assertTrue(
+            any("duplicate OVERVIEW" in item for item in result.warnings)
+        )
+
+    def test_unknown_record_is_rejected_after_order_normalization(self) -> None:
+        source = FIXTURE.read_text(encoding="utf-8").replace(
+            "DEPTH\t前景から遠景まで見える",
+            "CAMERA_DEPTH\t前景から遠景まで見える",
         )
         with self.assertRaises(VisionProtocolError):
             parse_vision_observations(source)
@@ -254,6 +402,10 @@ class VisionLineProtocolTests(unittest.TestCase):
         self.assertIn("* `画像4` 長い黒髪の人物", result.emd_fragment)
         self.assertNotIn("<Subject", result.emd_fragment)
         self.assertNotIn("<Picture", result.emd_fragment)
+        self.assertIn(
+            "優先して保持する識別特徴: 狐の尾は一本です。",
+            result.emd_fragment,
+        )
         self.assertIn("狐の尾は一本です。", result.emd_fragment)
         for excluded in ("正面を向いて", "全身", "イラスト", "奉納", "青白い月光"):
             self.assertNotIn(excluded, result.emd_fragment)

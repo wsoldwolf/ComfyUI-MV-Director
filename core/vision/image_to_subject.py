@@ -19,7 +19,7 @@ from .image_data import PreparedVisionImage
 from .subject_emd import SubjectEMDResult, render_subject_emd
 
 
-VISION_PROMPT_VERSION = "mvd-vision-observation-v8"
+VISION_PROMPT_VERSION = "mvd-vision-observation-v15"
 ANALYSIS_PROFILES = ("general", "subject_only", "scene_only")
 HINT_MODES = ("observe_only", "assist", "lock_identity")
 HINT_CONFLICT_POLICIES = ("warn", "strict")
@@ -95,11 +95,34 @@ def build_vision_request(
         f"ANALYSIS_PROFILE: {request.analysis_profile}",
         f"HINT_MODE: {request.hint_mode if request.effective_subject_hint else 'observe_only'}",
     ]
+    if request.analysis_profile == "scene_only":
+        lines.append(
+            "SCENE_ONLY FORMAT: Keep every fixed record in protocol order. "
+            "When no person or object is present, emit PRIMARY_SUBJECT and "
+            "SUBJECT_POSE as named records with an empty value after the TAB; "
+            "do not omit those record lines."
+        )
     if request.effective_subject_hint:
         lines.extend(
             [
                 "SUBJECT_HINT_DATA (user-provided context, not visual evidence):",
                 request.effective_subject_hint,
+                "LOCKED HINT OUTPUT RULE: The Subject EMD renderer preserves "
+                "SUBJECT_HINT_DATA verbatim. Therefore SUBJECT_FEATURE must "
+                "contain only additional stable visible facts that are absent "
+                "from the hint. Never restate, paraphrase, summarize, translate, "
+                "or expand a fact already present in the hint. Keep each "
+                "additional feature atomic; if a candidate mixes a locked fact "
+                "with a new fact, emit only the new fact. A shortened label, "
+                "omitted Japanese particles, a synonym, or a fragment split "
+                "from a locked sentence is still the same fact and must be "
+                "omitted. Before emitting each feature, silently verify that "
+                "its meaning is absent from SUBJECT_HINT_DATA. Prefer zero "
+                "SUBJECT_FEATURE records over any restatement. Every retained "
+                "feature must be self-contained Japanese that explicitly names "
+                "the body part, garment, accessory, or material it describes; "
+                "never emit a dangling adjective or comma fragment whose subject "
+                "appears only in the hint or another feature.",
                 "Assess this hint against visible evidence. HINT_STATUS must be "
                 "consistent, ambiguous, or conflict; never not_used. "
                 "HINT_REASON should contain one concise Japanese reason.",
@@ -138,7 +161,9 @@ def _build_format_retry_request(
         "line. Put exactly one named record on each following physical line. "
         "Every record line must start with its required ASCII record name and "
         "a literal TAB. Never compress multiple records into one TAB-separated "
-        "line and never omit record names."
+        "line and never omit record names. For SUBJECT_FEATURE, emit exactly "
+        "three TAB-separated fields: SUBJECT_FEATURE, one allowed category, "
+        "and one nonempty Japanese feature. Never omit the category or feature."
     )
 
 
@@ -216,7 +241,10 @@ def observe_image(
     )
     retried_format = False
     try:
-        parsed = parse_vision_observations(response)
+        parsed = parse_vision_observations(
+            response,
+            analysis_profile=request.analysis_profile,
+        )
     except VisionProtocolError as first_error:
         retried_format = True
         retry_response = backend.complete_observation(
@@ -229,7 +257,10 @@ def observe_image(
             interrupt_callback=interrupt_callback,
         )
         try:
-            parsed = parse_vision_observations(retry_response)
+            parsed = parse_vision_observations(
+                retry_response,
+                analysis_profile=request.analysis_profile,
+            )
         except VisionProtocolError as second_error:
             raise VisionProtocolError(
                 "Vision format retry failed; "

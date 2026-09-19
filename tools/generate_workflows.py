@@ -25,6 +25,22 @@ TURBO_LORA_NAME = (
 TEXT_MODEL = "Qwen3-4B-abliterated/Qwen3-4B-abliterated-q5_k_m.gguf"
 VISION_MODEL = "Qwen3-VL-4B-Instruct/Qwen3-VL-4B-Instruct-Q4_K_M.gguf"
 WHISPER_MODEL = "medium.pt"
+CHARACTER_IMAGE = "image001_mikofox.jpg"
+BACKGROUND_IMAGE = "image002_keinai.jpg"
+FULL_MIX_AUDIO = "autumn_fox_shrine.mp3"
+VOCAL_AUDIO = "autumn_fox_shrine_vocal.mp3"
+LYRICS_BASENAME = "autumn_fox_shrine.txt"
+CHARACTER_HINT = (
+    "狐巫女。狐耳、耳の先端は黒い。狐尻尾、尾の先端は白。"
+    "白い足袋と、赤い鼻緒の黒い木下駄を着用する。"
+    "下駄の木製台全体は黒色で、赤いのは鼻緒だけである。"
+    "目尻は赤い化粧が施されている。"
+    "眉毛は丸く、横に線が伸びない、色は髪と同じである。"
+)
+BACKGROUND_INSTRUCTION = (
+    "人物、動物、キャラクター及び画面構成資料としての特徴は記述しない。"
+    "場所、空間構成、建築、植生、時刻、天候及び環境照明だけを観察する。"
+)
 
 MODES = {
     "context_loop": {
@@ -272,7 +288,7 @@ def _fallback_plan(mode: str) -> dict[str, Any]:
 
 
 def _lyrics_text() -> str:
-    path = ROOT / "assets" / "bgm" / "short_bgm_millennium_torii_lyrics.txt"
+    path = ROOT / "assets" / "bgm" / LYRICS_BASENAME
     return path.read_text(encoding="utf-8")
 
 
@@ -361,7 +377,7 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
             f"MV Director • {spec['label']} • Plan / Compiler",
             (
                 f"{spec['summary']}。\n\n"
-                "1. 参照画像、vocal、歌詞、Vision/Text GGUF、Whisperを確認します。\n"
+                "1. 人物参照画像、背景画像、vocal、歌詞、Vision/Text GGUF、Whisperを確認します。\n"
                 "2. QueueしてEMD、SRT、Context Loop Planを出力します。\n"
                 f"3. 保存された {mode}_plan_*.txt を同方式のVideo workflowへ読み込みます。\n\n"
                 f"Baseline: {CONTRACT_ID}"
@@ -372,16 +388,16 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
             "LoadImage",
             (40, 360),
             (340, 360),
-            "Reference Image",
+            "Character Reference Image",
             outputs=[_output("IMAGE", "IMAGE"), _output("MASK", "MASK")],
-            widgets=["image00002.jpg"],
+            widgets=[CHARACTER_IMAGE],
         ),
         _node(
             3,
             "MVDirectorImageToSubjectEMD",
             (440, 330),
             (500, 800),
-            "Image to Subject EMD",
+            "Character Vision / Subject EMD",
             inputs=[_input("image", "IMAGE")],
             outputs=[
                 _output("emd_fragment", "STRING"),
@@ -391,15 +407,13 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
             ],
             widgets=[
                 VISION_MODEL,
-                "general",
-                "",
+                "subject_only",
+                CHARACTER_HINT,
                 "",
                 "lock_identity",
                 "warn",
                 "manual",
                 "person",
-                1,
-                1,
                 1,
                 1024,
                 1024,
@@ -414,8 +428,9 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
                 True,
                 False,
                 1,
-                "randomize",
+                "fixed",
                 "reuse",
+                "<Picture 1>",
             ],
         ),
         _node(
@@ -425,9 +440,9 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
             (340, 110),
             "Vocal Stem",
             outputs=[_output("AUDIO", "AUDIO")],
-            widgets=["short_bgm_millennium_torii_vocal.mp3"],
+            widgets=[VOCAL_AUDIO],
         ),
-        _load_text_node(5, (40, 980), "Plain Lyrics", lyrics, "lyrics.txt"),
+        _load_text_node(5, (40, 980), "Plain Lyrics", lyrics, LYRICS_BASENAME),
         _timing_node(6, (40, 1210)),
         _lyric_node(7, (480, 1210)),
         _node(
@@ -446,10 +461,11 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
                 _output("status", "STRING"),
             ],
             widgets=[
+                "profile",
                 "",
-                "reference_cinematic",
-                "natural_performance",
-                "readable_depth",
+                "anime_mv",
+                "anime_mv",
+                "anime_mv",
                 TEXT_MODEL,
                 "",
                 768,
@@ -458,14 +474,16 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
                 1.05,
                 -1,
                 512,
-                32768,
+                16384,
                 True,
                 "q8_0",
                 True,
                 False,
                 1,
-                "randomize",
+                "fixed",
                 "reuse",
+                "",
+                "",
             ],
         ),
         _node(
@@ -487,23 +505,23 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
             ],
             widgets=[
                 spec["planner_mode"],
-                "人物1",
+                "サブジェクト1",
                 1,
                 TEXT_MODEL,
                 "auto",
-                4096,
+                1536,
                 0.1,
                 0.9,
                 1.05,
                 -1,
                 256,
-                32768,
+                16384,
                 True,
                 "q8_0",
                 True,
                 False,
                 1,
-                "randomize",
+                "fixed",
                 3,
                 "reuse",
                 False,
@@ -535,13 +553,13 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
                 1.05,
                 -1,
                 256,
-                32768,
+                16384,
                 True,
                 "q8_0",
                 True,
                 False,
                 1,
-                "randomize",
+                "fixed",
                 "reuse",
             ],
         ),
@@ -566,8 +584,58 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
             f"mv_director/{mode}_lyrics",
             "txt",
         ),
+        _node(
+            14,
+            "LoadImage",
+            (40, 1740),
+            (340, 360),
+            "Background Reference Image",
+            outputs=[_output("IMAGE", "IMAGE"), _output("MASK", "MASK")],
+            widgets=[BACKGROUND_IMAGE],
+        ),
+        _node(
+            15,
+            "MVDirectorImageToSubjectEMD",
+            (440, 1700),
+            (500, 800),
+            "Background Vision (Scene Only)",
+            inputs=[_input("image", "IMAGE")],
+            outputs=[
+                _output("emd_fragment", "STRING"),
+                _output("reference_bindings", "MV_DIRECTOR_REFERENCE_BINDINGS"),
+                _output("image", "IMAGE"),
+                _output("observations_json", "STRING"),
+            ],
+            widgets=[
+                VISION_MODEL,
+                "scene_only",
+                "",
+                BACKGROUND_INSTRUCTION,
+                "lock_identity",
+                "warn",
+                "none",
+                "location",
+                1,
+                1024,
+                1024,
+                0.1,
+                0.9,
+                1.05,
+                -1,
+                512,
+                16384,
+                True,
+                "q8_0",
+                True,
+                False,
+                1,
+                "fixed",
+                "reuse",
+                "none",
+            ],
+        ),
     ]
-    workflow["last_node_id"] = 13
+    workflow["last_node_id"] = 15
     workflow["extra"]["mv_director"] = {
         "kind": "plan_compiler",
         "lip_sync_mode": mode,
@@ -585,7 +653,8 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
         "MV_DIRECTOR_H3_TIMING_PROFILE",
     )
     _connect(workflow, 3, 0, 8, "concept_emd", "STRING")
-    _connect(workflow, 3, 3, 8, "observations_json", "STRING")
+    _connect(workflow, 14, 0, 15, "image", "IMAGE")
+    _connect(workflow, 15, 3, 8, "observations_json", "STRING")
     _connect(workflow, 7, 0, 9, "template_emd", "STRING")
     _connect(workflow, 3, 0, 9, "concept_emd", "STRING")
     _connect(workflow, 8, 0, 9, "direction", "MV_DIRECTOR_DIRECTION")
@@ -658,9 +727,9 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
     note = _node_by_id(workflow, 31)
     note["title"] = f"START HERE • MV Director • {spec['label']}"
     preparation = (
-        "full mix、vocal stem、歌詞、参照画像、Whisper"
+        "full mix、vocal stem、歌詞、人物・背景参照画像、Whisper"
         if mode == "audio_reference"
-        else "full mix、vocal stem、参照画像"
+        else "full mix、vocal stem、人物・背景参照画像"
     )
     segmentation_note = (
         "4. Plan/Compiler側と同じ歌詞・vocalを使うとsegmentation cacheを再利用できます。\n\n"
@@ -681,7 +750,7 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
     ]
 
     image = _node_by_id(workflow, 26)
-    image["widgets_values"] = ["image00002.jpg"]
+    image["widgets_values"] = [CHARACTER_IMAGE]
     image["title"] = "Reference Image • <Picture 1>"
 
     plan_json = _json_text(_fallback_plan(mode))
@@ -707,7 +776,7 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
             (360, 110),
             "Full Mix",
             outputs=[_output("AUDIO", "AUDIO")],
-            widgets=["short_bgm_millennium_torii.mp3"],
+            widgets=[FULL_MIX_AUDIO],
         ),
         _node(
             33,
@@ -716,7 +785,7 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
             (360, 110),
             "Vocal Stem",
             outputs=[_output("AUDIO", "AUDIO")],
-            widgets=["short_bgm_millennium_torii_vocal.mp3"],
+            widgets=[VOCAL_AUDIO],
         ),
         _timing_node(35, (500, 2130)),
         _audio_pad_node(37, spec["alignment"]),
@@ -742,6 +811,32 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
             outputs=[_output("MODEL", "MODEL")],
             widgets=[TURBO_LORA_NAME, 1.0],
         ),
+        _node(
+            45,
+            "LoadImage",
+            (2380, 1430),
+            (360, 360),
+            "Background Reference • <Picture 2>",
+            outputs=[_output("IMAGE", "IMAGE"), _output("MASK", "MASK")],
+            widgets=[BACKGROUND_IMAGE],
+        ),
+        _node(
+            46,
+            "MVDirectorH3BackgroundReference",
+            (1550, 600),
+            (500, 180),
+            "Bind Background • <Picture 2>",
+            inputs=[
+                _input("plan_json", "STRING"),
+                _input("background_image", "IMAGE"),
+            ],
+            outputs=[
+                _output("plan_json", "STRING"),
+                _output("background_image", "IMAGE"),
+                _output("status", "STRING"),
+            ],
+            widgets=[2],
+        ),
     ]
     if mode == "audio_reference":
         lyrics = _lyrics_text()
@@ -754,7 +849,7 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
             ]
         )
     workflow["nodes"].extend(additions)
-    workflow["last_node_id"] = 44
+    workflow["last_node_id"] = 46
 
     _connect(workflow, 32, 0, 37, "audio_a", "AUDIO")
     _connect(workflow, 33, 0, 37, "audio_b", "AUDIO")
@@ -781,8 +876,13 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
     _connect(workflow, 37, 0, 38, "full_mix", "AUDIO")
     _connect(workflow, 37, 1, 38, "vocals", "AUDIO")
     _connect(workflow, 38, 0, 7, "source_timeline", "H3_SOURCE_TIMELINE")
-    _connect(workflow, 39, 0, 24, "plan_json_input", "STRING")
-    _connect(workflow, 39, 0, 37, "plan_json", "STRING")
+    _disconnect_input(workflow, 24, "plan_json_input")
+    _disconnect_input(workflow, 37, "plan_json")
+    _connect(workflow, 39, 0, 46, "plan_json", "STRING")
+    _connect(workflow, 45, 0, 46, "background_image", "IMAGE")
+    _connect(workflow, 46, 0, 24, "plan_json_input", "STRING")
+    _connect(workflow, 46, 0, 37, "plan_json", "STRING")
+    _connect(workflow, 46, 1, 11, "ref_images.ref_image_1", "IMAGE")
     _connect(workflow, 1, 0, 44, "model", "MODEL")
     _connect(workflow, 44, 0, 22, "model", "MODEL")
 
@@ -802,7 +902,7 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
             widgets=[1.0, 0.2, 0.0, 0.15, 0.2],
         )
         workflow["nodes"].append(lip)
-        workflow["last_node_id"] = 44
+        workflow["last_node_id"] = 46
         _connect(workflow, 37, 1, 40, "voice", "AUDIO")
         _connect(workflow, 40, 0, 30, "lip_sync_options", "H3_LIP_SYNC_OPTIONS")
         _connect(workflow, 40, 1, 12, "lip_sync_voice", "AUDIO")
@@ -823,7 +923,7 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
             widgets=[0.0, 60.0],
         )
         workflow["nodes"].append(trim)
-        workflow["last_node_id"] = 44
+        workflow["last_node_id"] = 46
         _connect(workflow, 37, 3, 40, "audio", "AUDIO")
         _connect(workflow, 8, 10, 40, "start_index", "FLOAT")
         _connect(workflow, 8, 11, 40, "duration", "FLOAT")
@@ -860,6 +960,83 @@ def validate_workflow(workflow: dict[str, Any]) -> None:
             raise ValueError(f"link {link_id} origin type mismatch")
 
 
+def _node_by_title(workflow: dict[str, Any], title: str) -> dict[str, Any]:
+    matches = [node for node in workflow["nodes"] if node.get("title") == title]
+    if len(matches) != 1:
+        raise ValueError(f"expected one workflow node titled {title!r}")
+    return matches[0]
+
+
+def _sync_node_widgets(
+    target: dict[str, Any], source: dict[str, Any]
+) -> None:
+    """Copy generated defaults while retaining debug layout and wiring."""
+
+    values = copy.deepcopy(source.get("widgets_values", []))
+    target["widgets_values"] = values
+    named = target.get("widgets_values_named")
+    if not isinstance(named, dict):
+        return
+    # ComfyUI stores control_after_generate ("randomize") in the named map
+    # even though it is not a graph input.  Preserve that serialized order so
+    # the following cache_mode value cannot shift by one position.
+    for name, value in zip(tuple(named), values):
+        named[name] = copy.deepcopy(value)
+
+
+def _sync_development_workflows(
+    output_dir: Path,
+    reference_plan: dict[str, Any],
+    reference_video: dict[str, Any],
+) -> None:
+    """Keep hand-edited debug graphs on the same runtime defaults.
+
+    Debug-only Preview nodes, pass-through prompts, positions, and links remain
+    untouched.  Only user-facing configuration widgets are synchronized.
+    """
+
+    development = output_dir / "development"
+    pairs = (
+        (
+            development / "01_plan_compiler_context_loop_debug.json",
+            reference_plan,
+            (
+                "Character Reference Image",
+                "Character Vision / Subject EMD",
+                "Vocal Stem",
+                "Plain Lyrics",
+                "Lyric Segmentation",
+                "Direction Enhancer",
+                "Timeline Planner",
+                "Ref2VA EMD Compiler",
+                "Background Reference Image",
+                "Background Vision (Scene Only)",
+            ),
+        ),
+        (
+            development / "02_video_context_loop_debug.json",
+            reference_video,
+            (
+                "Reference Image • <Picture 1>",
+                "Full Mix",
+                "Vocal Stem",
+                "Background Reference • <Picture 2>",
+            ),
+        ),
+    )
+    for path, reference, titles in pairs:
+        if not path.is_file():
+            continue
+        workflow = json.loads(path.read_text(encoding="utf-8"))
+        for title in titles:
+            _sync_node_widgets(
+                _node_by_title(workflow, title),
+                _node_by_title(reference, title),
+            )
+        validate_workflow(workflow)
+        path.write_text(_json_text(workflow) + "\n", encoding="utf-8")
+
+
 def write_workflows(context_loop_root: Path, output_dir: Path) -> None:
     base_path = (
         context_loop_root
@@ -869,16 +1046,22 @@ def write_workflows(context_loop_root: Path, output_dir: Path) -> None:
     if not base_path.is_file():
         raise FileNotFoundError(base_path)
     output_dir.mkdir(parents=True, exist_ok=True)
+    generated: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {}
     for mode, spec in MODES.items():
         number = int(spec["number"])
         plan = build_plan_workflow(mode)
         video = build_video_workflow(mode, base_path)
         validate_workflow(plan)
         validate_workflow(video)
+        generated[mode] = (plan, video)
         plan_path = output_dir / f"{number * 2 - 1:02d}_plan_compiler_{mode}.json"
         video_path = output_dir / f"{number * 2:02d}_video_{mode}.json"
         plan_path.write_text(_json_text(plan) + "\n", encoding="utf-8")
         video_path.write_text(_json_text(video) + "\n", encoding="utf-8")
+    _sync_development_workflows(
+        output_dir,
+        *generated["context_loop"],
+    )
 
 
 def main() -> None:

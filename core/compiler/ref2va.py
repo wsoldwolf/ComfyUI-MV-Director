@@ -119,13 +119,50 @@ def _subject_definition(
         else "."
     )
     references = ", ".join(subject.references)
+    has_visual_reference = any(
+        reference.startswith(("<Picture ", "<Video "))
+        for reference in subject.references
+    )
+    composition_contract = (
+        " The reference is identity evidence, not a storyboard, montage, or "
+        "layout template. Render one unified full-frame continuous camera view "
+        "that fills the entire image. Never create an internal border, seam, "
+        "divider, panel, inset, picture-in-picture, side-by-side view, or "
+        "simultaneous alternate angle. If the reference contains multiple views, "
+        "fuse only compatible identity features into this one view. Camera angle "
+        "and framing changes must happen over time or at a scene cut, never "
+        "simultaneously within one frame. The current Scene environment and "
+        "time-lighting directions are the sole authority for the rendered world "
+        "and fully replace every background and illumination visible inside this "
+        "identity reference. "
+        "Treat any blank or white studio field, daylight, backdrop, panel-specific "
+        "setting, or other conflicting reference environment as non-renderable "
+        "source residue. Continue the specified Scene environment across the "
+        "entire frame, including behind and around the Subject. Generate a newly "
+        "staged Shot from the current action and camera instructions. The first "
+        "output frame must already use the new Shot-specific body pose, gaze, "
+        "blocking, framing, viewpoint, camera height, and camera distance. Never "
+        "show, reconstruct, paste, hold, or transition from the reference image "
+        "itself as a frame, still, plate, poster, inset, background, or composition. "
+        "Keep visible skin and clothing clean and intact unless an author-written "
+        "Shot explicitly requires a physical condition. Lyric text inside <d> is "
+        "vocal content only: figurative words about wounds, scars, pain, blood, or "
+        "a broken heart never authorize a visible cut, scar, bruise, bleeding, "
+        "bandage, lesion, stain, tattoo-like mark, torn skin, or damaged clothing."
+        if has_visual_reference
+        else ""
+    )
     return [
         f"{subject.subject_ref} is described here: {description.rstrip()}{separator} "
+        "Every explicitly described local shape, count, placement, scale, color, "
+        "material, and exclusion is a literal identity constraint. Never normalize "
+        "an unusual facial, anatomical, garment, or accessory feature into a "
+        "conventional default. "
         f"Use these connected references only for its visual identity and design: "
         f"{references}. Treat every panel or alternate view as identity material "
         f"for the same single physical instance.{singleton} Do not copy a "
         "reference pose, framing, composition, panel layout, or background; "
-        "follow the current Shot instead."
+        f"follow the current Shot instead.{composition_contract}"
     ]
 
 
@@ -145,7 +182,9 @@ def _retention_lines(
     for subject in document.subjects:
         lines.append(
             f"{subject.subject_ref}: fully_preserved - preserve the described "
-            "identity and attributes across shots."
+            "identity and attributes across shots. Preserve every stated local "
+            "shape, count, placement, scale, color, material, and exclusion "
+            "literally; never replace an unusual feature with a conventional default."
         )
     return lines
 

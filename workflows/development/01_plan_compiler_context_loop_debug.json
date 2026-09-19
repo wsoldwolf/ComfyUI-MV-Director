@@ -1,0 +1,2786 @@
+{
+  "id": "c0557147-a468-4c8b-8321-e1ebc7331c88",
+  "revision": 0,
+  "last_node_id": 25,
+  "last_link_id": 27,
+  "nodes": [
+    {
+      "id": 2,
+      "type": "LoadImage",
+      "pos": [
+        40,
+        360
+      ],
+      "size": [
+        340,
+        360
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "画像",
+          "name": "image",
+          "type": "COMBO",
+          "widget": {
+            "name": "image"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "アップロードするファイルを選択",
+          "name": "upload",
+          "type": "IMAGEUPLOAD",
+          "widget": {
+            "name": "upload"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "画像",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            1
+          ]
+        },
+        {
+          "localized_name": "マスク",
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "title": "Character Reference Image",
+      "properties": {
+        "Node name for S&R": "LoadImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "image001_mikofox.jpg"
+      ],
+      "widgets_values_named": {
+        "image": "image001_mikofox.jpg",
+        "upload": "image"
+      }
+    },
+    {
+      "id": 14,
+      "type": "PreviewAny",
+      "pos": [
+        1657.276602180174,
+        315.6442433715118
+      ],
+      "size": [
+        537.7084760589987,
+        241.35487127997783
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "ソース",
+          "name": "source",
+          "type": "*",
+          "link": 15
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "文字列",
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [],
+      "widgets_values_named": {}
+    },
+    {
+      "id": 18,
+      "type": "PreviewAny",
+      "pos": [
+        431.69082507937554,
+        1779.9347940349624
+      ],
+      "size": [
+        537.7084760589987,
+        241.35487127997783
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "ソース",
+          "name": "source",
+          "type": "*",
+          "link": 19
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "文字列",
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [],
+      "widgets_values_named": {}
+    },
+    {
+      "id": 19,
+      "type": "PreviewAny",
+      "pos": [
+        -147.19800446977774,
+        1451.0458373292313
+      ],
+      "size": [
+        537.7084760589987,
+        241.35487127997783
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "ソース",
+          "name": "source",
+          "type": "*",
+          "link": 20
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "文字列",
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [],
+      "widgets_values_named": {}
+    },
+    {
+      "id": 5,
+      "type": "MVDirectorLoadTextFile",
+      "pos": [
+        42.222230699327255,
+        1016.6667005750865
+      ],
+      "size": [
+        348.3951425380018,
+        180
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "file_data_base64",
+          "name": "file_data_base64",
+          "type": "STRING",
+          "widget": {
+            "name": "file_data_base64"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "basename",
+          "name": "basename",
+          "type": "STRING",
+          "widget": {
+            "name": "basename"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "browser_metadata_json",
+          "name": "browser_metadata_json",
+          "type": "STRING",
+          "widget": {
+            "name": "browser_metadata_json"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "text",
+          "name": "text",
+          "type": "STRING",
+          "links": [
+            3,
+            20
+          ]
+        }
+      ],
+      "title": "Plain Lyrics",
+      "properties": {
+        "Node name for S&R": "MVDirectorLoadTextFile",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "W0ludHJvXQrlpJzpnLLjgavmv6HjgozjgZ/jgIDnn7Pjga7pgZMK54Gv57Gg44Gu54Gr44GM44CA44Gy44Go44Gk5o+644KM44KLCumBoOOBhOaYlOOBruOAgOi2s+mfs+OCkgrntIXokYnjga7mo67jgYzjgIDmirHjgYTjgabjgYTjgosKCltWZXJzZSAxXQrkurrjga/nlJ/jgb7jgozjgabjgIDlkI3jgpLntZDjgbMK5Ye65Lya44GE5Yil44KM44Gm44CA5Zyf44G46YKE44KLCuefreOBhOWkouOCkuOAgOaDnOOBl+OCgOOCiOOBhuOBqwrkuIDmnprjga7okYnjgYzjgIDnqbrjgpLoiJ7jgYYKCuOCj+OBn+OBl+OBr+W5vuOBpOOAgOeni+OCkui2iuOBiArlub7jgaTjga7lo7DjgpLjgIDopovpgIHjgaPjgZ/jgo3jgYYK6ZW344GP55Sf44GN44KL44GT44Go44Gv44CA5rC46YGg44Gn44Gv44Gq44GPCuOBn+OBoOiomOaGtuOBoOOBkeOBjOOAgOepjeOCguOCi+OBk+OBqAoKW1ByZS1DaG9ydXNdCuWkieOCj+OCieOBrOOCguOBruOCkuOAgOaOouOBmeOBu+OBqQrlpInjgo/jgorjgobjgY/nqbrjgYzjgIDnvo7jgZfjgY/jgaYK5pWj44KL44GT44Go44Gv44CA5aSx44GG44GT44Go44GLCuOBneOCjOOBqOOCguOAgOmChOOCi+OBk+OBqOOBquOBruOBiwoKW0Nob3J1c10K57SF6JGJ44KI44CA57SF6JGJ44KI44CA5aSc6aKo44Gr44G744Gp44GRCuOBguOBquOBn+OBruaZgumWk+OCkuOAgOOCj+OBn+OBl+OBq+mgkOOBkeOBpgrnh4PjgYjjgovjgojjgYbjgarlkb3jgoLjgIDpnZnjgYvjgarliKXjgozjgoIK5ZCM44GY5a2j56+A44Gu44CA44Gy44Go44Gy44KJ44Gn44GX44KH44GGCgrnpZ7mp5jjgafjgZXjgYjjgIDnrZTjgYjjgpLnn6XjgonjgZoK56WI44KK44Gu5YWI44Gn44CA44Gf44Gg6KaL44Gk44KB44Gm44GE44KLCuawuOmBoOOCiOOCiuOCguOAgOeiuuOBi+OBquOCguOBruOBrwrku4rjgZPjgZPjgavjgYLjgovjgIDjgazjgY/jgoLjgorjgafjgZfjgZ8KCltWZXJzZSAyXQrps6XlsYXjga7lkJHjgZPjgYbjgIDmnIjjgYzmmIfjgooK6Kqw44GL44Gu6aGY44GE44GM44CA6Yi044KS6bO044KJ44GZCuWPtuOCj+OBrOmhmOOBhOOCkuOAgOaKseOBhOOBn+OBvuOBvgrkurrjga/mmI7ml6XjgbjjgajjgIDmranjgYTjgabjgobjgY8KCuOCj+OBn+OBl+OBruWwvuOBq+epjeOCguOCi+OAgOWPpOOBhOWto+evgArlpLHjgaPjgZ/lkI3jgpLjgIDlv5jjgozjgazjgb7jgb4K6ZW344GE5bm05pyI44Gv44CA5b+D44KS5a6I44KL55u+44GLCuOBneOCjOOBqOOCguOAgOWIpeOCjOOCkuWil+OChOOBmeW9seOBiwoKW1ByZS1DaG9ydXMgMl0K44Gy44Go44Gy44KJ6JC944Gh44Gm44CA5Zyf44Gr6Kem44KMCuaWsOOBl+OBhOaYpeOBruOAgOezp+OBq+OBquOCiwrntYLjgo/jgorjgajjga/jgIDmtojjgYjjgovjgZPjgajjgYsK44Gd44KM44Go44KC44CA5qyh44G45rih44GZ44GT44Go44GLCgpbQ2hvcnVzIDJdCue0heiRieOCiOOAgOe0heiRieOCiOOAgOmXh+WknOOCkuafk+OCgeOBpgrjgYLjgarjgZ/jga7nn63jgZXjgpLjgIDoqrDjgYzlmIbjgY/jgaDjgo3jgYYK54eD44GI5bC944GN44KL44GL44KJ44GT44Gd44CA5YWJ44Gv5q6L44KKCuWOu+OCiuOChuOBj+iDjOS4reOCkuOAgOaciOOBjOeFp+OCieOBmQoK44KP44Gf44GX44KC44GE44Gk44GL44CA44GT44Gu5qOu44Gu5LitCuWQjeOCguOBquOBhOmiqOOBuOOBqOOAgOOBu+OBqeOBkeOBpuOChuOBj+OBquOCiQrmsLjpgaDjgafjga/jgarjgY/jgIDph43jga3jgZ/kuIDnnqzjgpIK5oSb44Gb44KL54uQ44Gn44CA44GC44KK44Gf44GE44Gu44Gn44GZCgpbSW5zdHJ1bWVudGFsIEludGVybHVkZV0KCltCcmlkZ2VdCuOCguOBl+OCguaZguOCkuOAgOatouOCgeOCieOCjOOBpuOCggrlh7rkvJrjgYTjga7mhI/lkbPjga/jgIDlpLHjgo/jgozjgosK56e744KN44GG44GL44KJ44CA5omL44KS5Ly444Gw44GZCumZkOOCiuOBguOCi+OBi+OCieOAgOeliOOCiuOBq+OBquOCiwoKW0ZpbmFsIENob3J1c10K57SF6JGJ44KI44CA57SF6JGJ44KI44CA5pyd54S844GR44Gr6Iie44GICuS6uuOBruS4luOBruWkouOCkuOAgOWEquOBl+OBj+WMheOCk+OBpwrlub7ljYPjga7liKXjgozjgoLjgIDlub7ljYPjga7poZjjgYTjgoIK44Gy44Go44Gk44Gu5aSn5Zyw44G444CA6YKE44Gj44Gm44KG44GPCgrnpZ7mp5jjgafjgZXjgYjjgIDjgbLjgajjgorjgafjga/jgarjgY8K6Kqw44GL44Gu6KiY5oa244Gr44CA55Sf44GL44GV44KM44Gm44GE44KLCumVt+OBhOWknOOCkui2iuOBiOOAgOOBvuOBn+eni+OBjOadpeOBn+OCiQrjgYLjgarjgZ/jga7lkI3liY3jgpLjgIDpoqjjgavmrYzjgYrjgYYKCltPdXRyb10K5aSc5piO44GR44Gu6bOl5bGF44CA5reh44GP44G744Gp44GRCue0heiRieOBsuOBqOOBsuOCieOAgOaOjOOBq+ecoOOCiwrnn63jgYTlraPnr4DjgpLjgIDmirHjgY3jgZfjgoHjgaYK44KP44Gf44GX44Gv44G+44Gf44CA44GT44GT44Gr44GE44KLCg==",
+        "autumn_fox_shrine.txt",
+        "{\n  \"name\": \"autumn_fox_shrine.txt\",\n  \"size\": 2446,\n  \"type\": \"text/plain\"\n}"
+      ],
+      "widgets_values_named": {
+        "file_data_base64": "W0ludHJvXQrlpJzpnLLjgavmv6HjgozjgZ/jgIDnn7Pjga7pgZMK54Gv57Gg44Gu54Gr44GM44CA44Gy44Go44Gk5o+644KM44KLCumBoOOBhOaYlOOBruOAgOi2s+mfs+OCkgrntIXokYnjga7mo67jgYzjgIDmirHjgYTjgabjgYTjgosKCltWZXJzZSAxXQrkurrjga/nlJ/jgb7jgozjgabjgIDlkI3jgpLntZDjgbMK5Ye65Lya44GE5Yil44KM44Gm44CA5Zyf44G46YKE44KLCuefreOBhOWkouOCkuOAgOaDnOOBl+OCgOOCiOOBhuOBqwrkuIDmnprjga7okYnjgYzjgIDnqbrjgpLoiJ7jgYYKCuOCj+OBn+OBl+OBr+W5vuOBpOOAgOeni+OCkui2iuOBiArlub7jgaTjga7lo7DjgpLjgIDopovpgIHjgaPjgZ/jgo3jgYYK6ZW344GP55Sf44GN44KL44GT44Go44Gv44CA5rC46YGg44Gn44Gv44Gq44GPCuOBn+OBoOiomOaGtuOBoOOBkeOBjOOAgOepjeOCguOCi+OBk+OBqAoKW1ByZS1DaG9ydXNdCuWkieOCj+OCieOBrOOCguOBruOCkuOAgOaOouOBmeOBu+OBqQrlpInjgo/jgorjgobjgY/nqbrjgYzjgIDnvo7jgZfjgY/jgaYK5pWj44KL44GT44Go44Gv44CA5aSx44GG44GT44Go44GLCuOBneOCjOOBqOOCguOAgOmChOOCi+OBk+OBqOOBquOBruOBiwoKW0Nob3J1c10K57SF6JGJ44KI44CA57SF6JGJ44KI44CA5aSc6aKo44Gr44G744Gp44GRCuOBguOBquOBn+OBruaZgumWk+OCkuOAgOOCj+OBn+OBl+OBq+mgkOOBkeOBpgrnh4PjgYjjgovjgojjgYbjgarlkb3jgoLjgIDpnZnjgYvjgarliKXjgozjgoIK5ZCM44GY5a2j56+A44Gu44CA44Gy44Go44Gy44KJ44Gn44GX44KH44GGCgrnpZ7mp5jjgafjgZXjgYjjgIDnrZTjgYjjgpLnn6XjgonjgZoK56WI44KK44Gu5YWI44Gn44CA44Gf44Gg6KaL44Gk44KB44Gm44GE44KLCuawuOmBoOOCiOOCiuOCguOAgOeiuuOBi+OBquOCguOBruOBrwrku4rjgZPjgZPjgavjgYLjgovjgIDjgazjgY/jgoLjgorjgafjgZfjgZ8KCltWZXJzZSAyXQrps6XlsYXjga7lkJHjgZPjgYbjgIDmnIjjgYzmmIfjgooK6Kqw44GL44Gu6aGY44GE44GM44CA6Yi044KS6bO044KJ44GZCuWPtuOCj+OBrOmhmOOBhOOCkuOAgOaKseOBhOOBn+OBvuOBvgrkurrjga/mmI7ml6XjgbjjgajjgIDmranjgYTjgabjgobjgY8KCuOCj+OBn+OBl+OBruWwvuOBq+epjeOCguOCi+OAgOWPpOOBhOWto+evgArlpLHjgaPjgZ/lkI3jgpLjgIDlv5jjgozjgazjgb7jgb4K6ZW344GE5bm05pyI44Gv44CA5b+D44KS5a6I44KL55u+44GLCuOBneOCjOOBqOOCguOAgOWIpeOCjOOCkuWil+OChOOBmeW9seOBiwoKW1ByZS1DaG9ydXMgMl0K44Gy44Go44Gy44KJ6JC944Gh44Gm44CA5Zyf44Gr6Kem44KMCuaWsOOBl+OBhOaYpeOBruOAgOezp+OBq+OBquOCiwrntYLjgo/jgorjgajjga/jgIDmtojjgYjjgovjgZPjgajjgYsK44Gd44KM44Go44KC44CA5qyh44G45rih44GZ44GT44Go44GLCgpbQ2hvcnVzIDJdCue0heiRieOCiOOAgOe0heiRieOCiOOAgOmXh+WknOOCkuafk+OCgeOBpgrjgYLjgarjgZ/jga7nn63jgZXjgpLjgIDoqrDjgYzlmIbjgY/jgaDjgo3jgYYK54eD44GI5bC944GN44KL44GL44KJ44GT44Gd44CA5YWJ44Gv5q6L44KKCuWOu+OCiuOChuOBj+iDjOS4reOCkuOAgOaciOOBjOeFp+OCieOBmQoK44KP44Gf44GX44KC44GE44Gk44GL44CA44GT44Gu5qOu44Gu5LitCuWQjeOCguOBquOBhOmiqOOBuOOBqOOAgOOBu+OBqeOBkeOBpuOChuOBj+OBquOCiQrmsLjpgaDjgafjga/jgarjgY/jgIDph43jga3jgZ/kuIDnnqzjgpIK5oSb44Gb44KL54uQ44Gn44CA44GC44KK44Gf44GE44Gu44Gn44GZCgpbSW5zdHJ1bWVudGFsIEludGVybHVkZV0KCltCcmlkZ2VdCuOCguOBl+OCguaZguOCkuOAgOatouOCgeOCieOCjOOBpuOCggrlh7rkvJrjgYTjga7mhI/lkbPjga/jgIDlpLHjgo/jgozjgosK56e744KN44GG44GL44KJ44CA5omL44KS5Ly444Gw44GZCumZkOOCiuOBguOCi+OBi+OCieOAgOeliOOCiuOBq+OBquOCiwoKW0ZpbmFsIENob3J1c10K57SF6JGJ44KI44CA57SF6JGJ44KI44CA5pyd54S844GR44Gr6Iie44GICuS6uuOBruS4luOBruWkouOCkuOAgOWEquOBl+OBj+WMheOCk+OBpwrlub7ljYPjga7liKXjgozjgoLjgIDlub7ljYPjga7poZjjgYTjgoIK44Gy44Go44Gk44Gu5aSn5Zyw44G444CA6YKE44Gj44Gm44KG44GPCgrnpZ7mp5jjgafjgZXjgYjjgIDjgbLjgajjgorjgafjga/jgarjgY8K6Kqw44GL44Gu6KiY5oa244Gr44CA55Sf44GL44GV44KM44Gm44GE44KLCumVt+OBhOWknOOCkui2iuOBiOOAgOOBvuOBn+eni+OBjOadpeOBn+OCiQrjgYLjgarjgZ/jga7lkI3liY3jgpLjgIDpoqjjgavmrYzjgYrjgYYKCltPdXRyb10K5aSc5piO44GR44Gu6bOl5bGF44CA5reh44GP44G744Gp44GRCue0heiRieOBsuOBqOOBsuOCieOAgOaOjOOBq+ecoOOCiwrnn63jgYTlraPnr4DjgpLjgIDmirHjgY3jgZfjgoHjgaYK44KP44Gf44GX44Gv44G+44Gf44CA44GT44GT44Gr44GE44KLCg==",
+        "basename": "autumn_fox_shrine.txt",
+        "browser_metadata_json": "{\n  \"name\": \"autumn_fox_shrine.txt\",\n  \"size\": 2446,\n  \"type\": \"text/plain\"\n}",
+        "select .txt file": null
+      }
+    },
+    {
+      "id": 15,
+      "type": "PreviewAny",
+      "pos": [
+        1664.1757806280948,
+        610.236894479561
+      ],
+      "size": [
+        537.7084760589987,
+        241.35487127997783
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "ソース",
+          "name": "source",
+          "type": "*",
+          "link": 16
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "文字列",
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [],
+      "widgets_values_named": {}
+    },
+    {
+      "id": 20,
+      "type": "PreviewAny",
+      "pos": [
+        1003.8323754000722,
+        1911.9130422320281
+      ],
+      "size": [
+        537.7084760589987,
+        241.35487127997783
+      ],
+      "flags": {},
+      "order": 21,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "ソース",
+          "name": "source",
+          "type": "*",
+          "link": 21
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "文字列",
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [],
+      "widgets_values_named": {}
+    },
+    {
+      "id": 17,
+      "type": "PreviewAny",
+      "pos": [
+        1045.0242940463888,
+        -35.6207784748041
+      ],
+      "size": [
+        537.7084760589987,
+        241.35487127997783
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "ソース",
+          "name": "source",
+          "type": "*",
+          "link": 18
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "文字列",
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [],
+      "widgets_values_named": {}
+    },
+    {
+      "id": 12,
+      "type": "SaveText",
+      "pos": [
+        2260,
+        1260
+      ],
+      "size": [
+        556.4036682676528,
+        792.0616657328101
+      ],
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "text",
+          "name": "text",
+          "type": "STRING",
+          "link": 13
+        },
+        {
+          "localized_name": "filename_prefix",
+          "name": "filename_prefix",
+          "type": "STRING",
+          "widget": {
+            "name": "filename_prefix"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "format",
+          "name": "format",
+          "type": "COMBO",
+          "widget": {
+            "name": "format"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "text",
+          "name": "text",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "title": "Save Completed EMD",
+      "properties": {
+        "Node name for S&R": "SaveText",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "mv_director/context_loop_emd",
+        "md"
+      ],
+      "widgets_values_named": {
+        "filename_prefix": "mv_director/context_loop_emd",
+        "format": "md"
+      }
+    },
+    {
+      "id": 11,
+      "type": "SaveText",
+      "pos": [
+        2260,
+        525.7015260453522
+      ],
+      "size": [
+        559.8246266870956,
+        684.2984739546478
+      ],
+      "flags": {},
+      "order": 22,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "text",
+          "name": "text",
+          "type": "STRING",
+          "link": 12
+        },
+        {
+          "localized_name": "filename_prefix",
+          "name": "filename_prefix",
+          "type": "STRING",
+          "widget": {
+            "name": "filename_prefix"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "format",
+          "name": "format",
+          "type": "COMBO",
+          "widget": {
+            "name": "format"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "text",
+          "name": "text",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "title": "Save Context Loop Plan (.txt handoff)",
+      "properties": {
+        "Node name for S&R": "SaveText",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "mv_director/context_loop_plan",
+        "txt"
+      ],
+      "widgets_values_named": {
+        "filename_prefix": "mv_director/context_loop_plan",
+        "format": "txt"
+      }
+    },
+    {
+      "id": 6,
+      "type": "MVDirectorH3TimingProfile",
+      "pos": [
+        29.982462952337833,
+        1268.4355956256786
+      ],
+      "size": [
+        380,
+        100
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "contract",
+          "name": "contract",
+          "type": "COMBO",
+          "widget": {
+            "name": "contract"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "timing_profile",
+          "name": "timing_profile",
+          "type": "MV_DIRECTOR_H3_TIMING_PROFILE",
+          "links": [
+            4,
+            11
+          ]
+        },
+        {
+          "localized_name": "profile_json",
+          "name": "profile_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "localized_name": "status",
+          "name": "status",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "title": "H3 Timing Profile",
+      "properties": {
+        "Node name for S&R": "MVDirectorH3TimingProfile",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9"
+      ],
+      "widgets_values_named": {
+        "contract": "context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9"
+      }
+    },
+    {
+      "id": 1,
+      "type": "Note",
+      "pos": [
+        38.88890584309896,
+        -16.6666793823242
+      ],
+      "size": [
+        960,
+        280
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "MV Director • Context Loop • Plan / Compiler",
+      "properties": {
+        "Node name for S&R": "Note",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "Context Loopのsource-audio lockとLip-Sync Optionsを使用。\n\n1. 人物参照画像、背景画像、vocal、歌詞、Vision/Text GGUF、Whisperを確認します。\n2. QueueしてEMD、SRT、Context Loop Planを出力します。\n3. 保存された context_loop_plan_*.txt を同方式のVideo workflowへ読み込みます。\n\nBaseline: context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9"
+      ],
+      "widgets_values_named": {
+        "text": "Context Loopのsource-audio lockとLip-Sync Optionsを使用。\n\n1. 人物参照画像、背景画像、vocal、歌詞、Vision/Text GGUF、Whisperを確認します。\n2. QueueしてEMD、SRT、Context Loop Planを出力します。\n3. 保存された context_loop_plan_*.txt を同方式のVideo workflowへ読み込みます。\n\nBaseline: context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9"
+      },
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 22,
+      "type": "PrimitiveStringMultiline",
+      "pos": [
+        489.6521330439544,
+        1512.4386106854245
+      ],
+      "size": [
+        447.6666853162976,
+        201.2221103244358
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "値",
+          "name": "value",
+          "type": "STRING",
+          "widget": {
+            "name": "value"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "文字列",
+          "name": "STRING",
+          "type": "STRING",
+          "links": [
+            24
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PrimitiveStringMultiline",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "# 共通プロンプト\n## 時間・照明\n* シーン全編を通して時刻は夜間である。\n* 月明りが照している。"
+      ],
+      "widgets_values_named": {
+        "value": "# 共通プロンプト\n## 時間・照明\n* シーン全編を通して時刻は夜間である。\n* 月明りが照している。"
+      }
+    },
+    {
+      "id": 7,
+      "type": "MVDirectorLyricSegmentation",
+      "pos": [
+        480,
+        1210
+      ],
+      "size": [
+        460,
+        240
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "vocal_audio",
+          "name": "vocal_audio",
+          "type": "AUDIO",
+          "link": 2
+        },
+        {
+          "localized_name": "lyrics_text",
+          "name": "lyrics_text",
+          "type": "STRING",
+          "link": 3
+        },
+        {
+          "localized_name": "h3_timing_profile",
+          "name": "h3_timing_profile",
+          "shape": 7,
+          "type": "MV_DIRECTOR_H3_TIMING_PROFILE",
+          "link": 4
+        },
+        {
+          "localized_name": "whisper_model",
+          "name": "whisper_model",
+          "type": "COMBO",
+          "widget": {
+            "name": "whisper_model"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "language",
+          "name": "language",
+          "type": "COMBO",
+          "widget": {
+            "name": "language"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "max_scene_duration_ms",
+          "name": "max_scene_duration_ms",
+          "type": "INT",
+          "widget": {
+            "name": "max_scene_duration_ms"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "srt_time_offset_ms",
+          "name": "srt_time_offset_ms",
+          "type": "INT",
+          "widget": {
+            "name": "srt_time_offset_ms"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "cache_mode",
+          "name": "cache_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "cache_mode"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "keep_whisper_loaded",
+          "name": "keep_whisper_loaded",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "keep_whisper_loaded"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "template_emd",
+          "name": "template_emd",
+          "type": "STRING",
+          "links": [
+            7,
+            19
+          ]
+        },
+        {
+          "localized_name": "srt_text",
+          "name": "srt_text",
+          "type": "STRING",
+          "links": [
+            14
+          ]
+        },
+        {
+          "localized_name": "timeline",
+          "name": "timeline",
+          "type": "MV_DIRECTOR_TIMELINE",
+          "links": null
+        },
+        {
+          "localized_name": "status",
+          "name": "status",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "title": "Lyric Segmentation",
+      "properties": {
+        "Node name for S&R": "MVDirectorLyricSegmentation",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "medium.pt",
+        "ja",
+        10000,
+        0,
+        "reuse",
+        false
+      ],
+      "widgets_values_named": {
+        "whisper_model": "medium.pt",
+        "language": "ja",
+        "max_scene_duration_ms": 10000,
+        "srt_time_offset_ms": 0,
+        "cache_mode": "reuse",
+        "keep_whisper_loaded": false
+      }
+    },
+    {
+      "id": 13,
+      "type": "SaveText",
+      "pos": [
+        1710.350650856509,
+        1763.3772990003533
+      ],
+      "size": [
+        346.66087405889994,
+        523.1179818996382
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "text",
+          "name": "text",
+          "type": "STRING",
+          "link": 14
+        },
+        {
+          "localized_name": "filename_prefix",
+          "name": "filename_prefix",
+          "type": "STRING",
+          "widget": {
+            "name": "filename_prefix"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "format",
+          "name": "format",
+          "type": "COMBO",
+          "widget": {
+            "name": "format"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "text",
+          "name": "text",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "title": "Save SRT body (.txt; rename to .srt)",
+      "properties": {
+        "Node name for S&R": "SaveText",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "mv_director/context_loop_lyrics",
+        "txt"
+      ],
+      "widgets_values_named": {
+        "filename_prefix": "mv_director/context_loop_lyrics",
+        "format": "txt"
+      }
+    },
+    {
+      "id": 4,
+      "type": "LoadAudio",
+      "pos": [
+        40,
+        820
+      ],
+      "size": [
+        340,
+        136
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "オーディオ",
+          "name": "audio",
+          "type": "COMBO",
+          "widget": {
+            "name": "audio"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "audioUI",
+          "name": "audioUI",
+          "type": "AUDIO_UI",
+          "widget": {
+            "name": "audioUI"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "アップロードするファイルを選択",
+          "name": "upload",
+          "type": "AUDIOUPLOAD",
+          "widget": {
+            "name": "upload"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "オーディオ",
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            2
+          ]
+        }
+      ],
+      "title": "Vocal Stem",
+      "properties": {
+        "Node name for S&R": "LoadAudio",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "autumn_fox_shrine_vocal.mp3"
+      ],
+      "widgets_values_named": {
+        "audio": "autumn_fox_shrine_vocal.mp3",
+        "upload": null
+      }
+    },
+    {
+      "id": 23,
+      "type": "PreviewAny",
+      "pos": [
+        1063.6598502488503,
+        -376.31674183114063
+      ],
+      "size": [
+        510,
+        280
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "ソース",
+          "name": "source",
+          "type": "*",
+          "link": 25
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "文字列",
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [],
+      "widgets_values_named": {}
+    },
+    {
+      "id": 24,
+      "type": "LoadImage",
+      "pos": [
+        -840,
+        360
+      ],
+      "size": [
+        340,
+        360
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "画像",
+          "name": "image",
+          "type": "COMBO",
+          "widget": {
+            "name": "image"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "アップロードするファイルを選択",
+          "name": "upload",
+          "type": "IMAGEUPLOAD",
+          "widget": {
+            "name": "upload"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "画像",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            26
+          ]
+        },
+        {
+          "localized_name": "マスク",
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "title": "Background Reference Image",
+      "properties": {
+        "Node name for S&R": "LoadImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "image002_keinai.jpg"
+      ],
+      "widgets_values_named": {
+        "image": "image002_keinai.jpg",
+        "upload": "image"
+      }
+    },
+    {
+      "id": 10,
+      "type": "MVDirectorEMDCompiler",
+      "pos": [
+        1660,
+        1060
+      ],
+      "size": [
+        500,
+        510
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "emd_text",
+          "name": "emd_text",
+          "type": "STRING",
+          "link": 10
+        },
+        {
+          "localized_name": "h3_timing_profile",
+          "name": "h3_timing_profile",
+          "shape": 7,
+          "type": "MV_DIRECTOR_H3_TIMING_PROFILE",
+          "link": 11
+        },
+        {
+          "localized_name": "translation_mode",
+          "name": "translation_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "translation_mode"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "model_name",
+          "name": "model_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "model_name"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "chat_format",
+          "name": "chat_format",
+          "type": "COMBO",
+          "widget": {
+            "name": "chat_format"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "steps",
+          "name": "steps",
+          "type": "INT",
+          "widget": {
+            "name": "steps"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "max_tokens",
+          "name": "max_tokens",
+          "type": "INT",
+          "widget": {
+            "name": "max_tokens"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "temperature",
+          "name": "temperature",
+          "type": "FLOAT",
+          "widget": {
+            "name": "temperature"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "top_p",
+          "name": "top_p",
+          "type": "FLOAT",
+          "widget": {
+            "name": "top_p"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "repetition_penalty",
+          "name": "repetition_penalty",
+          "type": "FLOAT",
+          "widget": {
+            "name": "repetition_penalty"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "gpu_layers",
+          "name": "gpu_layers",
+          "type": "INT",
+          "widget": {
+            "name": "gpu_layers"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "n_batch",
+          "name": "n_batch",
+          "type": "INT",
+          "widget": {
+            "name": "n_batch"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "n_ctx",
+          "name": "n_ctx",
+          "type": "INT",
+          "widget": {
+            "name": "n_ctx"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "flash_attn",
+          "name": "flash_attn",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "flash_attn"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "kv_cache_type",
+          "name": "kv_cache_type",
+          "type": "COMBO",
+          "widget": {
+            "name": "kv_cache_type"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "op_offload",
+          "name": "op_offload",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "op_offload"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "keep_model_loaded",
+          "name": "keep_model_loaded",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "keep_model_loaded"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "seed",
+          "name": "seed",
+          "type": "INT",
+          "widget": {
+            "name": "seed"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "cache_mode",
+          "name": "cache_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "cache_mode"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "plan_json",
+          "name": "plan_json",
+          "type": "STRING",
+          "links": [
+            12
+          ]
+        },
+        {
+          "localized_name": "required_references",
+          "name": "required_references",
+          "type": "MV_DIRECTOR_REQUIRED_REFERENCES",
+          "links": null
+        },
+        {
+          "localized_name": "status",
+          "name": "status",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "title": "Ref2VA EMD Compiler",
+      "properties": {
+        "Node name for S&R": "MVDirectorEMDCompiler",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "ja_to_en",
+        "Qwen3-4B-abliterated/Qwen3-4B-abliterated-q5_k_m.gguf",
+        "auto",
+        8,
+        4096,
+        0.0,
+        0.9,
+        1.05,
+        -1,
+        256,
+        16384,
+        true,
+        "q8_0",
+        true,
+        false,
+        1,
+        "fixed",
+        "reuse"
+      ],
+      "widgets_values_named": {
+        "translation_mode": "ja_to_en",
+        "model_name": "Qwen3-4B-abliterated/Qwen3-4B-abliterated-q5_k_m.gguf",
+        "chat_format": "auto",
+        "steps": 8,
+        "max_tokens": 4096,
+        "temperature": 0.0,
+        "top_p": 0.9,
+        "repetition_penalty": 1.05,
+        "gpu_layers": -1,
+        "n_batch": 256,
+        "n_ctx": 16384,
+        "flash_attn": true,
+        "kv_cache_type": "q8_0",
+        "op_offload": true,
+        "keep_model_loaded": false,
+        "seed": 1,
+        "randomize": "fixed",
+        "cache_mode": "reuse"
+      }
+    },
+    {
+      "id": 9,
+      "type": "MVDirectorTimelinePlanner",
+      "pos": [
+        1040,
+        1060
+      ],
+      "size": [
+        520,
+        600
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "template_emd",
+          "name": "template_emd",
+          "type": "STRING",
+          "link": 7
+        },
+        {
+          "localized_name": "concept_emd",
+          "name": "concept_emd",
+          "shape": 7,
+          "type": "STRING",
+          "link": 8
+        },
+        {
+          "localized_name": "direction",
+          "name": "direction",
+          "shape": 7,
+          "type": "MV_DIRECTOR_DIRECTION",
+          "link": 9
+        },
+        {
+          "localized_name": "model_name_override",
+          "name": "model_name_override",
+          "shape": 7,
+          "type": "STRING",
+          "link": null
+        },
+        {
+          "localized_name": "lip_sync_mode",
+          "name": "lip_sync_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "lip_sync_mode"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "lip_sync_target",
+          "name": "lip_sync_target",
+          "type": "STRING",
+          "widget": {
+            "name": "lip_sync_target"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "lip_sync_audio_slot",
+          "name": "lip_sync_audio_slot",
+          "type": "INT",
+          "widget": {
+            "name": "lip_sync_audio_slot"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "model_name",
+          "name": "model_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "model_name"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "chat_format",
+          "name": "chat_format",
+          "type": "COMBO",
+          "widget": {
+            "name": "chat_format"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "max_tokens",
+          "name": "max_tokens",
+          "type": "INT",
+          "widget": {
+            "name": "max_tokens"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "temperature",
+          "name": "temperature",
+          "type": "FLOAT",
+          "widget": {
+            "name": "temperature"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "top_p",
+          "name": "top_p",
+          "type": "FLOAT",
+          "widget": {
+            "name": "top_p"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "repetition_penalty",
+          "name": "repetition_penalty",
+          "type": "FLOAT",
+          "widget": {
+            "name": "repetition_penalty"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "gpu_layers",
+          "name": "gpu_layers",
+          "type": "INT",
+          "widget": {
+            "name": "gpu_layers"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "n_batch",
+          "name": "n_batch",
+          "type": "INT",
+          "widget": {
+            "name": "n_batch"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "n_ctx",
+          "name": "n_ctx",
+          "type": "INT",
+          "widget": {
+            "name": "n_ctx"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "flash_attn",
+          "name": "flash_attn",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "flash_attn"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "kv_cache_type",
+          "name": "kv_cache_type",
+          "type": "COMBO",
+          "widget": {
+            "name": "kv_cache_type"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "op_offload",
+          "name": "op_offload",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "op_offload"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "keep_model_loaded",
+          "name": "keep_model_loaded",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "keep_model_loaded"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "seed",
+          "name": "seed",
+          "type": "INT",
+          "widget": {
+            "name": "seed"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "scenes_per_batch",
+          "name": "scenes_per_batch",
+          "type": "INT",
+          "widget": {
+            "name": "scenes_per_batch"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "cache_mode",
+          "name": "cache_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "cache_mode"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "save_debug_output",
+          "name": "save_debug_output",
+          "shape": 7,
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "save_debug_output"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "emd_text",
+          "name": "emd_text",
+          "type": "STRING",
+          "links": [
+            10,
+            13,
+            21
+          ]
+        },
+        {
+          "localized_name": "emd",
+          "name": "emd",
+          "type": "MV_DIRECTOR_EMD",
+          "links": null
+        },
+        {
+          "localized_name": "status",
+          "name": "status",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "title": "Timeline Planner",
+      "properties": {
+        "Node name for S&R": "MVDirectorTimelinePlanner",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "context_loop",
+        "サブジェクト1",
+        1,
+        "Qwen3-4B-abliterated/Qwen3-4B-abliterated-q5_k_m.gguf",
+        "auto",
+        1536,
+        0.1,
+        0.9,
+        1.05,
+        -1,
+        256,
+        16384,
+        true,
+        "q8_0",
+        true,
+        false,
+        1,
+        "fixed",
+        3,
+        "reuse",
+        false
+      ],
+      "widgets_values_named": {
+        "lip_sync_mode": "context_loop",
+        "lip_sync_target": "サブジェクト1",
+        "lip_sync_audio_slot": 1,
+        "model_name": "Qwen3-4B-abliterated/Qwen3-4B-abliterated-q5_k_m.gguf",
+        "chat_format": "auto",
+        "max_tokens": 1536,
+        "temperature": 0.1,
+        "top_p": 0.9,
+        "repetition_penalty": 1.05,
+        "gpu_layers": -1,
+        "n_batch": 256,
+        "n_ctx": 16384,
+        "flash_attn": true,
+        "kv_cache_type": "q8_0",
+        "op_offload": true,
+        "keep_model_loaded": false,
+        "seed": 1,
+        "randomize": "fixed",
+        "scenes_per_batch": 3,
+        "cache_mode": "reuse",
+        "save_debug_output": false
+      }
+    },
+    {
+      "id": 8,
+      "type": "MVDirectorDirectionEnhancer",
+      "pos": [
+        1040,
+        300
+      ],
+      "size": [
+        480,
+        716
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "direction_emd_passthrough",
+          "name": "direction_emd_passthrough",
+          "shape": 7,
+          "type": "STRING",
+          "link": 24
+        },
+        {
+          "localized_name": "retention_policy",
+          "name": "retention_policy",
+          "type": "COMBO",
+          "widget": {
+            "name": "retention_policy"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "user_request",
+          "name": "user_request",
+          "type": "STRING",
+          "widget": {
+            "name": "user_request"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "style_profile",
+          "name": "style_profile",
+          "type": "COMBO",
+          "widget": {
+            "name": "style_profile"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "motion_profile",
+          "name": "motion_profile",
+          "type": "COMBO",
+          "widget": {
+            "name": "motion_profile"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "camera_profile",
+          "name": "camera_profile",
+          "type": "COMBO",
+          "widget": {
+            "name": "camera_profile"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "model_name",
+          "name": "model_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "model_name"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "chat_format",
+          "name": "chat_format",
+          "type": "STRING",
+          "widget": {
+            "name": "chat_format"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "max_tokens",
+          "name": "max_tokens",
+          "type": "INT",
+          "widget": {
+            "name": "max_tokens"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "temperature",
+          "name": "temperature",
+          "type": "FLOAT",
+          "widget": {
+            "name": "temperature"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "top_p",
+          "name": "top_p",
+          "type": "FLOAT",
+          "widget": {
+            "name": "top_p"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "repetition_penalty",
+          "name": "repetition_penalty",
+          "type": "FLOAT",
+          "widget": {
+            "name": "repetition_penalty"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "gpu_layers",
+          "name": "gpu_layers",
+          "type": "INT",
+          "widget": {
+            "name": "gpu_layers"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "n_batch",
+          "name": "n_batch",
+          "type": "INT",
+          "widget": {
+            "name": "n_batch"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "n_ctx",
+          "name": "n_ctx",
+          "type": "INT",
+          "widget": {
+            "name": "n_ctx"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "flash_attn",
+          "name": "flash_attn",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "flash_attn"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "kv_cache_type",
+          "name": "kv_cache_type",
+          "type": "COMBO",
+          "widget": {
+            "name": "kv_cache_type"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "op_offload",
+          "name": "op_offload",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "op_offload"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "keep_model_loaded",
+          "name": "keep_model_loaded",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "keep_model_loaded"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "seed",
+          "name": "seed",
+          "type": "INT",
+          "widget": {
+            "name": "seed"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "cache_mode",
+          "name": "cache_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "cache_mode"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "concept_emd",
+          "name": "concept_emd",
+          "shape": 7,
+          "type": "STRING",
+          "widget": {
+            "name": "concept_emd"
+          },
+          "link": 5
+        },
+        {
+          "localized_name": "observations_json",
+          "name": "observations_json",
+          "shape": 7,
+          "type": "STRING",
+          "widget": {
+            "name": "observations_json"
+          },
+          "link": 27
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "direction",
+          "name": "direction",
+          "type": "MV_DIRECTOR_DIRECTION",
+          "links": [
+            9,
+            15
+          ]
+        },
+        {
+          "localized_name": "direction_emd_preview",
+          "name": "direction_emd_preview",
+          "type": "STRING",
+          "links": [
+            16
+          ]
+        },
+        {
+          "localized_name": "status",
+          "name": "status",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "title": "Direction Enhancer",
+      "properties": {
+        "Node name for S&R": "MVDirectorDirectionEnhancer",
+        "ue_properties": {
+          "widget_ue_connectable": {
+            "concept_emd": true,
+            "observations_json": true
+          },
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "profile",
+        "",
+        "anime_mv",
+        "anime_mv",
+        "anime_mv",
+        "Qwen3-4B-abliterated/Qwen3-4B-abliterated-q5_k_m.gguf",
+        "",
+        768,
+        0.2,
+        0.9,
+        1.05,
+        -1,
+        512,
+        16384,
+        true,
+        "q8_0",
+        true,
+        false,
+        1,
+        "fixed",
+        "reuse",
+        "",
+        ""
+      ],
+      "widgets_values_named": {
+        "retention_policy": "profile",
+        "user_request": "",
+        "style_profile": "anime_mv",
+        "motion_profile": "anime_mv",
+        "camera_profile": "anime_mv",
+        "model_name": "Qwen3-4B-abliterated/Qwen3-4B-abliterated-q5_k_m.gguf",
+        "chat_format": "",
+        "max_tokens": 768,
+        "temperature": 0.2,
+        "top_p": 0.9,
+        "repetition_penalty": 1.05,
+        "gpu_layers": -1,
+        "n_batch": 512,
+        "n_ctx": 16384,
+        "flash_attn": true,
+        "kv_cache_type": "q8_0",
+        "op_offload": true,
+        "keep_model_loaded": false,
+        "seed": 1,
+        "randomize": "fixed",
+        "cache_mode": "reuse",
+        "concept_emd": "",
+        "observations_json": ""
+      }
+    },
+    {
+      "id": 3,
+      "type": "MVDirectorImageToSubjectEMD",
+      "pos": [
+        440,
+        330
+      ],
+      "size": [
+        500,
+        802
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "image",
+          "name": "image",
+          "type": "IMAGE",
+          "link": 1
+        },
+        {
+          "localized_name": "model_name",
+          "name": "model_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "model_name"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "analysis_profile",
+          "name": "analysis_profile",
+          "type": "COMBO",
+          "widget": {
+            "name": "analysis_profile"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "subject_hint",
+          "name": "subject_hint",
+          "type": "STRING",
+          "widget": {
+            "name": "subject_hint"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "additional_instruction",
+          "name": "additional_instruction",
+          "type": "STRING",
+          "widget": {
+            "name": "additional_instruction"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "hint_mode",
+          "name": "hint_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "hint_mode"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "hint_conflict",
+          "name": "hint_conflict",
+          "type": "COMBO",
+          "widget": {
+            "name": "hint_conflict"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "picture_reference_mode",
+          "name": "picture_reference_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "picture_reference_mode"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "concept_type",
+          "name": "concept_type",
+          "type": "COMBO",
+          "widget": {
+            "name": "concept_type"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "picture_index",
+          "name": "picture_index",
+          "type": "INT",
+          "widget": {
+            "name": "picture_index"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "analysis_max_edge",
+          "name": "analysis_max_edge",
+          "type": "INT",
+          "widget": {
+            "name": "analysis_max_edge"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "max_tokens",
+          "name": "max_tokens",
+          "type": "INT",
+          "widget": {
+            "name": "max_tokens"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "temperature",
+          "name": "temperature",
+          "type": "FLOAT",
+          "widget": {
+            "name": "temperature"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "top_p",
+          "name": "top_p",
+          "type": "FLOAT",
+          "widget": {
+            "name": "top_p"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "repetition_penalty",
+          "name": "repetition_penalty",
+          "type": "FLOAT",
+          "widget": {
+            "name": "repetition_penalty"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "gpu_layers",
+          "name": "gpu_layers",
+          "type": "INT",
+          "widget": {
+            "name": "gpu_layers"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "n_batch",
+          "name": "n_batch",
+          "type": "INT",
+          "widget": {
+            "name": "n_batch"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "n_ctx",
+          "name": "n_ctx",
+          "type": "INT",
+          "widget": {
+            "name": "n_ctx"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "flash_attn",
+          "name": "flash_attn",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "flash_attn"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "kv_cache_type",
+          "name": "kv_cache_type",
+          "type": "COMBO",
+          "widget": {
+            "name": "kv_cache_type"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "op_offload",
+          "name": "op_offload",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "op_offload"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "keep_model_loaded",
+          "name": "keep_model_loaded",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "keep_model_loaded"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "seed",
+          "name": "seed",
+          "type": "INT",
+          "widget": {
+            "name": "seed"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "cache_mode",
+          "name": "cache_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "cache_mode"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "emd_fragment",
+          "name": "emd_fragment",
+          "type": "STRING",
+          "links": [
+            5,
+            8,
+            25
+          ]
+        },
+        {
+          "localized_name": "reference_bindings",
+          "name": "reference_bindings",
+          "type": "MV_DIRECTOR_REFERENCE_BINDINGS",
+          "links": null
+        },
+        {
+          "localized_name": "image",
+          "name": "image",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "localized_name": "observations_json",
+          "name": "observations_json",
+          "type": "STRING",
+          "links": [
+            18
+          ]
+        }
+      ],
+      "title": "Character Vision / Subject EMD",
+      "properties": {
+        "Node name for S&R": "MVDirectorImageToSubjectEMD",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "Qwen3-VL-4B-Instruct/Qwen3-VL-4B-Instruct-Q4_K_M.gguf",
+        "subject_only",
+        "狐巫女。狐耳、耳の先端は黒い。狐尻尾、尾の先端は白。白い足袋と、赤い鼻緒の黒い木下駄を着用する。下駄の木製台全体は黒色で、赤いのは鼻緒だけである。目尻は赤い化粧が施されている。眉毛は丸く、横に線が伸びない、色は髪と同じである。",
+        "",
+        "lock_identity",
+        "warn",
+        "manual",
+        "person",
+        1,
+        1024,
+        1024,
+        0.1,
+        0.9,
+        1.05,
+        -1,
+        512,
+        16384,
+        true,
+        "q8_0",
+        true,
+        false,
+        1,
+        "fixed",
+        "reuse",
+        "<Picture 1>"
+      ],
+      "widgets_values_named": {
+        "model_name": "Qwen3-VL-4B-Instruct/Qwen3-VL-4B-Instruct-Q4_K_M.gguf",
+        "analysis_profile": "subject_only",
+        "subject_hint": "狐巫女。狐耳、耳の先端は黒い。狐尻尾、尾の先端は白。白い足袋と、赤い鼻緒の黒い木下駄を着用する。下駄の木製台全体は黒色で、赤いのは鼻緒だけである。目尻は赤い化粧が施されている。眉毛は丸く、横に線が伸びない、色は髪と同じである。",
+        "additional_instruction": "",
+        "hint_mode": "lock_identity",
+        "hint_conflict": "warn",
+        "picture_reference_mode": "manual",
+        "concept_type": "person",
+        "picture_index": 1,
+        "analysis_max_edge": 1024,
+        "max_tokens": 1024,
+        "temperature": 0.1,
+        "top_p": 0.9,
+        "repetition_penalty": 1.05,
+        "gpu_layers": -1,
+        "n_batch": 512,
+        "n_ctx": 16384,
+        "flash_attn": true,
+        "kv_cache_type": "q8_0",
+        "op_offload": true,
+        "keep_model_loaded": false,
+        "seed": 1,
+        "randomize": "fixed",
+        "cache_mode": "reuse",
+        "resolved_picture_reference": "<Picture 1>"
+      }
+    },
+    {
+      "id": 25,
+      "type": "MVDirectorImageToSubjectEMD",
+      "pos": [
+        -482.193009532493,
+        349.95614904230547
+      ],
+      "size": [
+        500,
+        802
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "image",
+          "name": "image",
+          "type": "IMAGE",
+          "link": 26
+        },
+        {
+          "localized_name": "model_name",
+          "name": "model_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "model_name"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "analysis_profile",
+          "name": "analysis_profile",
+          "type": "COMBO",
+          "widget": {
+            "name": "analysis_profile"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "subject_hint",
+          "name": "subject_hint",
+          "type": "STRING",
+          "widget": {
+            "name": "subject_hint"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "additional_instruction",
+          "name": "additional_instruction",
+          "type": "STRING",
+          "widget": {
+            "name": "additional_instruction"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "hint_mode",
+          "name": "hint_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "hint_mode"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "hint_conflict",
+          "name": "hint_conflict",
+          "type": "COMBO",
+          "widget": {
+            "name": "hint_conflict"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "picture_reference_mode",
+          "name": "picture_reference_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "picture_reference_mode"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "concept_type",
+          "name": "concept_type",
+          "type": "COMBO",
+          "widget": {
+            "name": "concept_type"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "picture_index",
+          "name": "picture_index",
+          "type": "INT",
+          "widget": {
+            "name": "picture_index"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "analysis_max_edge",
+          "name": "analysis_max_edge",
+          "type": "INT",
+          "widget": {
+            "name": "analysis_max_edge"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "max_tokens",
+          "name": "max_tokens",
+          "type": "INT",
+          "widget": {
+            "name": "max_tokens"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "temperature",
+          "name": "temperature",
+          "type": "FLOAT",
+          "widget": {
+            "name": "temperature"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "top_p",
+          "name": "top_p",
+          "type": "FLOAT",
+          "widget": {
+            "name": "top_p"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "repetition_penalty",
+          "name": "repetition_penalty",
+          "type": "FLOAT",
+          "widget": {
+            "name": "repetition_penalty"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "gpu_layers",
+          "name": "gpu_layers",
+          "type": "INT",
+          "widget": {
+            "name": "gpu_layers"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "n_batch",
+          "name": "n_batch",
+          "type": "INT",
+          "widget": {
+            "name": "n_batch"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "n_ctx",
+          "name": "n_ctx",
+          "type": "INT",
+          "widget": {
+            "name": "n_ctx"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "flash_attn",
+          "name": "flash_attn",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "flash_attn"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "kv_cache_type",
+          "name": "kv_cache_type",
+          "type": "COMBO",
+          "widget": {
+            "name": "kv_cache_type"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "op_offload",
+          "name": "op_offload",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "op_offload"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "keep_model_loaded",
+          "name": "keep_model_loaded",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "keep_model_loaded"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "seed",
+          "name": "seed",
+          "type": "INT",
+          "widget": {
+            "name": "seed"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "cache_mode",
+          "name": "cache_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "cache_mode"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "emd_fragment",
+          "name": "emd_fragment",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "localized_name": "reference_bindings",
+          "name": "reference_bindings",
+          "type": "MV_DIRECTOR_REFERENCE_BINDINGS",
+          "links": null
+        },
+        {
+          "localized_name": "image",
+          "name": "image",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "localized_name": "observations_json",
+          "name": "observations_json",
+          "type": "STRING",
+          "links": [
+            27
+          ]
+        }
+      ],
+      "title": "Background Vision (Scene Only)",
+      "properties": {
+        "Node name for S&R": "MVDirectorImageToSubjectEMD",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "Qwen3-VL-4B-Instruct/Qwen3-VL-4B-Instruct-Q4_K_M.gguf",
+        "scene_only",
+        "",
+        "人物、動物、キャラクター及び画面構成資料としての特徴は記述しない。場所、空間構成、建築、植生、時刻、天候及び環境照明だけを観察する。",
+        "lock_identity",
+        "warn",
+        "none",
+        "location",
+        1,
+        1024,
+        1024,
+        0.1,
+        0.9,
+        1.05,
+        -1,
+        512,
+        16384,
+        true,
+        "q8_0",
+        true,
+        false,
+        1,
+        "fixed",
+        "reuse",
+        "none"
+      ],
+      "widgets_values_named": {
+        "model_name": "Qwen3-VL-4B-Instruct/Qwen3-VL-4B-Instruct-Q4_K_M.gguf",
+        "analysis_profile": "scene_only",
+        "subject_hint": "",
+        "additional_instruction": "人物、動物、キャラクター及び画面構成資料としての特徴は記述しない。場所、空間構成、建築、植生、時刻、天候及び環境照明だけを観察する。",
+        "hint_mode": "lock_identity",
+        "hint_conflict": "warn",
+        "picture_reference_mode": "none",
+        "concept_type": "location",
+        "picture_index": 1,
+        "analysis_max_edge": 1024,
+        "max_tokens": 1024,
+        "temperature": 0.1,
+        "top_p": 0.9,
+        "repetition_penalty": 1.05,
+        "gpu_layers": -1,
+        "n_batch": 512,
+        "n_ctx": 16384,
+        "flash_attn": true,
+        "kv_cache_type": "q8_0",
+        "op_offload": true,
+        "keep_model_loaded": false,
+        "seed": 1,
+        "randomize": "fixed",
+        "cache_mode": "reuse",
+        "resolved_picture_reference": "none"
+      }
+    }
+  ],
+  "links": [
+    [
+      1,
+      2,
+      0,
+      3,
+      0,
+      "IMAGE"
+    ],
+    [
+      2,
+      4,
+      0,
+      7,
+      0,
+      "AUDIO"
+    ],
+    [
+      3,
+      5,
+      0,
+      7,
+      1,
+      "STRING"
+    ],
+    [
+      4,
+      6,
+      0,
+      7,
+      2,
+      "MV_DIRECTOR_H3_TIMING_PROFILE"
+    ],
+    [
+      5,
+      3,
+      0,
+      8,
+      21,
+      "STRING"
+    ],
+    [
+      7,
+      7,
+      0,
+      9,
+      0,
+      "STRING"
+    ],
+    [
+      8,
+      3,
+      0,
+      9,
+      1,
+      "STRING"
+    ],
+    [
+      9,
+      8,
+      0,
+      9,
+      2,
+      "MV_DIRECTOR_DIRECTION"
+    ],
+    [
+      10,
+      9,
+      0,
+      10,
+      0,
+      "STRING"
+    ],
+    [
+      11,
+      6,
+      0,
+      10,
+      1,
+      "MV_DIRECTOR_H3_TIMING_PROFILE"
+    ],
+    [
+      12,
+      10,
+      0,
+      11,
+      0,
+      "STRING"
+    ],
+    [
+      13,
+      9,
+      0,
+      12,
+      0,
+      "STRING"
+    ],
+    [
+      14,
+      7,
+      1,
+      13,
+      0,
+      "STRING"
+    ],
+    [
+      15,
+      8,
+      0,
+      14,
+      0,
+      "MV_DIRECTOR_DIRECTION"
+    ],
+    [
+      16,
+      8,
+      1,
+      15,
+      0,
+      "STRING"
+    ],
+    [
+      18,
+      3,
+      3,
+      17,
+      0,
+      "STRING"
+    ],
+    [
+      19,
+      7,
+      0,
+      18,
+      0,
+      "STRING"
+    ],
+    [
+      20,
+      5,
+      0,
+      19,
+      0,
+      "STRING"
+    ],
+    [
+      21,
+      9,
+      0,
+      20,
+      0,
+      "STRING"
+    ],
+    [
+      24,
+      22,
+      0,
+      8,
+      0,
+      "STRING"
+    ],
+    [
+      25,
+      3,
+      0,
+      23,
+      0,
+      "STRING"
+    ],
+    [
+      26,
+      24,
+      0,
+      25,
+      0,
+      "IMAGE"
+    ],
+    [
+      27,
+      25,
+      3,
+      8,
+      22,
+      "STRING"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 1.159567200000006,
+      "offset": [
+        349.63594764357043,
+        170.78593899431908
+      ]
+    },
+    "mv_director": {
+      "kind": "plan_compiler",
+      "lip_sync_mode": "context_loop",
+      "contract": "context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9"
+    },
+    "ue_links": [],
+    "links_added_by_ue": []
+  },
+  "version": 0.4
+}

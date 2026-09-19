@@ -33,7 +33,7 @@ SECTION_ORDER = (
 class NamespaceContractTests(unittest.TestCase):
     def test_public_namespace_is_new_project_only(self) -> None:
         validate_namespace_contract()
-        self.assertEqual(len(PUBLIC_NODE_TYPES), 11)
+        self.assertEqual(len(PUBLIC_NODE_TYPES), 12)
         self.assertTrue(all(value.startswith("MVDirector") for value in PUBLIC_NODE_TYPES))
         self.assertTrue(
             all(value.startswith("MV_DIRECTOR_") for value in CUSTOM_SOCKET_TYPES)

@@ -22,14 +22,23 @@
 
 ## 共通入力
 
-- `image00002.jpg`: `<Picture 1>`用の参照画像
-- `short_bgm_millennium_torii.mp3`: 完成動画へ使うfull mix
-- `short_bgm_millennium_torii_vocal.mp3`: 整列・口形駆動用vocal stem
-- plain lyrics `.txt`（Plan/Compiler WFとAudio Reference動画WF）
+- `image001_mikofox.jpg`: `<Picture 1>`用の人物参照画像
+- `image002_keinai.jpg`: 前段では背景Visionから場所・空間構成、建築、植生、時刻、天候及び環境照明をDirectionへ渡し、動画生成時には`<Picture 2>`の環境専用参照としてH3へ渡す
+- `autumn_fox_shrine.mp3`: 完成動画へ使うfull mix
+- `autumn_fox_shrine_vocal.mp3`: 整列・口形駆動用vocal stem
+- `autumn_fox_shrine.txt`: plain lyrics（Plan/Compiler WFとAudio Reference動画WF）
 - Vision GGUF、Text GGUF、ローカルWhisper `.pt`（Plan/Compiler WFとAudio Reference動画WF）
 - MiniMax H3 diffusion model、text encoder、video VAE、audio VAE
 
 同梱検証素材を既定値にしているが、ComfyUIの`input`へ存在しない場合は各Loadノードで選択し直す。Context Loop方式とLyrics方式の動画WFは、コンパイル済みPlanから最終frame尺と歌詞directiveを得るためLyric Segmentationを再実行しない。Audio Reference方式だけは元音声のScene区間をPlan位置へ並べ直すため、Plan/Compiler側と同じ歌詞、vocal、Whisper及びtiming profileでLyric Segmentationを実行し、成功cacheを再利用する。
+
+同梱検証素材はソースコードのGPLとは別に`CC BY-NC 4.0`で提供する。対象ファイル、出自及び適用範囲は[`ASSET_LICENSES.md`](../ASSET_LICENSES.md)を参照する。
+
+人物Visionは`subject_only / person`で`# サブジェクト`を生成し、背景Visionは`scene_only / location / picture_reference_mode=none / hint_mode=lock_identity`で観察JSONだけを生成する。Direction Enhancerの`concept_emd`には人物Vision、`observations_json`には背景Visionを接続する。背景Visionの`subject_hint`へ`赤い鳥居。`等を書いた場合、その原文は完成Directionの`## 環境`へ保持される。人物と背景を同じ参照へまとめると人物identityが条件を占有して背景情報が希薄化又は消失しやすいため、背景は別画像として用意することを推奨する。
+
+動画生成WFでは`H3 Background Reference`がコンパイル済みPlanの全Shotへ`<Picture 2>`の環境専用契約を追加し、同じ画像を`ref_images.ref_image_1`へ渡す。人物`<Picture 1>`と環境`<Picture 2>`を独立条件にすることで背景の再現率を高める。Picture 2は建築、植生、地形、材質及び空間同一性だけを部分保持し、人物、pose、文字、分割構図、camera angle及び照明はコピーしない。ユーザーがDirection又は共通プロンプトで指定した環境、時刻及び照明を背景画像より優先する。これは画素単位の背景複製を保証しない。
+
+`development/01_plan_compiler_context_loop_debug.json`も同じ人物・背景分離配線を持つ。`development/02_video_context_loop_debug.json`は背景Visionを重複実行せず、背景Load Imageを`H3 Background Reference`経由でPicture 2へ束縛する。
 
 ## 方式ごとの音声経路
 

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1120" viewBox="0 0 1600 1120" role="img" aria-labelledby="title desc">
   <title id="title">Direction EnhancerとTimeline Plannerの処理フロー</title>
-  <desc id="desc">外部Direction profile、ユーザー入力、Subject EMD及びVision観察をDirection Enhancerが行protocolで統合し、Timeline PlannerがTemplate EMDへVisual Beat、Song Direction、Shot Layout、Action、Camera及びリップシンクdirectiveを展開して完全EMDを作る流れ。青はLLM、緑は決定的Python処理、橙は入力、紫はartifactを示す。</desc>
+  <desc id="desc">人物identity用Subject EMDと背景環境用Vision観察を分離してDirection Enhancerへ入力し、Timeline PlannerがTemplate EMDへVisual Beat、Song Direction、Shot Layout、Action、Camera及びリップシンクdirectiveを展開して完全EMDを作る流れ。背景IMAGE自体は動画生成時に環境専用PictureとしてH3へ渡す。</desc>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
       <path d="M0 0L10 5L0 10Z" fill="#526273"/>
@@ -29,10 +29,10 @@
   <rect class="input" x="52" y="268" width="250" height="174" rx="12"/>
   <text class="label" x="177" y="299">入力authority</text>
   <text class="small" x="177" y="327">user_request</text>
-  <text class="small" x="177" y="349">concept_emd / observations</text>
-  <text class="small" x="177" y="371">retention_policy</text>
-  <text class="small" x="177" y="393">Direction EMD passthrough</text>
-  <text class="tiny" x="177" y="421">user ＞ vision ＞ profile ＞ generated</text>
+  <text class="small" x="177" y="349">Subject EMD = 人物identity</text>
+  <text class="small" x="177" y="371">Background observations = 環境</text>
+  <text class="small" x="177" y="393">retention / passthrough</text>
+  <text class="tiny" x="177" y="421">人物と背景を同じ参照roleへ混在させない</text>
 
   <rect class="python" x="352" y="205" width="240" height="142" rx="12"/>
   <text class="label" x="472" y="237">Profile loader + 検証</text>
@@ -55,7 +55,7 @@
   <text class="small" x="1073" y="286">locked Styleを機械適用</text>
   <text class="small" x="1073" y="308">provenanceを固定enumで記録</text>
   <text class="small" x="1073" y="330">preview EMDをrender</text>
-  <text class="tiny" x="1073" y="354">Subject/Picture定義は変更しない</text>
+  <text class="tiny" x="1073" y="354">背景IMAGEはPlannerでなく生成時H3へ別Picture入力</text>
 
   <rect class="artifact" x="1260" y="205" width="270" height="142" rx="12"/>
   <text class="label" x="1395" y="237">MVD_DIRECTION_V3</text>

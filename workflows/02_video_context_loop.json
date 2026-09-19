@@ -1,8 +1,8 @@
 {
   "id": "f97af838-5222-5864-8ec8-15d657333fdb",
   "revision": 0,
-  "last_node_id": 44,
-  "last_link_id": 68,
+  "last_node_id": 46,
+  "last_link_id": 71,
   "nodes": [
     {
       "id": 1,
@@ -24,7 +24,7 @@
           "name": "MODEL",
           "type": "MODEL",
           "links": [
-            63
+            66
           ]
         }
       ],
@@ -159,7 +159,7 @@
           "links": [
             8,
             32,
-            68
+            71
           ]
         }
       ],
@@ -585,7 +585,7 @@
         {
           "name": "ref_images.ref_image_1",
           "type": "IMAGE",
-          "link": null
+          "link": 65
         },
         {
           "name": "ref_images.ref_image_2",
@@ -674,7 +674,7 @@
         {
           "name": "audio_vae",
           "type": "VAE",
-          "link": 68
+          "link": 71
         },
         {
           "name": "model",
@@ -689,7 +689,7 @@
         {
           "name": "lip_sync_voice",
           "type": "AUDIO",
-          "link": 67
+          "link": 70
         }
       ],
       "outputs": [
@@ -1229,7 +1229,7 @@
         {
           "name": "model",
           "type": "MODEL",
-          "link": 64
+          "link": 67
         }
       ],
       "outputs": [
@@ -1346,7 +1346,7 @@
         {
           "name": "plan_json_input",
           "type": "STRING",
-          "link": 61
+          "link": 63
         },
         {
           "name": "project_assets",
@@ -1502,7 +1502,7 @@
         "Node name for S&R": "LoadImage"
       },
       "widgets_values": [
-        "image00002.jpg"
+        "image001_mikofox.jpg"
       ]
     },
     {
@@ -1668,7 +1668,7 @@
         {
           "name": "lip_sync_options",
           "type": "H3_LIP_SYNC_OPTIONS",
-          "link": 66
+          "link": 69
         }
       ],
       "outputs": [
@@ -1715,7 +1715,7 @@
         "Node name for S&R": "Note"
       },
       "widgets_values": [
-        "Context Loopのsource-audio lockとLip-Sync Optionsを使用。\n\n1. context_loop_plan_*.txtをPlan JSONノードへD&Dします。\n2. full mix、vocal stem、参照画像を確認します。\n3. H3モデル/VAEを確認してQueueします。\n4. 動画生成側ではLyric Segmentationを再実行しません。\n\nAudio Referenceだけは整列済みvocalをCurrent Scene時刻で切り出し、固定ref_audio_0へ渡します。\nBaseline: context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9"
+        "Context Loopのsource-audio lockとLip-Sync Optionsを使用。\n\n1. context_loop_plan_*.txtをPlan JSONノードへD&Dします。\n2. full mix、vocal stem、人物・背景参照画像を確認します。\n3. H3モデル/VAEを確認してQueueします。\n4. 動画生成側ではLyric Segmentationを再実行しません。\n\nAudio Referenceだけは整列済みvocalをCurrent Scene時刻で切り出し、固定ref_audio_0へ渡します。\nBaseline: context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9"
       ]
     },
     {
@@ -1747,7 +1747,7 @@
         "Node name for S&R": "LoadAudio"
       },
       "widgets_values": [
-        "short_bgm_millennium_torii.mp3"
+        "autumn_fox_shrine.mp3"
       ]
     },
     {
@@ -1779,7 +1779,7 @@
         "Node name for S&R": "LoadAudio"
       },
       "widgets_values": [
-        "short_bgm_millennium_torii_vocal.mp3"
+        "autumn_fox_shrine_vocal.mp3"
       ]
     },
     {
@@ -1862,7 +1862,7 @@
         {
           "name": "plan_json",
           "type": "STRING",
-          "link": 62
+          "link": 64
         }
       ],
       "outputs": [
@@ -1878,7 +1878,7 @@
           "type": "AUDIO",
           "links": [
             59,
-            65
+            68
           ]
         },
         {
@@ -1974,8 +1974,7 @@
           "name": "text",
           "type": "STRING",
           "links": [
-            61,
-            62
+            61
           ]
         }
       ],
@@ -2007,7 +2006,7 @@
         {
           "name": "model",
           "type": "MODEL",
-          "link": 63
+          "link": 66
         },
         {
           "name": "lora_name",
@@ -2031,7 +2030,7 @@
           "name": "MODEL",
           "type": "MODEL",
           "links": [
-            64
+            67
           ]
         }
       ],
@@ -2042,6 +2041,99 @@
       "widgets_values": [
         "MiniMaxH3\\minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors",
         1.0
+      ]
+    },
+    {
+      "id": 45,
+      "type": "LoadImage",
+      "pos": [
+        2380,
+        1430
+      ],
+      "size": [
+        360,
+        360
+      ],
+      "flags": {},
+      "order": 45,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            62
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "title": "Background Reference • <Picture 2>",
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "image002_keinai.jpg"
+      ]
+    },
+    {
+      "id": 46,
+      "type": "MVDirectorH3BackgroundReference",
+      "pos": [
+        1550,
+        600
+      ],
+      "size": [
+        500,
+        180
+      ],
+      "flags": {},
+      "order": 46,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "plan_json",
+          "type": "STRING",
+          "link": 61
+        },
+        {
+          "name": "background_image",
+          "type": "IMAGE",
+          "link": 62
+        }
+      ],
+      "outputs": [
+        {
+          "name": "plan_json",
+          "type": "STRING",
+          "links": [
+            63,
+            64
+          ]
+        },
+        {
+          "name": "background_image",
+          "type": "IMAGE",
+          "links": [
+            65
+          ]
+        },
+        {
+          "name": "status",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "title": "Bind Background • <Picture 2>",
+      "properties": {
+        "Node name for S&R": "MVDirectorH3BackgroundReference"
+      },
+      "widgets_values": [
+        2
       ]
     },
     {
@@ -2062,7 +2154,7 @@
         {
           "name": "voice",
           "type": "AUDIO",
-          "link": 65
+          "link": 68
         }
       ],
       "outputs": [
@@ -2070,14 +2162,14 @@
           "name": "lip_sync_options",
           "type": "H3_LIP_SYNC_OPTIONS",
           "links": [
-            66
+            69
           ]
         },
         {
           "name": "voice",
           "type": "AUDIO",
           "links": [
-            67
+            70
           ]
         },
         {
@@ -2568,20 +2660,44 @@
       61,
       39,
       0,
+      46,
+      0,
+      "STRING"
+    ],
+    [
+      62,
+      45,
+      0,
+      46,
+      1,
+      "IMAGE"
+    ],
+    [
+      63,
+      46,
+      0,
       24,
       1,
       "STRING"
     ],
     [
-      62,
-      39,
+      64,
+      46,
       0,
       37,
       4,
       "STRING"
     ],
     [
-      63,
+      65,
+      46,
+      1,
+      11,
+      8,
+      "IMAGE"
+    ],
+    [
+      66,
       1,
       0,
       44,
@@ -2589,7 +2705,7 @@
       "MODEL"
     ],
     [
-      64,
+      67,
       44,
       0,
       22,
@@ -2597,7 +2713,7 @@
       "MODEL"
     ],
     [
-      65,
+      68,
       37,
       1,
       40,
@@ -2605,7 +2721,7 @@
       "AUDIO"
     ],
     [
-      66,
+      69,
       40,
       0,
       30,
@@ -2613,7 +2729,7 @@
       "H3_LIP_SYNC_OPTIONS"
     ],
     [
-      67,
+      70,
       40,
       1,
       12,
@@ -2621,7 +2737,7 @@
       "AUDIO"
     ],
     [
-      68,
+      71,
       5,
       0,
       12,

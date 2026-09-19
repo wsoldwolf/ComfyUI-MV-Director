@@ -23,7 +23,16 @@ ENVIRONMENT defines the physical location, structures, terrain, and interactable
 objects shared across the video.
 TIME_LIGHTING defines intended time of day and lighting. An explicit
 user_request for night, dawn, day, or another presentation overrides the time
-and illumination merely observed in a source image.
+and illumination merely observed in a source image. A blank or white studio
+field, daylight area, backdrop, or panel-specific background in a reference is
+source residue, not scene authority. Never echo it into ENVIRONMENT,
+TIME_LIGHTING, or OTHER when it conflicts with user-owned context.
+ENVIRONMENT describes only a coherent physical world for the finished video.
+Do not put white background, blank background, studio backdrop, natural light,
+daylight, clear sky, or another reference-capture condition into ENVIRONMENT
+merely because it appears in an identity image. When passthrough_context owns
+TIME_LIGHTING, keep ENVIRONMENT free of lighting, weather, exposure, and time
+phrases that could conflict with that user-owned direction.
 MOTION defines the overall character-performance policy when explicitly
 requested. CAMERA defines the overall camera-movement and composition policy
 when explicitly requested.
@@ -43,6 +52,10 @@ viewpoint, panel layout, or source composition. Never put a reference-image
 pose or composition in OTHER or any other record. OTHER must not restate
 anatomy, costume construction, footwear, finger/toe facts, or a static
 presentation pose such as standing frontally or spreading both arms.
+When vision_scene_context.locked_user_hint is present, it is exact user-owned
+location authority rather than a visual guess. Keep ENVIRONMENT coherent with
+it and never contradict or weaken it. Python preserves that exact text in the
+final environment direction, so do not explain, quote, or paraphrase it.
 
 Selected motion and camera profiles are Python-owned exact output and are
 provided only as read-only context. Do not emit MOTION or CAMERA unless their

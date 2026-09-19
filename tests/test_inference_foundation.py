@@ -10,6 +10,7 @@ from core.inference import (
     build_cache_key,
     build_context_budget,
     discover_gguf_models,
+    fit_context_budget,
     resolve_model_selection,
 )
 
@@ -72,6 +73,35 @@ class InferenceFoundationTests(unittest.TestCase):
         self.assertEqual(exact.remaining_tokens, 0)
         with self.assertRaisesRegex(ContextBudgetError, "required=16385"):
             build_context_budget(14_050, 1_024, 16_384)
+
+    def test_context_budget_fits_bounded_protocol_output(self) -> None:
+        reported_case = fit_context_budget(
+            3_077,
+            4_096,
+            8_192,
+            minimum_output_tokens=128,
+            maximum_output_tokens=1_024,
+        )
+        self.assertEqual(reported_case.reserved_output_tokens, 1_024)
+        self.assertEqual(reported_case.remaining_tokens, 3_067)
+
+        constrained = fit_context_budget(
+            2_500,
+            4_096,
+            4_096,
+            minimum_output_tokens=128,
+            maximum_output_tokens=1_024,
+        )
+        self.assertEqual(constrained.reserved_output_tokens, 572)
+
+        with self.assertRaisesRegex(ContextBudgetError, "reserved_output=128"):
+            fit_context_budget(
+                3_000,
+                4_096,
+                4_096,
+                minimum_output_tokens=128,
+                maximum_output_tokens=1_024,
+            )
 
     def test_runtime_config_preserves_32k_trial_values(self) -> None:
         config = LlamaRuntimeConfig(n_ctx=32_768, kv_cache_type="q8_0")

@@ -1,4 +1,10 @@
-"""Strict fixed-order parser for MVD_VISION_OBSERVATION_LINES_V2."""
+"""Bounded parser for MVD_VISION_OBSERVATION_LINES_V2.
+
+The wire format has one canonical record order, but small Vision models
+occasionally permute otherwise valid named records or restart a response. The
+parser canonicalizes only known record names before applying strict field and
+artifact validation. It never guesses an unknown line's meaning.
+"""
 
 from __future__ import annotations
 
@@ -15,6 +21,50 @@ from ..artifacts.observations import (
 )
 
 from .vision_contract import VISION_END_MARKER, VISION_PROTOCOL_ID
+
+
+_CANONICAL_RECORD_ORDER = (
+    "OVERVIEW",
+    "PRIMARY_SUBJECT",
+    "HINT_STATUS",
+    "HINT_REASON",
+    "SUBJECT_FEATURE",
+    "SUBJECT_POSE",
+    "SCENE_SETTING",
+    "SCENE_ELEMENT",
+    "LIGHTING",
+    "TIME_WEATHER",
+    "SHOT_SIZE",
+    "VIEWPOINT",
+    "SUBJECT_PLACEMENT",
+    "DEPTH",
+    "STYLE_MEDIUM",
+    "STYLE_RENDERING",
+    "STYLE_PALETTE",
+    "VISIBLE_TEXT",
+    "UNCERTAINTY",
+)
+_REPEATED_RECORDS = {
+    "SUBJECT_FEATURE",
+    "SCENE_ELEMENT",
+    "VISIBLE_TEXT",
+    "UNCERTAINTY",
+}
+_EMPTY_ALLOWED_SCALAR_RECORDS = {
+    "PRIMARY_SUBJECT",
+    "HINT_REASON",
+    "SUBJECT_POSE",
+    "SCENE_SETTING",
+    "LIGHTING",
+    "TIME_WEATHER",
+    "SHOT_SIZE",
+    "VIEWPOINT",
+    "SUBJECT_PLACEMENT",
+    "DEPTH",
+    "STYLE_MEDIUM",
+    "STYLE_RENDERING",
+    "STYLE_PALETTE",
+}
 
 
 class VisionProtocolError(ValueError):
@@ -40,8 +90,22 @@ def _record_name(line: str) -> str:
     return raw.replace(" ", "_").replace("-", "_").upper()
 
 
+def _is_redundant_protocol_id_line(line: str) -> bool:
+    """Return true only for a protocol_id label carrying no observation data."""
+
+    if _record_name(line) != "PROTOCOL_ID":
+        return False
+    values = [part.strip() for part in line.split("\t")[1:] if part.strip()]
+    return not values or all(value == VISION_PROTOCOL_ID for value in values)
+
+
 class _VisionParser:
-    def __init__(self, content: str, allow_missing_end: bool) -> None:
+    def __init__(
+        self,
+        content: str,
+        allow_missing_end: bool,
+        analysis_profile: str,
+    ) -> None:
         if not isinstance(content, str):
             raise VisionProtocolError("Vision response must be a string")
         if "\x00" in content:
@@ -63,6 +127,11 @@ class _VisionParser:
             raise VisionProtocolError("H3 reference tags are not allowed")
         self.cursor = 0
         self.allow_missing_end = allow_missing_end
+        if analysis_profile not in {"general", "subject_only", "scene_only"}:
+            raise VisionProtocolError(
+                f"unknown Vision analysis profile {analysis_profile!r}"
+            )
+        self.analysis_profile = analysis_profile
 
     def current(self) -> str | None:
         return self.lines[self.cursor] if self.cursor < len(self.lines) else None
@@ -123,6 +192,98 @@ class _VisionParser:
                 )
         return values
 
+    @staticmethod
+    def _record_value_for_duplicate_check(line: str, record_type: str) -> str:
+        if record_type == "OVERVIEW" and line.startswith(
+            ("Overview:", "OVERVIEW:")
+        ):
+            return line.split(":", 1)[1].strip()
+        parts = line.split("\t")
+        return "\t".join(part.strip() for part in parts[1:]).strip()
+
+    def _canonicalize_known_records(self) -> None:
+        """Put known named records in wire order without inventing content."""
+
+        body = self.lines[self.cursor :]
+        by_name: dict[str, list[str]] = {
+            name: [] for name in _CANONICAL_RECORD_ORDER
+        }
+        observed_names: list[str] = []
+        saw_end = False
+        for offset, line in enumerate(body, start=self.cursor + 1):
+            if line == VISION_END_MARKER:
+                saw_end = True
+                continue
+            if line == VISION_PROTOCOL_ID or _is_redundant_protocol_id_line(line):
+                self.warnings.append(
+                    f"ignored repeated Vision protocol marker at line {offset}"
+                )
+                continue
+            if line.startswith(("Overview:", "OVERVIEW:")):
+                name = "OVERVIEW"
+                line = f"OVERVIEW\t{line.split(':', 1)[1].strip()}"
+                self.warnings.append(
+                    f"normalized colon-form OVERVIEW at line {offset}"
+                )
+            else:
+                name = _record_name(line)
+            if name not in by_name:
+                raw_name = line.split("\t", 1)[0]
+                raise VisionProtocolError(
+                    f"line {offset}: unknown Vision record {raw_name!r}"
+                )
+            observed_names.append(name)
+            records = by_name[name]
+            value = self._record_value_for_duplicate_check(line, name)
+            if name in _REPEATED_RECORDS:
+                if any(
+                    self._record_value_for_duplicate_check(existing, name) == value
+                    for existing in records
+                ):
+                    self.warnings.append(
+                        f"ignored duplicate {name} record at line {offset}"
+                    )
+                    continue
+                records.append(line)
+                continue
+            if not records:
+                records.append(line)
+                continue
+            previous = self._record_value_for_duplicate_check(records[0], name)
+            if not previous and value:
+                records[0] = line
+                self.warnings.append(
+                    f"used non-empty duplicate {name} value at line {offset}"
+                )
+            else:
+                qualifier = "conflicting " if previous and value != previous else ""
+                self.warnings.append(
+                    f"ignored {qualifier}duplicate {name} record at line {offset}"
+                )
+
+        for name in _EMPTY_ALLOWED_SCALAR_RECORDS:
+            if not by_name[name]:
+                by_name[name].append(f"{name}\t")
+                self.warnings.append(
+                    f"restored omitted empty {name} record"
+                )
+
+        canonical_names = [
+            name
+            for name in _CANONICAL_RECORD_ORDER
+            for _line in by_name[name]
+        ]
+        if observed_names != canonical_names:
+            self.warnings.append("normalized known Vision records to canonical order")
+        canonical_body = [
+            line
+            for name in _CANONICAL_RECORD_ORDER
+            for line in by_name[name]
+        ]
+        if saw_end:
+            canonical_body.append(VISION_END_MARKER)
+        self.lines = self.lines[: self.cursor] + canonical_body
+
     def parse(self) -> VisionParseResult:
         if self.lines:
             first_name = _record_name(self.lines[0])
@@ -141,12 +302,17 @@ class _VisionParser:
         self.cursor = 1
         if (
             (line := self.current()) is not None
-            and line.strip().casefold() == "protocol_id"
+            and _is_redundant_protocol_id_line(line)
         ):
             self.cursor += 1
-            self.warnings.append(
-                "ignored redundant bare protocol_id after Vision protocol ID"
-            )
+            if line.strip().casefold() == "protocol_id":
+                self.warnings.append(
+                    "ignored redundant bare protocol_id after Vision protocol ID"
+                )
+            else:
+                self.warnings.append(
+                    "ignored redundant protocol_id metadata after Vision protocol ID"
+                )
         if (
             (line := self.current()) is not None
             and "\t" not in line
@@ -166,6 +332,7 @@ class _VisionParser:
                 self.warnings.append(
                     f"labelled bare PRIMARY_SUBJECT value at line {self.cursor + 1}"
                 )
+        self._canonicalize_known_records()
         if (
             (line := self.current()) is not None
             and _record_name(line) == "PRIMARY_SUBJECT"
@@ -198,6 +365,20 @@ class _VisionParser:
         features: list[SubjectFeature] = []
         while (line := self.current()) is not None and _record_name(line) == "SUBJECT_FEATURE":
             parts = line.split("\t")
+            if len(parts) == 2:
+                lone_value = parts[1].strip()
+                if not lone_value or lone_value.casefold() in FEATURE_CATEGORIES:
+                    raise VisionProtocolError("SUBJECT_FEATURE has too few fields")
+                features.append(
+                    SubjectFeature("distinctive_feature", lone_value, "partial")
+                )
+                self.warnings.append(
+                    "defaulted missing SUBJECT_FEATURE category to "
+                    "distinctive_feature and visibility to partial at line "
+                    f"{self.cursor + 1}"
+                )
+                self.cursor += 1
+                continue
             if len(parts) < 3:
                 raise VisionProtocolError("SUBJECT_FEATURE has too few fields")
             raw_category = parts[1].strip()
@@ -297,6 +478,9 @@ class _VisionParser:
 
 
 def parse_vision_observations(
-    content: str, *, allow_missing_end: bool = True
+    content: str,
+    *,
+    allow_missing_end: bool = True,
+    analysis_profile: str = "general",
 ) -> VisionParseResult:
-    return _VisionParser(content, allow_missing_end).parse()
+    return _VisionParser(content, allow_missing_end, analysis_profile).parse()

@@ -50,6 +50,12 @@ def render_subject_emd(
     descriptions: list[str] = []
     if observations.primary_subject:
         descriptions.append(observations.primary_subject)
+    hint_values = _hint_lines(subject_hint)
+    included_hint = hint_mode == "lock_identity" and bool(hint_values)
+    if included_hint:
+        descriptions.append(
+            "優先して保持する識別特徴: " + " ".join(hint_values)
+        )
     omitted_uncertain = 0
     if concept_type in {"person", "object"}:
         for feature in observations.subject_features:
@@ -62,10 +68,6 @@ def render_subject_emd(
             descriptions.append(observations.scene_setting)
         descriptions.extend(observations.scene_elements)
 
-    hint_values = _hint_lines(subject_hint)
-    included_hint = hint_mode == "lock_identity" and bool(hint_values)
-    if included_hint:
-        descriptions.extend(hint_values)
     if not descriptions:
         fallback = observations.primary_subject or observations.overview
         if fallback:

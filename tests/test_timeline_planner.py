@@ -32,7 +32,10 @@ from core.planner.layout import (
     repair_scene_layout_selection,
 )
 from core.planner.engine import (
+    _anime_mv_face_zoom_key,
+    _anime_mv_long_arc_keys,
     _camera_editorial_role,
+    _face_arc_transitions,
     _performance_role,
     _recover_unframed_records,
     _repair_boundary_contract,
@@ -129,7 +132,18 @@ class FakePlannerBackend:
                         f"{identity} 「生成台詞」"
                     ),
                     "cameras": (
-                        "カメラは前景の鳥居から人物へ緩やかに寄る。"
+                        (
+                            "Arc Shot with large amplitude at fast speed "
+                            "で顔から人物の側面を回り全身と鳥居を開示する。"
+                            if item.get("face_arc_transition")
+                            or item.get("long_arc_emphasis")
+                            else (
+                                "Zoom In with large amplitude at fast speed "
+                                "で両目と歌唱口を保ちながら顔へ寄る。"
+                                if item.get("face_zoom_emphasis")
+                                else "カメラは前景の鳥居から人物へ緩やかに寄る。"
+                            )
+                        )
                         + identity
                     ),
                 }[task]
@@ -294,6 +308,63 @@ class TimelinePlannerCoreTests(unittest.TestCase):
                 allow_single_positional=True,
             ),
             {7: "Static Shot で両目と口全体を大きく写す。"},
+        )
+
+    def test_isolated_json_wrapper_recovers_text_without_rewriting_it(self) -> None:
+        text = "袖を胸元へ引き寄せ、歌詞の余韻に合わせて視線を上げる。"
+        response = json.dumps(
+            {"record_type": "ACTION", "slot": 1, "text": text},
+            ensure_ascii=False,
+        )
+        self.assertEqual(
+            _recover_unframed_records(
+                response,
+                "ACTION",
+                [1],
+                allow_single_positional=True,
+            ),
+            {1: text},
+        )
+
+    def test_isolated_markdown_table_recovers_text_without_rewriting_it(self) -> None:
+        text = "肩越しに振り返り、右手を胸の前で静止させる。"
+        response = "| ACTION | 1 | " + text + " |"
+        self.assertEqual(
+            _recover_unframed_records(
+                response,
+                "ACTION",
+                [1],
+                allow_single_positional=True,
+            ),
+            {1: text},
+        )
+
+    def test_isolated_label_wrapper_requires_matching_slot(self) -> None:
+        response = "type: ACTION\nslot: 2\ntext: この値は別slotである。"
+        self.assertEqual(
+            _recover_unframed_records(
+                response,
+                "ACTION",
+                [1],
+                allow_single_positional=True,
+            ),
+            {},
+        )
+
+    def test_isolated_multiline_prose_uses_unique_side_table_mapping(self) -> None:
+        response = (
+            "ACTION\nslot: 1\n"
+            "袖を胸元へ引き寄せる。\n"
+            "続けて視線を鳥居の奥へ移す。"
+        )
+        self.assertEqual(
+            _recover_unframed_records(
+                response,
+                "ACTION",
+                [1],
+                allow_single_positional=True,
+            ),
+            {1: "袖を胸元へ引き寄せる。 続けて視線を鳥居の奥へ移す。"},
         )
 
     def test_boundary_repair_scales_to_twenty_four_all_cut_scenes(self) -> None:
@@ -553,6 +624,11 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertIn("subject_roster identifies performers only", prompt)
         self.assertIn("detailed Subject appearance remains renderer-owned", prompt)
         self.assertIn("feet, toes, fabric sliding over terrain", prompt)
+        self.assertIn("A lyric transcript is vocal content", prompt)
+        self.assertIn("do not write\nwound, scar, cut, bruise", prompt)
+        self.assertIn("unrequested_running_maximum", prompt)
+        self.assertIn("Never invent running to\nfill an instrumental Shot", prompt)
+        self.assertIn("Fit the performance to shot_duration_ms", prompt)
 
     def test_visual_beat_prompt_treats_complete_direction_as_immutable(self) -> None:
         prompt = (
@@ -566,6 +642,12 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertIn("subject_roster", prompt)
         self.assertIn("not creative source material", prompt)
         self.assertIn("footwear", prompt)
+        self.assertIn("replace every background and lighting", prompt)
+        self.assertIn("Keep the directed environment continuous", prompt)
+        self.assertIn("figurative lyric language about a wound", prompt)
+        self.assertIn("visible skin and clothing clean and intact", prompt)
+        self.assertIn("twelve-Scene negative motif ledger", prompt)
+        self.assertIn("especially strict\nfor an instrumental Scene", prompt)
 
     def test_camera_prompt_keeps_arc_and_closeup_shot_local(self) -> None:
         prompt = (
@@ -589,12 +671,23 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertIn("Never start the physical line directly with the Motion Type", prompt)
         self.assertIn("Tracking Shot", prompt)
         self.assertIn("exactly one performer", prompt)
+        self.assertIn("one unified continuous camera image", prompt)
+        self.assertIn("never as simultaneous spatial views", prompt)
+        self.assertIn("picture-in-picture", prompt)
+        self.assertIn("Stage every Shot as a newly photographed composition", prompt)
+        self.assertIn("first output frame must already use", prompt)
+        self.assertIn("Do not restate or modify environment", prompt)
         self.assertIn("must remain non-emissive", prompt)
         self.assertIn("translucent lamp effect", prompt)
         self.assertIn("highest-priority immutable common constraint set", prompt)
         self.assertIn("every Scene represented by the", prompt)
         self.assertIn("complete speaking mouth", prompt)
         self.assertIn("incompatible body-part detail", prompt)
+        self.assertIn("every essential body part and contact", prompt)
+        self.assertIn("Static Shot keeps camera position", prompt)
+        self.assertIn("label-versus-prose consistency", prompt)
+        self.assertIn("face_arc_transition", prompt)
+        self.assertIn("arc_out_of_previous_face_cut", prompt)
 
     def test_layout_prompt_balances_boundaries_and_uses_lyrics_for_face_edits(self) -> None:
         prompt = (
@@ -610,6 +703,8 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertIn("boundary_mix_retry_reason", prompt)
         self.assertIn("later_continue_minimum", prompt)
         self.assertIn("The retry is invalid", prompt)
+        self.assertIn("Normally select two or three Shots", prompt)
+        self.assertIn("every selected interval remains\nat least two seconds", prompt)
 
     def test_degenerate_all_cut_layout_is_replanned_once(self) -> None:
         class DegenerateThenMixedBackend(FakePlannerBackend):
@@ -686,18 +781,34 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         layout_calls = [
             payload for task, payload in backend.calls if task == "shot-layout"
         ]
-        self.assertEqual(len(layout_calls), 2)
-        self.assertIn("boundary_mix_retry_reason", layout_calls[1])
+        primary_layout_calls = [
+            payload
+            for payload in layout_calls
+            if "boundary_mix_retry_reason" not in payload
+        ]
+        retry_layout_calls = [
+            payload
+            for payload in layout_calls
+            if "boundary_mix_retry_reason" in payload
+        ]
+        self.assertEqual(len(primary_layout_calls), 2)
         self.assertEqual(
-            layout_calls[1]["boundary_contract"]["later_continue_minimum"],
+            [len(payload["slots"]) for payload in primary_layout_calls],
+            [3, 1],
+        )
+        self.assertEqual(len(retry_layout_calls), 2)
+        self.assertEqual(
+            retry_layout_calls[0]["boundary_contract"]["later_continue_minimum"],
             2,
         )
         self.assertEqual(
-            layout_calls[1]["boundary_contract"]["later_cut_minimum"],
+            retry_layout_calls[0]["boundary_contract"]["later_cut_minimum"],
             1,
         )
-        self.assertIn("previous_visual_beat", layout_calls[0]["slots"][1])
-        self.assertIn("previous_lyrics", layout_calls[0]["slots"][1])
+        self.assertIn(
+            "previous_visual_beat", primary_layout_calls[0]["slots"][1]
+        )
+        self.assertIn("previous_lyrics", primary_layout_calls[0]["slots"][1])
 
     def test_degenerate_retry_that_remains_all_cut_is_structurally_repaired(self) -> None:
         class AlwaysCutBackend(FakePlannerBackend):
@@ -887,6 +998,7 @@ class TimelinePlannerCoreTests(unittest.TestCase):
                 style_direction=("実写映画として描写する。",),
                 motion_direction=("接地を明瞭にする。",),
                 camera_direction=("奥行きを保つ。",),
+                camera_profile_id="anime_mv",
             ),
             lip_sync_mode="lyrics",
             lip_sync_target="サブジェクト1",
@@ -903,7 +1015,7 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         text = result.emd.text
         self.assertNotIn("生成台詞", text)
         self.assertIn("* `リップシンク` `歌詞` `サブジェクト1` 「千年鳥居をくぐるそなたよ」", text)
-        self.assertLess(text.index("サブジェクト1が重心"), text.index("カメラは前景"))
+        self.assertLess(text.index("サブジェクト1が重心"), text.index("Arc Shot"))
         document = parse_emd(text)
         self.assertEqual(document.scenes[0].h3_length, 243)
         self.assertEqual(document.scenes[0].shots[0].lyric_annotations[0].text, "千年鳥居をくぐるそなたよ")
@@ -923,7 +1035,26 @@ class TimelinePlannerCoreTests(unittest.TestCase):
             "サブジェクト1",
         )
         self.assertIn("recent_camera_history", camera_payload)
-        self.assertTrue(camera_payload["arc_required"])
+        self.assertFalse(camera_payload["arc_required"])
+        self.assertEqual(
+            camera_payload["slots"][0]["face_arc_transition"],
+            "arc_out_of_previous_face_cut",
+        )
+        self.assertEqual(
+            camera_payload["camera_batch_contract"][
+                "face_arc_transition_count"
+            ],
+            1,
+        )
+        self.assertTrue(camera_payload["slots"][0]["long_arc_emphasis"])
+        self.assertEqual(
+            camera_payload["slots"][0]["long_arc_duration_fraction"],
+            "70-90%",
+        )
+        self.assertEqual(
+            camera_payload["camera_batch_contract"]["camera_profile_id"],
+            "anime_mv",
+        )
         self.assertEqual(
             camera_payload["subject_instance_policy"],
             "single_subject_exactly_one_visible_instance",
@@ -940,6 +1071,14 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         )
         self.assertEqual(result.content.actions[0][2], FACE_PERFORMANCE_CUT_ACTION)
         self.assertEqual(result.content.cameras[0][2], FACE_PERFORMANCE_CUT_CAMERA)
+        self.assertIn(
+            "without changing their count, compactness, shape, placement, or color",
+            FACE_PERFORMANCE_CUT_ACTION,
+        )
+        self.assertIn(
+            "conventional long, curved, arched, or line-shaped eyebrows",
+            FACE_PERFORMANCE_CUT_ACTION,
+        )
         visual_payload = backend.calls[0][1]
         expected_roster = [
             {"concept_id": "サブジェクト1", "subject_ref": "<Subject 1>"}
@@ -980,6 +1119,53 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertEqual([task for task, _ in backend.calls].count("actions"), 2)
         self.assertEqual(result.content.retried_scenes, (1,))
 
+    def test_missing_advisory_direction_does_not_block_completed_emd(self) -> None:
+        class MissingDirectionBackend(FakePlannerBackend):
+            def complete_planner(
+                self,
+                *,
+                task,
+                system_prompt,
+                payload,
+                config,
+                interrupt_callback=None,
+            ):
+                if task == "song-direction":
+                    value = json.loads(payload)
+                    self.calls.append((task, value))
+                    return ""
+                return super().complete_planner(
+                    task=task,
+                    system_prompt=system_prompt,
+                    payload=payload,
+                    config=config,
+                    interrupt_callback=interrupt_callback,
+                )
+
+        backend = MissingDirectionBackend()
+        result = plan_timeline(
+            backend,
+            template_emd=TEMPLATE,
+            concept_emd=CONCEPT,
+            direction=None,
+            lip_sync_mode="off",
+            lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1,
+            scenes_per_batch=3,
+            system_prompts=prompts(),
+            runtime_config=runtime(),
+        )
+
+        self.assertTrue(result.complete)
+        self.assertFalse(result.missing)
+        self.assertEqual(result.content.song_direction, "")
+        self.assertTrue(result.content.song_direction_fallback)
+        self.assertEqual(
+            [task for task, _ in backend.calls].count("song-direction"),
+            3,
+        )
+        self.assertGreaterEqual(result.content.issue_count, 1)
+
     def test_missing_camera_records_are_retried_as_is_one_slot_at_a_time(self) -> None:
         class IsolatedCameraRetryBackend(FakePlannerBackend):
             def complete_planner(
@@ -1006,6 +1192,12 @@ class TimelinePlannerCoreTests(unittest.TestCase):
                     return ""
                 if retry == "missing_slots_only":
                     return "protocol wrapper failed"
+                if retry == "camera_quality_budget":
+                    slot = value["slots"][0]["slot"]
+                    return (
+                        f"CAMERA\t{slot}\tArc Shot with large amplitude "
+                        "at fast speed で顔から全身と鳥居を開示する。"
+                    )
                 self.assert_single_slot(value)
                 slot = value["slots"][0]["slot"]
                 return f"Static Shot 顔の演技を保持する。slot{slot}"
@@ -1033,11 +1225,11 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         camera_calls = [
             payload for task, payload in backend.calls if task == "cameras"
         ]
-        self.assertEqual(len(camera_calls), 3)
+        self.assertEqual(len(camera_calls), 4)
         self.assertEqual(camera_calls[1]["retry"], "missing_slots_only")
         self.assertEqual(
             [payload["retry"] for payload in camera_calls[2:]],
-            ["isolated_missing_slot"],
+            ["isolated_missing_slot", "camera_quality_budget"],
         )
         self.assertEqual(result.content.protocol_recovered_count, 1)
 
@@ -1110,6 +1302,59 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertEqual(
             _camera_editorial_role(continued_new_section, lip_sync_active=True),
             "continuity_bridge",
+        )
+
+    def test_face_insert_is_paired_with_one_same_scene_arc_transition(self) -> None:
+        self.assertEqual(
+            _face_arc_transitions(
+                [(1, 1), (1, 2), (1, 3), (2, 1)], {(1, 1)}
+            ),
+            {(1, 2): "arc_out_of_previous_face_cut"},
+        )
+        self.assertEqual(
+            _face_arc_transitions(
+                [(1, 1), (1, 2), (1, 3), (2, 1)], {(1, 3)}
+            ),
+            {(1, 2): "arc_into_next_face_cut"},
+        )
+
+    def test_anime_mv_selects_up_to_two_sparse_long_arc_slots(self) -> None:
+        entities = [
+            type("Entity", (), {
+                "key": (1, index + 1),
+                "value": {
+                    "editorial_role": "spatial_reveal_or_interaction_coverage",
+                    "face_arc_transition": "",
+                    "shot_duration_ms": (1000, 5000, 4000, 3000, 2000)[index],
+                },
+            })()
+            for index in range(5)
+        ]
+        selected = _anime_mv_long_arc_keys(entities)
+        self.assertEqual(selected, {(1, 2), (1, 4)})
+        selected_indices = sorted(key[1] for key in selected)
+        self.assertGreater(selected_indices[1] - selected_indices[0], 1)
+
+    def test_anime_mv_face_zoom_avoids_long_arc_and_prefers_expression(self) -> None:
+        entities = [
+            type("Entity", (), {
+                "key": (1, 1),
+                "value": {
+                    "editorial_role": "upper_body_performance_coverage",
+                    "shot_duration_ms": 5000,
+                },
+            })(),
+            type("Entity", (), {
+                "key": (1, 2),
+                "value": {
+                    "editorial_role": "expressive_result_coverage",
+                    "shot_duration_ms": 3000,
+                },
+            })(),
+        ]
+        self.assertEqual(
+            _anime_mv_face_zoom_key(entities, {(1, 1)}),
+            (1, 2),
         )
 
     def test_face_insert_moves_to_shot_that_contains_new_section_lyric(self) -> None:
@@ -1248,6 +1493,67 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertIn(
             "主人公は鳥居へ身体を返し、肩越しに見据えて袖を払う。",
             [text for _scene, _shot, text in result.content.actions],
+        )
+
+    def test_unrequested_running_is_retried_without_rewriting(self) -> None:
+        class RunningBackend(FakePlannerBackend):
+            def complete_planner(
+                self,
+                *,
+                task,
+                system_prompt,
+                payload,
+                config,
+                interrupt_callback=None,
+            ):
+                value = json.loads(payload)
+                if task != "actions":
+                    return super().complete_planner(
+                        task=task,
+                        system_prompt=system_prompt,
+                        payload=payload,
+                        config=config,
+                        interrupt_callback=interrupt_callback,
+                    )
+                self.calls.append((task, value))
+                if value.get("retry") == "action_quality_budget":
+                    return (
+                        "ACTION\t1\t主人公は上体を反転し、肩越しに鳥居を見据えて静止する。"
+                    )
+                return "\n".join(
+                    (
+                        f"ACTION\t{item['slot']}\t主人公は参道を全力で走り抜ける。"
+                        if index == 0
+                        else f"ACTION\t{item['slot']}\t主人公は鳥居へ向き直る。{index}"
+                    )
+                    for index, item in enumerate(value["slots"])
+                )
+
+        backend = RunningBackend()
+        result = plan_timeline(
+            backend,
+            template_emd=TEMPLATE,
+            concept_emd=CONCEPT,
+            direction=None,
+            lip_sync_mode="off",
+            lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1,
+            scenes_per_batch=3,
+            system_prompts=prompts(),
+            runtime_config=runtime(),
+        )
+        self.assertTrue(result.complete)
+        action_calls = [
+            payload for task, payload in backend.calls if task == "actions"
+        ]
+        self.assertEqual(action_calls[1]["retry"], "action_quality_budget")
+        self.assertEqual(
+            action_calls[1]["slots"][0]["action_quality_violations"],
+            ["unrequested_running"],
+        )
+        self.assertNotIn(
+            "走り抜ける",
+            " ".join(text for _scene, _shot, text in result.content.actions),
         )
 
     def test_repeated_action_is_retried_as_is_for_only_affected_scene(self) -> None:

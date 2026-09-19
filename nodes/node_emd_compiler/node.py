@@ -45,7 +45,7 @@ from ..common import gguf_model_choices, resolve_comfy_gguf_model
 TRANSLATION_MODES = ("ja_to_en", "already_english")
 CHAT_FORMATS = ("auto", "qwen", "gemma")
 CACHE_MODES = ("reuse", "refresh", "disabled")
-_COMPILER_CACHE_VERSION = "mvd-ref2va-compiler-cache-v8"
+_COMPILER_CACHE_VERSION = "mvd-ref2va-compiler-cache-v14"
 _SYSTEM_PROMPT_PATH = (
     Path(__file__).resolve().parents[2]
     / "prompts"
@@ -117,7 +117,7 @@ class MVDirectorEMDCompiler:
                 "repetition_penalty": ("FLOAT", {"default": 1.05, "min": 0.5, "max": 2.0, "step": 0.05}),
                 "gpu_layers": ("INT", {"default": -1, "min": -1, "max": 1000}),
                 "n_batch": ("INT", {"default": 256, "min": 32, "max": 4096, "step": 32}),
-                "n_ctx": ("INT", {"default": 32768, "min": 0, "max": 131072, "step": 1024}),
+                "n_ctx": ("INT", {"default": 16384, "min": 0, "max": 131072, "step": 1024}),
                 "flash_attn": ("BOOLEAN", {"default": True}),
                 "kv_cache_type": (["q8_0", "q4_0", "f16"], {"default": "q8_0"}),
                 "op_offload": ("BOOLEAN", {"default": True}),
@@ -298,6 +298,9 @@ class MVDirectorEMDCompiler:
                     f"references={len(result.required_references.references)}; "
                     f"translation_batches={translator.batch_count}; "
                     f"estimated_token_batches={translator.estimated_token_batches}; "
+                    f"protocol_recovered={translator.protocol_recovered_count}; "
+                    f"segmented_recovered={translator.segmented_recovered_count}; "
+                    f"cleanup_recovered={translator.cleanup_recovered_count}; "
                     f"cache={cache_status(None)}"
                 )
                 return plan_json, result.required_references, status

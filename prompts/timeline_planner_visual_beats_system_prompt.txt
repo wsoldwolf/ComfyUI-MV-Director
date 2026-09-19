@@ -24,6 +24,10 @@ direction field. Reconcile time-lighting with style instead of treating it as
 permission to change a Subject material: for example, moonlight may illuminate
 a non-emissive body feature by ordinary reflected light, but the feature itself
 must not shine, glow, radiate, bloom, or become a light source.
+The stage environment and time_lighting replace every background and lighting
+condition visible in an identity reference. Never reintroduce a blank or white
+studio field, daylight, backdrop, or panel-specific setting from the reference.
+Keep the directed environment continuous behind and around the Subject.
 Supplied slots are in timeline order; make each beat advance
 the physical state established by the preceding supplied slot instead of
 repeating the same gesture or object interaction. Prefer the earliest complete depictable predicate in the
@@ -48,6 +52,21 @@ the same main verb, contact target, and visible result found in
 recent_visual_beat_history. timeline_position and has_resolved_lyrics are
 read-only planning context.
 
+Do not invent running, sprinting, dashing, or fleeing unless the original lyric
+or author body explicitly requires it. This restriction is especially strict
+for an instrumental Scene: create momentum through a body turn, level change,
+decisive gesture, environmental interaction, reveal, held pose, or camera-ready
+spatial relationship instead of making the Subject run.
+
+Treat recent_visual_beat_history as a twelve-Scene negative motif ledger, not
+merely a wording blacklist. Do not return to the same combination of acting
+verb, contact target, place element, and visible result after a few intervening
+Scenes. No incidental object such as a leaf, flower, stone, lantern, flame, or
+patch of light may dominate more than two consecutive Scenes. At a section
+change, deliberately select a different available spatial layer or established
+environment element and a different kind of Subject response. A recurring
+motif may return only with a new physical state and narrative function.
+
 Translate lyric meaning into a visible event rather than defaulting to generic
 walking, standing, spreading the arms, raising a hand, or looking forward. For
 each Scene choose a lyric-specific combination of place state, concrete object
@@ -60,6 +79,15 @@ motivate sparse foxfire or spirit particles when Direction permits it. An
 environmental effect must alter the blocking or receive a reaction; decorative
 particles alone are not a beat. Reserve a recurring motif for selected section
 turns and change its state each time instead of placing it in every Scene.
+
+Treat figurative lyric language about a wound, scar, broken heart, pain, blood,
+or bodily damage as emotional meaning, not as visible anatomy. Unless the
+author body or Subject definition explicitly establishes that exact physical
+condition, never create a cut, scar, bruise, blood, bandage, lesion, stain,
+tattoo-like mark, torn skin, or damaged clothing. Do not name a figurative
+wound as a contact target. Externalize it through intact-body performance,
+gaze, breath, guarded posture, memory-related blocking, or an established
+environmental motif while keeping visible skin and clothing clean and intact.
 
 The connected reference is an identity sheet, not an opening pose or blocking
 instruction. Never infer or reuse its stance, hand placement, gaze, framing,

@@ -123,7 +123,7 @@ class _LlamaPlannerBackend:
         self._expected_primary_calls = {
             "visual-beats": scene_batches,
             "song-direction": 1,
-            "shot-layout": 1,
+            "shot-layout": scene_batches,
             "actions": scene_batches,
             "cameras": scene_batches,
         }
@@ -463,6 +463,12 @@ class MVDirectorTimelinePlanner:
                     lip_sync_target=lip_sync_target,
                     lip_sync_audio_slot=lip_sync_audio_slot,
                 )
+                if content.song_direction_fallback:
+                    _LOGGER.warning(
+                        "[MV Director - Timeline Planner] advisory DIRECTION "
+                        "was missing after bounded retries; continued with "
+                        "per-scene visual beats and Direction Artifact"
+                    )
                 planned_shot_count = sum(
                     len(starts) for _, starts in content.shot_layouts
                 )
@@ -496,6 +502,8 @@ class MVDirectorTimelinePlanner:
                     f"layout_fallback_scenes={fallback_label}; "
                     f"layout_mix_retry={'yes' if content.layout_mix_retry else 'no'}; "
                     f"protocol_recovered={content.protocol_recovered_count}; "
+                    "song_direction_fallback="
+                    f"{'yes' if content.song_direction_fallback else 'no'}; "
                     "repetition_warnings="
                     f"{content.repetition_warning_count}"
                     f"(beat={content.beat_repetition_warning_count},"

@@ -55,7 +55,12 @@ it gives a distinct visual purpose: preparing an interaction, revealing a
 contact or object detail, showing an expression or transient accent, or
 presenting the visible result. An internal Shot boundary is a timed prompt
 change inside one H3 generation, not a guaranteed hard edit. Prefer a held
-composition over an unmotivated boundary. Use the visual beat and original
+composition over an unmotivated boundary. Normally select two or three Shots
+for a full-length Scene. Select four only when the Scene is at least eight
+seconds long, the lyrics and visual beat contain enough distinct physical
+phases for four different visual purposes, and every selected interval remains
+at least two seconds long. Do not preserve every existing candidate merely
+because it is available. A short accent may use one Shot. Use the visual beat and original
 lyric grouping as creative context, but never output prose, times, camera
 directions, actions, JSON, Markdown, headings, or commentary. Never print the
 five characters <TAB>.

@@ -4,7 +4,13 @@
 
 EMDは **Easy MarkDown** の略です。Extended Markdownではありません。
 
-![画像、演出、歌詞と音声からEMDを計画・コンパイルし、Context LoopとH3 Ref2VAへ渡す最小パイプライン](docs/assets/minimal-pipeline.svg)
+![人物参照と背景参照を分離し、背景を計画時の環境観察と生成時の専用Pictureへ渡す最小パイプライン](docs/assets/minimal-pipeline.png)
+
+## 人物参照と背景参照を分ける理由
+
+人物の立ち絵と背景を一枚又は一つのPicture参照へ同居させると、H3の参照条件が人物identity、顔、髪、衣装及びposeへ強く使われ、背景の建築、植生、地形、材質及び空間構成が希薄化又は消失しやすくなります。本プロジェクトは人物を`<Picture 1>`、背景を環境専用の`<Picture 2>`として別々に与える構成を推奨します。背景の条件信号を人物identityから独立させることで、単一の人物参照だけへ背景も担わせる場合より背景再現率を高めます。ただし、参照画像の画素単位の複製を保証するものではありません。
+
+計画時は背景画像を専用のImage to Subject EMDで`scene_only / location / picture_reference_mode=none`として観察し、`observations_json`だけをDirection Enhancerへ渡します。動画生成時は同じ背景画像を`H3 Background Reference`へ渡し、コンパイル済みPlanの全ShotとH3の`ref_images.ref_image_1`へ`<Picture 2>`として束縛します。人物参照と背景参照は役割を混ぜず、文章で指定した環境、時刻及び照明は背景画像の撮影条件より優先します。
 
 ## はじめに
 
@@ -20,7 +26,7 @@ EMDは **Easy MarkDown** の略です。Extended Markdownではありません�
 | 場所 | 内容 |
 |---|---|
 | [`docs/`](docs/README.md) | 利用者向け・開発者向け文書の総合索引 |
-| [`docs/nodes/`](docs/nodes/README.md) | 公開11ノードの操作マニュアル |
+| [`docs/nodes/`](docs/nodes/README.md) | 公開12ノードの操作マニュアル |
 | [`docs/spec/`](docs/spec/README.md) | EMD、protocol、最小コアの規範仕様 |
 | [`docs/implementation/`](docs/implementation/README.md) | 内部構造、公開surface、実装順序 |
 | [`docs/research/`](docs/research/README.md) | Context Loop調査と仕様監査の記録 |
@@ -39,6 +45,7 @@ EMDは **Easy MarkDown** の略です。Extended Markdownではありません�
 | Core | EMD Compiler (Ref2VA) | [EMDをPlan JSONへ変換する](docs/nodes/emd-compiler.md) |
 | Input | Lyric Segmentation | [歌詞、SRT、timelineを整列する](docs/nodes/lyric-segmentation.md) |
 | Audio | Audio Pad Pair | [full mixとvocalをPCM無音で整える](docs/nodes/audio-pad-pair.md) |
+| Video | H3 Background Reference | [人物参照から分離した背景画像を環境専用Pictureとして動画生成時に束縛する](docs/nodes/h3-background-reference.md) |
 | Utilities | H3 Timing Profile | [H3時間契約を共有する](docs/nodes/h3-timing-profile.md) |
 | Utilities | 32-bit Seed | [再現可能なseedを分岐する](docs/nodes/seed32.md) |
 | Utilities | String Combo | [有限文字列リストを選ぶ](docs/nodes/string-combo.md) |

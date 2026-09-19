@@ -8,6 +8,22 @@ editorial_role is a mandatory coverage assignment for the current Shot. Obey the
 - upper_body_performance_coverage: prioritize face, shoulders, arms and hands together so the assigned gesture reads; do not frame feet or footwear as the visual subject.
 - spatial_reveal_or_interaction_coverage: reveal the Subject's relationship to the relevant place or contact target with readable depth and parallax.
 - expressive_result_coverage: frame the changed final expression and silhouette rather than returning to a generic walking view.
+face_arc_transition is a structural editorial bridge to a renderer-owned face
+insert. When it is arc_into_next_face_cut, this CAMERA record must begin with
+Arc Shot and travel on a 60-to-120-degree path for 70-to-90 percent of the Shot
+from readable body/environment coverage toward a frontal or three-quarter
+head-and-shoulders singing composition that hands off cleanly to the next
+face Zoom In. Do not arrive early and hold. When it is
+arc_out_of_previous_face_cut, it must begin with Arc Shot at the frontal or
+three-quarter face scale established by the preceding insert, then increase
+the arc radius over 70-to-90 percent of the Shot on a 60-to-120-degree path to
+reveal upper body, full body, or the relevant environment. Do not arrive early
+and hold.
+Keep both eyes and the complete singing mouth visible while the face is close.
+Use foreground/background parallax and one continuous camera image; do not
+simulate the transition with split views, zoom, a second performer, or an
+internal cut. This required relation takes priority over the ordinary Arc
+cadence but never changes locked_action.
 Read scene_continuation literally. For the first Shot of a CUT Scene, establish
 a visibly new edit with a changed framing, scale, viewpoint or orientation. If
 the supplied lyric concerns memory, a name, a question, doubt, fear,
@@ -29,12 +45,37 @@ supplied slots must contain at least one frontal or three-quarter medium,
 medium close-up, or head-and-shoulders Shot that shows both eyes and the
 complete speaking mouth. Use another Shot for any genuinely lyric-motivated
 detail.
+long_arc_emphasis is a per-slot hard contract used by anime_mv. Every record
+where it is true must begin with Arc Shot, traverse a clear 60-to-120-degree
+path continuously for long_arc_duration_fraction of that existing Shot, and
+show strong foreground/midground/background parallax with distinct start and
+end viewpoints. Do not shorten it into a quick orbit followed by a hold, turn
+it into a stationary pan or zoom, insert a cut, or add another performer. The
+marked records already account for camera_batch_contract.long_arc_emphasis_count
+and arc_shot_maximum. Prefer a decisive path at fast speed whose framing
+evolves substantially while locked_action remains unchanged.
+face_zoom_emphasis is the anime_mv face approach for a batch that has no
+renderer-owned face insert. Every record where it is true must begin with
+Zoom In with large amplitude at fast speed. Start at a frontal or
+three-quarter medium or head-and-shoulders composition and use 70-to-90
+percent of the Shot to reach a tight readable singing face. Keep both eyes,
+both eyebrows, the nose, complete mouth, and enough facial contour visible
+throughout. Keep any hand essential to locked_action readable near the lower
+frame edge until its gesture completes; never replace the locked action with
+the zoom. Do not end at an eye-only or mouth-only crop.
 For a spatial or narrative reset, use a wide or medium establishing view. For
 the first Shot of a CONTINUE Scene, preserve the preceding image state, screen
 direction and camera path instead of resetting the composition. Do not write
 the words cut or continuation into the camera record; the Scene heading owns
 that boundary mode.
 Use the shared camera direction, visual beat, song direction and recent_camera_history as context. Give every existing Shot one distinct visual purpose. Vary shot scale, front/profile/rear-three-quarter/over-shoulder viewpoint, height, distance, movement family and direction. A static or held composition is valid and preferable to unmotivated movement. Use an arc only when revealing another side of the Subject or a spatial relationship serves the locked action; use a close-up only for an expression, gaze or transient accent that matters in this Shot. Never impose either choice on the whole Scene. Avoid the same scale, angle or movement family in consecutive Shots and across the supplied recent history.
+Before choosing shot scale, verify that every essential body part and contact
+target required by locked_action remains visible. A face close-up is permitted
+only when the locked action can be performed completely by the face, gaze, and
+head. If hands, arms, torso rotation, locomotion, or object contact carry the
+action, use head-and-shoulders, upper-body, medium, full, or spatial coverage
+that actually shows them. Never pair an extreme face crop with an invisible
+hand, foot, walking, or environmental-contact action.
 camera_batch_contract is a hard batch budget. Do not exceed
 arc_shot_maximum, tracking_shot_maximum,
 same_other_motion_type_maximum, slow_speed_maximum, or
@@ -52,11 +93,46 @@ every entry in forbidden_recent_outputs as a negative example: do not
 paraphrase its movement family, scale, viewpoint, path, or visual purpose.
 If camera_quality_retry is present, replace rejected_output with a genuinely
 different Camera choice that resolves every item in camera_quality_violations.
+required_face_arc_transition and required_long_arc_emphasis both require the
+replacement to begin with Arc Shot and satisfy the corresponding structural
+path and duration contract.
+required_face_zoom_emphasis requires the replacement to begin with Zoom In
+and satisfy the readable-face contract.
 Never use a Motion Type listed in disallowed_motion_types. A speed-word change,
 left/right swap, or paraphrase of the same foot-level composition is invalid.
 Every physical output line must still begin CAMERA, one literal TAB, and the supplied numeric slot. In the third TEXT field, immediately after the second literal TAB, begin with exactly one literal MiniMax H3 Motion Type: Zoom In, Zoom Out, Push In, Pull Out, Pan Left, Pan Right, Truck Left, Truck Right, Tilt Up, Tilt Down, Pedestal Up, Pedestal Down, Arc Shot, Tracking Shot, Static Shot, Shake Slightly, Shake Strongly, POV, Roll Clockwise, or Roll Counterclockwise. Never start the physical line directly with the Motion Type and never omit CAMERA or the slot. When useful, immediately append exactly one amplitude phrase, with small amplitude or with large amplitude, and exactly one speed phrase, at slow speed or at fast speed. Keep these English phrases unchanged, then write the concise Japanese framing, path, and purpose. Do not replace them with vague prose such as follow from the side, move the camera slightly, raise the camera, or capture the movement.
-arc_required is a batch-level camera contract, not a suggestion. When it is true and at least one locked action includes locomotion, a body turn, physical contact, or a spatial reveal, exactly one eligible CAMERA record whose editorial_role is not face_performance_cut must begin with Arc Shot. Give that Arc Shot a clear 30-to-90-degree path, distinct start and end viewpoints, and readable foreground/background parallax; it is not a stationary Pan Left or Pan Right and is not Zoom In or Zoom Out. Prefer locomotion or a body turn when several Shots qualify. Only when every supplied non-face-cut Shot lacks all four eligible actions may the batch omit Arc Shot. Never place Arc Shot in consecutive Shots. When arc_required is false, use Arc Shot only for an unusually strong spatial reason and never for face_performance_cut. A separate locomotion Shot should begin with Tracking Shot so the camera follows the moving Subject through space. Do not turn a stable costume detail into the Shot's subject unless the original lyric or author body explicitly selects it.
+arc_required is a batch-level camera contract, not a suggestion. First assign
+Arc Shot to every record carrying face_arc_transition; these records consume
+camera_batch_contract.face_arc_transition_count Arc entries. When arc_required
+is true and no face_arc_transition is supplied, exactly one eligible CAMERA
+record whose editorial_role is not face_performance_cut must begin with Arc
+Shot if at least one locked action includes locomotion, a body turn, physical
+contact, or a spatial reveal. Give that Arc Shot a clear 30-to-90-degree path,
+distinct start and end viewpoints, and readable foreground/background
+parallax; it is not a stationary Pan Left or Pan Right and is not Zoom In or
+Zoom Out. Prefer locomotion or a body turn when several Shots qualify. Only
+when every supplied non-face-cut Shot lacks all four eligible actions may the
+batch omit the ordinary Arc Shot. Never place unrelated Arc Shots
+consecutively. When arc_required is false, do not add an Arc beyond required
+face transitions and records carrying long_arc_emphasis without an unusually
+strong spatial reason. A separate
+locomotion Shot should begin with Tracking Shot so the camera follows the
+moving Subject through space. Do not turn a stable costume detail into the
+Shot's subject unless the original lyric or author body explicitly selects it.
 Obey subject_instance_policy. When it is single_subject_exactly_one_visible_instance, every CAMERA record must positively frame exactly one performer, the primary Subject, as the sole person in the image. Never reproduce a reference-sheet panel layout, side-by-side alternate view, clone, twin, mirror/reflection duplicate, background lookalike or second physical instance. With multiple defined Subjects, show only the Subjects required by the locked action and never duplicate any of them.
+Every CAMERA record describes one unified continuous camera image that fills the whole frame. Camera angle, scale, and viewpoint changes happen over time through the named camera movement or at a scene cut, never as simultaneous spatial views. Never request a montage, diptych, split screen, picture-in-picture, inset, internal border, divider, or side-by-side alternate angle, even when the identity reference contains those layouts.
+Stage every Shot as a newly photographed composition governed by its locked action and editorial role. The first output frame must already use the Shot-specific scale, viewpoint, subject placement, camera height, distance, and depth arrangement. Never reconstruct, hold, paste, display, or transition from a reference framing or the reference image itself as a still, plate, poster, inset, background, or opening composition. Do not restate or modify environment or time-lighting in CAMERA text; never copy white background, natural light, daylight, clear sky, or another reference-capture condition into a CAMERA record.
 Do not make a body feature into a lighting effect or camera purpose. Hair, fur, animal ears, ear interiors, tails, skin and clothing must remain non-emissive unless the author body explicitly requests emission. Never describe them as shining, glowing, luminous, blooming or radiating light. Moonlight, backlight and practical lamps may give ordinary controlled rim or reflected light, but must not create a bright hotspot, translucent lamp effect, halo or clipped exposure inside the ears. Frame the performance rather than celebrating illumination on an ear, eye, hair or tail.
 Use camera terms literally: pan rotates left or right, tilt rotates up or down, push/dolly moves forward, pull/dolly moves backward, truck moves laterally, pedestal moves vertically, tracking follows displacement, and arc moves around the Subject. Never write forward/backward pan or upward/downward track. Choose at most one principal movement family per Shot. Describe framing, viewpoint, movement and visual purpose only; do not restate the locked character action as camera prose.
+The prose after the Motion Type must describe the same physical camera
+operation. Static Shot keeps camera position, orientation, and focal length
+fixed and therefore takes no speed phrase and never approaches, retreats,
+translates, rotates, zooms, or follows. Zoom In/Zoom Out change focal length
+while the camera body stays fixed. Push In/Pull Out move the camera forward or
+backward without being called zoom. Pan Left/Pan Right rotate horizontally
+from a fixed position; Truck Left/Truck Right translate laterally. Tilt Up/Tilt
+Down rotate vertically from a fixed position; Pedestal Up/Pedestal Down move
+the complete camera vertically. Tracking Shot follows a moving Subject; Arc
+Shot travels around the Subject. Perform this label-versus-prose consistency
+check before outputting each record.
 Never print the five characters <TAB>. Start every record on a new physical line.

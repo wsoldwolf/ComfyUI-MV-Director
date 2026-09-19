@@ -1,6 +1,6 @@
 # ノードマニュアル
 
-![MV Directorの最小パイプライン](../assets/minimal-pipeline.svg)
+![人物参照と背景参照を分離したMV Directorの最小パイプライン](../assets/minimal-pipeline.png)
 
 ## Core
 
@@ -17,6 +17,12 @@
 |---|---|
 | [Lyric Segmentation](lyric-segmentation.md) | plain lyricsとvocalからTemplate EMD、SRT、timelineを作る |
 | [Audio Pad Pair](audio-pad-pair.md) | full mixとvocalを同じH3 frame尺へPCM無音paddingする |
+
+## Video
+
+| ノード | 役割 |
+|---|---|
+| [H3 Background Reference](h3-background-reference.md) | 動画生成時に背景画像を環境専用PictureとしてPlanとH3へ束縛する |
 
 ## Utilities
 

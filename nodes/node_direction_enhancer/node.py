@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import logging
 import threading
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -24,7 +26,7 @@ try:
         LlamaRuntimeConfig,
         SuccessCache,
         build_cache_key,
-        build_context_budget,
+        fit_context_budget,
     )
 except ImportError:  # Standalone repository tests.
     from core.artifacts import DirectionArtifact, sha256_text
@@ -44,13 +46,16 @@ except ImportError:  # Standalone repository tests.
         LlamaRuntimeConfig,
         SuccessCache,
         build_cache_key,
-        build_context_budget,
+        fit_context_budget,
     )
 
 from ..common import gguf_model_choices, resolve_comfy_gguf_model
 
 
 CACHE_MODES = ("reuse", "refresh", "disabled")
+LOGGER = logging.getLogger("mv_director.nodes")
+_DIRECTION_MAX_OUTPUT_TOKENS = 1024
+_DIRECTION_MIN_OUTPUT_TOKENS = 128
 _SYSTEM_PROMPT_PATH = (
     Path(__file__).resolve().parents[2]
     / "prompts"
@@ -101,18 +106,38 @@ class _LlamaDirectionBackend:
         serialized = f"{system_prompt}\n{model_payload}"
         count = self.lifecycle.count_serialized_prompt(serialized)
         effective = self.lifecycle.effective_n_ctx or config.n_ctx
-        build_context_budget(
+        budget = fit_context_budget(
             count.count,
             config.max_tokens,
             effective,
+            minimum_output_tokens=min(
+                config.max_tokens, _DIRECTION_MIN_OUTPUT_TOKENS
+            ),
+            maximum_output_tokens=_DIRECTION_MAX_OUTPUT_TOKENS,
             estimated=count.estimated,
         )
+        call_config = config
+        if budget.reserved_output_tokens != config.max_tokens:
+            call_config = replace(
+                config, max_tokens=budget.reserved_output_tokens
+            )
+            LOGGER.info(
+                "[MV Director - Direction Enhancer] adjusted output budget; "
+                "prompt_tokens=%s%d; requested_max_tokens=%d; "
+                "effective_max_tokens=%d; safety_margin=%d; n_ctx=%d",
+                "~" if count.estimated else "",
+                count.count,
+                config.max_tokens,
+                budget.reserved_output_tokens,
+                budget.safety_margin,
+                effective,
+            )
         return self.lifecycle.complete_chat(
             [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": model_payload},
             ],
-            config,
+            call_config,
             interrupt_callback=interrupt_callback,
         )
 

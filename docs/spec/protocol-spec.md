@@ -62,6 +62,8 @@ V1は後方互換を要求しない。未知schema、旧`CL...` schema又はvers
 
 六方向は空文字列を含まない文字列配列で、順序を保持する。`environment_direction`は物理的な場所、構造、地形及び接触可能な物体、`time_lighting_direction`は完成映像の時刻・照明を表す。明示的なユーザー指定は参照画像で観測した昼夜又は照明より上位である。`retention_policy`は`profile` / `compiler_default` / `passthrough`のいずれかとする。`retention_lines`は`passthrough`時だけ非空で、各要素は先頭の`* `を除いたEMD保持record `` `サブジェクトN`: `fully_preserved|partially_preserved` 説明``である。三profile IDはPlannerがテキスト一致推測をせず機械policyを適用するために保存する。provenance recordは次の固定shapeを使う。
 
+標準workflowでは人物identityのConcept EMDと背景環境の`MVD_OBSERVATIONS_V1`を別入力としてDirection Enhancerへ渡す。背景観察を人物Subjectへ結合しない。動画生成時も人物`<Picture 1>`と環境`<Picture 2>`を別H3参照slotへ束縛する。同一Pictureへ人物と背景の保持責務を集中させると人物identityが参照条件を占有し、環境特徴が希薄化又は欠落しやすいためである。環境専用Pictureは背景再現率を改善するための証拠であり、構図、時刻、照明又は画素一致のauthorityではない。
+
 ```json
 {
   "record_id": "src_0001",
@@ -194,6 +196,8 @@ Direction Enhancerだけは、Qwen3-4Bで実測した二つの表記揺れをpar
 
 Plannerはstrict parserの後に全task共通のwrapper recoveryを持つ。`TYPE slot: TEXT`、`slot N - TEXT`及び番号付きlistのようにslotが一意に明示された行は、typeとslot wrapperだけを正規recordへ戻す。複数の未解決slotに対して、fenceと空行を除く非空物理行数が完全一致する場合だけ、request side table順へ位置対応させる。Markdown bullet以外の`TEXT`は変更しない。単一の無番号行、余分な説明行、行数不一致又は重複slotは推測しない。機械復元数はPlanner artifactの`protocol_recovered_count`とnode statusの`protocol_recovered`へ残す。共通parser、未知slot拒否及びcreative textのAS IS規則は変更しない。
 
+Compiler翻訳では360文字を超え、安全な句点・読点境界を持つunitを初回推論前に120文字以下を目標として分割する。通常batchの欠落、日本語echo又は競合重複slotは一件だけで隔離再試行し、隔離後も日本語echoとなる長文には同じ分割回復を適用する。ほぼ完成した英文に少数の日本語だけが残る場合は、英文候補全体を再翻訳せず、連続する残存日本語spanだけを出現順に一意化して同じprotocolへ渡し、英訳を元のspan位置へ機械置換する。同じspanの反復は一度だけ翻訳し、既存英文は変更しない。各chunk又はspanを同じprotocolで翻訳し、全件成功後だけ元の順序又は位置で再結合する。原文内容、slot順及びprotected spanは変更しない。短文、境界なし又はspan cleanup・chunk失敗は停止する。回復過程はtrigger及びspan数を含めINFOへ、成功件数は`segmented_recovered`及び`cleanup_recovered`へ残す。
+
 ### 9.1 parse結果
 
 ```json
@@ -217,19 +221,19 @@ issue reasonは`field_count`、`unknown_type`、`invalid_slot`、`unknown_slot`�
 |---|---|---|
 | Enhancer | 未固定`STYLE`、任意`ENVIRONMENT`、`TIME_LIGHTING`、`OTHER` | 要求typeのslot 1。locked STYLE及び選択Motion/Camera profileはLLMを経由せずPythonが原文採用 |
 | visual-beats | `BEAT` | side tableの全Scene slot |
-| song-direction | `DIRECTION` | slot 1 |
+| song-direction | `DIRECTION` | slot 1。最終EMDへ直接配置しない補助文脈であり、限定再試行後も欠落する場合は警告を記録して空文脈へ縮退する |
 | shot-layout | `LAYOUT` | side tableの全Scene slot |
 | actions | `ACTION` | side tableの全slot |
 | cameras | `CAMERA` | side tableの全slot |
 | translation-ja-en | `TRANSLATION` | batch内の全slot |
 
-Visual BeatはSceneごとの原文歌詞、opening/middle/closing位置、歌詞解決有無、Subjectの`concept_id`と`<Subject N>`だけからなるroster及び直近4件の採用beatから具体名詞、物理動詞、接触対象、可視結果及び感情変化を一行へ固定する。Concept EMDの外見・身体・衣装・材質detailはVisual Beat及びAction requestへ含めず、最終EMDのSubject定義として保持する。`LAYOUT`のTEXTは`CUT,B0,...`又は`CONTINUE,B0,...`とし、先頭Sceneは`CUT`固定、後続は新しい編集構図なら`CUT`、直前の画像状態とカメラ経路を引き継ぐ時だけ`CONTINUE`とする。各Scene slotへ直前Sceneの歌詞とvisual beat、`first_section_appearance`、`new_sections`及び`section_entry_shot_index`を渡し、同じ物理動作又は接触の次段階なら`CONTINUE`、実行可能な範囲で新section初出Sceneを`CUT`とする。4 Scene以上でCUT/CONTINUEの最低数、同一mode最大3連続又はmode遷移数上限を満たさない場合は、隣接関係を再評価する境界mix requestを一度追加する。完全なCUT/CONTINUE交互列も不合格である。再応答も違反する時はmode列だけを最小変更で構造修復し、自然文は変更しない。残りはPythonが提示した境界IDだけを時系列順に持つ。LLMは時刻を生成しない。Pythonは候補同士も1500 ms以上離れた相互互換集合を作り、選択IDを絶対msへ機械変換し、mode変更後のraw H3 lengthとPlan時刻を累積格子へ再配分する。1 Sceneあたり最大4 Shot、複数Shot時は各Shot 1500 ms以上とする。Scene全体が1500 ms未満の場合は`B0`だけの一Shotを許す。候補数超過、区切り差、重複、順序違反又は未知候補を含む応答は、既知IDの抽出、時系列順整列、重複除去及び最大4 Shotへの切り詰めだけで機械修復し、statusへScene番号を残す。境界mode自体を認識できない場合だけ`CUT,B0`へ機械fallbackする。ActionはShot終了・長さ・Scene内Shot数、Subject rosterと直近6件の採用action、Cameraは確定action、Sceneのcut/continue modeと直近6件の採用cameraをrequest side tableから受ける。これらの履歴は反復回避用で、LLM応答へ再出力しない。Action及びCameraのcreative textはslot対応後に意味修復せずEMDへ置く。
+Visual BeatはSceneごとの原文歌詞、opening/middle/closing位置、歌詞解決有無、Subjectの`concept_id`と`<Subject N>`だけからなるroster及び直近12件の採用beatから具体名詞、物理動詞、接触対象、可視結果及び感情変化を一行へ固定する。Concept EMDの外見・身体・衣装・材質detailはVisual Beat及びAction requestへ含めず、最終EMDのSubject定義として保持する。`LAYOUT`のTEXTは`CUT,B0,...`又は`CONTINUE,B0,...`とし、先頭Sceneは`CUT`固定、後続は新しい編集構図なら`CUT`、直前の画像状態とカメラ経路を引き継ぐ時だけ`CONTINUE`とする。各Scene slotへ直前Sceneの歌詞とvisual beat、`first_section_appearance`、`new_sections`及び`section_entry_shot_index`を渡し、同じ物理動作又は接触の次段階なら`CONTINUE`、実行可能な範囲で新section初出Sceneを`CUT`とする。4 Scene以上でCUT/CONTINUEの最低数、同一mode最大3連続又はmode遷移数上限を満たさない場合は、隣接関係を再評価する境界mix requestを一度追加する。完全なCUT/CONTINUE交互列も不合格である。再応答も違反する時はmode列だけを最小変更で構造修復し、自然文は変更しない。残りはPythonが提示した境界IDだけを時系列順に持つ。LLMは時刻を生成しない。Pythonは候補同士も1500 ms以上離れた相互互換集合を作り、選択IDを絶対msへ機械変換し、mode変更後のraw H3 lengthとPlan時刻を累積格子へ再配分する。1 Sceneあたり最大4 Shot、通常は2～3 Shotとし、4 ShotはSceneが8秒以上で各intervalを2秒以上確保できる場合だけ選び、複数Shot時は各Shot 1500 ms以上とする。Scene全体が1500 ms未満の場合は`B0`だけの一Shotを許す。候補数超過、区切り差、重複、順序違反又は未知候補を含む応答は、既知IDの抽出、時系列順整列、重複除去及び最大4 Shotへの切り詰めだけで機械修復し、statusへScene番号を残す。境界mode自体を認識できない場合だけ`CUT,B0`へ機械fallbackする。ActionはShot終了・長さ・Scene内Shot数、Subject rosterと直近18件の採用action、Cameraは確定action、Sceneのcut/continue modeと直近12件の採用cameraをrequest side tableから受ける。これらの履歴は反復回避用で、LLM応答へ再出力しない。Action及びCameraのcreative textはslot対応後に意味修復せずEMDへ置く。
 
-Visual Beat、Action及びCameraの長いTEXTが、同じrequest内の先行採用TEXT又は直近履歴と完全一致若しくは高い表層類似度を持つ場合、対応するSceneの該当slotだけを最大二回再要求する。retryには`rejected_output`、`must_differ_from`、`diversity_retry_attempt`、`diversity_retry`及び直近と同一batchの採用候補最大12件からなる`forbidden_recent_outputs`を付ける。Pythonは自然文を置換・合成せず、再応答をAS ISで採用する。二回の再応答後も類似するslotは品質警告として段階別に数え、`repetition_warnings=total(beat=B,action=A,camera=C)`をWARNINGログとstatusへ記録するが、未解決slotにはせずCompilerを実行する。Actionは`action_batch_contract`を持ち、slow、単純な手の上下及び作者未指定のlower-body主体に違反したslotだけを`action_quality_budget`として一度再要求する。Cameraは`camera_batch_contract`を持ち、Arc、Tracking、同一Motion Type、slow及び作者未指定のlower-body detailを超過したslotだけを`camera_quality_budget`として一度再要求する。
+Visual Beat、Action及びCameraの長いTEXTが、同じrequest内の先行採用TEXT又は直近履歴と完全一致若しくは高い表層類似度を持つ場合、対応するSceneの該当slotだけを最大二回再要求する。retryには`rejected_output`、`must_differ_from`、`diversity_retry_attempt`、`diversity_retry`及び直近と同一batchの採用候補最大12件からなる`forbidden_recent_outputs`を付ける。Pythonは自然文を置換・合成せず、再応答をAS ISで採用する。二回の再応答後も類似するslotは品質警告として段階別に数え、`repetition_warnings=total(beat=B,action=A,camera=C)`をWARNINGログとstatusへ記録するが、未解決slotにはせずCompilerを実行する。Actionは`action_batch_contract`を持ち、slow、単純な手の上下、作者未指定のlower-body主体及び作者・歌詞未指定の走行に違反したslotだけを`action_quality_budget`として一度再要求する。Cameraは`camera_batch_contract`を持ち、Arc、Tracking、同一Motion Type、slow及び作者未指定のlower-body detailを超過したslotだけを`camera_quality_budget`として一度再要求する。
 
-Compilerの`translation-ja-en`は描写文の一対一翻訳だけを返す。slotは各有限batch内で1から振り直し、Pythonが元のtranslation unit順へ戻す。入力JSONはPython所有であり、各slotの原文fieldは`japanese_text`、固定instructionはそのfieldを英訳することを明記する。LLMへJSON出力を要求しない。Qwen3系へはuser message先頭で`/no_think`を指定する。Compiler翻訳に限り、閉じた`<think>...</think>`、文字列`<TAB>`又はTABで囲まれた`TAB`ラベル、`slot N`表記、及び一物理行へ連結された既知`TRANSLATION` recordをparser前に決定論的に正規化する。実測形式の先頭に英訳文が複製されていても、数値slot後の英訳文だけを採用する。必須`TRANSLATION` slotが全て揃う応答に付随した非record行及び未知record型は捨て、同じslotの重複が完全一致する時は一件として扱う。重複本文が異なるslotは一方を選択せず、そのslotだけを一回単独再翻訳する。不正slot、未知slot、空本文、単独再翻訳後の競合又は欠落は停止する。
+Compilerの`translation-ja-en`は描写文の一対一翻訳だけを返す。識別上重要な局所形状、個数、配置、大きさ、色、材質及び否定条件を具体的な物理形状として訳し、特殊形状を一般的な解剖・衣装・装飾名称へ丸めない。slotは各有限batch内で1から振り直し、Pythonが元のtranslation unit順へ戻す。入力JSONはPython所有であり、各slotの原文fieldは`japanese_text`、固定instructionはそのfieldを英訳することを明記する。LLMへJSON出力を要求しない。Qwen3系へはuser message先頭で`/no_think`を指定する。Compiler翻訳に限り、閉じた`<think>...</think>`、文字列`<TAB>`又はTABで囲まれた`TAB`ラベル、`slot N`表記、及び一物理行へ連結された既知`TRANSLATION` recordをparser前に決定論的に正規化する。実測形式の先頭に英訳文が複製されていても、数値slot後の英訳文だけを採用する。必須`TRANSLATION` slotが全て揃う応答に付随した非record行及び未知record型は捨て、同じslotの重複が完全一致する時は一件として扱う。重複本文が異なるslotは一方を選択せず、そのslotだけを一回単独再翻訳する。不正slot、未知slot、空本文、単独再翻訳後の競合又は欠落は停止する。
 
-欠落slot、採用本文に日本語scriptが残るslot又は異なる本文が重複するslotは、正常slotを保持したまま、該当原文だけを`slot 1`として一度だけ隔離再翻訳し元位置へ戻す。隔離再翻訳も欠落・競合・行protocol不正・日本語script残存なら停止する。非record行、未知record型及び完全一致重複以外の破損行、slot番号、protected token又は英訳本文の意味は推測修復しない。本文がslot番号そのものの場合も日本語script残存と同じ機械条件で一度だけ隔離再翻訳し、再発すれば停止する。
+欠落slot、採用本文に日本語scriptが残るslot又は異なる本文が重複するslotは、正常slotを保持したまま、該当原文だけを`slot 1`として一度だけ隔離再翻訳し元位置へ戻す。隔離再翻訳は入力が一つだけなので、strict parserの問題が`field_count`だけであり、非空英訳候補を一つだけ決定できる場合に限り、裸の一物理行、明示的な単一slot wrapper又は単一translation fieldを持つJSON wrapperから本文をAS ISで復元できる。複数行・複数候補・未知record型・不正slot・競合・日本語script残存は停止する。slot番号、protected token又は英訳本文の意味は推測修復しない。本文がslot番号そのものの場合も日本語script残存と同じ機械条件で一度だけ隔離再翻訳し、再発すれば停止する。
 
 ### 9.3 Compiler翻訳保護token
 
@@ -239,17 +243,19 @@ Compilerが翻訳backendへ自由描写を渡す前に、内部ID、`<Subject 1.
 
 ## 10. Vision行protocol
 
-protocol IDは`MVD_VISION_OBSERVATION_LINES_V2`。record順、category、visibility、空を許すfield及び終端warningは最小コア仕様5.2を正本とする。Phase 0ではIDとfixtureだけを固定し、parser実装はPhase 3で行う。
+protocol IDは`MVD_VISION_OBSERVATION_LINES_V2`。正規record順、category、visibility、空を許すfield及び終端warningは最小コア仕様5.2を正本とする。parserは既知の名前付きrecordの順序入替えと応答再開による重複を決定論的に正規化し、意味payloadのない冗長な`protocol_id` labelだけを除外する。`SUBJECT_FEATURE`が本文一列だけを持つ場合は本文を保持して`distinctive_feature`及び`partial`を割り当てるが、本文欠落は拒否する。それ以外のunknown recordは拒否する。Phase 0ではIDとfixtureだけを固定し、parser実装はPhase 3で行う。
 
 LLM行protocolとVision行protocolを同じparserへ無理に統合しない。前者は部分回収、後者は固定順の完全な観察recordを要求する。
 
 Plannerの`ACTION`要求slotは`performance_role`、`CAMERA`要求slotは`editorial_role`を持つ。これらは出力行へ追加するfieldではなく、既存の`TYPE<TAB>SLOT<TAB>TEXT`を生成するための構造的制約である。複数Shot Sceneでは顔・上半身accent、腕・手主体の演技、環境相互作用又は身体方向転換、終端silhouetteを別Shotへ配分する。通常slotではPythonは自然文を合成又は置換せず、LLMが返したTEXTをAS ISでRendererへ渡す。
 
-例外として、リップシンク有効かつ歌詞sectionが初登場するCUT Sceneでは、新section名を持つ最初の歌詞annotationが属するShotを`face_performance_cut`とする。Scene開始と歌詞開始が異なる場合もScene先頭へ前倒ししない。このslotは有限個のRenderer所有構造出力であり、ACTION/CAMERA LLM要求へ含めない。Actionは`Facial performance only; no walking, stepping, running, or full-body locomotion. Only the primary subject sings with a lyric-matched expression through both eyes, eyebrows, and the complete mouth; hands, props, and hair remain below or outside the face.`、Cameraは`Static Shot extreme facial close-up of only the primary subject; both eyes fill the upper half of the frame and the complete singing mouth remains visible in the lower half; crop out the torso, feet, and most of the background.`と完全一致させる。Compilerは両方をopaque spanとして翻訳backendから隔離し、H3 promptへ完全一致で再結合する。これにより通常slotへの固定phrase漏洩と、顔close-upに対する歩行又は全身Actionの競合を防ぐ。
+例外として、リップシンク有効かつ歌詞sectionが初登場するCUT Sceneでは、新section名を持つ最初の歌詞annotationが属するShotを`face_performance_cut`とする。Scene開始と歌詞開始が異なる場合もScene先頭へ前倒ししない。このslotは有限個のRenderer所有構造出力であり、ACTION/CAMERA LLM要求へ含めない。Actionは顔演技中も記述済み眉の個数、compactness、形、配置及び色を維持し、特殊な眉markを通常の長い線状又は弓状眉へ置換しない固定英語文とする。Cameraは`Zoom In with large amplitude at fast speed`で正面又は斜め正面の頭肩構図から極端な顔close-upへ進み、全行程で両目、両眉、鼻、完全な歌唱口及び顔輪郭を同時に残す固定英語文とする。Compilerは両方をopaque spanとして翻訳backendから隔離し、H3 promptへ完全一致で再結合する。これにより通常slotへの固定phrase漏洩と、顔close-upに対する歩行又は全身Actionの競合を防ぐ。固定顔インサートには同一Scene内の隣接通常slot一個を`face_arc_transition`として対応付け、顔へ入るArc又は顔から全身・環境へ抜けるArcをLLMへ必須要求する。`anime_mv`では離れた最大二slotを`long_arc_emphasis`とし、60～120度のArcをShot尺の70～90%にわたり継続させる。
 
 Plannerの初回応答でslotが欠落した場合、同一Sceneの欠落slotだけを一度再要求する。そこでも欠落したslotは一件ずつ`isolated_missing_slot`として一度再要求する。通常batchでは単一の無番号行を推測しないが、この隔離要求はrequest side tableに候補が一件しかないため、応答が説明行を含まない単一の非空物理行ならそのTEXTを一文字も変更せず当該slotへ対応付けられる。複数行、空行だけ又は明らかなJSON／Markdown見出しは推測回収しない。隔離再要求後も欠落する場合だけPlannerを不完全として停止する。
 
 `HINT_STATUS`が`consistent`、`ambiguous`又は`conflict`で、固定行`HINT_REASON`の値だけが空の場合は、statusを保持したままwarningとして受理する。理由本文をPythonで合成せず、この欠落だけをformat retry条件にしない。`not_used`は空理由だけを受理する。
+
+全profileで、protocol上「値又は空」と定義された単値recordの行自体が省略された場合は、そのfieldを空文字として復元しwarningを残す。対象は`PRIMARY_SUBJECT`、`HINT_REASON`、`SUBJECT_POSE`、`SCENE_SETTING`、`LIGHTING`、`TIME_WEATHER`、`SHOT_SIZE`、`VIEWPOINT`、`SUBJECT_PLACEMENT`、`DEPTH`及び三つのstyle fieldに限定する。これは空値の構造的正規化だけであり、観察本文を生成又は書換えない。全profileで既知recordの逆順は正規化するが、未知record、必須`HINT_STATUS`欠落又は不正値は推測せず拒否する。
 
 ## 11. protocol変更
 

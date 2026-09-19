@@ -8,7 +8,7 @@
 |---|---|
 | [プロジェクト概要](overview.md) | パイプライン、EMD、音声方式、設計上の境界を理解する |
 | [導入マニュアル](installation.md) | Windows版ComfyUIへ本体と依存環境を導入する |
-| [ノードマニュアル](nodes/README.md) | 公開11ノードの入力、出力、使い方を確認する |
+| [ノードマニュアル](nodes/README.md) | 公開12ノードの入力、出力、使い方を確認する |
 | [Direction profile EMD](../profiles/README.md) | Style、Motion、Camera profileを追加・編集する |
 | [Direction / Planner処理フロー](architecture/direction-planner-flow.md) | LLM task、Python所有処理、artifactの流れを確認する |
 | [workflowマニュアル](../workflows/README.md) | 三つのリップシンク方式に対応する6 workflowを使う |

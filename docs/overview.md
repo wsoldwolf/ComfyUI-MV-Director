@@ -2,7 +2,7 @@
 
 ComfyUI-MV-Directorは、利用者が完成promptを手書きしなくても、画像、歌詞、ボーカル、楽曲からMiniMax H3 / Context Loop用のMV計画を組み立てるフロントエンドです。生成結果の美術的な採否は人間が判断します。
 
-![MV Directorの最小パイプライン](assets/minimal-pipeline.svg)
+![人物参照と背景参照を分離したMV Directorの最小パイプライン](assets/minimal-pipeline.png)
 
 ## 四つのコア
 
@@ -10,6 +10,8 @@ ComfyUI-MV-Directorは、利用者が完成promptを手書きしなくても、�
 2. Direction Enhancerがスタイル、環境、時間・照明、モーション、カメラ、その他の全体方針を作ります。
 3. Timeline Plannerが確定済みScene/Shot枠へ歌詞解釈、人物動作、カメラ、リップシンク方式を展開します。
 4. EMD Compilerが日本語promptだけを英訳し、Ref2VA用Context Loop Plan JSONへ機械的に変換します。
+
+人物参照と背景参照は別系統です。人物画像はSubject identity用`<Picture 1>`、背景画像は環境用`<Picture 2>`としてH3へ渡します。一つの参照へ両方を担わせると人物の顔、髪、衣装及びposeが参照条件を占有し、背景の建築、植生及び空間構成が弱くなりやすいためです。計画時は背景Visionの`observations_json`をDirection Enhancerへ、動画生成時は同じ背景画像をH3 Background Referenceへ渡します。
 
 Direction EnhancerとTimeline Planner内部の詳しい流れは[処理フロー図](architecture/direction-planner-flow.md)を参照してください。DirectionのStyle、Motion、Cameraは[`profiles/`](../profiles/README.md)の外部EMDとして追加できます。
 
