@@ -14,12 +14,12 @@ PUBLIC_NODE_TYPES = (
     "MVDirectorEMDCompiler",
     "MVDirectorLyricSegmentation",
     "MVDirectorAudioPadPair",
-    "MVDirectorH3BackgroundReference",
     "MVDirectorH3TimingProfile",
     "MVDirectorSeed32",
     "MVDirectorStringCombo",
     "MVDirectorConnectedCombo",
     "MVDirectorLoadTextFile",
+    "MVDirectorSceneDebugSplitter",
 )
 
 CUSTOM_SOCKET_TYPES = (
@@ -35,7 +35,6 @@ PUBLIC_CATEGORIES = (
     "MV Director/Core",
     "MV Director/Input",
     "MV Director/Audio",
-    "MV Director/Video",
     "MV Director/Utilities",
 )
 

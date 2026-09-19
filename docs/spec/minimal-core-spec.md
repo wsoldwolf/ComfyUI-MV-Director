@@ -1,6 +1,6 @@
 # 最小コア仕様
 
-版: `draft-0.33`<br>
+版: `draft-0.34`<br>
 作成日: 2026-09-16<br>
 状態: 初期実装の基準。現行ノードで利用可能な構文の説明ではない。
 
@@ -41,12 +41,12 @@
 - GGUF backend: モデル探索、ロード、token計測、中断、解放を共通化する。
 - PromptTranslator: prompt本文の日本語から英語への一方向変換だけを行う交換可能なinterface。初期実装はローカル4B又は8Bを想定するが、LLM固有の契約にはしない。
 - Audio Pad Pair: full mixとvocal stemを同じ基準尺へ末尾無音補完し、明示mode時だけsource SceneをPlan frame位置へPCM無音で配置した参照専用vocalも返す公開support node。単体Audio Padは公開しない。
-- H3 Background Reference: 旧Planとの互換用video node。新workflowはScene EMDをPlannerとCompilerへ渡し、Compilerが環境専用`<Picture N>`契約を生成するため使用しない。
 - H3 Timing Profile: Context Loop基準contract、24fps、anchor mode、visual/audio context lengthを一つの`MV_DIRECTOR_H3_TIMING_PROFILE`へまとめ、Lyric SegmentationとCompilerへ共有する公開utility node。
 - 32-bit Seed: GGUF系とH3系へ同じ再現可能な符号付き32-bit正整数seedを分岐する公開utility node。旧実装の有限なrandom/fixed/一回保持処理だけを再利用する。
 - String Combo: 文字列候補を通常の接続可能なSTRINGとして選択・出力する公開utility node。
 - Connected Combo: サブグラフ内部で頻繁に変更するcomboを外側へ引き出し、接続値を選択肢として扱う公開utility node。
 - Load Text File: ローカルのplain lyrics `.txt`をブラウザで選択/D&Dし、workflowへ埋め込まれたUTF-8本文をSTRINGとして返す公開utility node。
+- Scene Debug Splitter: Context Loop Planの連続Scene部分列と同じdelivered-frame区間のvocal/full mixを切り出す公開utility node。無効時は三入力をそのまま返す。
 - Context Loop / H3: 本プロジェクトの下流。変更しない。
 
 ### 2.3 独自名前空間
@@ -61,14 +61,14 @@ ComfyUIのnode type IDはworkflow互換性を左右するため、初回実装�
 | EMD Compiler type / class | `MVDirectorEMDCompiler` |
 | Lyric Segmentation type / class | `MVDirectorLyricSegmentation` |
 | Audio Pad Pair type / class | `MVDirectorAudioPadPair` |
-| H3 Background Reference type / class | `MVDirectorH3BackgroundReference` |
 | H3 Timing Profile type / class | `MVDirectorH3TimingProfile` |
 | 32-bit Seed type / class | `MVDirectorSeed32` |
 | String Combo type / class | `MVDirectorStringCombo` |
 | Connected Combo type / class | `MVDirectorConnectedCombo` |
 | Load Text File type / class | `MVDirectorLoadTextFile` |
+| Scene Debug Splitter type / class | `MVDirectorSceneDebugSplitter` |
 | 将来の補助node type | `MVDirector`接頭辞を必須とする |
-| 表示カテゴリ | `MV Director/Core`、`MV Director/Input`、`MV Director/Audio`、`MV Director/Video`、`MV Director/Utilities` |
+| 表示カテゴリ | `MV Director/Core`、`MV Director/Input`、`MV Director/Audio`、`MV Director/Utilities` |
 | 表示名 | `MV Director - ...` |
 | custom socket / data type | `MV_DIRECTOR_...` |
 | schema ID | 既存どおり`MVD_..._V1` |
@@ -171,8 +171,8 @@ Style文書だけは`# 共通プロンプト`の前に任意の`# プロファ�
 | カメラ | `cinematic_depth` | 開始視点、被写体の側面を通る経路、終了視点、前景・中景・遠景の視差を明示する |
 | カメラ | `rhythmic_mv` | 楽曲強度に合わせて移動量と構図保持を変え、Scene間で角度、高さ、距離、移動方向を展開する |
 | カメラ | `cinema_mv` | 従来の穏やかな映画的camera設計を保持し、Shot目的に必要な時だけarc又はclose-upを選ぶ |
-| カメラ | `anime_story_mv` | Shotごとの意味に合わせ、MiniMax H3正式Motion Typeを各Camera行頭へそのまま置く。離れた最大二Shotへ60～120度かつShot尺70～90%の長尺`Arc Shot`と強い視差を使い、移動する別Shotは`Tracking Shot`で追う。各リップシンクbatchは固定顔インサート又は追加の`face_zoom_emphasis`を一件持ち、頭肩構図から両目、両眉、鼻、口全体及び顔輪郭を保ったまま顔アップへ`Zoom In`する |
-| カメラ | `anime_emotional_mv` | 適格slotのおよそ半数を60～120度かつShot尺70～90%の長尺Arc候補とする。顔Zoomはbatchごとではなく曲全体の疎な予算と既存section face cutで選び、35～55%で顔へ到達して短い表情accentだけを保持する。同一Scene内でArcから顔へ入る又は顔からArcで空間へ抜ける連続phraseを作り、後続Sceneの少なくとも4分の3をCONTINUE可能にし、すべてCONTINUEも許す |
+| カメラ | `anime_story_mv` | Shotごとの意味に合わせ、MiniMax H3正式Motion Typeを各Camera行頭へそのまま置く。適格な通常Shotのおよそ3分の1へ`Arc Shot with large amplitude at fast speed`で始まる60～120度かつShot尺70～90%の長尺Arcと強い視差を使い、移動する別Shotは`Tracking Shot`で追う。各リップシンクbatchは固定顔インサート又は追加の`face_zoom_emphasis`を一件持ち、頭肩構図から両目、両眉、鼻、口全体及び顔輪郭を保ったまま顔アップへ`Zoom In`する |
+| カメラ | `anime_emotional_mv` | 適格な非顔slotのおよそ3分の2を`Arc Shot with large amplitude at fast speed`で始まる60～120度かつShot尺70～90%の長尺Arc候補とする。顔Zoomはbatchごとではなく曲全体の疎な予算と既存section face cutで選び、35～55%で顔へ到達して短い表情accentだけを保持する。同一Scene内でArcから顔へ入る又は顔からArcで空間へ抜ける連続phraseを作り、後続Sceneの少なくとも4分の3をCONTINUE可能にし、すべてCONTINUEも許す |
 
 「禁止リストを増やす」のではなく、実現したい材質、形、動き、軌道を記述する。ただしユーザー自身が否定条件を指定した場合は削除しない。
 
@@ -337,11 +337,12 @@ Visionのnative log抑制はMTMDのlog callbackで行い、ComfyUI process全体
 
 ### 5.3 出力
 
-- `emd_fragment`: 通常のSTRINGでも保存・編集できる`MVD_EMD_FRAGMENT_V1`。`# サブジェクト`と一つのSubject行を持ち、binding成功時はdescriptionの前へ``画像N``を書く。完全EMDへ組み込まれた位置からSubject番号を導出する。
+- `emd_fragment`: 通常のSTRINGでも保存・編集できるprofile依存のEMD断片。`general`又は`subject_only`では`MVD_EMD_FRAGMENT_V1`として`# サブジェクト`と一つのSubject行を持ち、binding成功時はdescriptionの前へ``画像N``を書く。`scene_only`では`MVD_SCENE_EMD_FRAGMENT_V1`として`# シーン設定`、環境、任意の時間・照明baseline及び環境専用Pictureだけを持つ。完全EMDへ組み込まれた位置からSubject番号を導出する。
 - `reference_bindings`: optional `MV_DIRECTOR_REFERENCE_BINDINGS`。`MVD_REFERENCE_BINDINGS_V1`としてserializeでき、概念ID、`subject_ref`、`picture_ref`、接続先signature、入力image fingerprintを持つ。
 - `image`: H3へ分岐できる、入力と同一のIMAGE tensor。modeにかかわらず常にpass-throughする。
 - `observations_json`: 可視事実、uncertainty、provenanceを持つdebug/再利用用出力。下流必須にしない。
-- `scene_emd`: `scene_only`時の`MVD_SCENE_EMD_FRAGMENT_V1`。`# シーン設定`、環境、任意の時間・照明baseline及び環境専用Pictureだけを持ち、Direction EnhancerとTimeline Plannerへ同じ出力を分岐する。
+
+旧`scene_emd`出力socketは設けない。背景Visionの`emd_fragment`をDirection EnhancerとTimeline Plannerの`scene_emd`入力へ分岐する。
 
 `resolved_picture_reference`は上記出力socketへ加えず、frontendの読み取り専用表示として返す。workflowを開いただけでは古い表示を確定値とみなさず、配線変更後の次回実行で更新する。
 
@@ -613,18 +614,18 @@ Plannerの`concept_emd`も一個だけを受け取る。初期自動MV経路で�
 Plannerの順序は次で固定する。
 
 1. PythonがLLM入力に含まれる作者由来の`「...」`及び明示`<d>...</d>`をID付きplaceholderへ置換し、原文をside tableへ退避する。
-2. `visual-beats`: Sceneごとの原文歌詞、timeline上のopening/middle/closing位置、歌詞解決有無、直近12 Sceneのbeat、Subjectの構造的roster及びDirectionのStyle、Environment、Time/Lighting、Motion、Other制約から、対象物、身体動作、接触、結果、感情表現を一行へ圧縮する。Camera profileは人物動作候補へ昇格しないよう、この段階へ渡さない。Concept EMDの詳細な外見、身体構造、衣装構造、履物、色、材質及び参照保持文は創作taskへ渡さず、最終EMDのSubject定義としてだけ保持する。段階Directionは歌詞の創作的解釈、履歴及び照明効果より上位とし、いずれかの区分と矛盾する述語を生成しない。髪、衣装、耳、尾、風、光又は口形の受動変化だけを主beatにせず、歌詞のないSceneも直前動作の言い換えではなく新しい状態又は結末へ進める。歌詞中の傷、古傷、痛み、血又は心の損傷は、作者本文又はSubject定義が可視の身体状態として明示しない限り比喩として扱い、外傷、傷跡、痣、出血、包帯、皮膚若しくは衣装の損傷又は接触対象へ変換しない。
+2. `visual-beats`: Sceneごとの全原文歌詞、timeline上のopening/middle/closing位置、歌詞解決有無、直近12 Sceneのbeat、Subjectの構造的roster及びDirectionのStyle、Environment、Time/Lighting、Motion、Other制約から、対象物、身体動作、接触、結果、感情表現を一行へ圧縮する。最初の述語だけを選ばず、同一Scene内の後続歌詞にある具体名詞又はeffectも別の位相へ割り当てる。動詞のない名詞も同一Sceneで固有の状態、動き、変化、雰囲気、空間関係又は人物の非接触反応として可視化するが、操作動詞なしに接触、保持又は誘導へ変換しない。Camera profileは人物動作候補へ昇格しないよう、この段階へ渡さない。Concept EMDの詳細な外見、身体構造、衣装構造、履物、色、材質及び参照保持文は創作taskへ渡さず、最終EMDのSubject定義としてだけ保持する。段階Directionは歌詞の創作的解釈、履歴及び照明効果より上位とし、いずれかの区分と矛盾する述語を生成しない。髪、衣装、耳、尾、風、光又は口形の受動変化だけを主beatにせず、歌詞のないSceneも直前動作の言い換えではなく新しい状態又は結末へ進める。歌詞中の傷、古傷、痛み、血又は心の損傷は、作者本文又はSubject定義が可視の身体状態として明示しない限り比喩として扱い、外傷、傷跡、痣、出血、包帯、皮膚若しくは衣装の損傷又は接触対象へ変換しない。
 3. `song-direction`: visual beatsだけから、全曲を通す短い弧、反復してよい要素、変化させる要素を作る。全歌詞を再添付しない。
-4. `shot-layout`: PythonがScene開始、既存Shot及び安全な均等位置から、互いにも1500ms以上離れた候補IDを作る。LLMは各Sceneへ`CUT`又は`CONTINUE`を一個選び、その後へ候補IDを最大4個並べる。先頭Sceneは`CUT`固定。新しい画角、detail、逆方向又は場所を編集点で提示する場合は`CUT`、直前の画像状態とカメラ経路を物理的に引き継ぐ場合だけ`CONTINUE`とする。各Sceneへ直前Sceneの歌詞とvisual beatに加え、`first_section_appearance`、`new_sections`及び`section_entry_shot_index`を明示する。同じ物理動作又は接触の次段階なら`CONTINUE`とし、実行可能な範囲で新section初出Sceneを`CUT`として保持する。4 Scene以上では、最初のmode列がScene 1をCUT、後続境界の4分の1以上をCUT、半数以上をCONTINUE、同一mode最大3連続及びmode遷移数上限という構造契約を満たさない場合、隣接歌詞とvisual beatを比較させる境界mix再計画を一度行う。完全なCUT/CONTINUE交互列は遷移数上限違反である。再応答も満たさない場合、PythonはCUT/CONTINUE列だけを元の選択から最小変更で契約内へ修復し、変更Sceneを`layout_repaired_scenes`へ記録する。Action、Camera、歌詞、Shot候補及び自然文は修復しない。時刻を生成させず、通常は2～3 Shotを選び、4 ShotはSceneが8秒以上で四つの異なる視覚目的を各2秒以上確保できる場合だけにし、複数Shot時は各Shotを1500ms以上にする。Scene全体が1500ms未満なら一個のShotを許す。候補数超過、区切り差、重複、順序違反又は未知候補を含む応答は、既知IDの抽出、時系列順整列、重複除去及び最大4 Shotへの切り詰めだけで機械修復し、修復Sceneをstatusへ記録する。境界mode自体を認識できない場合はLLMを再試行せず`CUT,B0`へfallbackする。
+4. `shot-layout`: PythonがScene開始、既存Shot及び安全な均等位置から、互いにも1500ms以上離れた候補IDを作る。LLMは各Sceneへ`CUT`又は`CONTINUE`を一個選び、その後へ候補IDを最大4個並べる。先頭Sceneは`CUT`固定。新しい画角、detail、逆方向又は場所を編集点で提示する場合は`CUT`、直前の画像状態とカメラ経路を物理的に引き継ぐ場合だけ`CONTINUE`とする。各Sceneへ直前Sceneの歌詞とvisual beatに加え、`first_section_appearance`、`new_sections`及び`section_entry_shot_index`を明示する。同じ物理動作又は接触の次段階なら`CONTINUE`とし、実行可能な範囲で新section初出Sceneを`CUT`として保持する。構造的な顔インサートと歌詞固有の具体名詞又はeffectが同居するSceneでは、顔インサートに唯一のShotを占有させず、歌詞cueを可視化する通常Shotを少なくとも一つ残す。4 Scene以上では、最初のmode列がScene 1をCUT、後続境界の4分の1以上をCUT、半数以上をCONTINUE、同一mode最大3連続及びmode遷移数上限という構造契約を満たさない場合、隣接歌詞とvisual beatを比較させる境界mix再計画を一度行う。完全なCUT/CONTINUE交互列は遷移数上限違反である。再応答も満たさない場合、PythonはCUT/CONTINUE列だけを元の選択から最小変更で契約内へ修復し、変更Sceneを`layout_repaired_scenes`へ記録する。Action、Camera、歌詞、Shot候補及び自然文は修復しない。時刻を生成させず、通常は2～3 Shotを選び、4 ShotはSceneが8秒以上で四つの異なる視覚目的を各2秒以上確保できる場合だけにし、複数Shot時は各Shotを1500ms以上にする。Scene全体が1500ms未満なら一個のShotを許す。候補数超過、区切り差、重複、順序違反又は未知候補を含む応答は、既知IDの抽出、時系列順整列、重複除去及び最大4 Shotへの切り詰めだけで機械修復し、修復Sceneをstatusへ記録する。境界mode自体を認識できない場合はLLMを再試行せず`CUT,B0`へfallbackする。
 5. Pythonが選択候補をShot構造へ展開し、カット／継続modeに合わせて累積H3格子上のraw length、Scene時刻及びShot時刻を再配分し、既存本文と歌詞annotationを時刻順に再配置する。
 6. `actions`: DirectionのStyle、Environment、Time/Lighting、Motion、Other制約、visual beat、対象Scene、該当歌詞、Shot終了・長さ・Scene内Shot数、必要な直前状態、直近18 Shotの採用action、Subject instance policy、Python所有Shot枠及び構造的`performance_role`から、Shot IDごとの人物動作を生成する。Camera profileは渡さず、`Arc Shot`等の撮影語をActionへ混入させない。複数Shot Sceneでは、先頭の顔・上半身accent又は継続状態の変化、二番目の腕・手主体の演技、三番目の環境相互作用又は身体方向転換、四番目の異なる終端silhouetteへroleを分配する。Scene-level visual beatが移動でも全Shotを同じ歩行cycleへせず、割り当てroleでは歩行を接続動作へ降格する。段階Directionをvisual beatより上位とし、beatの対象、物理動詞、接触及び結果は維持する一方、Directionと矛盾する付随的な外見、材質、照明、変形、動作又は構図の句は出力しない。同一Scene内の各Shotは同じ主動詞と結果を反復せず、準備、接触、反応、収束等の異なる位相を持つ。MVアクセントでは加速、強い重心移動、方向転換、反動又は鋭い停止を使い、静かな区間とのpose差を作る。Action batchはslow表現上限、単純な手の上下0件及び作者未指定のlower-body主体0件及び作者・歌詞未指定の走行0件という予算を持ち、違反slotだけを一度LLMへ再要求する。比喩的な傷表現は清潔で損傷のない皮膚と衣装の上で、視線、呼吸、肩、胴体、手及び終端poseによる感情演技へ変換する。歌詞transcript自体を身体状態の指示として扱わない。
-7. `cameras`: Direction六区分の完全な共通制約、同じShot枠、visual beat、確定したaction、Subject instance policy、構造的`editorial_role`、直近12件までのcamera履歴及びCamera profileから、Shot IDごとの構図とカメラを生成する。通常slotではPythonはcamera自然文を生成又は書き換えず、LLMが選んだCamera行をAS ISで渡す。リップシンク有効かつ歌詞sectionが初登場するCUT Sceneでは、新section名を持つ最初の歌詞annotationが属するShotだけを`face_performance_cut`とし、Scene開始と歌詞開始が異なる場合も前倒ししない。通常profileではそのActionとCameraをRenderer所有の固定文へ割り当てる。`anime_emotional_mv`ではActionだけをLLMへ渡し、現在歌詞に応じた閉眼、半開き、伏し目、細め又は再開眼を含む顔演技をAS ISで採用する。固定Cameraは頭肩構図から読み取れる顔close-upへ進む`Zoom In with large amplitude at fast speed`とし、Shotの35～55%で到達して短い表情accentだけを保持し、両目、両眉、鼻、完全な歌唱口及び顔輪郭を残す。固定文はopaque spanとして翻訳backendから隔離する。各通常Camera行はMiniMax H3正式Motion Typeの一つから始める。Camera batchは通常Arc最大1、`anime_story_mv`では離れた最大二slotを`long_arc_emphasis`として60～120度かつShot尺70～90%の長尺Arcにする。顔インサートと構造的に連携するArc、Tracking最大1、その他の同一Motion Type最大2、slow上限及び作者未指定のlower-body detail 0という予算を持ち、違反slotだけを一度LLMへ再要求する。共通Directionに反する付随表現を撮影目的、照明効果又は視覚的強調へ拡大しない。action本文を再出力せず、一Shotでは一つの主要なCamera Motion Typeだけを選ぶ。顔インサートと同一Scene内で隣接する通常Shot一個へ`face_arc_transition`を割り当て、顔Zoomへ入る又は顔Zoomから抜ける60～120度の長尺Arcを必須化する。
+7. `cameras`: Direction六区分の完全な共通制約、同じShot枠、visual beat、確定したaction、Subject instance policy、構造的`editorial_role`、直近12件までのcamera履歴及びCamera profileから、Shot IDごとの構図とカメラを生成する。通常slotではPythonはcamera自然文を生成又は書き換えず、LLMが選んだCamera行をAS ISで渡す。リップシンク有効かつ歌詞sectionが初登場するCUT Sceneでは、新section名を持つ最初の歌詞annotationが属するShotだけを`face_performance_cut`とし、Scene開始と歌詞開始が異なる場合も前倒ししない。通常profileではそのActionとCameraをRenderer所有の固定文へ割り当てる。`anime_emotional_mv`ではActionだけをLLMへ渡し、現在歌詞に応じた閉眼、半開き、伏し目、細め又は再開眼を含む顔演技をAS ISで採用する。固定Cameraは頭肩構図から読み取れる顔close-upへ進む`Zoom In with large amplitude at fast speed`とし、Shotの35～55%で到達して短い表情accentだけを保持し、両目、両眉、鼻、完全な歌唱口及び顔輪郭を残す。Renderer所有文はEMDで日本語表示し、Compilerが翻訳backendを介さず正規のH3英語文へ決定的に置換する。各通常Camera行はMiniMax H3正式Motion Typeの一つから始める。Camera batchは通常Arc最大1、`anime_story_mv`では適格な通常slotのおよそ3分の1、`anime_emotional_mv`では適格な非顔slotのおよそ3分の2を`long_arc_emphasis`とする。長尺Arcは`Arc Shot with large amplitude at fast speed`で始まり、60～120度かつShot尺70～90%を移動する。顔インサートと構造的に連携するArc、Tracking最大1、その他の同一Motion Type最大2、slow上限及び作者未指定のlower-body detail 0という予算を持ち、正式Motion Type欠落、長尺Arcの振幅・速度不足又は速度語競合を含む違反slotだけを一度LLMへ再要求する。共通Directionに反する付随表現を撮影目的、照明効果又は視覚的強調へ拡大しない。action本文を再出力せず、一Shotでは一つの主要なCamera Motion Typeだけを選ぶ。顔インサートと同一Scene内で隣接する通常Shot一個へ`face_arc_transition`を割り当て、顔Zoomへ入る又は顔Zoomから抜ける60～120度の長尺Arcを必須化する。
 
-`planner_policy=anime_emotional_mv`ではstep 4の通常境界mixを置換し、先頭SceneだけをCUT固定、後続Sceneの4分の3以上をCONTINUEとし、CUT最小数及び同一mode最大3連続を要求しない。step 2及び6へは、現在Sceneの元歌詞だけが対象を活性化すること、scene EMDとDirectionのinventoryをAction sourceにしないこと、一つの対象triggerを一Sceneで消費すること、接触には歌詞上の物理的操作意味を別途必要とすること、外部effectを既定で自律させること、まぶたと全身の感情演技を使うことを構造契約として渡す。step 7では通常Camera slotのおよそ半数を長尺Arcへ割り当てる一方、顔Zoomは曲全体のScene数と既存section face cutを合わせた疎な予算にする。顔Zoomは35～55%で到達し、可能なら同一Scene内の隣接slotへArc-in又はArc-out関係を設定する。これらはprofile EMD metadata由来のslot契約であり、LLMが返したAction又はCamera本文をPythonで書き換えない。
+`planner_policy=anime_emotional_mv`ではstep 4の通常境界mixを置換し、先頭SceneだけをCUT固定、後続Sceneの4分の3以上をCONTINUEとし、CUT最小数及び同一mode最大3連続を要求しない。step 2及び6へは、現在Sceneの元歌詞だけが対象を活性化すること、動詞のない具体名詞又はeffectも同一Sceneの自律的な可視述語へすること、scene EMDとDirectionのinventoryをAction sourceにしないこと、一つの対象triggerを一Sceneで消費すること、接触には歌詞上の物理的操作意味を別途必要とすること、外部effectを既定で自律させること、まぶたと誇張した全身の感情演技を使うことを構造契約として渡す。step 7では適格な非顔Camera slotのおよそ3分の2を長尺Arcへ割り当てる一方、顔Zoomは曲全体のScene数と既存section face cutを合わせた疎な予算にする。顔Zoomは35～55%で到達し、可能なら同一Scene内の隣接slotへArc-in又はArc-out関係を設定する。これらはprofile EMD metadata由来のslot契約であり、LLMが返したAction又はCamera本文をPythonで書き換えない。
 8. Pythonが採用した行recordの`TEXT`から新規生成された引用台詞とplaceholder echoを削除する。
 9. Pythonが任意のサブジェクトEMD、direction、annotation、action、camera、audio templateを完全EMDへ合成し、選択したlip-sync modeのdirectiveを最後に挿入する。`<Subject N>`と`<Picture N>`の関連は変更しない。`` `H3長` ``はstep 5で境界modeと同時に確定した値をそのまま出し、Compilerには再計算させない。
 
-Visual Beatは一般的な歩行、正面立ち、両手を広げる、手を上げる又は背景物へ触る動作を既定にしない。現在Sceneの元歌詞又は作者指示だけが具体物、場所要素又は外部effectを活性化し、scene EMD、Direction及び過去SceneはAction sourceにしない。対象名だけでは接触を許可せず、物理的操作の意味が無い場合は、まぶた、視線、頭、肩、胴体、骨盤、腕、手、支持脚、遊脚、重心及び身体レベルを連動した非接触の全身演技へ変換する。外部effectは既定で人物から独立して空間内を移動し、人物は視線、姿勢、回避又は一回の感情反応だけを返す。
+Visual Beatは一般的な歩行、正面立ち、両手を広げる、手を上げる又は背景物へ触る動作を既定にしない。現在Sceneの全原文歌詞又は作者指示だけが具体物、場所要素又は外部effectを活性化し、最初の述語だけで後続の具体名詞を捨てない。scene EMD、Direction及び過去SceneはAction sourceにしない。動詞のない名詞も固有の状態、動き、変化、雰囲気、空間関係又は人物の非接触反応として同一Sceneで可視化する。対象名だけでは接触を許可せず、物理的操作の意味が無い場合は、まぶた、視線、頭、肩、胴体、骨盤、腕、手、支持脚、遊脚、重心及び身体レベルを連動した非接触の全身演技へ変換する。外部effectは既定で人物から独立して空間内を移動し、人物は視線、姿勢、回避又は一回の感情反応だけを返す。
 
 Visual Beat、Action及びCameraの長いTEXTが同一request内又は直近履歴と完全一致若しくは高い表層類似度を持つ場合、Pythonは本文を変更せず、該当slotだけをScene単位で最大二回再要求する。retry payloadには`rejected_output`、`must_differ_from`、`diversity_retry_attempt`及び直近と同一batchの採用候補最大12件からなる`forbidden_recent_outputs`を入れ、左右交換、同義語又は語順変更ではなく、主動詞、対象、結果、終端pose、Motion Type、構図又は撮影目的を実質的に変更させる。Action又はCameraの構造予算違反は該当slotだけを`action_quality_budget`又は`camera_quality_budget`として一度再要求する。再試行後も違反する場合は再応答をAS ISで採用し、`repetition_warnings=total(beat=B,action=A,camera=C)`としてWARNINGログとstatusへ記録する。創作上の類似又は予算違反は品質警告であり、Compilerを停止しない。採用TEXTは一文字も機械修正しない。
 
@@ -688,6 +689,17 @@ Timeline PlannerはMV専用である。完成動画にどの音声を残すか�
 - `reference_alignment=source_scenes_to_plan`では`MVD_TIMELINE_V1`を必須とし、padding前`audio_b`の各`source_start_ms`～`source_end_ms`を順番のまま取り出して、累積`delivered_frames`を24fpsでsample位置へ変換したPlan区間の先頭へ配置する。各Sceneの量子化余剰はScene末尾PCM無音とし、Scene内の無音を保持する。
 - Scene alignmentでもresample、mix又は音声内容のtruncateを行わない。source Sceneが対応Plan delivered区間へ収まらない、source区間が非連続、又はtimelineがない場合は明示エラーにする。`reference_audio_b`だけをAudio参照workflowのH3 Audio Tracks／Source Timelineへ渡し、最終full mixには使わない。
 - 単体Audio Padの公開classは再利用しない。入力検証とPCM paddingに必要な処理だけをPair module内のprivate helperへ抽出する。
+
+### 7.8 Scene Debug Splitter
+
+公開utility nodeは`MVDirectorSceneDebugSplitter`、表示名は`MV Director - Scene Debug Splitter`、カテゴリは`MV Director/Utilities`とする。
+
+- 必須入力は`plan_json: STRING`、`vocal_audio: AUDIO`、`full_mix_audio: AUDIO`、`enable: BOOLEAN`、`scene_start: INT`及び`scene_length: INT`とする。`plan_json`は接続入力、後三項目はUI widgetで、`enable=true`、`scene_start=1`、`scene_length=1`を既定とする。
+- `scene_start`は1ベースであり、JSON上の選択開始は`shots[scene_start - 1]`とする。PCMスキップframe数はindex 0から選択開始直前までの各`length - context_length`を総和する。`scene_start=1`では0 frameをスキップする。
+- 出力frame数は選択する連続`scene_length`件の`length - context_length`合計とする。raw `length`だけを加算して継続contextの音声を重複させない。
+- 24fpsの累積開始frameと終了frameをそれぞれ入力sample rateへ有理数変換してsample境界を求める。両PCMを同じframe窓で切り出し、入力が選択終端より短い場合だけ不足分を末尾PCM無音で補う。resample、mix又は時間伸縮を行わない。
+- 出力Planはroot objectの`shots`だけを選択部分列へ置換し、他field及び選択Shot objectを変更しない。範囲がPlanを超える場合は暗黙に縮めず停止する。
+- 出力順は`plan_json: STRING`、`vocal_audio: AUDIO`、`full_mix_audio: AUDIO`とする。`enable=false`ではJSON又はPCMを検証せず、三入力を同一値のまま返す。
 
 ## 8. EMD（Easy MarkDown）`MVD_EMD_V1`
 
@@ -879,7 +891,7 @@ CompilerはRef2VA専用のEMD parser、限定翻訳orchestrator、H3 prompt rend
 
 `as is`は「日本語をそのまま残す」ではなく、EMDの構造、情報量、文書順、Scene/Shot対応を変えないという意味で使う。H3自体が日本語を受理できる場合でも、本Compilerのtarget contractでは純粋な生成promptを英語で出力する。PromptTranslatorは日本語の描写文を英語へ翻訳するが、要約、補強、創作、並べ替え、重複除去、禁止文追加又は演出修正を行わない。
 
-360文字を超えるunitは、既存の句点又は読点境界から二個以上のchunkを一意に作れる場合、初回推論前に120文字以下を目標として分割する。通常batchで日本語echo、欠落又は競合重複となった他のunitは一件だけで隔離再試行し、日本語echoが隔離再試行でも残る長文にも同じ分割回復を適用する。ほぼ完成した英文に少数の日本語だけが残る場合は、英文候補全体を再翻訳せず、連続する残存日本語spanだけを出現順に一意化して同じstrict翻訳protocolへ通し、得た英訳を元位置へ機械置換する。同一spanの反復は一度だけ翻訳し、既存英文の語順と内容を変更しない。Compilerは原文文字列を変更せず、全span又は全chunkが英語になった場合だけ再結合する。短文、安全な境界のない長文又はspan cleanup・chunk翻訳にも日本語が残る場合は推測翻訳せず停止する。回復の隔離開始、分割・cleanup開始、各batch、完了又は失敗をslot番号・trigger・文字数・span数・chunk数とともにINFOへ記録し、正常完了statusへ`segmented_recovered`及び`cleanup_recovered`件数を出す。
+360文字を超えるunitは、既存の句点又は読点境界から二個以上のchunkを一意に作れる場合、初回推論前に120文字以下を目標として分割する。通常batchで日本語echo、欠落又は競合重複となった他のunitは一件だけで隔離再試行し、日本語echoが隔離再試行でも残る長文にも同じ分割回復を適用する。隔離再試行はsource unitが一件だけでslot対応が一意なので、異なる`TRANSLATION 1`が複数返った場合は空候補、日本語scriptを含む候補及びslot番号echoを除外し、応答順で最初の有効な英訳を無改変で採用する。候補数と`first_valid_english`選択規則はINFOへ記録する。ほぼ完成した英文に少数の日本語だけが残る場合は、英文候補全体を再翻訳せず、連続する残存日本語spanだけを出現順に一意化して同じstrict翻訳protocolへ通し、得た英訳を元位置へ機械置換する。同一spanの反復は一度だけ翻訳し、既存英文の語順と内容を変更しない。Compilerは原文文字列を変更せず、全span又は全chunkが英語になった場合だけ再結合する。短文、安全な境界のない長文又はspan cleanup・chunk翻訳にも日本語が残る場合は推測翻訳せず停止する。回復の隔離開始、分割・cleanup開始、各batch、完了又は失敗をslot番号・trigger・文字数・span数・chunk数とともにINFOへ記録し、正常完了statusへ`protocol_recovered`、`segmented_recovered`及び`cleanup_recovered`件数を出す。
 
 翻訳へ渡す前に保護spanを自由文から分離し、翻訳後に原位置へ機械的に再結合する。保護対象はH3 binding、概念ID、`「...」`、作者が明示した`<d>...</d>`、MiniMax H3正式Camera Motion Typeと`with small amplitude`、`with large amplitude`、`at slow speed`、`at fast speed`、予約annotation、音響directive、Shotの``リップシンク 歌詞``である。保護span又はそのplaceholderは翻訳LLMへ渡さない。日本語括弧の台詞と明示された歌詞方式リップシンクは英訳せず`<d>[Japanese]...</d>`にし、作者が既に書いた`<d>...</d>`はlanguage labelの有無を含めて一文字も変更しない。概念IDとCamera directiveは自然な言い換えを生成せず原文を完全一致で再結合する。日本語、CJK又はHangul文字を含まない既存英語fragmentは翻訳batchへ入れず完全一致で保持する。
 
@@ -1092,7 +1104,7 @@ Compiler wrapperは単純な構文・翻訳・直列化境界を保つため独�
 - 音響省略時はScene固有keyを出さず、`無音`がある場合だけ対応するoff値とsilence prompt要素を出す。
 - `「...」`の内容を変更せず`<d>[Japanese]...</d>`へ包み、`明示台詞のみ`がある場合だけ追加発声禁止要素を出す。
 - Shot本文に明示された`<d>...</d>`と`<d>[English]...</d>`を翻訳又は書換えせず、そのまま一回だけH3 promptへ出す。
-- ``リップシンク Audio参照``を翻訳LLMなしで対象token、`<Audio N>`及び固定英文へ変換し、必要音声slotを返せる。
+- ``リップシンク Audio参照``を翻訳LLMなしで対象token、`<Audio N>`及び正規のH3固定英語文へ変換し、必要音声slotを返せる。
 - Lyric Segmentationが同じatomic segment列からTemplate EMD、timeline、SRTを作り、歌詞annotationを割当て済みShotの直前へ配置できる。Plannerは数値包含で再対応付けせず対象付きの``リップシンク 歌詞``を生成し、Compilerはannotationを参照せず、Shot開始位置とdirective内の原文を順序どおりの`<d>[Japanese]...</d>`へ変換できる。
 - 同一Sceneのリップシンク駆動方式は一つに限定され、後二方式では`H3_LIP_SYNC_OPTIONS`を要求しない。
 - `model_name` comboから任意の利用可能なGGUFを選択でき、`ja_to_en`ではそのGGUFを内部PromptTranslator adapterで使う。`already_english`ではGGUFをloadしない。

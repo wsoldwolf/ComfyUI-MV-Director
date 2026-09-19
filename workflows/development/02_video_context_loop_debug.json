@@ -1,8 +1,8 @@
 {
   "id": "d89034f0-15f1-402e-988a-a6f7b9b296e2",
   "revision": 0,
-  "last_node_id": 45,
-  "last_link_id": 84,
+  "last_node_id": 46,
+  "last_link_id": 91,
   "nodes": [
     {
       "id": 3,
@@ -2141,7 +2141,7 @@
           "name": "padded_audio_a",
           "type": "AUDIO",
           "links": [
-            58
+            88
           ]
         },
         {
@@ -2149,8 +2149,7 @@
           "name": "padded_audio_b",
           "type": "AUDIO",
           "links": [
-            59,
-            63
+            87
           ]
         },
         {
@@ -2192,7 +2191,7 @@
       "id": 38,
       "type": "MiniMaxH3AudioTracks",
       "pos": [
-        1980,
+        2460,
         2580
       ],
       "size": [
@@ -2208,14 +2207,14 @@
           "name": "full_mix",
           "shape": 7,
           "type": "AUDIO",
-          "link": 58
+          "link": 89
         },
         {
           "localized_name": "vocals",
           "name": "vocals",
           "shape": 7,
           "type": "AUDIO",
-          "link": 59
+          "link": 90
         },
         {
           "localized_name": "instrumental",
@@ -2271,7 +2270,7 @@
           "name": "voice",
           "shape": 7,
           "type": "AUDIO",
-          "link": 63
+          "link": 91
         },
         {
           "localized_name": "Audio context before scene",
@@ -2416,8 +2415,8 @@
           "name": "text",
           "type": "STRING",
           "links": [
-            82,
-            83
+            83,
+            85
           ]
         }
       ],
@@ -2954,7 +2953,7 @@
           "name": "plan_json_input",
           "shape": 7,
           "type": "STRING",
-          "link": 82
+          "link": 86
         },
         {
           "localized_name": "project_assets",
@@ -3708,6 +3707,95 @@
       "widgets_values": [
         "image002_keinai.jpg"
       ]
+    },
+    {
+      "id": 46,
+      "type": "MVDirectorSceneDebugSplitter",
+      "pos": [
+        1980,
+        2580
+      ],
+      "size": [
+        420,
+        250
+      ],
+      "flags": {},
+      "order": 46,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "plan_json",
+          "type": "STRING",
+          "link": 85
+        },
+        {
+          "name": "vocal_audio",
+          "type": "AUDIO",
+          "link": 87
+        },
+        {
+          "name": "full_mix_audio",
+          "type": "AUDIO",
+          "link": 88
+        },
+        {
+          "name": "enable",
+          "type": "BOOLEAN",
+          "link": null,
+          "widget": {
+            "name": "enable"
+          }
+        },
+        {
+          "name": "scene_start",
+          "type": "INT",
+          "link": null,
+          "widget": {
+            "name": "scene_start"
+          }
+        },
+        {
+          "name": "scene_length",
+          "type": "INT",
+          "link": null,
+          "widget": {
+            "name": "scene_length"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "plan_json",
+          "type": "STRING",
+          "links": [
+            86
+          ]
+        },
+        {
+          "name": "vocal_audio",
+          "type": "AUDIO",
+          "links": [
+            90,
+            91
+          ]
+        },
+        {
+          "name": "full_mix_audio",
+          "type": "AUDIO",
+          "links": [
+            89
+          ]
+        }
+      ],
+      "title": "Scene Debug Splitter",
+      "properties": {
+        "Node name for S&R": "MVDirectorSceneDebugSplitter"
+      },
+      "widgets_values": [
+        false,
+        1,
+        1
+      ]
     }
   ],
   "links": [
@@ -4152,36 +4240,12 @@
       "MV_DIRECTOR_H3_TIMING_PROFILE"
     ],
     [
-      58,
-      37,
-      0,
-      38,
-      0,
-      "AUDIO"
-    ],
-    [
-      59,
-      37,
-      1,
-      38,
-      1,
-      "AUDIO"
-    ],
-    [
       60,
       38,
       0,
       7,
       3,
       "H3_SOURCE_TIMELINE"
-    ],
-    [
-      63,
-      37,
-      1,
-      40,
-      0,
-      "AUDIO"
     ],
     [
       64,
@@ -4248,14 +4312,6 @@
       "MODEL"
     ],
     [
-      82,
-      39,
-      0,
-      24,
-      1,
-      "STRING"
-    ],
-    [
       83,
       39,
       0,
@@ -4270,6 +4326,62 @@
       11,
       4,
       "IMAGE"
+    ],
+    [
+      85,
+      39,
+      0,
+      46,
+      0,
+      "STRING"
+    ],
+    [
+      86,
+      46,
+      0,
+      24,
+      1,
+      "STRING"
+    ],
+    [
+      87,
+      37,
+      1,
+      46,
+      1,
+      "AUDIO"
+    ],
+    [
+      88,
+      37,
+      0,
+      46,
+      2,
+      "AUDIO"
+    ],
+    [
+      89,
+      46,
+      2,
+      38,
+      0,
+      "AUDIO"
+    ],
+    [
+      90,
+      46,
+      1,
+      38,
+      1,
+      "AUDIO"
+    ],
+    [
+      91,
+      46,
+      1,
+      40,
+      0,
+      "AUDIO"
     ]
   ],
   "groups": [

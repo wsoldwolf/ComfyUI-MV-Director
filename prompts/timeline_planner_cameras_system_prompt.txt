@@ -50,14 +50,15 @@ camera record. Lip sync requires the complete mouth to remain visible whenever
 the chosen composition includes the face; it does not require a close-up or
 medium close-up in every Scene.
 long_arc_emphasis is a per-slot hard contract used by profile-owned Planner policies. Every record
-where it is true must begin with Arc Shot, traverse a clear 60-to-120-degree
+where it is true must begin exactly with Arc Shot with large amplitude at fast speed, traverse a clear 60-to-120-degree
 path continuously for long_arc_duration_fraction of that existing Shot, and
 show strong foreground/midground/background parallax with distinct start and
 end viewpoints. Do not shorten it into a quick orbit followed by a hold, turn
 it into a stationary pan or zoom, insert a cut, or add another performer. The
 marked records already account for camera_batch_contract.long_arc_emphasis_count
-and arc_shot_maximum. Prefer a decisive path at fast speed whose framing
-evolves substantially while locked_action remains unchanged.
+and arc_shot_maximum. Use a decisive path whose framing evolves substantially
+while locked_action remains unchanged. Do not downgrade it to small amplitude,
+slow speed, a fixed frontal view, or a fixed rear view.
 face_zoom_emphasis is a profile-owned readable face approach. Every record
 where it is true must begin with
 Zoom In with large amplitude at fast speed. Start at a frontal or
@@ -79,7 +80,11 @@ than isolated quota items. Preserve every face_arc_transition relation between
 them. Use the long Arc through 70-to-90 percent of its Shot, carry the image
 state across CONTINUE boundaries, and hand off to or expand out of the readable
 face scale without an internal cut. Prefer fast speed and substantial parallax
-when compatible with locked_action. Do not make generic walking or an
+when compatible with locked_action. Treat arc_density and arc_energy as hard
+assignments, not suggestions. Vary the start and end among low front
+three-quarter, side, rear three-quarter, over-shoulder, and frontal or
+three-quarter face coverage; do not reduce the batch to alternating fixed
+front and fixed rear records. Do not make generic walking or an
 incidental fixed fixture the visual purpose of the move; reveal the emotional
 whole-body performance, current-lyric-selected relationship, reaction, or
 changed environment. A face phrase is a sparse section or emotional pivot, not
@@ -122,6 +127,14 @@ different Camera choice that resolves every item in camera_quality_violations.
 required_face_arc_transition and required_long_arc_emphasis both require the
 replacement to begin with Arc Shot and satisfy the corresponding structural
 path and duration contract.
+required_long_arc_energy requires the replacement to begin exactly with
+Arc Shot with large amplitude at fast speed and retain the large moving path
+through the supplied duration fraction.
+required_h3_motion_type requires the replacement TEXT to begin with exactly
+one literal MiniMax H3 Motion Type from the allowed list. Do not repeat CAMERA
+inside TEXT and do not translate the Motion Type into Japanese.
+conflicting_camera_speed requires the replacement to remove every prose phrase
+whose speed contradicts the literal at fast speed or at slow speed modifier.
 required_face_zoom_emphasis requires the replacement to begin with Zoom In
 and satisfy the readable-face contract.
 Never use a Motion Type listed in disallowed_motion_types. A speed-word change,

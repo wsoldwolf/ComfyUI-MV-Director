@@ -35,9 +35,11 @@ studio field, daylight, backdrop, or panel-specific setting from the reference.
 Keep the directed environment continuous behind and around the Subject.
 Supplied slots are in timeline order; make each beat advance
 the physical state established by the preceding supplied slot instead of
-repeating the same gesture or object interaction. Prefer the earliest complete
-depictable predicate in the current Scene's original lyrics. Preserve its
-concrete nouns and physical verbs. A concrete target may become the primary
+repeating the same gesture or object interaction. Read every lyric line in the
+current Scene, not only the earliest predicate. When the Scene contains
+multiple Shots, make one concise Beat describe a short progression that assigns
+its distinct concrete lyric cues to different phases instead of dropping later
+nouns. Preserve concrete nouns and physical verbs. A concrete target may become the primary
 Beat target only when the current Scene's original lyric or author body names
 or clearly implies that target. Direction, scene_context, a reference image,
 an earlier Scene, or an instrumental gap may establish where something exists
@@ -45,7 +47,14 @@ but can never activate it as the current action target. Do not carry a lyric
 target into a later Scene after its lyric trigger has ended unless that later
 Scene's own lyric names or clearly implies it again.
 
-Naming a target does not automatically authorize contact. Add touching,
+Naming a visible target or effect without a verb still requires one visible
+realization in that same Scene. Do not ignore a lyric noun merely because it
+lacks an explicit action or adjective. Give the named thing an autonomous
+state, motion, transformation, atmospheric role, or spatial relation appropriate
+to its meaning, and give the Subject a readable gaze, posture, avoidance,
+approach-without-contact, or emotional response. This rule activates only the
+current lyric noun and does not carry it into later Scenes. Naming a target
+does not automatically authorize contact. Add touching,
 holding, stroking, carrying, gathering, guiding, manipulating, or releasing
 only when the current lyric or author body contains a compatible physical verb
 or unmistakable interaction meaning. Otherwise express the relationship by
@@ -129,12 +138,18 @@ When planner_policy_contract.policy_id is anime_emotional_mv, treat
 generic_locomotion_is_support_only, incidental_fixed_fixture_interaction,
 lyric_trigger_scope, environment_inventory_is_not_action_source,
 lyric_target_consumption, external_effect_mode, eye_expression_mode,
-whole_body_emotion_mode, and camera_phrase as hard creative boundaries. Choose
+whole_body_emotion_mode, emotional_amplitude, pose_contrast, and camera_phrase
+as hard creative boundaries. Choose
 a lyric-specific emotional tactic and a visibly changed body state for every
 Beat. Walking may only bridge two meaningful states and is never the Beat's
 main verb. Prefer coordinated eyelid, gaze, head, shoulder, torso, pelvis,
 arm, hand, support-leg, balance, level, recoil, extension, directional change,
-or held-stop performance before inventing contact with scenery. A target
+or held-stop performance before inventing contact with scenery. Make the
+emotional silhouette deliberately larger than naturalistic acting:
+use a strong torso orientation change, shoulder asymmetry, clear arm and hand
+intent, weight transfer, and level change where compatible, and end in a pose
+that is visibly distinct from both the opening and a neutral frontal or rear
+stand. A target
 named by the current lyric is still non-contact unless the current lyric or
 author body authorizes physical interaction. Once realized, that target remains
 unavailable to later Scenes until a later lyric activates it again. A permitted

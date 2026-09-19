@@ -163,9 +163,9 @@ class MVDirectorDirectionEnhancer:
             "required": {
                 "retention_policy": (list(RETENTION_POLICIES), {"default": "profile"}),
                 "user_request": ("STRING", {"default": "", "multiline": True}),
-                "style_profile": ([*STYLE_PROFILES, PASSTHROUGH_PROFILE], {"default": "reference_anime"}),
-                "motion_profile": ([*MOTION_PROFILES, PASSTHROUGH_PROFILE], {"default": "natural_performance"}),
-                "camera_profile": ([*CAMERA_PROFILES, PASSTHROUGH_PROFILE], {"default": "readable_depth"}),
+                "style_profile": ([*STYLE_PROFILES, PASSTHROUGH_PROFILE], {"default": "anime_emotional_mv"}),
+                "motion_profile": ([*MOTION_PROFILES, PASSTHROUGH_PROFILE], {"default": "anime_emotional_mv"}),
+                "camera_profile": ([*CAMERA_PROFILES, PASSTHROUGH_PROFILE], {"default": "anime_emotional_mv"}),
                 "model_name": (models, {"default": models[0]}),
                 "chat_format": ("STRING", {"default": ""}),
                 "max_tokens": ("INT", {"default": 768, "min": 64, "max": 4096, "step": 32}),

@@ -1,8 +1,8 @@
 {
   "id": "f97af838-5222-5864-8ec8-15d657333fdb",
   "revision": 0,
-  "last_node_id": 47,
-  "last_link_id": 71,
+  "last_node_id": 48,
+  "last_link_id": 74,
   "nodes": [
     {
       "id": 1,
@@ -24,7 +24,7 @@
           "name": "MODEL",
           "type": "MODEL",
           "links": [
-            64
+            67
           ]
         }
       ],
@@ -159,7 +159,7 @@
           "links": [
             8,
             32,
-            71
+            74
           ]
         }
       ],
@@ -241,7 +241,7 @@
         {
           "name": "source_timeline",
           "type": "H3_SOURCE_TIMELINE",
-          "link": 60
+          "link": 62
         },
         {
           "name": "tagged_references",
@@ -585,7 +585,7 @@
         {
           "name": "ref_images.ref_image_1",
           "type": "IMAGE",
-          "link": 63
+          "link": 66
         },
         {
           "name": "ref_images.ref_image_2",
@@ -674,7 +674,7 @@
         {
           "name": "audio_vae",
           "type": "VAE",
-          "link": 71
+          "link": 74
         },
         {
           "name": "model",
@@ -689,7 +689,7 @@
         {
           "name": "lip_sync_voice",
           "type": "AUDIO",
-          "link": 70
+          "link": 73
         }
       ],
       "outputs": [
@@ -1229,7 +1229,7 @@
         {
           "name": "model",
           "type": "MODEL",
-          "link": 65
+          "link": 68
         }
       ],
       "outputs": [
@@ -1346,7 +1346,7 @@
         {
           "name": "plan_json_input",
           "type": "STRING",
-          "link": 61
+          "link": 64
         },
         {
           "name": "project_assets",
@@ -1380,7 +1380,7 @@
         {
           "name": "width",
           "type": "INT",
-          "link": 66,
+          "link": 69,
           "widget": {
             "name": "width"
           }
@@ -1388,7 +1388,7 @@
         {
           "name": "height",
           "type": "INT",
-          "link": 67,
+          "link": 70,
           "widget": {
             "name": "height"
           }
@@ -1764,7 +1764,7 @@
         {
           "name": "lip_sync_options",
           "type": "H3_LIP_SYNC_OPTIONS",
-          "link": 69
+          "link": 72
         }
       ],
       "outputs": [
@@ -1958,7 +1958,7 @@
         {
           "name": "plan_json",
           "type": "STRING",
-          "link": 62
+          "link": 65
         }
       ],
       "outputs": [
@@ -1966,15 +1966,14 @@
           "name": "padded_audio_a",
           "type": "AUDIO",
           "links": [
-            58
+            59
           ]
         },
         {
           "name": "padded_audio_b",
           "type": "AUDIO",
           "links": [
-            59,
-            68
+            58
           ]
         },
         {
@@ -2003,7 +2002,7 @@
       "id": 38,
       "type": "MiniMaxH3AudioTracks",
       "pos": [
-        1980,
+        2460,
         2580
       ],
       "size": [
@@ -2017,12 +2016,12 @@
         {
           "name": "full_mix",
           "type": "AUDIO",
-          "link": 58
+          "link": 60
         },
         {
           "name": "vocals",
           "type": "AUDIO",
-          "link": 59
+          "link": 61
         },
         {
           "name": "instrumental",
@@ -2035,7 +2034,7 @@
           "name": "source_timeline",
           "type": "H3_SOURCE_TIMELINE",
           "links": [
-            60
+            62
           ]
         },
         {
@@ -2049,6 +2048,95 @@
         "Node name for S&R": "MiniMaxH3AudioTracks"
       },
       "widgets_values": []
+    },
+    {
+      "id": 48,
+      "type": "MVDirectorSceneDebugSplitter",
+      "pos": [
+        1980,
+        2580
+      ],
+      "size": [
+        420,
+        250
+      ],
+      "flags": {},
+      "order": 48,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "plan_json",
+          "type": "STRING",
+          "link": 63
+        },
+        {
+          "name": "vocal_audio",
+          "type": "AUDIO",
+          "link": 58
+        },
+        {
+          "name": "full_mix_audio",
+          "type": "AUDIO",
+          "link": 59
+        },
+        {
+          "name": "enable",
+          "type": "BOOLEAN",
+          "link": null,
+          "widget": {
+            "name": "enable"
+          }
+        },
+        {
+          "name": "scene_start",
+          "type": "INT",
+          "link": null,
+          "widget": {
+            "name": "scene_start"
+          }
+        },
+        {
+          "name": "scene_length",
+          "type": "INT",
+          "link": null,
+          "widget": {
+            "name": "scene_length"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "plan_json",
+          "type": "STRING",
+          "links": [
+            64
+          ]
+        },
+        {
+          "name": "vocal_audio",
+          "type": "AUDIO",
+          "links": [
+            61,
+            71
+          ]
+        },
+        {
+          "name": "full_mix_audio",
+          "type": "AUDIO",
+          "links": [
+            60
+          ]
+        }
+      ],
+      "title": "Scene Debug Splitter",
+      "properties": {
+        "Node name for S&R": "MVDirectorSceneDebugSplitter"
+      },
+      "widgets_values": [
+        false,
+        1,
+        1
+      ]
     },
     {
       "id": 39,
@@ -2070,8 +2158,8 @@
           "name": "text",
           "type": "STRING",
           "links": [
-            61,
-            62
+            63,
+            65
           ]
         }
       ],
@@ -2103,7 +2191,7 @@
         {
           "name": "model",
           "type": "MODEL",
-          "link": 64
+          "link": 67
         },
         {
           "name": "lora_name",
@@ -2127,7 +2215,7 @@
           "name": "MODEL",
           "type": "MODEL",
           "links": [
-            65
+            68
           ]
         }
       ],
@@ -2160,7 +2248,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            63
+            66
           ]
         },
         {
@@ -2231,14 +2319,14 @@
           "name": "width",
           "type": "INT",
           "links": [
-            66
+            69
           ]
         },
         {
           "name": "height",
           "type": "INT",
           "links": [
-            67
+            70
           ]
         }
       ],
@@ -2270,7 +2358,7 @@
         {
           "name": "voice",
           "type": "AUDIO",
-          "link": 68
+          "link": 71
         }
       ],
       "outputs": [
@@ -2278,14 +2366,14 @@
           "name": "lip_sync_options",
           "type": "H3_LIP_SYNC_OPTIONS",
           "links": [
-            69
+            72
           ]
         },
         {
           "name": "voice",
           "type": "AUDIO",
           "links": [
-            70
+            73
           ]
         },
         {
@@ -2751,21 +2839,37 @@
     [
       58,
       37,
-      0,
-      38,
-      0,
+      1,
+      48,
+      1,
       "AUDIO"
     ],
     [
       59,
       37,
+      0,
+      48,
+      2,
+      "AUDIO"
+    ],
+    [
+      60,
+      48,
+      2,
+      38,
+      0,
+      "AUDIO"
+    ],
+    [
+      61,
+      48,
       1,
       38,
       1,
       "AUDIO"
     ],
     [
-      60,
+      62,
       38,
       0,
       7,
@@ -2773,15 +2877,23 @@
       "H3_SOURCE_TIMELINE"
     ],
     [
-      61,
+      63,
       39,
+      0,
+      48,
+      0,
+      "STRING"
+    ],
+    [
+      64,
+      48,
       0,
       24,
       1,
       "STRING"
     ],
     [
-      62,
+      65,
       39,
       0,
       37,
@@ -2789,7 +2901,7 @@
       "STRING"
     ],
     [
-      63,
+      66,
       45,
       0,
       11,
@@ -2797,7 +2909,7 @@
       "IMAGE"
     ],
     [
-      64,
+      67,
       1,
       0,
       44,
@@ -2805,7 +2917,7 @@
       "MODEL"
     ],
     [
-      65,
+      68,
       44,
       0,
       22,
@@ -2813,7 +2925,7 @@
       "MODEL"
     ],
     [
-      66,
+      69,
       47,
       0,
       24,
@@ -2821,7 +2933,7 @@
       "INT"
     ],
     [
-      67,
+      70,
       47,
       1,
       24,
@@ -2829,15 +2941,15 @@
       "INT"
     ],
     [
-      68,
-      37,
+      71,
+      48,
       1,
       40,
       0,
       "AUDIO"
     ],
     [
-      69,
+      72,
       40,
       0,
       30,
@@ -2845,7 +2957,7 @@
       "H3_LIP_SYNC_OPTIONS"
     ],
     [
-      70,
+      73,
       40,
       1,
       12,
@@ -2853,7 +2965,7 @@
       "AUDIO"
     ],
     [
-      71,
+      74,
       5,
       0,
       12,

@@ -36,7 +36,7 @@ from .template import (
 )
 
 
-PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v36"
+PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v37"
 TASKS = ("visual-beats", "song-direction", "shot-layout", "actions", "cameras")
 _CAMERA_MOTION_TYPES = (
     "Roll Counterclockwise",
@@ -65,6 +65,10 @@ _LOWER_BODY_DETAIL_RE = re.compile(
     re.IGNORECASE,
 )
 _SLOW_CAMERA_RE = re.compile(r"at slow speed|ゆっくり|緩やか", re.IGNORECASE)
+_LARGE_FAST_ARC_RE = re.compile(
+    r"^Arc Shot\s+with large amplitude\s+at fast speed\b",
+    re.IGNORECASE,
+)
 _SLOW_ACTION_RE = re.compile(
     r"ゆっくり|緩やか|そっと|静かに|徐々に|slowly|gently|gradually",
     re.IGNORECASE,
@@ -816,7 +820,11 @@ def _camera_budget_violations(
         if not text:
             continue
         motion = _camera_motion_type(text)
-        if motion:
+        if not motion:
+            violations.setdefault(entity.key, []).append(
+                "required_h3_motion_type"
+            )
+        else:
             motion_counts[motion] = motion_counts.get(motion, 0) + 1
             maximum = (
                 1
@@ -836,10 +844,15 @@ def _camera_budget_violations(
             violations.setdefault(entity.key, []).append(
                 "required_face_arc_transition"
             )
-        if entity.value.get("long_arc_emphasis") and motion != "Arc Shot":
-            violations.setdefault(entity.key, []).append(
-                "required_long_arc_emphasis"
-            )
+        if entity.value.get("long_arc_emphasis"):
+            if motion != "Arc Shot":
+                violations.setdefault(entity.key, []).append(
+                    "required_long_arc_emphasis"
+                )
+            elif not _LARGE_FAST_ARC_RE.search(text):
+                violations.setdefault(entity.key, []).append(
+                    "required_long_arc_energy"
+                )
         if entity.value.get("face_zoom_emphasis") and motion != "Zoom In":
             violations.setdefault(entity.key, []).append(
                 "required_face_zoom_emphasis"
@@ -848,6 +861,12 @@ def _camera_budget_violations(
             slow_count += 1
             if slow_count > slow_maximum:
                 violations.setdefault(entity.key, []).append("slow_speed_budget")
+        if "at fast speed" in text and re.search(
+            r"ゆっくり|緩やか|at slow speed", text, re.IGNORECASE
+        ):
+            violations.setdefault(entity.key, []).append(
+                "conflicting_camera_speed"
+            )
         source_text = canonical_json(
             {
                 "lyrics": entity.value.get("lyrics", []),
@@ -869,7 +888,7 @@ def _anime_story_mv_long_arc_keys(entities: list[_Entity]) -> set[tuple[int, ...
 
     if not entities:
         return set()
-    target = 2 if len(entities) >= 4 else 1
+    target = max(1, (len(entities) + 2) // 3)
     selected_indices = {
         index
         for index, entity in enumerate(entities)
@@ -1007,7 +1026,8 @@ def _anime_emotional_mv_camera_emphasis(
             transitions[entities[candidate].key] = relation
             break
 
-    arc_target = max(len(arc_indices), (len(entities) + 1) // 2)
+    arc_target = max(len(arc_indices), (len(entities) * 2 + 2) // 3)
+    arc_target = min(arc_target, len(entities) - len(face_indices))
     candidates = sorted(
         (
             index
@@ -1565,12 +1585,17 @@ def generate_planner_content(
             "generic_locomotion_is_support_only": True,
             "incidental_fixed_fixture_interaction": "forbidden",
             "lyric_trigger_scope": "current_scene_original_lyrics_only",
+            "noun_only_lyric_visualization": "same_scene_autonomous_visual_predicate",
             "environment_inventory_is_not_action_source": True,
             "lyric_target_consumption": "one_scene_then_requires_new_trigger",
             "external_effect_mode": "autonomous_unless_current_lyric_operates_it",
             "eye_expression_mode": "vary_eyelids_with_lyric_phase",
             "whole_body_emotion_mode": "coordinated_head_torso_pelvis_limbs_weight",
-            "camera_phrase": "long_arc_sparse_short_face_pivot",
+            "emotional_amplitude": "exaggerated_readable_full_body",
+            "pose_contrast": "large_asymmetric_silhouette_change",
+            "camera_phrase": "dense_energetic_long_arc_short_face_pivot",
+            "arc_density": "two_thirds_of_eligible_non_face_slots",
+            "arc_energy": "large_amplitude_fast_70_90_percent",
             "face_zoom_frequency": "sparse_section_or_emotional_pivot",
             "later_scene_continue_minimum_ratio": "3/4",
             "all_later_continue_allowed": True,

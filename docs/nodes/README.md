@@ -22,7 +22,6 @@
 
 | ノード | 役割 |
 |---|---|
-| [H3 Background Reference](h3-background-reference.md) | 旧Planへ背景契約を後付けする互換ノード。新workflowでは不要 |
 
 ## Utilities
 
@@ -33,5 +32,6 @@
 | [String Combo](string-combo.md) | 任意の有限文字列候補をcombo化する |
 | [Connected Combo](connected-combo.md) | 接続先のcombo候補をサブグラフ外へ引き出す |
 | [Load Text File](load-text-file.md) | UTF-8 `.txt`をworkflowへ埋め込んでSTRING化する |
+| [Scene Debug Splitter](scene-debug-splitter.md) | Planの連続Scene範囲と対応PCMだけを切り出してデバッグする |
 
 LLMを使うノードの共通調整値は[GGUF共通設定](gguf-settings.md)を参照してください。

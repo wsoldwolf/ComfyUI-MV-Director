@@ -255,9 +255,10 @@ class VisionPhase3Tests(unittest.TestCase):
             concept_type="person",
         )
         self.assertEqual(result.resolved_picture_reference, "<Picture 3>")
-        self.assertIn("`画像3`", result.emd.emd_fragment)
-        self.assertNotIn("<Picture 3>", result.emd.emd_fragment)
-        self.assertIn("subject_hint: 狐の尾は一本です。", result.emd.emd_fragment)
+        self.assertEqual(result.emd_fragment.schema, "MVD_EMD_FRAGMENT_V1")
+        self.assertIn("`画像3`", result.emd_fragment.text)
+        self.assertNotIn("<Picture 3>", result.emd_fragment.text)
+        self.assertIn("subject_hint: 狐の尾は一本です。", result.emd_fragment.text)
         stored = result.reference_bindings.bindings[0]
         self.assertEqual(stored.image_sha256, "a" * 64)
         self.assertEqual(stored.target_node_id, "42")
@@ -357,12 +358,10 @@ class VisionPhase3Tests(unittest.TestCase):
             ),
             concept_type="location",
         )
-        self.assertIsNotNone(result.scene_emd)
-        assert result.scene_emd is not None
-        self.assertEqual(result.scene_emd.schema, "MVD_SCENE_EMD_FRAGMENT_V1")
-        self.assertIn("# シーン設定", result.scene_emd.text)
-        self.assertIn("* 赤い鳥居。", result.scene_emd.text)
-        self.assertIn("* `画像2`", result.scene_emd.text)
+        self.assertEqual(result.emd_fragment.schema, "MVD_SCENE_EMD_FRAGMENT_V1")
+        self.assertIn("# シーン設定", result.emd_fragment.text)
+        self.assertIn("* 赤い鳥居。", result.emd_fragment.text)
+        self.assertIn("* `画像2`", result.emd_fragment.text)
         self.assertEqual(result.reference_bindings.bindings, ())
 
     def test_format_retry_stops_after_second_invalid_response(self) -> None:
@@ -414,7 +413,7 @@ class VisionPhase3Tests(unittest.TestCase):
             ),
             concept_type="person",
         )
-        self.assertNotIn("画像外の設定", result.emd.emd_fragment)
+        self.assertNotIn("画像外の設定", result.emd_fragment.text)
 
     def test_mtmd_lifecycle_loads_reuses_streams_and_closes(self) -> None:
         with TemporaryDirectory() as temporary:
@@ -452,7 +451,16 @@ class VisionPhase3Tests(unittest.TestCase):
 
     def test_public_mapping_contains_image_node(self) -> None:
         self.assertIn("MVDirectorImageToSubjectEMD", NODE_CLASS_MAPPINGS)
-        inputs = NODE_CLASS_MAPPINGS["MVDirectorImageToSubjectEMD"].INPUT_TYPES()
+        cls = NODE_CLASS_MAPPINGS["MVDirectorImageToSubjectEMD"]
+        inputs = cls.INPUT_TYPES()
+        self.assertEqual(
+            cls.RETURN_NAMES,
+            ("emd_fragment", "reference_bindings", "image", "observations_json"),
+        )
+        self.assertEqual(
+            cls.RETURN_TYPES,
+            ("STRING", "MV_DIRECTOR_REFERENCE_BINDINGS", "IMAGE", "STRING"),
+        )
         self.assertIn("model_name", inputs["required"])
         self.assertEqual(
             inputs["required"]["seed"][1]["control_after_generate"],

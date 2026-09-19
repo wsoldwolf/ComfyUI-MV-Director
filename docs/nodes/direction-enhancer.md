@@ -8,9 +8,9 @@ Subject EMD、Scene EMD、ユーザー希望、三つのprofileを統合し、MV
 |---|---|---|
 | `retention_policy` | `profile` | profile既定の保持、Compiler既定、完全pass-throughを切り替える |
 | `user_request` | 空 | 最優先の演出希望。空でも動作する |
-| `style_profile` | `reference_anime` | 画風と媒体変換。`passthrough`で直接記述を優先 |
-| `motion_profile` | `natural_performance` | 全体の身体演技方針 |
-| `camera_profile` | `readable_depth` | 全体の撮影方針。Shot固有のカメラはPlannerが決める |
+| `style_profile` | `anime_emotional_mv` | 画風と媒体変換。`passthrough`で直接記述を優先 |
+| `motion_profile` | `anime_emotional_mv` | 全体の身体演技方針 |
+| `camera_profile` | `anime_emotional_mv` | 全体の撮影方針。Shot固有のカメラはPlannerが決める |
 | `concept_emd` | 任意 | Image to Subject EMD等の概念EMD |
 | `scene_emd` | 任意 | scene-only Visionが確定した環境、時刻・照明baseline、背景Picture。Plannerにも同じ断片を渡す |
 | `direction_emd_passthrough` | 任意 | profileを使わず、利用者が直接書く演出EMD |

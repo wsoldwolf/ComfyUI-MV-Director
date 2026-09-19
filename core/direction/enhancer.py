@@ -69,9 +69,9 @@ class DirectionEnhancerInput:
     concept_emd: str = ""
     scene_emd: str = ""
     user_request: str = ""
-    style_profile: str = "reference_anime"
-    motion_profile: str = "natural_performance"
-    camera_profile: str = "readable_depth"
+    style_profile: str = "anime_emotional_mv"
+    motion_profile: str = "anime_emotional_mv"
+    camera_profile: str = "anime_emotional_mv"
     retention_policy: str = "profile"
     direction_emd_passthrough: str = ""
 

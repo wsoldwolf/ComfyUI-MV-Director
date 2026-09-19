@@ -5,8 +5,11 @@ import unittest
 from core.compiler import CompilerError, compile_ref2va
 from core.h3_contract import (
     ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA,
+    ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA_H3,
     FACE_PERFORMANCE_CUT_ACTION,
+    FACE_PERFORMANCE_CUT_ACTION_H3,
     FACE_PERFORMANCE_CUT_CAMERA,
+    FACE_PERFORMANCE_CUT_CAMERA_H3,
     H3TimingProfile,
 )
 
@@ -395,9 +398,10 @@ class Ref2VACompilerTests(unittest.TestCase):
 """
         result = compile_ref2va(source, CameraDirectiveMutatingTranslator())
         prompt = "\n".join(result.plan["shots"][0]["prompt"])
-        self.assertIn(FACE_PERFORMANCE_CUT_ACTION, prompt)
-        self.assertIn(FACE_PERFORMANCE_CUT_CAMERA, prompt)
-        self.assertIn(ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA, prompt)
+        self.assertIn(FACE_PERFORMANCE_CUT_ACTION_H3, prompt)
+        self.assertIn(FACE_PERFORMANCE_CUT_CAMERA_H3, prompt)
+        self.assertIn(ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA_H3, prompt)
+        self.assertNotIn(FACE_PERFORMANCE_CUT_ACTION, prompt)
 
     def test_context_loop_mode_sets_only_its_fixed_fields(self) -> None:
         source = """# サブジェクト

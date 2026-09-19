@@ -6,12 +6,6 @@ EMDは **Easy MarkDown** の略です。Extended Markdownではありません�
 
 ![人物参照と背景参照を分離し、背景を計画時の環境観察と生成時の専用Pictureへ渡す最小パイプライン](docs/assets/minimal-pipeline.png)
 
-## 人物参照と背景参照を分ける理由
-
-人物の立ち絵と背景を一枚又は一つのPicture参照へ同居させると、H3の参照条件が人物identity、顔、髪、衣装及びposeへ強く使われ、背景の建築、植生、地形、材質及び空間構成が希薄化又は消失しやすくなります。本プロジェクトは人物を`<Picture 1>`、背景を環境専用の`<Picture 2>`として別々に与える構成を推奨します。背景の条件信号を人物identityから独立させることで、単一の人物参照だけへ背景も担わせる場合より背景再現率を高めます。ただし、参照画像の画素単位の複製を保証するものではありません。
-
-計画時は背景画像を専用のImage to Subject EMDで`scene_only / location / picture_reference_mode=manual / picture_index=2`として観察し、決定的に生成した`scene_emd`をDirection EnhancerとTimeline Plannerの両方へ渡します。Plannerは完成EMDへ`# シーン設定`として組み込み、Compilerが`<Picture 2>`の環境専用定義、保持契約及び必要参照を直接生成します。動画生成workflowでは同じ背景画像をH3の`ref_images.ref_image_1`へ直接接続します。人物参照と背景参照は役割を混ぜず、文章で指定した環境、時刻及び照明は背景画像の撮影条件より優先します。
-
 ## はじめに
 
 1. [導入マニュアル](docs/installation.md)に従ってカスタムノード、`llama-cpp-python`、Whisper、各モデルを準備します。
@@ -26,6 +20,7 @@ EMDは **Easy MarkDown** の略です。Extended Markdownではありません�
 | 場所 | 内容 |
 |---|---|
 | [`docs/`](docs/README.md) | 利用者向け・開発者向け文書の総合索引 |
+| [`docs/tips/`](docs/tips/README.md) | 参照画像の分離、再現率、配線など実運用のTIPS |
 | [`docs/nodes/`](docs/nodes/README.md) | 公開12ノードの操作マニュアル |
 | [`docs/spec/`](docs/spec/README.md) | EMD、protocol、最小コアの規範仕様 |
 | [`docs/implementation/`](docs/implementation/README.md) | 内部構造、公開surface、実装順序 |
@@ -45,12 +40,12 @@ EMDは **Easy MarkDown** の略です。Extended Markdownではありません�
 | Core | EMD Compiler (Ref2VA) | [EMDをPlan JSONへ変換する](docs/nodes/emd-compiler.md) |
 | Input | Lyric Segmentation | [歌詞、SRT、timelineを整列する](docs/nodes/lyric-segmentation.md) |
 | Audio | Audio Pad Pair | [full mixとvocalをPCM無音で整える](docs/nodes/audio-pad-pair.md) |
-| Legacy | H3 Background Reference | [旧Planへ背景契約を後付けする互換ノード。新workflowはscene_emdとCompilerを使用](docs/nodes/h3-background-reference.md) |
 | Utilities | H3 Timing Profile | [H3時間契約を共有する](docs/nodes/h3-timing-profile.md) |
 | Utilities | 32-bit Seed | [再現可能なseedを分岐する](docs/nodes/seed32.md) |
 | Utilities | String Combo | [有限文字列リストを選ぶ](docs/nodes/string-combo.md) |
 | Utilities | Connected Combo | [サブグラフ内comboを外へ出す](docs/nodes/connected-combo.md) |
 | Utilities | Load Text File | [UTF-8 lyricsファイルを読む](docs/nodes/load-text-file.md) |
+| Utilities | Scene Debug Splitter | [PlanとPCMを連続Scene範囲へ切り出す](docs/nodes/scene-debug-splitter.md) |
 
 ノードIDは`MVDirector...`、表示カテゴリは`MV Director/...`、内部socket型は`MV_DIRECTOR_...`です。旧プロトタイプとの互換aliasは登録しません。
 

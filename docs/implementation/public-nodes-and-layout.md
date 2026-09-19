@@ -21,12 +21,12 @@ prompt、歌詞、画像又は音声payloadは記録しない。
 | Core | `MVDirectorEMDCompiler` | `MV Director - EMD Compiler (Ref2VA)` | `nodes/node_emd_compiler/` | 完全EMDをRef2VA六セクションとContext Loop Plan JSONへ変換する |
 | Input | `MVDirectorLyricSegmentation` | `MV Director - Lyric Segmentation` | `nodes/node_lyric_segmentation/` | Whisper/VAD、SRT、Template EMD、H3互換length付きtimelineを返す |
 | Audio | `MVDirectorAudioPadPair` | `MV Director - Audio Pad Pair (PCM Silence)` | `nodes/node_audio_pad_pair/` | full mixとvocal stemの短い側だけを共通尺へ末尾paddingする |
-| Video | `MVDirectorH3BackgroundReference` | `MV Director - H3 Background Reference` | `nodes/node_h3_background_reference/` | 旧Planへ背景契約を後付けする互換ノード。新workflowでは使用しない |
 | Utilities | `MVDirectorH3TimingProfile` | `MV Director - H3 Timing Profile` | `nodes/node_h3_timing_profile/` | Context Loop timing contractをLyric SegmentationとCompilerへ共有する |
 | Utilities | `MVDirectorSeed32` | `MV Director - 32-bit Seed` | `nodes/node_seed32/` | GGUFとH3へ同じ再現可能な正の32-bit seedを供給する |
 | Utilities | `MVDirectorStringCombo` | `MV Director - String Combo` | `nodes/node_string_combo/` | 利用者定義の有限な文字列候補を選びSTRINGとして出力する |
 | Utilities | `MVDirectorConnectedCombo` | `MV Director - Connected Combo` | `nodes/node_connected_combo/` | サブグラフ内部の頻繁に変更するcomboを外側へ引き出す |
 | Utilities | `MVDirectorLoadTextFile` | `MV Director - Load Text File` | `nodes/node_load_text_file/` | plain lyrics `.txt`をブラウザで選択/D&Dし、埋め込みUTF-8本文をSTRINGとして返す |
+| Utilities | `MVDirectorSceneDebugSplitter` | `MV Director - Scene Debug Splitter` | `nodes/node_scene_debug_splitter/` | Context Loop Planの連続Scene範囲と同じdelivered-frame区間のvocal/full mix PCMを切り出す |
 
 旧`CL...` type ID、表示名又は互換aliasは登録しない。
 
@@ -81,11 +81,9 @@ Direction Enhancerでは`retention_policy`を先頭widgetに置く。LLM利用no
 
 出力順は`padded_audio_a`、`padded_audio_b`、`status`、`reference_audio_b`とし、既存三出力のslotを動かさない。通常のPair二出力は常に末尾paddingだけであり、Scene alignmentは追加された参照専用出力へだけ適用する。Audio参照workflowは`reference_audio_b`をH3 Audio Tracks／Source Timelineへ、`padded_audio_a`を完成動画のfull mixへ使う。Lyric Segmentationにはpadding／alignment前の元vocalを接続する。
 
-### 1.8 H3 Background Referenceの保持範囲
+### 1.8 Scene Debug Splitterの保持範囲
 
-`MVDirectorH3BackgroundReference`は旧Planとの互換用で、Compiler後、動画生成前にだけ使用する。新しい標準workflowは背景Visionの`scene_emd`をDirection EnhancerとPlannerへ渡し、Compilerが環境専用契約を生成するため、このノードを使用しない。
-
-人物と背景を同じPictureへ束縛すると人物identityの特徴が参照条件を占有し、環境特徴が希薄化又は欠落しやすい。このため標準workflowは人物を`<Picture 1>`、背景を`<Picture 2>`へ物理的に分離する。計画時は背景Visionの`scene_emd`をDirection EnhancerとPlannerへ渡し、生成時は同じ背景IMAGEをH3 `ref_images.ref_image_1`へ直接渡す。この分離は背景再現率を改善するが、画素又は構図の完全一致を契約しない。
+`MVDirectorSceneDebugSplitter`は1ベースの`scene_start`と連続する`scene_length`からPlanの`shots`部分列を選び、選択Sceneより前にある`length - context_length`合計をPCM開始frame、選択Sceneの同合計を出力frame数としてvocal/full mixを切り出す。PCMが終端へ不足する場合だけ末尾へ無音を追加し、Planの選択Shot本文、context、continuity又は他のroot fieldは変更しない。`enable=false`では入力検証も行わず三入力をそのまま返す。
 
 ## 2. 初期実装で登録しないノード
 
@@ -121,6 +119,7 @@ ComfyUI-MV-Director/
 │  ├─ node_emd_compiler/
 │  ├─ node_lyric_segmentation/
 │  ├─ node_audio_pad_pair/
+│  ├─ node_scene_debug_splitter/
 │  ├─ node_h3_timing_profile/
 │  ├─ node_seed32/
 │  ├─ node_string_combo/

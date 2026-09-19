@@ -23,6 +23,7 @@ from nodes import NODE_CLASS_MAPPINGS
 from nodes.node_audio_pad_pair import MVDirectorAudioPadPair
 from nodes.node_h3_timing_profile import MVDirectorH3TimingProfile
 from nodes.node_seed32 import MVDirectorSeed32
+from nodes.node_scene_debug_splitter import MVDirectorSceneDebugSplitter
 
 
 class FakeWaveform:
@@ -207,6 +208,116 @@ class AudioPadPairTests(unittest.TestCase):
                 "forceInput"
             ]
         )
+
+
+class SceneDebugSplitterTests(unittest.TestCase):
+    @staticmethod
+    def _plan() -> str:
+        return json.dumps(
+            {
+                "defaults": {"steps": 8},
+                "prompt_prefix": ["keep"],
+                "shots": [
+                    {"id": "scene_0001", "length": 10, "context_length": 0},
+                    {"id": "scene_0002", "length": 12, "context_length": 2},
+                    {"id": "scene_0003", "length": 15, "context_length": 3},
+                    {"id": "scene_0004", "length": 8, "context_length": 0},
+                ],
+            },
+            ensure_ascii=False,
+        )
+
+    def test_public_surface_uses_one_based_scene_widgets(self) -> None:
+        self.assertEqual(
+            MVDirectorSceneDebugSplitter.RETURN_NAMES,
+            ("plan_json", "vocal_audio", "full_mix_audio"),
+        )
+        inputs = MVDirectorSceneDebugSplitter.INPUT_TYPES()["required"]
+        self.assertTrue(inputs["plan_json"][1]["forceInput"])
+        self.assertTrue(inputs["enable"][1]["default"])
+        self.assertEqual(inputs["scene_start"][1]["default"], 1)
+        self.assertEqual(inputs["scene_start"][1]["min"], 1)
+        self.assertEqual(inputs["scene_length"][1]["default"], 1)
+
+    def test_disabled_node_returns_all_three_inputs_by_identity(self) -> None:
+        vocal = {"waveform": object(), "sample_rate": 1}
+        mix = {"waveform": object(), "sample_rate": 1}
+
+        output = MVDirectorSceneDebugSplitter().split_scenes(
+            "not JSON",
+            vocal,
+            mix,
+            False,
+            999,
+            999,
+        )
+
+        self.assertEqual(output["result"][0], "not JSON")
+        self.assertIs(output["result"][1], vocal)
+        self.assertIs(output["result"][2], mix)
+        self.assertEqual(output["ui"]["status"], ["enabled=no; passthrough=yes"])
+
+    def test_selected_scenes_use_prior_delivered_frames_as_pcm_skip(self) -> None:
+        vocal_wave = FakeWaveform((1, 1, 2800), range(2800))
+        mix_wave = FakeWaveform((1, 2, 4000), range(4000))
+        output = MVDirectorSceneDebugSplitter().split_scenes(
+            self._plan(),
+            {"waveform": vocal_wave, "sample_rate": 2400, "tag": "vocal"},
+            {"waveform": mix_wave, "sample_rate": 2400, "tag": "mix"},
+            True,
+            2,
+            2,
+        )
+
+        sliced_plan, vocal, mix = output["result"]
+        parsed = json.loads(sliced_plan)
+        self.assertEqual(
+            [shot["id"] for shot in parsed["shots"]],
+            ["scene_0002", "scene_0003"],
+        )
+        self.assertEqual(parsed["defaults"], {"steps": 8})
+        self.assertEqual(parsed["prompt_prefix"], ["keep"])
+        # Scene 1 delivers 10 frames, so 1000 samples are skipped at 24 fps.
+        # Scenes 2 and 3 deliver (12-2)+(15-3)=22 frames = 2200 samples.
+        self.assertEqual(vocal["waveform"].shape[-1], 2200)
+        self.assertEqual(vocal["waveform"].data[:1800], list(range(1000, 2800)))
+        self.assertEqual(vocal["waveform"].data[1800:], [0] * 400)
+        self.assertEqual(mix["waveform"].shape[-1], 2200)
+        self.assertEqual(mix["waveform"].data, list(range(1000, 3200)))
+        self.assertEqual(vocal["tag"], "vocal")
+        self.assertEqual(mix["tag"], "mix")
+        status = output["ui"]["status"][0]
+        self.assertIn("scenes=2..3", status)
+        self.assertIn("skip_frames=10", status)
+        self.assertIn("output_frames=22", status)
+        self.assertIn("vocal_end_padding_samples=400", status)
+
+    def test_scene_range_must_fit_the_plan(self) -> None:
+        audio = {
+            "waveform": FakeWaveform((1, 1, 1000)),
+            "sample_rate": 2400,
+        }
+        with self.assertRaisesRegex(ValueError, "scene_start 5 exceeds"):
+            MVDirectorSceneDebugSplitter().split_scenes(
+                self._plan(), audio, audio, True, 5, 1
+            )
+        with self.assertRaisesRegex(ValueError, "scene range 4..5 exceeds"):
+            MVDirectorSceneDebugSplitter().split_scenes(
+                self._plan(), audio, audio, True, 4, 2
+            )
+
+    def test_invalid_delivered_frame_count_is_rejected(self) -> None:
+        plan = json.dumps(
+            {"shots": [{"length": 22, "context_length": 22}]}
+        )
+        audio = {
+            "waveform": FakeWaveform((1, 1, 1000)),
+            "sample_rate": 2400,
+        }
+        with self.assertRaisesRegex(ValueError, "deliver at least one frame"):
+            MVDirectorSceneDebugSplitter().split_scenes(
+                plan, audio, audio, True, 1, 1
+            )
 
 
 class UtilityProtocolTests(unittest.TestCase):

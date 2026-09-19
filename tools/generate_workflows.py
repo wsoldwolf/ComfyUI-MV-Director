@@ -450,7 +450,6 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
                 _output("reference_bindings", "MV_DIRECTOR_REFERENCE_BINDINGS"),
                 _output("image", "IMAGE"),
                 _output("observations_json", "STRING"),
-                _output("scene_emd", "STRING"),
             ],
             widgets=[
                 VISION_MODEL,
@@ -510,9 +509,9 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
             widgets=[
                 "profile",
                 "",
-                "anime_story_mv",
-                "anime_story_mv",
-                "anime_story_mv",
+                "anime_emotional_mv",
+                "anime_emotional_mv",
+                "anime_emotional_mv",
                 TEXT_MODEL,
                 "",
                 768,
@@ -653,7 +652,6 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
                 _output("reference_bindings", "MV_DIRECTOR_REFERENCE_BINDINGS"),
                 _output("image", "IMAGE"),
                 _output("observations_json", "STRING"),
-                _output("scene_emd", "STRING"),
             ],
             widgets=[
                 VISION_MODEL,
@@ -703,10 +701,10 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
     )
     _connect(workflow, 3, 0, 8, "concept_emd", "STRING")
     _connect(workflow, 14, 0, 15, "image", "IMAGE")
-    _connect(workflow, 15, 4, 8, "scene_emd", "STRING")
+    _connect(workflow, 15, 0, 8, "scene_emd", "STRING")
     _connect(workflow, 7, 0, 9, "template_emd", "STRING")
     _connect(workflow, 3, 0, 9, "concept_emd", "STRING")
-    _connect(workflow, 15, 4, 9, "scene_emd", "STRING")
+    _connect(workflow, 15, 0, 9, "scene_emd", "STRING")
     _connect(workflow, 8, 0, 9, "direction", "MV_DIRECTOR_DIRECTION")
     _connect(workflow, 9, 0, 10, "emd_text", "STRING")
     _connect(
@@ -751,7 +749,7 @@ def _audio_tracks_node(node_id: int) -> dict[str, Any]:
     return _node(
         node_id,
         "MiniMaxH3AudioTracks",
-        (1980, 2580),
+        (2460, 2580),
         (380, 220),
         "H3 Audio Tracks",
         inputs=[
@@ -763,6 +761,33 @@ def _audio_tracks_node(node_id: int) -> dict[str, Any]:
             _output("source_timeline", "H3_SOURCE_TIMELINE"),
             _output("status", "STRING"),
         ],
+    )
+
+
+def _scene_debug_splitter_node(
+    node_id: int,
+    pos: tuple[int, int] = (1980, 2580),
+) -> dict[str, Any]:
+    return _node(
+        node_id,
+        "MVDirectorSceneDebugSplitter",
+        pos,
+        (420, 250),
+        "Scene Debug Splitter",
+        inputs=[
+            _input("plan_json", "STRING"),
+            _input("vocal_audio", "AUDIO"),
+            _input("full_mix_audio", "AUDIO"),
+            _widget_input("enable", "BOOLEAN"),
+            _widget_input("scene_start", "INT"),
+            _widget_input("scene_length", "INT"),
+        ],
+        outputs=[
+            _output("plan_json", "STRING"),
+            _output("vocal_audio", "AUDIO"),
+            _output("full_mix_audio", "AUDIO"),
+        ],
+        widgets=[False, 1, 1],
     )
 
 
@@ -872,6 +897,7 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
         _timing_node(35, (90, 2650), (340, 100)),
         _audio_pad_node(37, spec["alignment"]),
         _audio_tracks_node(38),
+        _scene_debug_splitter_node(48),
         _load_text_node(
             39,
             (76.77573693416907, 2427.2389436196327),
@@ -937,7 +963,7 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
             ]
         )
     workflow["nodes"].extend(additions)
-    workflow["last_node_id"] = 47
+    workflow["last_node_id"] = 48
 
     _connect(workflow, 32, 0, 37, "audio_a", "AUDIO")
     _connect(workflow, 33, 0, 37, "audio_b", "AUDIO")
@@ -961,12 +987,16 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
         "h3_timing_profile",
         "MV_DIRECTOR_H3_TIMING_PROFILE",
     )
-    _connect(workflow, 37, 0, 38, "full_mix", "AUDIO")
-    _connect(workflow, 37, 1, 38, "vocals", "AUDIO")
+    splitter_vocal_slot = 3 if mode == "audio_reference" else 1
+    _connect(workflow, 37, splitter_vocal_slot, 48, "vocal_audio", "AUDIO")
+    _connect(workflow, 37, 0, 48, "full_mix_audio", "AUDIO")
+    _connect(workflow, 48, 2, 38, "full_mix", "AUDIO")
+    _connect(workflow, 48, 1, 38, "vocals", "AUDIO")
     _connect(workflow, 38, 0, 7, "source_timeline", "H3_SOURCE_TIMELINE")
     _disconnect_input(workflow, 24, "plan_json_input")
     _disconnect_input(workflow, 37, "plan_json")
-    _connect(workflow, 39, 0, 24, "plan_json_input", "STRING")
+    _connect(workflow, 39, 0, 48, "plan_json", "STRING")
+    _connect(workflow, 48, 0, 24, "plan_json_input", "STRING")
     _connect(workflow, 39, 0, 37, "plan_json", "STRING")
     _connect(workflow, 45, 0, 11, "ref_images.ref_image_1", "IMAGE")
     _connect(workflow, 1, 0, 44, "model", "MODEL")
@@ -990,7 +1020,7 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
             widgets=[1.0, 0.2, 0.0, 0.15, 0.2],
         )
         workflow["nodes"].append(lip)
-        _connect(workflow, 37, 1, 40, "voice", "AUDIO")
+        _connect(workflow, 48, 1, 40, "voice", "AUDIO")
         _connect(workflow, 40, 0, 30, "lip_sync_options", "H3_LIP_SYNC_OPTIONS")
         _connect(workflow, 40, 1, 12, "lip_sync_voice", "AUDIO")
         _connect(workflow, 5, 0, 12, "audio_vae", "VAE")
@@ -1010,7 +1040,7 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
             widgets=[0.0, 60.0],
         )
         workflow["nodes"].append(trim)
-        _connect(workflow, 37, 3, 40, "audio", "AUDIO")
+        _connect(workflow, 48, 1, 40, "audio", "AUDIO")
         _connect(workflow, 8, 10, 40, "start_index", "FLOAT")
         _connect(workflow, 8, 11, 40, "duration", "FLOAT")
         _connect(workflow, 40, 0, 11, "ref_audios.ref_audio_0", "AUDIO")
@@ -1146,6 +1176,37 @@ def _connect_if_empty(
         )
 
 
+def _connect_if_different(
+    workflow: dict[str, Any], origin: dict[str, Any], origin_slot: int,
+    target: dict[str, Any], target_name: str, type_name: str,
+) -> None:
+    """Keep an existing equivalent link so workflow generation is idempotent."""
+
+    target_input = target["inputs"][_input_index(target, target_name)]
+    link_id = target_input.get("link")
+    if link_id is not None:
+        existing = next(
+            (link for link in workflow["links"] if int(link[0]) == int(link_id)),
+            None,
+        )
+        if (
+            existing is not None
+            and int(existing[1]) == int(origin["id"])
+            and int(existing[2]) == origin_slot
+            and existing[5] == type_name
+        ):
+            return
+        _disconnect_input(workflow, int(target["id"]), target_name)
+    _connect(
+        workflow,
+        int(origin["id"]),
+        origin_slot,
+        int(target["id"]),
+        target_name,
+        type_name,
+    )
+
+
 def _sync_development_workflows(
     output_dir: Path,
     reference_plan: dict[str, Any],
@@ -1238,31 +1299,73 @@ def _sync_development_workflows(
             if isinstance(direction_connectable, dict):
                 direction_connectable.pop("observations_json", None)
                 direction_connectable["scene_emd"] = True
-            _connect_if_empty(workflow, background, 4, direction, "scene_emd", "STRING")
-            _connect_if_empty(workflow, background, 4, planner, "scene_emd", "STRING")
+            _connect_if_empty(workflow, background, 0, direction, "scene_emd", "STRING")
+            _connect_if_empty(workflow, background, 0, planner, "scene_emd", "STRING")
         elif path.name.startswith("02_video"):
-            binder_ids = {
-                int(node["id"])
-                for node in workflow["nodes"]
-                if node.get("type") == "MVDirectorH3BackgroundReference"
-            }
-            if binder_ids:
-                _remove_nodes(workflow, binder_ids)
             loader = _node_by_title(workflow, "Compiled Plan JSON (.txt handoff)")
             background = _node_by_title(workflow, "Background Reference • <Picture 2>")
             production = _node_by_title(workflow, "Production Plan")
             audio_pad = _node_by_title(workflow, "Audio Pad Pair")
+            audio_tracks = _node_by_title(workflow, "H3 Audio Tracks")
             conditioning = _node_by_title(
                 workflow, "Reference Conditioning • MV Director Plan"
             )
-            _disconnect_input(workflow, int(production["id"]), "plan_json_input")
-            _disconnect_input(workflow, int(audio_pad["id"]), "plan_json")
-            _disconnect_input(
-                workflow, int(conditioning["id"]), "ref_images.ref_image_1"
+            splitters = [
+                node
+                for node in workflow["nodes"]
+                if node.get("type") == "MVDirectorSceneDebugSplitter"
+            ]
+            if len(splitters) > 1:
+                raise ValueError("expected at most one Scene Debug Splitter")
+            if splitters:
+                splitter = splitters[0]
+                _sync_node_interface(
+                    workflow,
+                    splitter,
+                    _node_by_title(reference, "Scene Debug Splitter"),
+                )
+                _sync_node_widgets(
+                    splitter,
+                    _node_by_title(reference, "Scene Debug Splitter"),
+                )
+            else:
+                splitter_id = max(int(node["id"]) for node in workflow["nodes"]) + 1
+                splitter = _scene_debug_splitter_node(splitter_id)
+                workflow["nodes"].append(splitter)
+            audio_tracks["pos"] = [2460, 2580]
+            _connect_if_different(
+                workflow, loader, 0, splitter, "plan_json", "STRING"
             )
-            _connect(workflow, int(loader["id"]), 0, int(production["id"]), "plan_json_input", "STRING")
-            _connect(workflow, int(loader["id"]), 0, int(audio_pad["id"]), "plan_json", "STRING")
-            _connect(workflow, int(background["id"]), 0, int(conditioning["id"]), "ref_images.ref_image_1", "IMAGE")
+            _connect_if_different(
+                workflow, splitter, 0, production, "plan_json_input", "STRING"
+            )
+            _connect_if_different(
+                workflow, loader, 0, audio_pad, "plan_json", "STRING"
+            )
+            _connect_if_different(
+                workflow, audio_pad, 1, splitter, "vocal_audio", "AUDIO"
+            )
+            _connect_if_different(
+                workflow, audio_pad, 0, splitter, "full_mix_audio", "AUDIO"
+            )
+            _connect_if_different(
+                workflow, splitter, 2, audio_tracks, "full_mix", "AUDIO"
+            )
+            _connect_if_different(
+                workflow, splitter, 1, audio_tracks, "vocals", "AUDIO"
+            )
+            lip = _node_by_title(workflow, "Context Loop Lip-Sync Options")
+            _connect_if_different(
+                workflow, splitter, 1, lip, "voice", "AUDIO"
+            )
+            _connect_if_different(
+                workflow,
+                background,
+                0,
+                conditioning,
+                "ref_images.ref_image_1",
+                "IMAGE",
+            )
             workflow["last_node_id"] = max(int(node["id"]) for node in workflow["nodes"])
         validate_workflow(workflow)
         path.write_text(_json_text(workflow) + "\n", encoding="utf-8")

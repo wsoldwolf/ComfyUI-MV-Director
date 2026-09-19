@@ -19,7 +19,7 @@ from ..protocols import parse_llm_records
 from .errors import CompilerError
 
 
-TRANSLATION_PROMPT_VERSION = "mvd-prompt-translation-ja-en-v12"
+TRANSLATION_PROMPT_VERSION = "mvd-prompt-translation-ja-en-v13"
 TRANSLATION_RECORD_TYPE = "TRANSLATION"
 TRANSLATION_MAX_BATCH_UNITS = 7
 TRANSLATION_RECOVERY_CHUNK_CHARS = 120
@@ -146,6 +146,29 @@ def _recover_isolated_translation(response: str) -> str | None:
     ):
         return None
     return text
+
+
+def _isolated_english_candidates(normalized_response: str) -> tuple[str, ...]:
+    """Return distinct valid slot-1 English candidates in response order.
+
+    A one-unit retry has no slot-to-source ambiguity even when a small model
+    repeats ``TRANSLATION 1`` with different wording.  Keep the model text AS
+    IS and make the choice deterministic instead of failing the compilation.
+    """
+
+    candidates: list[str] = []
+    for raw_line in normalized_response.split("\n"):
+        fields = raw_line.split("\t", 2)
+        if len(fields) != 3 or fields[0] != TRANSLATION_RECORD_TYPE:
+            continue
+        slot_text, candidate = fields[1], fields[2].replace("\t", " ").strip()
+        if slot_text != "1" or not candidate:
+            continue
+        if _JAPANESE_SCRIPT_RE.search(candidate) or candidate == "1":
+            continue
+        if candidate not in candidates:
+            candidates.append(candidate)
+    return tuple(candidates)
 
 
 def _translation_recovery_chunks(text: str) -> tuple[str, ...]:
@@ -500,6 +523,25 @@ class LlamaPromptTranslator:
                 frozenset({1}),
             )
             retry_reasons = {issue.reason for issue in retry.issues}
+            isolated_candidates = (
+                _isolated_english_candidates(normalized_retry)
+                if retry_duplicate_conflicts
+                and not retry.missing
+                and retry_reasons
+                <= {"field_count", "unknown_type", "unknown_slot", "duplicate"}
+                else ()
+            )
+            if isolated_candidates:
+                by_slot[retry_slot] = isolated_candidates[0]
+                self.protocol_recovered_count += 1
+                _LOGGER.info(
+                    "[MV Director - EMD Compiler (Ref2VA)] recovered "
+                    "conflicting duplicate isolated translation; slot=%d; "
+                    "candidates=%d; selected=first_valid_english",
+                    displayed_slot,
+                    len(isolated_candidates),
+                )
+                continue
             recovered_text = (
                 _recover_isolated_translation(retry_response)
                 if retry.missing and retry_reasons <= {"field_count"}

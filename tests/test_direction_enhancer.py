@@ -82,15 +82,21 @@ class DirectionEnhancerTests(unittest.TestCase):
             runtime_config=LlamaRuntimeConfig(),
         )
         self.assertEqual(len(backend.calls), 1)
-        self.assertEqual(result.direction.style_direction[0], "実写映画として自然な材質と奥行きで描く。")
+        self.assertEqual(
+            result.direction.style_direction,
+            (STYLE_PROFILES["anime_emotional_mv"],),
+        )
         self.assertEqual(
             result.direction.motion_direction,
-            (MOTION_PROFILES["natural_performance"],),
+            (MOTION_PROFILES["anime_emotional_mv"],),
         )
         self.assertEqual(
             result.direction.camera_direction,
-            (CAMERA_PROFILES["readable_depth"],),
+            (CAMERA_PROFILES["anime_emotional_mv"],),
         )
+        self.assertEqual(result.direction.style_profile_id, "anime_emotional_mv")
+        self.assertEqual(result.direction.motion_profile_id, "anime_emotional_mv")
+        self.assertEqual(result.direction.camera_profile_id, "anime_emotional_mv")
         self.assertIn("## スタイル", result.direction_emd_preview)
         self.assertIn("## その他", result.direction_emd_preview)
         input_records = [
@@ -106,7 +112,11 @@ class DirectionEnhancerTests(unittest.TestCase):
         )
         result = enhance_direction(
             backend,
-            value=DirectionEnhancerInput(),
+            value=DirectionEnhancerInput(
+                style_profile="reference_anime",
+                motion_profile="natural_performance",
+                camera_profile="readable_depth",
+            ),
             system_prompt="fixed",
             runtime_config=LlamaRuntimeConfig(),
         )
@@ -320,19 +330,29 @@ class DirectionEnhancerTests(unittest.TestCase):
         self.assertIn("never move one onto a route's centerline", system_prompt)
         self.assertIn("explicitly selects that exact object", system_prompt)
 
-    def test_anime_story_mv_profiles_keep_local_costume_details_out_of_direction(self) -> None:
-        self.assertIn("一又は二Shot", CAMERA_PROFILES["anime_story_mv"])
+    def test_anime_story_mv_profiles_keep_footwear_detail_in_style_only(self) -> None:
+        self.assertIn("およそ3分の1", CAMERA_PROFILES["anime_story_mv"])
         self.assertIn("70%から90%", CAMERA_PROFILES["anime_story_mv"])
-        self.assertIn("Arc Shot", CAMERA_PROFILES["anime_story_mv"])
-        combined = " ".join(
+        self.assertIn(
+            "Arc Shot with large amplitude at fast speed",
+            CAMERA_PROFILES["anime_story_mv"],
+        )
+        non_style = " ".join(
             (
-                STYLE_PROFILES["anime_story_mv"],
                 MOTION_PROFILES["anime_story_mv"],
                 CAMERA_PROFILES["anime_story_mv"],
             )
         ).casefold()
         for local_detail in ("足袋", "足指", "つま先", "裸足", "tabi", "toe"):
-            self.assertNotIn(local_detail, combined)
+            self.assertNotIn(local_detail, non_style)
+        self.assertIn(
+            "つま先の割れは親指と残り四趾の間の一か所",
+            STYLE_PROFILES["anime_story_mv"],
+        )
+        self.assertIn(
+            "指、爪又は素足を露出させず",
+            STYLE_PROFILES["anime_story_mv"],
+        )
 
     def test_all_passthrough_skips_inference_and_keeps_exact_text(self) -> None:
         backend = FakeDirectionBackend()
@@ -487,7 +507,12 @@ class DirectionEnhancerTests(unittest.TestCase):
         backend = FakeDirectionBackend("preamble\n" + VALID + "\nSTYLE\t1\t別案")
         result = enhance_direction(
             backend,
-            value=DirectionEnhancerInput(user_request="夜間"),
+            value=DirectionEnhancerInput(
+                user_request="夜間",
+                style_profile="reference_anime",
+                motion_profile="natural_performance",
+                camera_profile="readable_depth",
+            ),
             system_prompt="fixed",
             runtime_config=LlamaRuntimeConfig(),
         )
@@ -544,7 +569,7 @@ class DirectionEnhancerTests(unittest.TestCase):
             },
         )
         camera = CAMERA_PROFILES["anime_story_mv"]
-        self.assertIn("隣接ShotでArcを反復しない", camera)
+        self.assertIn("隣接Shotで同じArc軌道を反復しない", camera)
         self.assertIn("60度から120度の経路", camera)
         self.assertIn("続くZoom Inへ接続", camera)
         self.assertIn("Tracking Shot", camera)
@@ -555,6 +580,7 @@ class DirectionEnhancerTests(unittest.TestCase):
         self.assertIn("地面から明確に持ち上げ", MOTION_PROFILES["anime_story_mv"])
         self.assertIn("時間方向に連続", MOTION_PROFILES["anime_story_mv"])
         self.assertIn("痙攣状motion", MOTION_PROFILES["anime_story_mv"])
+        self.assertIn("非対称silhouette", MOTION_PROFILES["anime_story_mv"])
         self.assertIn("短いポーズ保持", MOTION_PROFILES["cinema_mv"])
         self.assertIn("移動が不要なら静止構図", CAMERA_PROFILES["cinema_mv"])
         self.assertIn("reference_anime", STYLE_PROFILES)
@@ -563,7 +589,20 @@ class DirectionEnhancerTests(unittest.TestCase):
         self.assertIn("古傷", STYLE_PROFILES["anime_story_mv"])
         self.assertIn("皮膚と衣装を清潔で損傷のない状態", STYLE_PROFILES["anime_story_mv"])
         self.assertIn("cinema_mv", DIRECTION_PRESETS)
-        self.assertIn("概ね半数", CAMERA_PROFILES["anime_emotional_mv"])
+        self.assertIn("概ね3分の2", CAMERA_PROFILES["anime_emotional_mv"])
+        self.assertIn(
+            "Arc Shot with large amplitude at fast speed",
+            CAMERA_PROFILES["anime_emotional_mv"],
+        )
+        self.assertIn("一段強く誇張", MOTION_PROFILES["anime_emotional_mv"])
+        self.assertIn(
+            "つま先の割れは親指と残り四趾の間の一か所",
+            STYLE_PROFILES["anime_emotional_mv"],
+        )
+        self.assertIn(
+            "指、爪又は素足を露出させず",
+            STYLE_PROFILES["anime_emotional_mv"],
+        )
         self.assertIn("単なる歩行", MOTION_PROFILES["anime_emotional_mv"])
         self.assertIn("短い閉眼、半開き、伏し目", MOTION_PROFILES["anime_emotional_mv"])
         self.assertIn("支持脚、遊脚、重心", MOTION_PROFILES["anime_emotional_mv"])
@@ -610,6 +649,18 @@ class DirectionEnhancerTests(unittest.TestCase):
         self.assertIn("retention_policy", inputs["required"])
         self.assertIn(
             PASSTHROUGH_PROFILE, inputs["required"]["style_profile"][0]
+        )
+        self.assertEqual(
+            inputs["required"]["style_profile"][1]["default"],
+            "anime_emotional_mv",
+        )
+        self.assertEqual(
+            inputs["required"]["motion_profile"][1]["default"],
+            "anime_emotional_mv",
+        )
+        self.assertEqual(
+            inputs["required"]["camera_profile"][1]["default"],
+            "anime_emotional_mv",
         )
 
 

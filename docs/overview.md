@@ -11,7 +11,7 @@ ComfyUI-MV-Directorは、利用者が完成promptを手書きしなくても、�
 3. Timeline Plannerが確定済みScene/Shot枠へ歌詞解釈、人物動作、カメラ、リップシンク方式を展開します。
 4. EMD Compilerが日本語promptだけを英訳し、Ref2VA用Context Loop Plan JSONへ機械的に変換します。
 
-人物参照と背景参照は別系統です。人物画像はSubject identity用`<Picture 1>`、背景画像は環境用`<Picture 2>`としてH3へ渡します。一つの参照へ両方を担わせると人物の顔、髪、衣装及びposeが参照条件を占有し、背景の建築、植生及び空間構成が弱くなりやすいためです。計画時は背景Visionが作る`scene_emd`をDirection EnhancerとPlannerへ渡し、Compilerが環境専用Picture契約を生成します。動画生成時は同じ背景画像をH3の対応slotへ直接渡します。
+人物参照と背景参照は別系統です。計画時は背景Visionが`scene_only`時に`emd_fragment`へ出すScene EMDをDirection EnhancerとPlannerの`scene_emd`へ渡し、動画生成時は同じ背景画像をH3の対応slotへ直接渡します。理由と推奨配線は[人物参照と背景参照を分ける](tips/separate-subject-and-background-references.md)を参照してください。
 
 Direction EnhancerとTimeline Planner内部の詳しい流れは[処理フロー図](architecture/direction-planner-flow.md)を参照してください。DirectionのStyle、Motion、Cameraは[`profiles/`](../profiles/README.md)の外部EMDとして追加できます。
 

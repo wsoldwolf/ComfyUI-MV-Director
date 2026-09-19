@@ -2,11 +2,13 @@
 
 from .camera import (
     ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA,
+    ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA_H3,
     FACE_PERFORMANCE_CUT_ACTION,
+    FACE_PERFORMANCE_CUT_ACTION_H3,
     FACE_PERFORMANCE_CUT_CAMERA,
+    FACE_PERFORMANCE_CUT_CAMERA_H3,
 )
-from .background_reference import (
-    bind_h3_background_reference,
+from .environment_reference import (
     build_environment_definition,
     build_environment_retention,
 )
@@ -31,10 +33,12 @@ __all__ = [
     "ContextLoopContract",
     "DEFAULT_H3_TIMING_PROFILE",
     "ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA",
+    "ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA_H3",
     "FACE_PERFORMANCE_CUT_ACTION",
+    "FACE_PERFORMANCE_CUT_ACTION_H3",
     "FACE_PERFORMANCE_CUT_CAMERA",
+    "FACE_PERFORMANCE_CUT_CAMERA_H3",
     "H3TimingProfile",
-    "bind_h3_background_reference",
     "build_environment_definition",
     "build_environment_retention",
     "TIMING_SCHEMA",

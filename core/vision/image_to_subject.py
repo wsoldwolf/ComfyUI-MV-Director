@@ -17,7 +17,7 @@ from ..protocols import VisionProtocolError, parse_vision_observations
 
 from .graph_binding import PictureBinding
 from .image_data import PreparedVisionImage
-from .subject_emd import SubjectEMDResult, render_subject_emd
+from .subject_emd import render_subject_emd
 from .scene_emd import render_scene_emd
 
 
@@ -79,11 +79,10 @@ class VisionObservationRequest:
 
 @dataclass(frozen=True, slots=True)
 class ImageToSubjectResult:
-    emd: SubjectEMDResult
+    emd_fragment: EMDTextArtifact
     observations: ObservationsArtifact
     reference_bindings: ReferenceBindingsArtifact
     resolved_picture_reference: str
-    scene_emd: EMDTextArtifact | None = None
     warnings: tuple[str, ...] = ()
 
 
@@ -345,36 +344,39 @@ def compose_image_to_subject(
     if concept_type not in {"person", "location", "object"}:
         raise ValueError("unknown concept_type")
     picture_index = binding.picture_index
-    emd = render_subject_emd(
-        observations,
-        concept_type=concept_type,
-        picture_index=picture_index,
-        subject_hint=request.normalized_subject_hint,
-        hint_mode=request.hint_mode,
-        hint_conflict=request.hint_conflict,
-    )
-    scene_emd = None
     if request.analysis_profile == "scene_only":
-        scene_emd = render_scene_emd(
+        emd_fragment = render_scene_emd(
             observations,
             picture_index=picture_index,
             scene_hint=request.normalized_subject_hint,
             hint_mode=request.hint_mode,
         ).artifact
         # ReferenceBindings are Subject-specific. Scene Pictures are declared by
-        # scene_emd and resolved later by the compiler's required references.
+        # the Scene EMD fragment and resolved later by the compiler's required
+        # references.
         bindings = ReferenceBindingsArtifact()
     else:
+        subject_emd = render_subject_emd(
+            observations,
+            concept_type=concept_type,
+            picture_index=picture_index,
+            subject_hint=request.normalized_subject_hint,
+            hint_mode=request.hint_mode,
+            hint_conflict=request.hint_conflict,
+        )
+        emd_fragment = EMDTextArtifact.create(
+            "MVD_EMD_FRAGMENT_V1",
+            subject_emd.emd_fragment,
+        )
         bindings = _binding_artifact(
             binding=binding,
             image_sha256=prepared.image_sha256,
         )
     bindings.validate()
     return ImageToSubjectResult(
-        emd=emd,
+        emd_fragment=emd_fragment,
         observations=observations,
         reference_bindings=bindings,
         resolved_picture_reference=binding.resolved_picture_reference,
-        scene_emd=scene_emd,
         warnings=warnings,
     )

@@ -36,6 +36,7 @@ from core.planner.engine import (
     _anime_emotional_mv_camera_emphasis,
     _anime_story_mv_face_zoom_key,
     _anime_story_mv_long_arc_keys,
+    _camera_budget_violations,
     _camera_editorial_role,
     _face_arc_transitions,
     _performance_role,
@@ -638,6 +639,9 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertIn("support leg, free leg", prompt)
         self.assertIn("keep the effect autonomous", prompt)
         self.assertIn("current Scene's original lyric", prompt)
+        self.assertIn("named without an explicit verb", prompt)
+        self.assertIn("autonomous state, motion, transformation", prompt)
+        self.assertIn("final pose must differ strongly", prompt)
 
     def test_visual_beat_prompt_treats_complete_direction_as_immutable(self) -> None:
         prompt = (
@@ -662,11 +666,14 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertIn(
             "never use one\nas the Beat's contact target", prompt
         )
-        self.assertIn("current Scene's original lyrics", prompt)
+        self.assertIn("current Scene's original lyric", prompt)
         self.assertIn("lyric-selected target is consumed", prompt)
         self.assertIn("support leg", prompt)
         self.assertIn("moves independently through", prompt)
         self.assertIn("Do not\nplace it in the Subject's hand", prompt)
+        self.assertIn("Read every lyric line", prompt)
+        self.assertIn("Do not ignore a lyric noun", prompt)
+        self.assertIn("larger than naturalistic acting", prompt)
 
     def test_camera_prompt_keeps_arc_and_closeup_shot_local(self) -> None:
         prompt = (
@@ -730,6 +737,8 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertIn("The retry is invalid", prompt)
         self.assertIn("Normally select two or three Shots", prompt)
         self.assertIn("every selected interval remains\nat least two seconds", prompt)
+        self.assertIn("do not let the\nface insert consume the only Shot", prompt)
+        self.assertIn("add an adjacent normal Shot", prompt)
 
     def test_degenerate_all_cut_layout_is_replanned_once(self) -> None:
         class DegenerateThenMixedBackend(FakePlannerBackend):
@@ -1096,14 +1105,8 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         )
         self.assertEqual(result.content.actions[0][2], FACE_PERFORMANCE_CUT_ACTION)
         self.assertEqual(result.content.cameras[0][2], FACE_PERFORMANCE_CUT_CAMERA)
-        self.assertIn(
-            "without changing their count, compactness, shape, placement, or color",
-            FACE_PERFORMANCE_CUT_ACTION,
-        )
-        self.assertIn(
-            "conventional long, curved, arched, or line-shaped eyebrows",
-            FACE_PERFORMANCE_CUT_ACTION,
-        )
+        self.assertIn("眉の個数、短さ、形、配置及び色", FACE_PERFORMANCE_CUT_ACTION)
+        self.assertIn("通常の長い線状又は弓状眉", FACE_PERFORMANCE_CUT_ACTION)
         visual_payload = backend.calls[0][1]
         expected_roster = [
             {"concept_id": "サブジェクト1", "subject_ref": "<Subject 1>"}
@@ -1174,6 +1177,18 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertEqual(
             policy["eye_expression_mode"],
             "vary_eyelids_with_lyric_phase",
+        )
+        self.assertEqual(
+            policy["emotional_amplitude"],
+            "exaggerated_readable_full_body",
+        )
+        self.assertEqual(
+            policy["arc_density"],
+            "two_thirds_of_eligible_non_face_slots",
+        )
+        self.assertEqual(
+            policy["noun_only_lyric_visualization"],
+            "same_scene_autonomous_visual_predicate",
         )
 
     def test_missing_action_retries_only_affected_scene_once(self) -> None:
@@ -1393,7 +1408,7 @@ class TimelinePlannerCoreTests(unittest.TestCase):
             {(1, 2): "arc_into_next_face_cut"},
         )
 
-    def test_anime_story_mv_selects_up_to_two_sparse_long_arc_slots(self) -> None:
+    def test_anime_story_mv_selects_one_third_spaced_long_arc_slots(self) -> None:
         entities = [
             type("Entity", (), {
                 "key": (1, index + 1),
@@ -1409,6 +1424,19 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertEqual(selected, {(1, 2), (1, 4)})
         selected_indices = sorted(key[1] for key in selected)
         self.assertGreater(selected_indices[1] - selected_indices[0], 1)
+
+        larger = [
+            type("Entity", (), {
+                "key": (2, index + 1),
+                "value": {
+                    "editorial_role": "spatial_reveal_or_interaction_coverage",
+                    "face_arc_transition": "",
+                    "shot_duration_ms": 9000 - index * 200,
+                },
+            })()
+            for index in range(9)
+        ]
+        self.assertEqual(len(_anime_story_mv_long_arc_keys(larger)), 3)
 
     def test_anime_story_mv_face_zoom_avoids_long_arc_and_prefers_expression(self) -> None:
         entities = [
@@ -1451,7 +1479,7 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         arc_keys, face_keys, transitions = (
             _anime_emotional_mv_camera_emphasis(entities, face_target=2)
         )
-        self.assertEqual(len(arc_keys), 6)
+        self.assertEqual(len(arc_keys), 8)
         self.assertEqual(len(face_keys), 2)
         self.assertTrue(transitions)
         self.assertTrue(set(transitions).issubset(arc_keys))
@@ -1459,6 +1487,47 @@ class TimelinePlannerCoreTests(unittest.TestCase):
 
         _, sparse_face_keys, _ = _anime_emotional_mv_camera_emphasis(entities)
         self.assertEqual(len(sparse_face_keys), 1)
+
+    def test_long_arc_emphasis_requires_large_fast_h3_phrase(self) -> None:
+        entity = type("Entity", (), {
+            "key": (1, 1),
+            "value": {
+                "long_arc_emphasis": True,
+                "lyrics": [],
+                "author_body": [],
+            },
+        })()
+        weak = _camera_budget_violations(
+            [entity],
+            {(1, 1): "Arc Shot with small amplitude at slow speed 正面を回る。"},
+            arc_maximum=1,
+        )
+        self.assertIn("required_long_arc_energy", weak[(1, 1)])
+        strong = _camera_budget_violations(
+            [entity],
+            {(1, 1): "Arc Shot with large amplitude at fast speed 側面を抜ける。"},
+            arc_maximum=1,
+        )
+        self.assertEqual(strong, {})
+
+    def test_camera_quality_rejects_missing_h3_type_and_speed_conflict(self) -> None:
+        entities = [
+            type("Entity", (), {
+                "key": (1, index),
+                "value": {"lyrics": [], "author_body": []},
+            })()
+            for index in (1, 2)
+        ]
+        violations = _camera_budget_violations(
+            entities,
+            {
+                (1, 1): "頭肩構図から顔へ近づく。",
+                (1, 2): "Tilt Down at fast speed ゆっくり下へ傾ける。",
+            },
+            arc_maximum=1,
+        )
+        self.assertIn("required_h3_motion_type", violations[(1, 1)])
+        self.assertIn("conflicting_camera_speed", violations[(1, 2)])
 
     def test_anime_emotional_mv_boundary_contract_allows_long_continue_run(self) -> None:
         scenes = tuple(
@@ -2058,7 +2127,7 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertEqual(result.emd.text.count("「ここにいて」"), 1)
         self.assertNotIn("__MVD_LOCKED_DIALOGUE_", result.emd.text)
 
-    def test_dialogue_only_generated_shot_returns_incomplete_without_quality_retry(self) -> None:
+    def test_dialogue_only_generated_shot_returns_incomplete_after_camera_quality_retry(self) -> None:
         backend = DialogueOnlyPlannerBackend()
         result = plan_timeline(
             backend,
@@ -2075,7 +2144,7 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertFalse(result.complete)
         self.assertEqual(result.missing, (("FILTERED", 1, 1), ("FILTERED", 1, 2)))
         self.assertEqual([task for task, _ in backend.calls].count("actions"), 1)
-        self.assertEqual([task for task, _ in backend.calls].count("cameras"), 1)
+        self.assertEqual([task for task, _ in backend.calls].count("cameras"), 2)
 
 
 class TimelinePlannerNodeTests(unittest.TestCase):

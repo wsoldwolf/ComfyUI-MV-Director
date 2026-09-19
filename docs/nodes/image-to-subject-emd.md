@@ -1,6 +1,6 @@
 # Image to Subject EMD
 
-画像の可視事実をVision GGUFで観察し、編集可能な`# サブジェクト` EMD断片を返します。同じIMAGE出力をH3の`ref_image_N`へ直接接続すると、対応する`<Picture N+1>`を自動束縛できます。
+画像の可視事実をVision GGUFで観察し、profileに応じて編集可能なSubject又はScene EMD断片を返します。同じIMAGE出力をH3の`ref_image_N`へ直接接続すると、対応する`<Picture N+1>`を自動束縛できます。
 
 ## 主な入力
 
@@ -25,11 +25,10 @@
 
 | 出力 | 用途 |
 |---|---|
-| `emd_fragment` | EnhancerまたはPlannerの`concept_emd`へ渡す編集可能なSubject EMD |
+| `emd_fragment` | `general` / `subject_only`ではSubject EMD、`scene_only`ではScene EMD。後者はEnhancerとPlannerの`scene_emd`へ分岐する |
 | `reference_bindings` | 解決したPicture参照を持つtyped artifact |
 | `image` | H3の`ref_image_N`へ渡す元IMAGE pass-through |
 | `observations_json` | 可視観察とprovenanceを確認するdebug出力。Direction Enhancerへは接続しない |
-| `scene_emd` | `scene_only`時の`# シーン設定`断片。Direction EnhancerとTimeline Plannerへ同じ出力を接続する |
 
 ## 使い方
 

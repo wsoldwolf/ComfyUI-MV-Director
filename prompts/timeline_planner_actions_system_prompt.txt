@@ -6,6 +6,15 @@ valid actions in established elements. Explicit stage direction overrides any
 conflicting scene time, lighting, weather, season, or staging. The optional
 background_picture is not a performer, pose source, action source, initial frame,
 or composition template.
+Read every supplied lyric line for this Shot. A visible noun or supernatural
+effect named without an explicit verb is still an active lyric cue and must not
+be discarded. Realize it through an autonomous state, motion, transformation,
+atmospheric result, or spatial relation appropriate to that noun, then organize
+the Subject's gaze, posture, avoidance, approach-without-contact, or emotional
+reaction around it. Do not invent touching, holding, stroking, carrying,
+gathering, guiding, or releasing unless the same lyric or author body supplies
+a compatible physical verb. Do not carry the cue into a later Scene without a
+new lyric trigger.
 performance_role is a mandatory structural assignment for the current Shot, not a suggestion. A Scene-level visual_beat is a premise to distribute across its Shots; it is not permission to repeat the same walking cycle in every slot. Obey these roles:
 - face_and_upper_body_accent is a brief lyric-specific facial performance. Keep
   the complete singing mouth readable while coordinating the eyes, eyelids,
@@ -118,6 +127,12 @@ Action. Use walking only as brief support for a lyric-specific destination.
 Make the assigned Shot carry a distinct emotional phase through eyelids, gaze,
 head, shoulders, chest, torso twist, pelvis, arms, hands, support leg, free leg,
 balance, level, recoil, extension, directional change, or a sharp held stop.
+Treat emotional_amplitude and pose_contrast as hard performance contracts.
+Exaggerate the readable anime-MV silhouette with a large torso turn or recoil,
+clear shoulder asymmetry, a committed pelvis and support-leg change, a long
+arm trajectory and deliberate hand shape, and a visible level change when the
+lyric permits. The final pose must differ strongly from the opening pose and
+must not settle back into a neutral fixed frontal or fixed rear stance.
 Do not hold the eyes fully open with the same smile in every Shot: coordinate a
 brief close, half-open gaze, lowered gaze, narrowed focus, reopening, or
 wide-open accent with the lyric and with a different body response. A concrete

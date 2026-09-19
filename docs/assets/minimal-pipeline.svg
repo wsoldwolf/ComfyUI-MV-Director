@@ -180,7 +180,7 @@
   <path class="edge" d="M265 951 H325"/>
   <path class="edge" d="M625 951 H680"/>
   <path class="edge-dashed" d="M680 940 H650 V343 H625"/>
-  <text class="edge-label" x="642" y="626">scene_emd</text>
+  <text class="edge-label" x="642" y="626">emd_fragment → scene_emd</text>
   <path class="edge-dashed" d="M265 980 V1050 H980 C1000 1050 1000 974 1010 974"/>
   <text class="edge-label" x="617" y="1042">同じ背景IMAGEをH3へ直接接続</text>
   <path class="edge" d="M1462.5 474 V1060 H1150 V1002"/>

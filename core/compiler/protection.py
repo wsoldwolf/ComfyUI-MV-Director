@@ -13,9 +13,19 @@ from dataclasses import dataclass
 from ..emd.ast import Subject
 from ..h3_contract import (
     ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA,
+    ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA_H3,
     FACE_PERFORMANCE_CUT_ACTION,
+    FACE_PERFORMANCE_CUT_ACTION_H3,
     FACE_PERFORMANCE_CUT_CAMERA,
+    FACE_PERFORMANCE_CUT_CAMERA_H3,
 )
+
+_RENDERER_DIRECTIVE_MAP = {
+    FACE_PERFORMANCE_CUT_ACTION: FACE_PERFORMANCE_CUT_ACTION_H3,
+    FACE_PERFORMANCE_CUT_CAMERA: FACE_PERFORMANCE_CUT_CAMERA_H3,
+    ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA:
+        ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA_H3,
+}
 
 _CONCEPT_RE = re.compile(r"`(サブジェクト[1-4])`")
 _MEDIA_RE = re.compile(r"`(画像([1-9])|動画([1-3])|音声([1-3]))`")
@@ -25,9 +35,9 @@ _REFERENCE_RE = re.compile(
 _D_SPAN_RE = re.compile(r"<d(?:\[[^\]\r\n]+\])?>.*?</d>")
 _DIALOGUE_RE = re.compile(r"「([^「」]*)」")
 _H3_CAMERA_DIRECTIVES = (
-    ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA,
-    FACE_PERFORMANCE_CUT_ACTION,
-    FACE_PERFORMANCE_CUT_CAMERA,
+    ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA_H3,
+    FACE_PERFORMANCE_CUT_ACTION_H3,
+    FACE_PERFORMANCE_CUT_CAMERA_H3,
     "Roll Counterclockwise",
     "Roll Clockwise",
     "Shake Slightly",
@@ -113,6 +123,9 @@ class ProtectedUnit:
 
 
 def protect_unit(text: str, subjects: tuple[Subject, ...]) -> ProtectedUnit:
+    renderer_directive = _RENDERER_DIRECTIVE_MAP.get(text)
+    if renderer_directive is not None:
+        return ProtectedUnit(("", ""), (renderer_directive,))
     subject_refs = {subject.concept_id: subject.subject_ref for subject in subjects}
     text = _CONCEPT_RE.sub(
         lambda match: subject_refs.get(match.group(1), match.group(0)), text

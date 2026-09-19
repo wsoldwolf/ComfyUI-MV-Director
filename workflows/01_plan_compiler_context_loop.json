@@ -107,11 +107,6 @@
           "name": "observations_json",
           "type": "STRING",
           "links": null
-        },
-        {
-          "name": "scene_emd",
-          "type": "STRING",
-          "links": null
         }
       ],
       "title": "Character Vision / Subject EMD",
@@ -377,9 +372,9 @@
       "widgets_values": [
         "profile",
         "",
-        "anime_story_mv",
-        "anime_story_mv",
-        "anime_story_mv",
+        "anime_emotional_mv",
+        "anime_emotional_mv",
+        "anime_emotional_mv",
         "Qwen3-4B-abliterated/Qwen3-4B-abliterated-q5_k_m.gguf",
         "",
         768,
@@ -732,7 +727,10 @@
         {
           "name": "emd_fragment",
           "type": "STRING",
-          "links": null
+          "links": [
+            7,
+            10
+          ]
         },
         {
           "name": "reference_bindings",
@@ -748,14 +746,6 @@
           "name": "observations_json",
           "type": "STRING",
           "links": null
-        },
-        {
-          "name": "scene_emd",
-          "type": "STRING",
-          "links": [
-            7,
-            10
-          ]
         }
       ],
       "title": "Background Vision (Scene Only)",
@@ -843,7 +833,7 @@
     [
       7,
       15,
-      4,
+      0,
       8,
       1,
       "STRING"
@@ -867,7 +857,7 @@
     [
       10,
       15,
-      4,
+      0,
       9,
       2,
       "STRING"

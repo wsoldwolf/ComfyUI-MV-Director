@@ -122,11 +122,11 @@ class DistributableWorkflowTests(unittest.TestCase):
             )
             self.assertEqual(
                 input_link(workflow, direction, "scene_emd")[1:3],
-                [background_vision["id"], 4],
+                [background_vision["id"], 0],
             )
             self.assertEqual(
                 input_link(workflow, planner, "scene_emd")[1:3],
-                [background_vision["id"], 4],
+                [background_vision["id"], 0],
             )
             compiler = only_type(workflow, "MVDirectorEMDCompiler")
             self.assertEqual(
@@ -167,7 +167,10 @@ class DistributableWorkflowTests(unittest.TestCase):
             self.assertEqual(planner["widgets_values"][1], "サブジェクト1")
             self.assertEqual(planner["widgets_values"][5], 1536)
             self.assertEqual(planner["widgets_values"][11], 16384)
-            self.assertEqual(direction["widgets_values"][2:5], ["anime_story_mv"] * 3)
+            self.assertEqual(
+                direction["widgets_values"][2:5],
+                ["anime_emotional_mv"] * 3,
+            )
             self.assertEqual(direction["widgets_values"][13], 16384)
             self.assertIn("眉毛は丸く", character_vision["widgets_values"][2])
             self.assertIn("木製台全体は黒色", character_vision["widgets_values"][2])
@@ -243,7 +246,7 @@ class DistributableWorkflowTests(unittest.TestCase):
         )
         self.assertEqual(
             input_link(workflow, direction, "scene_emd")[1:3],
-            [background_vision["id"], 4],
+            [background_vision["id"], 0],
         )
         self.assertNotIn(
             "observations_json",
@@ -259,14 +262,11 @@ class DistributableWorkflowTests(unittest.TestCase):
         planner = only_type(workflow, "MVDirectorTimelinePlanner")
         self.assertEqual(
             input_link(workflow, planner, "scene_emd")[1:3],
-            [background_vision["id"], 4],
+            [background_vision["id"], 0],
         )
         video = json.loads(
             (DEVELOPMENT_WORKFLOWS / "02_video_context_loop_debug.json")
             .read_text(encoding="utf-8")
-        )
-        self.assertFalse(
-            [node for node in video["nodes"] if node["type"] == "MVDirectorH3BackgroundReference"]
         )
         background_image = titled_node(
             video, "Background Reference • <Picture 2>"
@@ -278,6 +278,41 @@ class DistributableWorkflowTests(unittest.TestCase):
         )
         self.assertEqual(ref2va["widgets_values"][4], "max")
         self.assertFalse(only_type(video, "MiniMaxH3ChainReview")["widgets_values"][0])
+        debug_splitter = only_type(video, "MVDirectorSceneDebugSplitter")
+        debug_loader = titled_node(video, "Compiled Plan JSON (.txt handoff)")
+        debug_pad = titled_node(video, "Audio Pad Pair")
+        debug_tracks = titled_node(video, "H3 Audio Tracks")
+        debug_plan = titled_node(video, "Production Plan")
+        debug_lip = titled_node(video, "Context Loop Lip-Sync Options")
+        self.assertEqual(debug_splitter["widgets_values"], [False, 1, 1])
+        self.assertEqual(
+            input_link(video, debug_splitter, "plan_json")[1:3],
+            [debug_loader["id"], 0],
+        )
+        self.assertEqual(
+            input_link(video, debug_splitter, "vocal_audio")[1:3],
+            [debug_pad["id"], 1],
+        )
+        self.assertEqual(
+            input_link(video, debug_splitter, "full_mix_audio")[1:3],
+            [debug_pad["id"], 0],
+        )
+        self.assertEqual(
+            input_link(video, debug_plan, "plan_json_input")[1:3],
+            [debug_splitter["id"], 0],
+        )
+        self.assertEqual(
+            input_link(video, debug_tracks, "vocals")[1:3],
+            [debug_splitter["id"], 1],
+        )
+        self.assertEqual(
+            input_link(video, debug_tracks, "full_mix")[1:3],
+            [debug_splitter["id"], 2],
+        )
+        self.assertEqual(
+            input_link(video, debug_lip, "voice")[1:3],
+            [debug_splitter["id"], 1],
+        )
         self.assertEqual(
             only_type(video, "UNETLoader")["widgets_values"][0],
             H3_DIFFUSION_MODEL,
@@ -330,9 +365,7 @@ class DistributableWorkflowTests(unittest.TestCase):
                 and "Compiled Plan" in node.get("title", "")
             )
             plan = only_type(workflow, "MiniMaxH3ChainPlanModern")
-            self.assertFalse(
-                [node for node in workflow["nodes"] if node["type"] == "MVDirectorH3BackgroundReference"]
-            )
+            splitter = only_type(workflow, "MVDirectorSceneDebugSplitter")
             background_image = titled_node(
                 workflow, "Background Reference • <Picture 2>"
             )
@@ -347,6 +380,11 @@ class DistributableWorkflowTests(unittest.TestCase):
             self.assertEqual(plan["widgets_values"][8], 8)
             self.assertEqual(
                 input_link(workflow, plan, "plan_json_input")[1:3],
+                [splitter["id"], 0],
+            )
+            self.assertEqual(splitter["widgets_values"], [False, 1, 1])
+            self.assertEqual(
+                input_link(workflow, splitter, "plan_json")[1:3],
                 [plan_loader["id"], 0],
             )
             self.assertEqual(
@@ -390,6 +428,23 @@ class DistributableWorkflowTests(unittest.TestCase):
             self.assertEqual(len(plain_lyrics), expected_count)
             tracks = only_type(workflow, "MiniMaxH3AudioTracks")
             loop = only_type(workflow, "MiniMaxH3ChainLoopStart")
+            expected_vocal_slot = 3 if mode == "audio_reference" else 1
+            self.assertEqual(
+                input_link(workflow, splitter, "vocal_audio")[1:3],
+                [pad["id"], expected_vocal_slot],
+            )
+            self.assertEqual(
+                input_link(workflow, splitter, "full_mix_audio")[1:3],
+                [pad["id"], 0],
+            )
+            self.assertEqual(
+                input_link(workflow, tracks, "vocals")[1:3],
+                [splitter["id"], 1],
+            )
+            self.assertEqual(
+                input_link(workflow, tracks, "full_mix")[1:3],
+                [splitter["id"], 2],
+            )
             self.assertEqual(
                 input_link(workflow, loop, "source_timeline")[1:3],
                 [tracks["id"], 0],
@@ -457,7 +512,7 @@ class DistributableWorkflowTests(unittest.TestCase):
     def test_context_loop_video_wires_options_voice_and_audio_vae(self) -> None:
         workflow = load(FILES["context_loop"][1])
         lip = only_type(workflow, "MiniMaxH3LipSyncOptions")
-        pad = only_type(workflow, "MVDirectorAudioPadPair")
+        splitter = only_type(workflow, "MVDirectorSceneDebugSplitter")
         profile = only_type(workflow, "MiniMaxH3GenerationProfile")
         context = only_type(workflow, "MiniMaxH3ChainContext")
         audio_vae = next(
@@ -466,7 +521,7 @@ class DistributableWorkflowTests(unittest.TestCase):
             if node["type"] == "VAELoader" and node.get("title") == "Audio VAE"
         )
         self.assertEqual(
-            input_link(workflow, lip, "voice")[1:3], [pad["id"], 1]
+            input_link(workflow, lip, "voice")[1:3], [splitter["id"], 1]
         )
         self.assertEqual(
             input_link(workflow, profile, "lip_sync_options")[1:3],
@@ -483,12 +538,12 @@ class DistributableWorkflowTests(unittest.TestCase):
 
     def test_audio_reference_video_slices_aligned_vocal_into_audio_one(self) -> None:
         workflow = load(FILES["audio_reference"][1])
-        pad = only_type(workflow, "MVDirectorAudioPadPair")
+        splitter = only_type(workflow, "MVDirectorSceneDebugSplitter")
         current = only_type(workflow, "MiniMaxH3ChainCurrent")
         trim = only_type(workflow, "TrimAudioDuration")
         ref2va = only_type(workflow, "MiniMaxH3ReferenceToVideo")
         self.assertEqual(
-            input_link(workflow, trim, "audio")[1:3], [pad["id"], 3]
+            input_link(workflow, trim, "audio")[1:3], [splitter["id"], 1]
         )
         self.assertEqual(
             input_link(workflow, trim, "start_index")[1:3],

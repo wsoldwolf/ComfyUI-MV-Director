@@ -84,18 +84,16 @@ class MVDirectorImageToSubjectEMD:
         "MV_DIRECTOR_REFERENCE_BINDINGS",
         "IMAGE",
         "STRING",
-        "STRING",
     )
     RETURN_NAMES = (
         "emd_fragment",
         "reference_bindings",
         "image",
         "observations_json",
-        "scene_emd",
     )
     FUNCTION = "image_to_subject_emd"
     CATEGORY = "MV Director/Core"
-    DESCRIPTION = "画像の可視事実から編集可能なSubject EMD断片を作成します。"
+    DESCRIPTION = "解析profileに応じて画像の可視事実からSubject又はScene EMD断片を作成します。"
     IMAGE_OUTPUT_INDEX = 2
 
     def __init__(self) -> None:
@@ -301,10 +299,9 @@ class MVDirectorImageToSubjectEMD:
                     "status": [status],
                 },
                 "result": (
-                    result.emd.emd_fragment,
+                    result.emd_fragment.text,
                     result.reference_bindings,
                     image,
                     result.observations.to_json(),
-                    result.scene_emd.text if result.scene_emd is not None else "",
                 ),
             }

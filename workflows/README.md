@@ -20,6 +20,8 @@
 
 各方式はPlan/Compilerと動画生成を一対一に分離している。前段をQueueするとComfyUI `output/mv_director`へPlan JSON本文を持つ`.txt`が保存される。対応する動画workflowの`Compiled Plan JSON (.txt handoff)`へ、そのファイルを選択又はD&Dする。
 
+三つの動画生成WFと`development/02_video_context_loop_debug.json`は、`Audio Pad Pair`の直後に`Scene Debug Splitter`を接続済みである。既定の`enable=false`ではPlan JSON、vocal及びfull mixをそのまま後段へ渡す。部分生成時だけ`enable=true`へ切り替え、1ベースの`scene_start`と連続数`scene_length`を指定する。SplitterのPlan出力は`Production Plan`へ、二つのPCM出力は`H3 Audio Tracks`及び使用中のlip-sync経路へ同時に渡るため、映像範囲と音声範囲を個別に配線し直す必要はない。詳細は[Scene Debug Splitter](../docs/nodes/scene-debug-splitter.md)を参照する。
+
 ## 共通入力
 
 - `image001_mikofox (2).jpg`: `<Picture 1>`用の人物参照画像
@@ -34,11 +36,13 @@
 
 同梱検証素材はソースコードのGPLとは別に`CC BY-NC 4.0`で提供する。対象ファイル、出自及び適用範囲は[`ASSET_LICENSES.md`](../ASSET_LICENSES.md)を参照する。
 
-人物Visionは`subject_only / person`で`# サブジェクト`を生成し、背景Visionは`scene_only / location / picture_reference_mode=manual / picture_index=2`で`# シーン設定`だけを決定的に生成する。Direction Enhancerの`concept_emd`には人物Vision、`scene_emd`には背景Visionを接続し、Plannerにも同じ`scene_emd`を接続する。`observations_json`はdebug出力であり、Direction Enhancerへは接続しない。人物と背景を同じ参照へまとめると人物identityが条件を占有して背景情報が希薄化又は消失しやすいため、背景は別画像として用意することを推奨する。
+人物Visionは`subject_only / person`で`emd_fragment`へ`# サブジェクト`を生成し、背景Visionは`scene_only / location / picture_reference_mode=manual / picture_index=2`で同じ`emd_fragment`へ`# シーン設定`だけを決定的に生成する。Direction Enhancerの`concept_emd`には人物Vision、`scene_emd`には背景Visionの`emd_fragment`を接続し、Plannerにも同じ断片を接続する。`observations_json`はdebug出力であり、Direction Enhancerへは接続しない。人物と背景を分ける理由と運用上の注意は[TIPS](../docs/tips/separate-subject-and-background-references.md)を参照する。
 
 Plannerは`scene_emd`を完成EMDへAS ISで統合し、Compilerが`<Picture 2>`の環境専用定義、保持契約及びrequired referenceをPlanへ生成する。動画生成WFは同じ背景画像を`ref_images.ref_image_1`へ直接渡す。人物`<Picture 1>`と環境`<Picture 2>`を独立条件にすることで背景の再現率を高める。Picture 2は建築、植生、地形、材質及び空間同一性だけを部分保持し、人物、pose、文字、分割構図、camera angle及び照明はコピーしない。ユーザーがDirection又は共通プロンプトで指定した環境、時刻及び照明を背景画像より優先する。これは画素単位の背景複製を保証しない。
 
 `development/01_plan_compiler_context_loop_debug.json`も同じ人物・背景分離配線を持つ。`development/02_video_context_loop_debug.json`は背景Visionを重複実行せず、背景Load ImageをH3のPicture 2 slotへ直接接続する。
+
+Plan/Compiler workflowのDirection EnhancerはStyle、Motion及びCameraの三項とも`anime_emotional_mv`を既定値とする。`anime_story_mv`は比較又は手動選択用profileとして残す。
 
 ## 方式ごとの音声経路
 
