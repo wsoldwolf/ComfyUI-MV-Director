@@ -71,7 +71,8 @@ Emit these records in this exact order:
    category. With lock_identity, do not use SUBJECT_FEATURE as a rewritten
    identity summary: omit every locked fact and emit only atomic additions.
    Category is one of face, hair, eyes,
-   eyebrows, ears, body, clothing, accessory, tail, distinctive_feature.
+   eyebrows, ears, body, clothing, footwear, accessory, tail,
+   distinctive_feature.
    Its wire shape has exactly three TAB-separated fields:
    SUBJECT_FEATURE, one category above, and one nonempty Japanese feature.
    Never omit the category or feature, and do not append a visibility field.

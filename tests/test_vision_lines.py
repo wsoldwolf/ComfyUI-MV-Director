@@ -18,7 +18,7 @@ class VisionLineProtocolTests(unittest.TestCase):
         result = parse_vision_observations(source)
         self.assertEqual(result.observations.primary_subject, "長い黒髪の人物")
         self.assertIn(
-            "ignored redundant bare protocol_id after Vision protocol ID",
+            "ignored redundant protocol_id metadata after Vision protocol ID",
             result.warnings,
         )
 
@@ -36,14 +36,31 @@ class VisionLineProtocolTests(unittest.TestCase):
             result.warnings,
         )
 
-    def test_protocol_id_record_with_observation_payload_is_rejected(self) -> None:
+    def test_protocol_id_record_with_observation_payload_is_discarded(self) -> None:
         source = FIXTURE.read_text(encoding="utf-8").replace(
             "OVERVIEW\t夜の神社に人物が立っている。",
             "protocol_id\t人物",
             1,
         )
-        with self.assertRaisesRegex(VisionProtocolError, "unknown Vision record"):
-            parse_vision_observations(source)
+        result = parse_vision_observations(source)
+        self.assertEqual(result.observations.primary_subject, "長い黒髪の人物")
+        self.assertEqual(result.observations.overview, "長い黒髪の人物の参照画像。")
+        self.assertTrue(
+            any("protocol_id metadata" in item for item in result.warnings)
+        )
+
+    def test_leading_colon_protocol_id_metadata_is_normalized(self) -> None:
+        source = FIXTURE.read_text(encoding="utf-8").replace(
+            "MVD_VISION_OBSERVATION_LINES_V2",
+            "protocol_id: MVD_VISION_OBSERVATION_LINES_V2",
+            1,
+        )
+        result = parse_vision_observations(source)
+        self.assertEqual(result.observations.primary_subject, "長い黒髪の人物")
+        self.assertIn(
+            "normalized leading protocol_id metadata to Vision protocol ID",
+            result.warnings,
+        )
 
     def test_canonical_fixture_builds_observations(self) -> None:
         result = parse_vision_observations(FIXTURE.read_text(encoding="utf-8"))
@@ -238,6 +255,50 @@ class VisionLineProtocolTests(unittest.TestCase):
         self.assertEqual(feature.visibility, "partial")
         self.assertTrue(
             any("missing SUBJECT_FEATURE category" in item for item in result.warnings)
+        )
+
+    def test_footwear_is_a_supported_subject_feature_category(self) -> None:
+        source = FIXTURE.read_text(encoding="utf-8").replace(
+            "SUBJECT_FEATURE\teyebrows\t短く丸い淡い金色の眉\tpartial",
+            "SUBJECT_FEATURE\tfootwear\t赤い鼻緒の黒い木下駄\tpartial",
+            1,
+        )
+        result = parse_vision_observations(source)
+        feature = result.observations.subject_features[1]
+        self.assertEqual(feature.category, "footwear")
+        self.assertEqual(feature.text, "赤い鼻緒の黒い木下駄")
+
+    def test_protocol_id_wrapper_and_footwear_recover_together(self) -> None:
+        source = FIXTURE.read_text(encoding="utf-8").replace(
+            "OVERVIEW\t夜の神社に人物が立っている。",
+            "protocol_id\tMVD_VISION_OBSERVATION_LINES_V2\n"
+            "OVERVIEW\t夜の神社に人物が立っている。",
+            1,
+        ).replace(
+            "SUBJECT_FEATURE\teyebrows\t短く丸い淡い金色の眉\tpartial",
+            "SUBJECT_FEATURE\tfootwear\t赤い鼻緒の黒い木下駄\tpartial",
+            1,
+        )
+        result = parse_vision_observations(source)
+        self.assertTrue(
+            any(item.category == "footwear" for item in result.observations.subject_features)
+        )
+        self.assertTrue(
+            any("protocol_id metadata" in item for item in result.warnings)
+        )
+
+    def test_unknown_feature_category_keeps_text_as_distinctive_feature(self) -> None:
+        source = FIXTURE.read_text(encoding="utf-8").replace(
+            "SUBJECT_FEATURE\teyebrows\t短く丸い淡い金色の眉\tpartial",
+            "SUBJECT_FEATURE\tfacial_marking\t目尻の赤い化粧\tpartial",
+            1,
+        )
+        result = parse_vision_observations(source)
+        feature = result.observations.subject_features[1]
+        self.assertEqual(feature.category, "distinctive_feature")
+        self.assertEqual(feature.text, "目尻の赤い化粧")
+        self.assertTrue(
+            any("unknown SUBJECT_FEATURE category" in item for item in result.warnings)
         )
 
     def test_feature_category_without_text_is_still_rejected(self) -> None:

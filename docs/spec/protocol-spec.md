@@ -243,7 +243,7 @@ Compilerが翻訳backendへ自由描写を渡す前に、内部ID、`<Subject 1.
 
 ## 10. Vision行protocol
 
-protocol IDは`MVD_VISION_OBSERVATION_LINES_V2`。正規record順、category、visibility、空を許すfield及び終端warningは最小コア仕様5.2を正本とする。parserは既知の名前付きrecordの順序入替えと応答再開による重複を決定論的に正規化し、意味payloadのない冗長な`protocol_id` labelだけを除外する。`SUBJECT_FEATURE`が本文一列だけを持つ場合は本文を保持して`distinctive_feature`及び`partial`を割り当てるが、本文欠落は拒否する。それ以外のunknown recordは拒否する。Phase 0ではIDとfixtureだけを固定し、parser実装はPhase 3で行う。
+protocol IDは`MVD_VISION_OBSERVATION_LINES_V2`。正規record順、category、visibility、空を許すfield及び終端warningは最小コア仕様5.2を正本とする。parserは既知の名前付きrecordの順序入替えと応答再開による重複を決定論的に正規化する。modelがschema wrapperとして生成する`protocol_id`はpayloadの有無や位置にかかわらずtransport metadataとして除外する。`SUBJECT_FEATURE`が本文一列だけを持つ場合は本文を保持して`distinctive_feature`及び`partial`を割り当てる。未知categoryも本文を保持して`distinctive_feature`へ収容するが、本文欠落及びその他のunknown recordは拒否する。Phase 0ではIDとfixtureだけを固定し、parser実装はPhase 3で行う。
 
 LLM行protocolとVision行protocolを同じparserへ無理に統合しない。前者は部分回収、後者は固定順の完全な観察recordを要求する。
 

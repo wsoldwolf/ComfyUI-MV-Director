@@ -22,7 +22,7 @@
 
 ## 共通入力
 
-- `image001_mikofox.jpg`: `<Picture 1>`用の人物参照画像
+- `image001_mikofox (2).jpg`: `<Picture 1>`用の人物参照画像
 - `image002_keinai.jpg`: 前段では背景Visionから場所・空間構成、建築、植生、時刻、天候及び環境照明をDirectionへ渡し、動画生成時には`<Picture 2>`の環境専用参照としてH3へ渡す
 - `autumn_fox_shrine.mp3`: 完成動画へ使うfull mix
 - `autumn_fox_shrine_vocal.mp3`: 整列・口形駆動用vocal stem

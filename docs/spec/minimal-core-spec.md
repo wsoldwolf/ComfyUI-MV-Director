@@ -294,7 +294,7 @@ OVERVIEW\t日本語の概要
 PRIMARY_SUBJECT\t日本語の単数名詞句又は空
 HINT_STATUS\tnot_used|consistent|ambiguous|conflict
 HINT_REASON\t日本語の根拠又は空
-SUBJECT_FEATURE\tface|hair|eyes|eyebrows|ears|body|clothing|accessory|tail|distinctive_feature\t日本語の可視特徴
+SUBJECT_FEATURE\tface|hair|eyes|eyebrows|ears|body|clothing|footwear|accessory|tail|distinctive_feature\t日本語の可視特徴
 SUBJECT_POSE\t日本語の姿勢又は空
 SCENE_SETTING\t日本語の場所・環境又は空
 SCENE_ELEMENT\t日本語の背景要素
@@ -312,9 +312,9 @@ UNCERTAINTY\t確認できない事項
 END_MVD_VISION_OBSERVATION
 ```
 
-`SUBJECT_FEATURE`、`SCENE_ELEMENT`、`VISIBLE_TEXT`、`UNCERTAINTY`は0件以上である。任意反復recordは該当内容がなければ行自体を省略する。Vision modelが`SCENE_ELEMENT`、`VISIBLE_TEXT`又は`UNCERTAINTY`を空値で一行だけ出した場合は、情報を捏造せずその行を機械的に省略してwarningへ記録する。`SUBJECT_FEATURE`の空値は受理しない。`OVERVIEW`及び`HINT_STATUS`は必須である。それ以外の「値又は空」と定義された単値recordは、行自体が欠落しても空文字へ機械復元しwarningへ記録する。同一category反復を許す。人体分類に当てはまらない物品の形、色、数、材質、模様又は状態は`distinctive_feature`を使い、modelに新categoryを作らせない。4B modelが説明文とenumの列順を反転させることを避けるため、model出力ではvisibility列を要求せず、Pythonが保守的な`partial`を割り当てる。明示visibilityを含む内部fixtureは`clear`、`partial`、`uncertain`の三値だけを受理する。modelが`SUBJECT_FEATURE<TAB>本文`だけを返した場合は、本文を変更せずcategoryを`distinctive_feature`、visibilityを`partial`としてwarning付きで受理する。categoryだけで本文がない行は受理しない。
+`SUBJECT_FEATURE`、`SCENE_ELEMENT`、`VISIBLE_TEXT`、`UNCERTAINTY`は0件以上である。任意反復recordは該当内容がなければ行自体を省略する。Vision modelが`SCENE_ELEMENT`、`VISIBLE_TEXT`又は`UNCERTAINTY`を空値で一行だけ出した場合は、情報を捏造せずその行を機械的に省略してwarningへ記録する。`SUBJECT_FEATURE`の空値は受理しない。`OVERVIEW`及び`HINT_STATUS`は必須である。それ以外の「値又は空」と定義された単値recordは、行自体が欠落しても空文字へ機械復元しwarningへ記録する。同一category反復を許す。履物は`footwear`を使い、それ以外の人体分類に当てはまらない物品の形、色、数、材質、模様又は状態は`distinctive_feature`を使う。小型modelが未知categoryを生成した場合は観測本文を失わないよう`distinctive_feature`へ収容しwarningを残す。4B modelが説明文とenumの列順を反転させることを避けるため、model出力ではvisibility列を要求せず、Pythonが保守的な`partial`を割り当てる。明示visibilityを含む内部fixtureは`clear`、`partial`、`uncertain`の三値だけを受理する。modelが`SUBJECT_FEATURE<TAB>本文`だけを返した場合は、本文を変更せずcategoryを`distinctive_feature`、visibilityを`partial`としてwarning付きで受理する。categoryだけで本文がない行は受理しない。
 
-Python parserは旧実装から、CRLF正規化、空値`SUBJECT_POSE`、`visible`から`clear`、visibility欠落時の保守的`partial`、自然文中へ混入した追加TAB断片の順序保持結合、終端marker欠落warningを再利用する。最初のrecordが正規の`OVERVIEW`、`Overview: value` / `OVERVIEW: value`又は`PRIMARY_SUBJECT`である場合だけprotocol ID欠落を決定論的に補う。4B modelで実測したcolon形式だけを`OVERVIEW<TAB>value`へ正規化する。protocol ID直後が`PRIMARY_SUBJECT`である場合に限り、欠落した`OVERVIEW`をそのSubject名と固定句「の参照画像。」から機械生成してwarningへ記録する。既知record名はASCIIの大文字小文字を無視し、空白又はhyphenをunderscoreへ正規化したうえで正規順へ並べる。未知category、未知enum、unknown record、code fence、参照tag、NUL又は必須`HINT_STATUS`欠落は推測修復せず停止する。画像なしLLM修復、英日翻訳repair、無制限の再観測retry及び旧`subject_hint:`互換正規化は移植しない。許可する再試行は、同じ画像と設定を使い出力形式だけを強制する一回に限る。
+Python parserは旧実装から、CRLF正規化、空値`SUBJECT_POSE`、`visible`から`clear`、visibility欠落時の保守的`partial`、自然文中へ混入した追加TAB断片の順序保持結合、終端marker欠落warningを再利用する。最初のrecordが正規の`OVERVIEW`、`Overview: value` / `OVERVIEW: value`又は`PRIMARY_SUBJECT`である場合だけprotocol ID欠落を決定論的に補う。4B modelで実測したcolon形式だけを`OVERVIEW<TAB>value`へ正規化する。modelがJSON風schema名として出す`protocol_id`は位置、区切り又はpayloadにかかわらずtransport metadataとして除外し、観測recordとして解釈しない。protocol ID直後が`PRIMARY_SUBJECT`である場合に限り、欠落した`OVERVIEW`をそのSubject名と固定句「の参照画像。」から機械生成してwarningへ記録する。既知record名はASCIIの大文字小文字を無視し、空白又はhyphenをunderscoreへ正規化したうえで正規順へ並べる。未知`SUBJECT_FEATURE` categoryは本文を保持して`distinctive_feature`へ収容する一方、未知enum、その他のunknown record、code fence、参照tag、NUL又は必須`HINT_STATUS`欠落は推測修復せず停止する。画像なしLLM修復、英日翻訳repair、無制限の再観測retry及び旧`subject_hint:`互換正規化は移植しない。許可する再試行は、同じ画像と設定を使い出力形式だけを強制する一回に限る。
 
 検証済みrecordからPythonが`MVD_OBSERVATIONS_V1`を構築し、`observations_json`を生成する。旧構造の`overview`、`primary_subject`、`hint_assessment`、`scene`、`composition`、`style`、`visible_text`、`uncertainties`を維持するが、schema IDとprotocol IDは新名称だけを使う。生model応答をJSONとしてparseしない。
 

@@ -65,6 +65,23 @@ _EMPTY_ALLOWED_SCALAR_RECORDS = {
     "STYLE_RENDERING",
     "STYLE_PALETTE",
 }
+_FEATURE_CATEGORY_ALIASES = {
+    "costume": "clothing",
+    "garment": "clothing",
+    "outfit": "clothing",
+    "shoe": "footwear",
+    "shoes": "footwear",
+    "footwears": "footwear",
+    "accessories": "accessory",
+    "eye": "eyes",
+    "eyebrow": "eyebrows",
+    "ear": "ears",
+}
+_PROTOCOL_ID_LABEL = re.compile(
+    r"^\s*[\"']?protocol(?:[ _-]?id)[\"']?\s*"
+    r"(?:(?:\t|[:=])\s*(.*?))?\s*[,}]?\s*$",
+    flags=re.IGNORECASE,
+)
 
 
 class VisionProtocolError(ValueError):
@@ -90,13 +107,15 @@ def _record_name(line: str) -> str:
     return raw.replace(" ", "_").replace("-", "_").upper()
 
 
-def _is_redundant_protocol_id_line(line: str) -> bool:
-    """Return true only for a protocol_id label carrying no observation data."""
+def _is_protocol_id_metadata(line: str) -> bool:
+    """Return true for a model-emitted protocol_id wrapper field.
 
-    if _record_name(line) != "PROTOCOL_ID":
-        return False
-    values = [part.strip() for part in line.split("\t")[1:] if part.strip()]
-    return not values or all(value == VISION_PROTOCOL_ID for value in values)
+    protocol_id is transport metadata, never an observation record.  Its
+    payload is therefore discarded rather than interpreted as image content;
+    the normal required-record checks still validate the observation body.
+    """
+
+    return _PROTOCOL_ID_LABEL.fullmatch(line) is not None
 
 
 class _VisionParser:
@@ -214,9 +233,9 @@ class _VisionParser:
             if line == VISION_END_MARKER:
                 saw_end = True
                 continue
-            if line == VISION_PROTOCOL_ID or _is_redundant_protocol_id_line(line):
+            if line == VISION_PROTOCOL_ID or _is_protocol_id_metadata(line):
                 self.warnings.append(
-                    f"ignored repeated Vision protocol marker at line {offset}"
+                    f"ignored Vision protocol metadata at line {offset}"
                 )
                 continue
             if line.startswith(("Overview:", "OVERVIEW:")):
@@ -285,6 +304,11 @@ class _VisionParser:
         self.lines = self.lines[: self.cursor] + canonical_body
 
     def parse(self) -> VisionParseResult:
+        if self.lines and _is_protocol_id_metadata(self.lines[0]):
+            self.lines[0] = VISION_PROTOCOL_ID
+            self.warnings.append(
+                "normalized leading protocol_id metadata to Vision protocol ID"
+            )
         if self.lines:
             first_name = _record_name(self.lines[0])
             first_is_colon_overview = self.lines[0].startswith(
@@ -300,19 +324,14 @@ class _VisionParser:
                 f"found {first!r}"
             )
         self.cursor = 1
-        if (
+        while (
             (line := self.current()) is not None
-            and _is_redundant_protocol_id_line(line)
+            and _is_protocol_id_metadata(line)
         ):
             self.cursor += 1
-            if line.strip().casefold() == "protocol_id":
-                self.warnings.append(
-                    "ignored redundant bare protocol_id after Vision protocol ID"
-                )
-            else:
-                self.warnings.append(
-                    "ignored redundant protocol_id metadata after Vision protocol ID"
-                )
+            self.warnings.append(
+                "ignored redundant protocol_id metadata after Vision protocol ID"
+            )
         if (
             (line := self.current()) is not None
             and "\t" not in line
@@ -383,11 +402,14 @@ class _VisionParser:
                 raise VisionProtocolError("SUBJECT_FEATURE has too few fields")
             raw_category = parts[1].strip()
             category = raw_category.casefold()
+            category = _FEATURE_CATEGORY_ALIASES.get(category, category)
             if category not in FEATURE_CATEGORIES:
-                raise VisionProtocolError(
-                    f"SUBJECT_FEATURE uses unknown category {category!r}"
+                self.warnings.append(
+                    f"defaulted unknown SUBJECT_FEATURE category {raw_category!r} "
+                    f"to 'distinctive_feature' at line {self.cursor + 1}"
                 )
-            if category != raw_category:
+                category = "distinctive_feature"
+            elif category != raw_category:
                 self.warnings.append(
                     f"normalized SUBJECT_FEATURE category {raw_category!r} to "
                     f"{category!r} at line {self.cursor + 1}"

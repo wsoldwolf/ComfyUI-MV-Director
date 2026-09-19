@@ -26,6 +26,7 @@ FEATURE_CATEGORIES = {
     "ears",
     "body",
     "clothing",
+    "footwear",
     "accessory",
     "tail",
     "distinctive_feature",
@@ -273,4 +274,3 @@ class ObservationsArtifact:
         )
         artifact.validate()
         return artifact
-

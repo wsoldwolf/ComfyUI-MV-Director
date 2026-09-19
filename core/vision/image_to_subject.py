@@ -163,7 +163,9 @@ def _build_format_retry_request(
         "a literal TAB. Never compress multiple records into one TAB-separated "
         "line and never omit record names. For SUBJECT_FEATURE, emit exactly "
         "three TAB-separated fields: SUBJECT_FEATURE, one allowed category, "
-        "and one nonempty Japanese feature. Never omit the category or feature."
+        "and one nonempty Japanese feature. Allowed categories are face, hair, "
+        "eyes, eyebrows, ears, body, clothing, footwear, accessory, tail, and "
+        "distinctive_feature. Never omit the category or feature."
     )
 
 

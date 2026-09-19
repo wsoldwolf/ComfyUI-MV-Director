@@ -19,13 +19,27 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT_ID = "context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9"
 VIDEO_DENOISING_STEPS = 8
+H3_DIFFUSION_MODEL = (
+    "MiniMaxH3\\minimax_h3_ref2va_pruned_int8_convrot.safetensors"
+)
+H3_TEXT_ENCODER = (
+    "MiniMaxH3\\qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors"
+)
+H3_VIDEO_VAE = "MiniMaxH3\\minimax_h3_video_vae_fp16.safetensors"
+H3_AUDIO_VAE = "MiniMaxH3\\minimax_h3_audio_vae_fp32.safetensors"
+H3_ATTENTION_BACKEND = "comfy kitchen attention"
+H3_REFERENCE_IMAGE_SIZE = "max"
+REVIEW_ENABLED = False
+OUTPUT_ASPECT_RATIO = "16:9 (Widescreen)"
+OUTPUT_MEGAPIXELS = 0.4
+OUTPUT_MULTIPLE = 32
 TURBO_LORA_NAME = (
     "MiniMaxH3\\minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors"
 )
 TEXT_MODEL = "Qwen3-4B-abliterated/Qwen3-4B-abliterated-q5_k_m.gguf"
 VISION_MODEL = "Qwen3-VL-4B-Instruct/Qwen3-VL-4B-Instruct-Q4_K_M.gguf"
 WHISPER_MODEL = "medium.pt"
-CHARACTER_IMAGE = "image001_mikofox.jpg"
+CHARACTER_IMAGE = "image001_mikofox (2).jpg"
 BACKGROUND_IMAGE = "image002_keinai.jpg"
 FULL_MIX_AUDIO = "autumn_fox_shrine.mp3"
 VOCAL_AUDIO = "autumn_fox_shrine_vocal.mp3"
@@ -163,6 +177,17 @@ def _input_index(node: dict[str, Any], name: str) -> int:
     raise KeyError(f"{node['type']} has no workflow input {name!r}")
 
 
+def _ensure_widget_inputs(
+    node: dict[str, Any], fields: tuple[tuple[str, str], ...]
+) -> None:
+    """Add connectable widget sockets missing from an older saved workflow."""
+
+    existing = {item.get("name") for item in node.get("inputs", [])}
+    for name, type_name in fields:
+        if name not in existing:
+            node.setdefault("inputs", []).append(_widget_input(name, type_name))
+
+
 def _connect(
     workflow: dict[str, Any],
     origin_id: int,
@@ -298,6 +323,7 @@ def _load_text_node(
     title: str,
     text: str,
     basename: str,
+    size: tuple[int, int] = (380, 180),
 ) -> dict[str, Any]:
     metadata = _json_text(
         {"name": basename, "size": len(text.encode("utf-8")), "type": "text/plain"}
@@ -306,19 +332,23 @@ def _load_text_node(
         node_id,
         "MVDirectorLoadTextFile",
         pos,
-        (380, 180),
+        size,
         title,
         outputs=[_output("text", "STRING")],
         widgets=[_embedded(text), basename, metadata],
     )
 
 
-def _timing_node(node_id: int, pos: tuple[int, int]) -> dict[str, Any]:
+def _timing_node(
+    node_id: int,
+    pos: tuple[int, int],
+    size: tuple[int, int] = (380, 100),
+) -> dict[str, Any]:
     return _node(
         node_id,
         "MVDirectorH3TimingProfile",
         pos,
-        (380, 100),
+        size,
         "H3 Timing Profile",
         outputs=[
             _output("timing_profile", "MV_DIRECTOR_H3_TIMING_PROFILE"),
@@ -724,6 +754,18 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
     workflow["last_node_id"] = max(int(node["id"]) for node in workflow["nodes"])
     workflow["last_link_id"] = max(int(link[0]) for link in workflow["links"])
 
+    _node_by_id(workflow, 1)["widgets_values"] = [H3_DIFFUSION_MODEL, "default"]
+    _node_by_id(workflow, 2)["widgets_values"] = [
+        H3_TEXT_ENCODER,
+        "minimax",
+        "default",
+    ]
+    _node_by_id(workflow, 4)["widgets_values"] = [H3_VIDEO_VAE]
+    _node_by_id(workflow, 5)["widgets_values"] = [H3_AUDIO_VAE]
+    _node_by_id(workflow, 22)["widgets_values"] = [H3_ATTENTION_BACKEND]
+    review = _node_by_id(workflow, 28)
+    review["widgets_values"][0] = REVIEW_ENABLED
+
     note = _node_by_id(workflow, 31)
     note["title"] = f"START HERE • MV Director • {spec['label']}"
     preparation = (
@@ -755,6 +797,25 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
 
     plan_json = _json_text(_fallback_plan(mode))
     plan = _node_by_id(workflow, 24)
+    _ensure_widget_inputs(
+        plan,
+        (
+            ("plan_json", "STRING"),
+            ("run_name", "STRING"),
+            ("generation_fingerprint", "STRING"),
+            ("width", "INT"),
+            ("height", "INT"),
+            ("encode_mode", "COMBO"),
+            ("crop", "COMBO"),
+            ("default_duration_seconds", "FLOAT"),
+            ("default_steps", "INT"),
+            ("base_seed", "INT"),
+            ("segment_crf", "INT"),
+            ("video_blend_frames", "INT"),
+        ),
+    )
+    plan["pos"] = [81.27143641603425, 808.5988944915174]
+    plan["size"] = [1000, 1090]
     plan["widgets_values"][0] = plan_json
     plan["widgets_values"][1] = f"mv_director_{mode}"
     plan["widgets_values"][2] = f"mv-director-{mode}-{CONTRACT_ID}"
@@ -767,13 +828,14 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
     ref_node = _node_by_id(workflow, 11)
     ref_node["title"] = "Reference Conditioning • MV Director Plan"
     ref_node["widgets_values"][0] = "\n".join(_fallback_plan(mode)["shots"][0]["prompt"])
+    ref_node["widgets_values"][4] = H3_REFERENCE_IMAGE_SIZE
 
     additions = [
         _node(
             32,
             "LoadAudio",
-            (80, 1900),
-            (360, 110),
+            (76.18564224970699, 2245.835943397865),
+            (360, 136),
             "Full Mix",
             outputs=[_output("AUDIO", "AUDIO")],
             widgets=[FULL_MIX_AUDIO],
@@ -782,25 +844,26 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
             33,
             "LoadAudio",
             (80, 2060),
-            (360, 110),
+            (360, 136),
             "Vocal Stem",
             outputs=[_output("AUDIO", "AUDIO")],
             widgets=[VOCAL_AUDIO],
         ),
-        _timing_node(35, (500, 2130)),
+        _timing_node(35, (90, 2650), (340, 100)),
         _audio_pad_node(37, spec["alignment"]),
         _audio_tracks_node(38),
         _load_text_node(
             39,
-            (1120, 610),
+            (76.77573693416907, 2427.2389436196327),
             "Compiled Plan JSON (.txt handoff)",
             plan_json,
             f"{mode}_plan.txt",
+            (360, 90),
         ),
         _node(
             44,
             "LoraLoaderModelOnly",
-            (2185, 3046),
+            (1663.157664449174, 3023.105301372301),
             (650, 100),
             "LIGHTX2V TURBO — 4 STEP v0.1",
             inputs=[
@@ -814,7 +877,7 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
         _node(
             45,
             "LoadImage",
-            (2380, 1430),
+            (2431.488682584539, 1797.7764759658048),
             (360, 360),
             "Background Reference • <Picture 2>",
             outputs=[_output("IMAGE", "IMAGE"), _output("MASK", "MASK")],
@@ -837,6 +900,28 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
             ],
             widgets=[2],
         ),
+        _node(
+            47,
+            "ResolutionSelector",
+            (-294.2352129891423, 1022.9692406773994),
+            (270, 150),
+            "Output Resolution",
+            inputs=[
+                _widget_input("aspect_ratio", "COMBO"),
+                _widget_input("megapixels", "FLOAT"),
+                _widget_input("multiple", "INT"),
+                {
+                    **_widget_input("preview", "RESOLUTION_PREVIEW"),
+                    "shape": 7,
+                },
+            ],
+            outputs=[
+                _output("width", "INT"),
+                _output("height", "INT"),
+            ],
+            widgets=[OUTPUT_ASPECT_RATIO, OUTPUT_MEGAPIXELS, OUTPUT_MULTIPLE],
+            order=12,
+        ),
     ]
     if mode == "audio_reference":
         lyrics = _lyrics_text()
@@ -849,7 +934,7 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
             ]
         )
     workflow["nodes"].extend(additions)
-    workflow["last_node_id"] = 46
+    workflow["last_node_id"] = 47
 
     _connect(workflow, 32, 0, 37, "audio_a", "AUDIO")
     _connect(workflow, 33, 0, 37, "audio_b", "AUDIO")
@@ -885,6 +970,8 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
     _connect(workflow, 46, 1, 11, "ref_images.ref_image_1", "IMAGE")
     _connect(workflow, 1, 0, 44, "model", "MODEL")
     _connect(workflow, 44, 0, 22, "model", "MODEL")
+    _connect(workflow, 47, 0, 24, "width", "INT")
+    _connect(workflow, 47, 1, 24, "height", "INT")
 
     if mode == "context_loop":
         lip = _node(
@@ -902,7 +989,6 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
             widgets=[1.0, 0.2, 0.0, 0.15, 0.2],
         )
         workflow["nodes"].append(lip)
-        workflow["last_node_id"] = 46
         _connect(workflow, 37, 1, 40, "voice", "AUDIO")
         _connect(workflow, 40, 0, 30, "lip_sync_options", "H3_LIP_SYNC_OPTIONS")
         _connect(workflow, 40, 1, 12, "lip_sync_voice", "AUDIO")
@@ -923,7 +1009,6 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
             widgets=[0.0, 60.0],
         )
         workflow["nodes"].append(trim)
-        workflow["last_node_id"] = 46
         _connect(workflow, 37, 3, 40, "audio", "AUDIO")
         _connect(workflow, 8, 10, 40, "start_index", "FLOAT")
         _connect(workflow, 8, 11, 40, "duration", "FLOAT")
@@ -964,6 +1049,13 @@ def _node_by_title(workflow: dict[str, Any], title: str) -> dict[str, Any]:
     matches = [node for node in workflow["nodes"] if node.get("title") == title]
     if len(matches) != 1:
         raise ValueError(f"expected one workflow node titled {title!r}")
+    return matches[0]
+
+
+def _node_by_type(workflow: dict[str, Any], type_name: str) -> dict[str, Any]:
+    matches = [node for node in workflow["nodes"] if node.get("type") == type_name]
+    if len(matches) != 1:
+        raise ValueError(f"expected one workflow node of type {type_name!r}")
     return matches[0]
 
 
@@ -1012,19 +1104,30 @@ def _sync_development_workflows(
                 "Background Reference Image",
                 "Background Vision (Scene Only)",
             ),
+            (),
         ),
         (
             development / "02_video_context_loop_debug.json",
             reference_video,
             (
+                "H3 Diffusion Model",
+                "H3 Text Encoder",
+                "Video VAE",
+                "Audio VAE",
+                "Reference Conditioning • MV Director Plan",
+                "Model Attention Backend",
+                "Production Plan",
+                "Review Candidates",
                 "Reference Image • <Picture 1>",
                 "Full Mix",
                 "Vocal Stem",
+                "LIGHTX2V TURBO — 4 STEP v0.1",
                 "Background Reference • <Picture 2>",
             ),
+            ("ResolutionSelector",),
         ),
     )
-    for path, reference, titles in pairs:
+    for path, reference, titles, type_names in pairs:
         if not path.is_file():
             continue
         workflow = json.loads(path.read_text(encoding="utf-8"))
@@ -1032,6 +1135,11 @@ def _sync_development_workflows(
             _sync_node_widgets(
                 _node_by_title(workflow, title),
                 _node_by_title(reference, title),
+            )
+        for type_name in type_names:
+            _sync_node_widgets(
+                _node_by_type(workflow, type_name),
+                _node_by_type(reference, type_name),
             )
         validate_workflow(workflow)
         path.write_text(_json_text(workflow) + "\n", encoding="utf-8")

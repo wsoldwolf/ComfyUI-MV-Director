@@ -1,8 +1,8 @@
 {
   "id": "f97af838-5222-5864-8ec8-15d657333fdb",
   "revision": 0,
-  "last_node_id": 46,
-  "last_link_id": 75,
+  "last_node_id": 47,
+  "last_link_id": 77,
   "nodes": [
     {
       "id": 1,
@@ -33,7 +33,7 @@
         "Node name for S&R": "UNETLoader"
       },
       "widgets_values": [
-        "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+        "MiniMaxH3\\minimax_h3_ref2va_pruned_int8_convrot.safetensors",
         "default"
       ]
     },
@@ -66,7 +66,7 @@
         "Node name for S&R": "CLIPLoader"
       },
       "widgets_values": [
-        "qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+        "MiniMaxH3\\qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
         "minimax",
         "default"
       ]
@@ -134,7 +134,7 @@
         "Node name for S&R": "VAELoader"
       },
       "widgets_values": [
-        "minimax_h3_video_vae_fp16.safetensors"
+        "MiniMaxH3\\minimax_h3_video_vae_fp16.safetensors"
       ]
     },
     {
@@ -167,7 +167,7 @@
         "Node name for S&R": "VAELoader"
       },
       "widgets_values": [
-        "minimax_h3_audio_vae_fp32.safetensors"
+        "MiniMaxH3\\minimax_h3_audio_vae_fp32.safetensors"
       ]
     },
     {
@@ -383,14 +383,14 @@
           "name": "audio_start",
           "type": "FLOAT",
           "links": [
-            73
+            75
           ]
         },
         {
           "name": "audio_duration",
           "type": "FLOAT",
           "links": [
-            74
+            76
           ]
         },
         {
@@ -608,7 +608,7 @@
         {
           "name": "ref_audios.ref_audio_0",
           "type": "AUDIO",
-          "link": 75
+          "link": 77
         }
       ],
       "outputs": [
@@ -636,7 +636,7 @@
         896,
         672,
         243,
-        "match"
+        "max"
       ]
     },
     {
@@ -1249,7 +1249,7 @@
         "Node name for S&R": "ModelAttentionBackend"
       },
       "widgets_values": [
-        "pytorch attention"
+        "comfy kitchen attention"
       ]
     },
     {
@@ -1330,12 +1330,12 @@
       "id": 24,
       "type": "MiniMaxH3ChainPlanModern",
       "pos": [
-        80,
-        862
+        81.27143641603425,
+        808.5988944915174
       ],
       "size": [
         1000,
-        900
+        1090
       ],
       "flags": {},
       "order": 23,
@@ -1355,6 +1355,102 @@
           "name": "project_assets",
           "type": "H3_PROJECT_ASSETS",
           "link": null
+        },
+        {
+          "name": "plan_json",
+          "type": "STRING",
+          "link": null,
+          "widget": {
+            "name": "plan_json"
+          }
+        },
+        {
+          "name": "run_name",
+          "type": "STRING",
+          "link": null,
+          "widget": {
+            "name": "run_name"
+          }
+        },
+        {
+          "name": "generation_fingerprint",
+          "type": "STRING",
+          "link": null,
+          "widget": {
+            "name": "generation_fingerprint"
+          }
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "link": 72,
+          "widget": {
+            "name": "width"
+          }
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "link": 73,
+          "widget": {
+            "name": "height"
+          }
+        },
+        {
+          "name": "encode_mode",
+          "type": "COMBO",
+          "link": null,
+          "widget": {
+            "name": "encode_mode"
+          }
+        },
+        {
+          "name": "crop",
+          "type": "COMBO",
+          "link": null,
+          "widget": {
+            "name": "crop"
+          }
+        },
+        {
+          "name": "default_duration_seconds",
+          "type": "FLOAT",
+          "link": null,
+          "widget": {
+            "name": "default_duration_seconds"
+          }
+        },
+        {
+          "name": "default_steps",
+          "type": "INT",
+          "link": null,
+          "widget": {
+            "name": "default_steps"
+          }
+        },
+        {
+          "name": "base_seed",
+          "type": "INT",
+          "link": null,
+          "widget": {
+            "name": "base_seed"
+          }
+        },
+        {
+          "name": "segment_crf",
+          "type": "INT",
+          "link": null,
+          "widget": {
+            "name": "segment_crf"
+          }
+        },
+        {
+          "name": "video_blend_frames",
+          "type": "INT",
+          "link": null,
+          "widget": {
+            "name": "video_blend_frames"
+          }
         }
       ],
       "outputs": [
@@ -1505,7 +1601,7 @@
         "Node name for S&R": "LoadImage"
       },
       "widgets_values": [
-        "image001_mikofox.jpg"
+        "image001_mikofox (2).jpg"
       ]
     },
     {
@@ -1563,7 +1659,7 @@
         "Node name for S&R": "MiniMaxH3ChainReview"
       },
       "widgets_values": [
-        true,
+        false,
         false,
         0,
         false,
@@ -1725,12 +1821,12 @@
       "id": 32,
       "type": "LoadAudio",
       "pos": [
-        80,
-        1900
+        76.18564224970699,
+        2245.835943397865
       ],
       "size": [
         360,
-        110
+        136
       ],
       "flags": {},
       "order": 32,
@@ -1762,7 +1858,7 @@
       ],
       "size": [
         360,
-        110
+        136
       ],
       "flags": {},
       "order": 33,
@@ -1790,11 +1886,11 @@
       "id": 35,
       "type": "MVDirectorH3TimingProfile",
       "pos": [
-        500,
-        2130
+        90,
+        2650
       ],
       "size": [
-        380,
+        340,
         100
       ],
       "flags": {},
@@ -1894,7 +1990,7 @@
           "name": "reference_audio_b",
           "type": "AUDIO",
           "links": [
-            72
+            74
           ]
         }
       ],
@@ -1964,12 +2060,12 @@
       "id": 39,
       "type": "MVDirectorLoadTextFile",
       "pos": [
-        1120,
-        610
+        76.77573693416907,
+        2427.2389436196327
       ],
       "size": [
-        380,
-        180
+        360,
+        90
       ],
       "flags": {},
       "order": 39,
@@ -1998,8 +2094,8 @@
       "id": 44,
       "type": "LoraLoaderModelOnly",
       "pos": [
-        2185,
-        3046
+        1663.157664449174,
+        3023.105301372301
       ],
       "size": [
         650,
@@ -2053,8 +2149,8 @@
       "id": 45,
       "type": "LoadImage",
       "pos": [
-        2380,
-        1430
+        2431.488682584539,
+        1797.7764759658048
       ],
       "size": [
         360,
@@ -2140,6 +2236,81 @@
       },
       "widgets_values": [
         2
+      ]
+    },
+    {
+      "id": 47,
+      "type": "ResolutionSelector",
+      "pos": [
+        -294.2352129891423,
+        1022.9692406773994
+      ],
+      "size": [
+        270,
+        150
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "aspect_ratio",
+          "type": "COMBO",
+          "link": null,
+          "widget": {
+            "name": "aspect_ratio"
+          }
+        },
+        {
+          "name": "megapixels",
+          "type": "FLOAT",
+          "link": null,
+          "widget": {
+            "name": "megapixels"
+          }
+        },
+        {
+          "name": "multiple",
+          "type": "INT",
+          "link": null,
+          "widget": {
+            "name": "multiple"
+          }
+        },
+        {
+          "name": "preview",
+          "type": "RESOLUTION_PREVIEW",
+          "link": null,
+          "widget": {
+            "name": "preview"
+          },
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "width",
+          "type": "INT",
+          "links": [
+            72
+          ]
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": [
+            73
+          ]
+        }
+      ],
+      "title": "Output Resolution",
+      "properties": {
+        "Node name for S&R": "ResolutionSelector"
+      },
+      "widgets_values": [
+        "16:9 (Widescreen)",
+        0.4,
+        32
       ]
     },
     {
@@ -2262,12 +2433,12 @@
         {
           "name": "audio",
           "type": "AUDIO",
-          "link": 72
+          "link": 74
         },
         {
           "name": "start_index",
           "type": "FLOAT",
-          "link": 73,
+          "link": 75,
           "widget": {
             "name": "start_index"
           }
@@ -2275,7 +2446,7 @@
         {
           "name": "duration",
           "type": "FLOAT",
-          "link": 74,
+          "link": 76,
           "widget": {
             "name": "duration"
           }
@@ -2286,7 +2457,7 @@
           "name": "AUDIO",
           "type": "AUDIO",
           "links": [
-            75
+            77
           ]
         }
       ],
@@ -2855,6 +3026,22 @@
     ],
     [
       72,
+      47,
+      0,
+      24,
+      6,
+      "INT"
+    ],
+    [
+      73,
+      47,
+      1,
+      24,
+      7,
+      "INT"
+    ],
+    [
+      74,
       37,
       3,
       40,
@@ -2862,7 +3049,7 @@
       "AUDIO"
     ],
     [
-      73,
+      75,
       8,
       10,
       40,
@@ -2870,7 +3057,7 @@
       "FLOAT"
     ],
     [
-      74,
+      76,
       8,
       11,
       40,
@@ -2878,7 +3065,7 @@
       "FLOAT"
     ],
     [
-      75,
+      77,
       40,
       0,
       11,

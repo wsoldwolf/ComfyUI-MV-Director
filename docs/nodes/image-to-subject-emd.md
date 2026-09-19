@@ -46,4 +46,4 @@
 
 `auto_h3`で異なるPicture番号へ同時分岐した場合は曖昧として停止します。H3へ未接続でもEMD生成は成功し、bindingは`unbound`になります。
 
-`scene_only`は人物のいない背景画像を対象にできます。全profileで、protocol上「値又は空」と定義された単値record（`PRIMARY_SUBJECT`、`SUBJECT_POSE`、構図・背景・style各fieldなど）の行自体を小型modelが省略した場合は、本文を生成せず空値へ復元してwarningを残します。名前が既知のrecordの順序入替えや応答再開による重複も正規順へ決定論的に復旧します。意味payloadのない冗長な`protocol_id` labelは除外します。`SUBJECT_FEATURE`でcategoryだけが欠けた場合は、本文を一切変更せず汎用category `distinctive_feature`と保守的なvisibility `partial`へ収容してwarningを残します。本文欠落、意味payloadを持つ未知record、`HINT_STATUS`などの必須値欠落及び不正なfield値は推測せず、format retry又は明示エラーにします。
+`scene_only`は人物のいない背景画像を対象にできます。全profileで、protocol上「値又は空」と定義された単値record（`PRIMARY_SUBJECT`、`SUBJECT_POSE`、構図・背景・style各fieldなど）の行自体を小型modelが省略した場合は、本文を生成せず空値へ復元してwarningを残します。名前が既知のrecordの順序入替えや応答再開による重複も正規順へ決定論的に復旧します。schema wrapperとして混入した`protocol_id`はpayloadの有無や位置にかかわらずtransport metadataとして除外します。履物category `footwear`を正式に受理します。`SUBJECT_FEATURE`でcategoryだけが欠けた場合、又はmodelが未知categoryを生成した場合は、本文を一切変更せず汎用category `distinctive_feature`と保守的なvisibility `partial`へ収容してwarningを残します。本文欠落、その他の未知record、`HINT_STATUS`などの必須値欠落及び不正なfield値は推測せず、format retry又は明示エラーにします。

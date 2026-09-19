@@ -10,6 +10,12 @@ ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / "workflows"
 DEVELOPMENT_WORKFLOWS = WORKFLOWS / "development"
 CONTRACT_ID = "context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9"
+H3_DIFFUSION_MODEL = (
+    "MiniMaxH3\\minimax_h3_ref2va_pruned_int8_convrot.safetensors"
+)
+H3_TEXT_ENCODER = (
+    "MiniMaxH3\\qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors"
+)
 
 FILES = {
     "context_loop": (
@@ -252,6 +258,34 @@ class DistributableWorkflowTests(unittest.TestCase):
             input_link(video, ref2va, "ref_images.ref_image_1")[1:3],
             [binder["id"], 1],
         )
+        self.assertEqual(ref2va["widgets_values"][4], "max")
+        self.assertFalse(only_type(video, "MiniMaxH3ChainReview")["widgets_values"][0])
+        self.assertEqual(
+            only_type(video, "UNETLoader")["widgets_values"][0],
+            H3_DIFFUSION_MODEL,
+        )
+        self.assertEqual(
+            only_type(video, "CLIPLoader")["widgets_values"][0],
+            H3_TEXT_ENCODER,
+        )
+        self.assertEqual(
+            only_type(video, "ModelAttentionBackend")["widgets_values"],
+            ["comfy kitchen attention"],
+        )
+        resolution = only_type(video, "ResolutionSelector")
+        plan = only_type(video, "MiniMaxH3ChainPlanModern")
+        self.assertEqual(
+            resolution["widgets_values"],
+            ["16:9 (Widescreen)", 0.4, 32],
+        )
+        self.assertEqual(
+            input_link(video, plan, "width")[1:3],
+            [resolution["id"], 0],
+        )
+        self.assertEqual(
+            input_link(video, plan, "height")[1:3],
+            [resolution["id"], 1],
+        )
 
     def test_video_workflows_share_plan_handoff_and_full_mix_timeline(self) -> None:
         profiles = {
@@ -285,6 +319,11 @@ class DistributableWorkflowTests(unittest.TestCase):
                 workflow, "Background Reference • <Picture 2>"
             )
             ref2va = only_type(workflow, "MiniMaxH3ReferenceToVideo")
+            character_image = titled_node(
+                workflow, "Reference Image • <Picture 1>"
+            )
+            full_mix = titled_node(workflow, "Full Mix")
+            vocal = titled_node(workflow, "Vocal Stem")
             fallback_plan = json.loads(plan["widgets_values"][0])
             self.assertEqual(fallback_plan["defaults"]["steps"], 8)
             self.assertEqual(plan["widgets_values"][8], 8)
@@ -303,6 +342,13 @@ class DistributableWorkflowTests(unittest.TestCase):
                 [background_image["id"], 0],
             )
             self.assertEqual(background_binder["widgets_values"], [2])
+            self.assertEqual(
+                character_image["widgets_values"][0],
+                "image001_mikofox (2).jpg",
+            )
+            self.assertEqual(background_image["widgets_values"][0], "image002_keinai.jpg")
+            self.assertEqual(full_mix["widgets_values"][0], "autumn_fox_shrine.mp3")
+            self.assertEqual(vocal["widgets_values"][0], "autumn_fox_shrine_vocal.mp3")
             self.assertEqual(
                 input_link(
                     workflow, ref2va, "ref_images.ref_image_1"
@@ -348,8 +394,42 @@ class DistributableWorkflowTests(unittest.TestCase):
             sigma_shift = shifts[0]
             attention = only_type(workflow, "ModelAttentionBackend")
             unet = only_type(workflow, "UNETLoader")
+            text_encoder = only_type(workflow, "CLIPLoader")
+            video_vae = titled_node(workflow, "Video VAE")
+            audio_vae = titled_node(workflow, "Audio VAE")
+            review = only_type(workflow, "MiniMaxH3ChainReview")
+            resolution = only_type(workflow, "ResolutionSelector")
             self.assertEqual(
                 input_link(workflow, lora, "model")[1:3], [unet["id"], 0]
+            )
+            self.assertEqual(unet["widgets_values"][0], H3_DIFFUSION_MODEL)
+            self.assertEqual(text_encoder["widgets_values"][0], H3_TEXT_ENCODER)
+            self.assertEqual(
+                video_vae["widgets_values"][0],
+                "MiniMaxH3\\minimax_h3_video_vae_fp16.safetensors",
+            )
+            self.assertEqual(
+                audio_vae["widgets_values"][0],
+                "MiniMaxH3\\minimax_h3_audio_vae_fp32.safetensors",
+            )
+            self.assertEqual(
+                lora["widgets_values"][0],
+                "MiniMaxH3\\minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors",
+            )
+            self.assertEqual(attention["widgets_values"], ["comfy kitchen attention"])
+            self.assertFalse(review["widgets_values"][0])
+            self.assertEqual(ref2va["widgets_values"][4], "max")
+            self.assertEqual(
+                resolution["widgets_values"],
+                ["16:9 (Widescreen)", 0.4, 32],
+            )
+            self.assertEqual(
+                input_link(workflow, plan, "width")[1:3],
+                [resolution["id"], 0],
+            )
+            self.assertEqual(
+                input_link(workflow, plan, "height")[1:3],
+                [resolution["id"], 1],
             )
             self.assertEqual(
                 input_link(workflow, attention, "model")[1:3],

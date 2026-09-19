@@ -781,14 +781,14 @@
         896,
         672,
         243,
-        "match"
+        "max"
       ],
       "widgets_values_named": {
         "prompt": "subject_definitions:\n<Picture 1> defines <Subject 1>, the performer in the reference image.\n\nsummary:\n[reference generation] A moonlit performance at a shrine approach.\n\nretention_analysis:\n<Subject 1>: fully_preserved - preserve identity, clothing, and proportions.\n<Picture 1>: fully_preserved - preserve the visible performer design.\n\ndetailed_description:\n[Shot 1] <Subject 1> walks toward the torii gate and sings.\n<Subject 1> performs visible lip movements synchronized to the locked source vocal.\n\noverall_soundscape:\nPreserve the selected music-video soundtrack policy.\n\nnon_diegetic_music:\nNo additional generated music is requested.",
         "width": 896,
         "height": 672,
         "length": 243,
-        "ref_image_size": "match"
+        "ref_image_size": "max"
       }
     },
     {
@@ -1737,10 +1737,10 @@
         }
       },
       "widgets_values": [
-        "image001_mikofox.jpg"
+        "image001_mikofox (2).jpg"
       ],
       "widgets_values_named": {
-        "image": "image001_mikofox.jpg",
+        "image": "image001_mikofox (2).jpg",
         "upload": "image"
       }
     },
@@ -3130,30 +3130,30 @@
         "h3_chain_scene_colors": {}
       },
       "widgets_values": [
-        "{\n  \"prompt_prefix\": [\n    \"Render every scene as photorealistic live-action cinema.\"\n  ],\n  \"defaults\": {\n    \"steps\": 20\n  },\n  \"shots\": [\n    {\n      \"id\": \"scene_0001\",\n      \"length\": 243,\n      \"prompt\": [\n        \"subject_definitions:\",\n        \"<Picture 1> defines <Subject 1>, the performer in the reference image.\",\n        \"\",\n        \"summary:\",\n        \"[reference generation] A moonlit performance at a shrine approach.\",\n        \"\",\n        \"retention_analysis:\",\n        \"<Subject 1>: fully_preserved - preserve identity, clothing, and proportions.\",\n        \"<Picture 1>: fully_preserved - preserve the visible performer design.\",\n        \"\",\n        \"detailed_description:\",\n        \"[Shot 1] <Subject 1> walks toward the torii gate and sings.\",\n        \"<Subject 1> performs visible lip movements synchronized to the locked source vocal.\",\n        \"\",\n        \"overall_soundscape:\",\n        \"Preserve the selected music-video soundtrack policy.\",\n        \"\",\n        \"non_diegetic_music:\",\n        \"No additional generated music is requested.\"\n      ],\n      \"context_length\": 0,\n      \"audio_context_length\": 22,\n      \"source_reference\": \"off\",\n      \"generated_continuity\": \"off\",\n      \"source_audio_target\": \"locked\"\n    }\n  ]\n}",
+        "{\n  \"prompt_prefix\": [\n    \"Render every scene as photorealistic live-action cinema.\"\n  ],\n  \"defaults\": {\n    \"steps\": 8\n  },\n  \"shots\": [\n    {\n      \"id\": \"scene_0001\",\n      \"length\": 243,\n      \"prompt\": [\n        \"subject_definitions:\",\n        \"<Picture 1> defines <Subject 1>, the performer in the reference image.\",\n        \"\",\n        \"summary:\",\n        \"[reference generation] A moonlit performance at a shrine approach.\",\n        \"\",\n        \"retention_analysis:\",\n        \"<Subject 1>: fully_preserved - preserve identity, clothing, and proportions.\",\n        \"<Picture 1>: fully_preserved - preserve the visible performer design.\",\n        \"\",\n        \"detailed_description:\",\n        \"[Shot 1] <Subject 1> walks toward the torii gate and sings.\",\n        \"<Subject 1> performs visible lip movements synchronized to the locked source vocal.\",\n        \"\",\n        \"overall_soundscape:\",\n        \"Preserve the selected music-video soundtrack policy.\",\n        \"\",\n        \"non_diegetic_music:\",\n        \"No additional generated music is requested.\"\n      ],\n      \"context_length\": 0,\n      \"audio_context_length\": 22,\n      \"source_reference\": \"off\",\n      \"generated_continuity\": \"off\",\n      \"source_audio_target\": \"locked\"\n    }\n  ]\n}",
         "mv_director_context_loop",
         "mv-director-context_loop-context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9",
         896,
         672,
         "video",
         "disabled",
-        10,
-        20,
-        655435,
+        10.0,
+        8,
+        0,
         20,
         0
       ],
       "widgets_values_named": {
-        "plan_json": "{\n  \"prompt_prefix\": [\n    \"Render every scene as photorealistic live-action cinema.\"\n  ],\n  \"defaults\": {\n    \"steps\": 20\n  },\n  \"shots\": [\n    {\n      \"id\": \"scene_0001\",\n      \"length\": 243,\n      \"prompt\": [\n        \"subject_definitions:\",\n        \"<Picture 1> defines <Subject 1>, the performer in the reference image.\",\n        \"\",\n        \"summary:\",\n        \"[reference generation] A moonlit performance at a shrine approach.\",\n        \"\",\n        \"retention_analysis:\",\n        \"<Subject 1>: fully_preserved - preserve identity, clothing, and proportions.\",\n        \"<Picture 1>: fully_preserved - preserve the visible performer design.\",\n        \"\",\n        \"detailed_description:\",\n        \"[Shot 1] <Subject 1> walks toward the torii gate and sings.\",\n        \"<Subject 1> performs visible lip movements synchronized to the locked source vocal.\",\n        \"\",\n        \"overall_soundscape:\",\n        \"Preserve the selected music-video soundtrack policy.\",\n        \"\",\n        \"non_diegetic_music:\",\n        \"No additional generated music is requested.\"\n      ],\n      \"context_length\": 0,\n      \"audio_context_length\": 22,\n      \"source_reference\": \"off\",\n      \"generated_continuity\": \"off\",\n      \"source_audio_target\": \"locked\"\n    }\n  ]\n}",
+        "plan_json": "{\n  \"prompt_prefix\": [\n    \"Render every scene as photorealistic live-action cinema.\"\n  ],\n  \"defaults\": {\n    \"steps\": 8\n  },\n  \"shots\": [\n    {\n      \"id\": \"scene_0001\",\n      \"length\": 243,\n      \"prompt\": [\n        \"subject_definitions:\",\n        \"<Picture 1> defines <Subject 1>, the performer in the reference image.\",\n        \"\",\n        \"summary:\",\n        \"[reference generation] A moonlit performance at a shrine approach.\",\n        \"\",\n        \"retention_analysis:\",\n        \"<Subject 1>: fully_preserved - preserve identity, clothing, and proportions.\",\n        \"<Picture 1>: fully_preserved - preserve the visible performer design.\",\n        \"\",\n        \"detailed_description:\",\n        \"[Shot 1] <Subject 1> walks toward the torii gate and sings.\",\n        \"<Subject 1> performs visible lip movements synchronized to the locked source vocal.\",\n        \"\",\n        \"overall_soundscape:\",\n        \"Preserve the selected music-video soundtrack policy.\",\n        \"\",\n        \"non_diegetic_music:\",\n        \"No additional generated music is requested.\"\n      ],\n      \"context_length\": 0,\n      \"audio_context_length\": 22,\n      \"source_reference\": \"off\",\n      \"generated_continuity\": \"off\",\n      \"source_audio_target\": \"locked\"\n    }\n  ]\n}",
         "run_name": "mv_director_context_loop",
         "generation_fingerprint": "mv-director-context_loop-context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9",
         "width": 896,
         "height": 672,
         "encode_mode": "video",
         "crop": "disabled",
-        "default_duration_seconds": 10,
-        "default_steps": 20,
-        "base_seed": 655435,
+        "default_duration_seconds": 10.0,
+        "default_steps": 8,
+        "base_seed": 0,
         "segment_crf": 20,
         "video_blend_frames": 0
       }
@@ -3403,11 +3403,11 @@
       },
       "widgets_values": [
         "MiniMaxH3\\minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors",
-        1
+        1.0
       ],
       "widgets_values_named": {
         "lora_name": "MiniMaxH3\\minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors",
-        "strength_model": 1
+        "strength_model": 1.0
       },
       "color": "#223",
       "bgcolor": "#335"
