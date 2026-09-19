@@ -192,7 +192,7 @@ class MVDirectorDirectionEnhancer:
             },
             "optional": {
                 "concept_emd": ("STRING", {"default": "", "multiline": True}),
-                "observations_json": ("STRING", {"default": "", "multiline": True}),
+                "scene_emd": ("STRING", {"default": "", "multiline": True}),
                 "direction_emd_passthrough": ("STRING", {"forceInput": True}),
             },
         }
@@ -220,7 +220,7 @@ class MVDirectorDirectionEnhancer:
         cache_mode: str,
         retention_policy: str,
         concept_emd: str = "",
-        observations_json: str = "",
+        scene_emd: str = "",
         direction_emd_passthrough: str = "",
     ) -> tuple[DirectionArtifact, str, str]:
         with self._lock:
@@ -228,7 +228,7 @@ class MVDirectorDirectionEnhancer:
                 raise ValueError("cache_mode must be reuse, refresh, or disabled")
             value = DirectionEnhancerInput(
                 concept_emd=concept_emd,
-                observations_json=observations_json,
+                scene_emd=scene_emd,
                 user_request=user_request,
                 style_profile=style_profile,
                 motion_profile=motion_profile,
@@ -288,7 +288,7 @@ class MVDirectorDirectionEnhancer:
                     ),
                     "input": {
                         "concept_emd": value.normalized_concept_emd,
-                        "observations_json": value.normalized_observations_json,
+                        "scene_emd": value.normalized_scene_emd,
                         "user_request": value.normalized_user_request,
                         "style_profile": style_profile,
                         "motion_profile": motion_profile,

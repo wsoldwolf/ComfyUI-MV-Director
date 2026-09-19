@@ -17,8 +17,19 @@ FACE_PERFORMANCE_CUT_CAMERA = (
     "finish with both eyes in the upper half and the complete singing mouth in the "
     "lower half; crop out the torso, feet, and most of the background only near the end."
 )
+ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA = (
+    "Zoom In with large amplitude at fast speed from a frontal or three-quarter "
+    "head-and-shoulders singing composition to a tight readable facial close-up of "
+    "only the primary subject during 35-55% of the Shot; both eyes, both eyebrows, "
+    "the nose, the complete singing mouth, and enough facial contour remain visible "
+    "throughout; a brief close, half-open gaze, lowered gaze, or reopening remains "
+    "readable without requiring both eyes to stay fully open; hold the final close "
+    "scale only for a short expression accent and do not end at an eye-only or "
+    "mouth-only crop."
+)
 
 __all__ = [
+    "ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA",
     "FACE_PERFORMANCE_CUT_ACTION",
     "FACE_PERFORMANCE_CUT_CAMERA",
 ]

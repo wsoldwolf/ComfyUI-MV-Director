@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from typing import Any, Mapping, Protocol
 
+from ..artifacts import EMDTextArtifact
 from ..artifacts.base import normalize_newlines, sha256_text
 from ..artifacts.observations import ObservationsArtifact
 from ..artifacts.references import (
@@ -17,9 +18,10 @@ from ..protocols import VisionProtocolError, parse_vision_observations
 from .graph_binding import PictureBinding
 from .image_data import PreparedVisionImage
 from .subject_emd import SubjectEMDResult, render_subject_emd
+from .scene_emd import render_scene_emd
 
 
-VISION_PROMPT_VERSION = "mvd-vision-observation-v15"
+VISION_PROMPT_VERSION = "mvd-vision-observation-v16"
 ANALYSIS_PROFILES = ("general", "subject_only", "scene_only")
 HINT_MODES = ("observe_only", "assist", "lock_identity")
 HINT_CONFLICT_POLICIES = ("warn", "strict")
@@ -81,6 +83,7 @@ class ImageToSubjectResult:
     observations: ObservationsArtifact
     reference_bindings: ReferenceBindingsArtifact
     resolved_picture_reference: str
+    scene_emd: EMDTextArtifact | None = None
     warnings: tuple[str, ...] = ()
 
 
@@ -350,15 +353,28 @@ def compose_image_to_subject(
         hint_mode=request.hint_mode,
         hint_conflict=request.hint_conflict,
     )
-    bindings = _binding_artifact(
-        binding=binding,
-        image_sha256=prepared.image_sha256,
-    )
+    scene_emd = None
+    if request.analysis_profile == "scene_only":
+        scene_emd = render_scene_emd(
+            observations,
+            picture_index=picture_index,
+            scene_hint=request.normalized_subject_hint,
+            hint_mode=request.hint_mode,
+        ).artifact
+        # ReferenceBindings are Subject-specific. Scene Pictures are declared by
+        # scene_emd and resolved later by the compiler's required references.
+        bindings = ReferenceBindingsArtifact()
+    else:
+        bindings = _binding_artifact(
+            binding=binding,
+            image_sha256=prepared.image_sha256,
+        )
     bindings.validate()
     return ImageToSubjectResult(
         emd=emd,
         observations=observations,
         reference_bindings=bindings,
         resolved_picture_reference=binding.resolved_picture_reference,
+        scene_emd=scene_emd,
         warnings=warnings,
     )

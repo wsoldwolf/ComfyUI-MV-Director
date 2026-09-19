@@ -112,16 +112,21 @@ class DistributableWorkflowTests(unittest.TestCase):
             self.assertEqual(character_vision["widgets_values"][6], "manual")
             self.assertEqual(background_vision["widgets_values"][1], "scene_only")
             self.assertEqual(background_vision["widgets_values"][4], "lock_identity")
-            self.assertEqual(background_vision["widgets_values"][6], "none")
+            self.assertEqual(background_vision["widgets_values"][6], "manual")
             self.assertEqual(background_vision["widgets_values"][7], "location")
+            self.assertEqual(background_vision["widgets_values"][8], 2)
             direction = only_type(workflow, "MVDirectorDirectionEnhancer")
             self.assertEqual(
                 input_link(workflow, direction, "concept_emd")[1:3],
                 [character_vision["id"], 0],
             )
             self.assertEqual(
-                input_link(workflow, direction, "observations_json")[1:3],
-                [background_vision["id"], 3],
+                input_link(workflow, direction, "scene_emd")[1:3],
+                [background_vision["id"], 4],
+            )
+            self.assertEqual(
+                input_link(workflow, planner, "scene_emd")[1:3],
+                [background_vision["id"], 4],
             )
             compiler = only_type(workflow, "MVDirectorEMDCompiler")
             self.assertEqual(
@@ -209,7 +214,7 @@ class DistributableWorkflowTests(unittest.TestCase):
         self.assertEqual(background_vision["widgets_values"][1], "scene_only")
         self.assertEqual(background_vision["widgets_values"][4], "lock_identity")
         self.assertEqual(background_vision["widgets_values"][2], "")
-        self.assertEqual(background_vision["widgets_values"][6:8], ["none", "location"])
+        self.assertEqual(background_vision["widgets_values"][6:9], ["manual", "location", 2])
         self.assertEqual(
             only_type(workflow, "MVDirectorTimelinePlanner")["widgets_values"][3],
             "Qwen3-4B-abliterated/Qwen3-4B-abliterated-q5_k_m.gguf",
@@ -237,26 +242,39 @@ class DistributableWorkflowTests(unittest.TestCase):
             [character_vision["id"], 0],
         )
         self.assertEqual(
-            input_link(workflow, direction, "observations_json")[1:3],
-            [background_vision["id"], 3],
+            input_link(workflow, direction, "scene_emd")[1:3],
+            [background_vision["id"], 4],
+        )
+        self.assertNotIn(
+            "observations_json",
+            [item["name"] for item in direction.get("inputs", [])],
+        )
+        connectable = (
+            direction.get("properties", {})
+            .get("ue_properties", {})
+            .get("widget_ue_connectable", {})
+        )
+        self.assertNotIn("observations_json", connectable)
+        self.assertTrue(connectable.get("scene_emd"))
+        planner = only_type(workflow, "MVDirectorTimelinePlanner")
+        self.assertEqual(
+            input_link(workflow, planner, "scene_emd")[1:3],
+            [background_vision["id"], 4],
         )
         video = json.loads(
             (DEVELOPMENT_WORKFLOWS / "02_video_context_loop_debug.json")
             .read_text(encoding="utf-8")
         )
-        binder = only_type(video, "MVDirectorH3BackgroundReference")
+        self.assertFalse(
+            [node for node in video["nodes"] if node["type"] == "MVDirectorH3BackgroundReference"]
+        )
         background_image = titled_node(
             video, "Background Reference • <Picture 2>"
         )
         ref2va = only_type(video, "MiniMaxH3ReferenceToVideo")
-        self.assertEqual(binder["widgets_values"], [2])
-        self.assertEqual(
-            input_link(video, binder, "background_image")[1:3],
-            [background_image["id"], 0],
-        )
         self.assertEqual(
             input_link(video, ref2va, "ref_images.ref_image_1")[1:3],
-            [binder["id"], 1],
+            [background_image["id"], 0],
         )
         self.assertEqual(ref2va["widgets_values"][4], "max")
         self.assertFalse(only_type(video, "MiniMaxH3ChainReview")["widgets_values"][0])
@@ -312,8 +330,8 @@ class DistributableWorkflowTests(unittest.TestCase):
                 and "Compiled Plan" in node.get("title", "")
             )
             plan = only_type(workflow, "MiniMaxH3ChainPlanModern")
-            background_binder = only_type(
-                workflow, "MVDirectorH3BackgroundReference"
+            self.assertFalse(
+                [node for node in workflow["nodes"] if node["type"] == "MVDirectorH3BackgroundReference"]
             )
             background_image = titled_node(
                 workflow, "Background Reference • <Picture 2>"
@@ -329,19 +347,8 @@ class DistributableWorkflowTests(unittest.TestCase):
             self.assertEqual(plan["widgets_values"][8], 8)
             self.assertEqual(
                 input_link(workflow, plan, "plan_json_input")[1:3],
-                [background_binder["id"], 0],
-            )
-            self.assertEqual(
-                input_link(workflow, background_binder, "plan_json")[1:3],
                 [plan_loader["id"], 0],
             )
-            self.assertEqual(
-                input_link(
-                    workflow, background_binder, "background_image"
-                )[1:3],
-                [background_image["id"], 0],
-            )
-            self.assertEqual(background_binder["widgets_values"], [2])
             self.assertEqual(
                 character_image["widgets_values"][0],
                 "image001_mikofox (2).jpg",
@@ -353,7 +360,11 @@ class DistributableWorkflowTests(unittest.TestCase):
                 input_link(
                     workflow, ref2va, "ref_images.ref_image_1"
                 )[1:3],
-                [background_binder["id"], 1],
+                [background_image["id"], 0],
+            )
+            self.assertTrue(
+                any("<Picture 2> is the environment reference:" in line
+                    for line in fallback_plan["shots"][0]["prompt"])
             )
 
             profile = only_type(workflow, "MiniMaxH3GenerationProfile")
@@ -362,7 +373,7 @@ class DistributableWorkflowTests(unittest.TestCase):
             self.assertEqual(pad["widgets_values"][3], alignments[mode])
             self.assertEqual(
                 input_link(workflow, pad, "plan_json")[1:3],
-                [background_binder["id"], 0],
+                [plan_loader["id"], 0],
             )
             lyric_nodes = [
                 node

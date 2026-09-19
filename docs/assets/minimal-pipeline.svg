@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1180" viewBox="0 0 1600 1180" role="img" aria-labelledby="title description">
   <title id="title">ComfyUI-MV-Director 最小パイプライン</title>
-  <desc id="description">人物参照と背景参照を分離し、背景は計画時にVision観察をDirectionへ、動画生成時に環境専用PictureをH3へ渡す。歌詞、ボーカル、フルミックスから完全EMDとContext Loop Plan JSONを作る流れ、Compiler単独経路及びSRT単独出力も示す。</desc>
+  <desc id="description">人物参照と背景参照を分離し、背景は計画時にScene EMDをDirectionとPlannerへ、動画生成時に環境専用PictureをH3へ直接渡す。CompilerがScene EMDから環境契約を生成する。歌詞、ボーカル、フルミックスから完全EMDとContext Loop Plan JSONを作る流れ、Compiler単独経路及びSRT単独出力も示す。</desc>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#526273"/>
@@ -65,7 +65,7 @@
 
   <rect class="node" x="325" y="257" width="300" height="96" rx="12"/>
   <text class="label" x="475" y="296">Direction Enhancer</text>
-  <text class="small" x="475" y="326">希望 + 背景観察 → 全体方針</text>
+  <text class="small" x="475" y="326">希望 + Scene EMD → 全体方針</text>
 
   <rect class="artifact" x="680" y="282" width="255" height="72" rx="12"/>
   <text class="label" x="807.5" y="326">Direction</text>
@@ -168,21 +168,21 @@
   <text class="small" x="475" y="982">Picture束縛なし</text>
 
   <rect class="artifact" x="680" y="900" width="255" height="102" rx="12"/>
-  <text class="label" x="807.5" y="932">環境observations_json</text>
+  <text class="label" x="807.5" y="932">Scene EMD</text>
   <text class="small" x="807.5" y="958">Directionへ環境証拠</text>
   <text class="small" x="807.5" y="982">人物Subjectへ結合しない</text>
 
   <rect class="node" x="1010" y="900" width="280" height="102" rx="12"/>
-  <text class="label" x="1150" y="932">H3 Background Reference</text>
+  <text class="label" x="1150" y="932">Compiler環境契約</text>
   <text class="small" x="1150" y="958">生成時: &lt;Picture 2&gt;</text>
   <text class="small" x="1150" y="982">環境条件を独立して保持</text>
 
   <path class="edge" d="M265 951 H325"/>
   <path class="edge" d="M625 951 H680"/>
   <path class="edge-dashed" d="M680 940 H650 V343 H625"/>
-  <text class="edge-label" x="642" y="626">observations_json</text>
+  <text class="edge-label" x="642" y="626">scene_emd</text>
   <path class="edge-dashed" d="M265 980 V1050 H980 C1000 1050 1000 974 1010 974"/>
-  <text class="edge-label" x="617" y="1042">同じ背景IMAGEをpass-through</text>
+  <text class="edge-label" x="617" y="1042">同じ背景IMAGEをH3へ直接接続</text>
   <path class="edge" d="M1462.5 474 V1060 H1150 V1002"/>
   <text class="edge-label" x="1362" y="1052">Compiled Plan JSON</text>
   <path class="edge" d="M1150 900 V888"/>

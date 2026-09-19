@@ -2,7 +2,7 @@
   "id": "c0557147-a468-4c8b-8321-e1ebc7331c88",
   "revision": 0,
   "last_node_id": 25,
-  "last_link_id": 27,
+  "last_link_id": 29,
   "nodes": [
     {
       "id": 2,
@@ -652,9 +652,7 @@
           "localized_name": "文字列",
           "name": "STRING",
           "type": "STRING",
-          "links": [
-            24
-          ]
+          "links": null
         }
       ],
       "properties": {
@@ -1332,217 +1330,33 @@
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "template_emd",
           "name": "template_emd",
           "type": "STRING",
           "link": 7
         },
         {
-          "localized_name": "concept_emd",
           "name": "concept_emd",
-          "shape": 7,
           "type": "STRING",
           "link": 8
         },
         {
-          "localized_name": "direction",
+          "name": "scene_emd",
+          "type": "STRING",
+          "link": 29
+        },
+        {
           "name": "direction",
-          "shape": 7,
           "type": "MV_DIRECTOR_DIRECTION",
           "link": 9
         },
         {
-          "localized_name": "model_name_override",
           "name": "model_name_override",
-          "shape": 7,
           "type": "STRING",
-          "link": null
-        },
-        {
-          "localized_name": "lip_sync_mode",
-          "name": "lip_sync_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "lip_sync_mode"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "lip_sync_target",
-          "name": "lip_sync_target",
-          "type": "STRING",
-          "widget": {
-            "name": "lip_sync_target"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "lip_sync_audio_slot",
-          "name": "lip_sync_audio_slot",
-          "type": "INT",
-          "widget": {
-            "name": "lip_sync_audio_slot"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "model_name",
-          "name": "model_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "model_name"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "chat_format",
-          "name": "chat_format",
-          "type": "COMBO",
-          "widget": {
-            "name": "chat_format"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "max_tokens",
-          "name": "max_tokens",
-          "type": "INT",
-          "widget": {
-            "name": "max_tokens"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "temperature",
-          "name": "temperature",
-          "type": "FLOAT",
-          "widget": {
-            "name": "temperature"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "top_p",
-          "name": "top_p",
-          "type": "FLOAT",
-          "widget": {
-            "name": "top_p"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "repetition_penalty",
-          "name": "repetition_penalty",
-          "type": "FLOAT",
-          "widget": {
-            "name": "repetition_penalty"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "gpu_layers",
-          "name": "gpu_layers",
-          "type": "INT",
-          "widget": {
-            "name": "gpu_layers"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "n_batch",
-          "name": "n_batch",
-          "type": "INT",
-          "widget": {
-            "name": "n_batch"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "n_ctx",
-          "name": "n_ctx",
-          "type": "INT",
-          "widget": {
-            "name": "n_ctx"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "flash_attn",
-          "name": "flash_attn",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "flash_attn"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "kv_cache_type",
-          "name": "kv_cache_type",
-          "type": "COMBO",
-          "widget": {
-            "name": "kv_cache_type"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "op_offload",
-          "name": "op_offload",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "op_offload"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "keep_model_loaded",
-          "name": "keep_model_loaded",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "keep_model_loaded"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "seed",
-          "name": "seed",
-          "type": "INT",
-          "widget": {
-            "name": "seed"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "scenes_per_batch",
-          "name": "scenes_per_batch",
-          "type": "INT",
-          "widget": {
-            "name": "scenes_per_batch"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "cache_mode",
-          "name": "cache_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "cache_mode"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "save_debug_output",
-          "name": "save_debug_output",
-          "shape": 7,
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "save_debug_output"
-          },
           "link": null
         }
       ],
       "outputs": [
         {
-          "localized_name": "emd_text",
           "name": "emd_text",
           "type": "STRING",
           "links": [
@@ -1552,13 +1366,11 @@
           ]
         },
         {
-          "localized_name": "emd",
           "name": "emd",
           "type": "MV_DIRECTOR_EMD",
           "links": null
         },
         {
-          "localized_name": "status",
           "name": "status",
           "type": "STRING",
           "links": null
@@ -1636,216 +1448,18 @@
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "direction_emd_passthrough",
-          "name": "direction_emd_passthrough",
-          "shape": 7,
-          "type": "STRING",
-          "link": 24
-        },
-        {
-          "localized_name": "retention_policy",
-          "name": "retention_policy",
-          "type": "COMBO",
-          "widget": {
-            "name": "retention_policy"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "user_request",
-          "name": "user_request",
-          "type": "STRING",
-          "widget": {
-            "name": "user_request"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "style_profile",
-          "name": "style_profile",
-          "type": "COMBO",
-          "widget": {
-            "name": "style_profile"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "motion_profile",
-          "name": "motion_profile",
-          "type": "COMBO",
-          "widget": {
-            "name": "motion_profile"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "camera_profile",
-          "name": "camera_profile",
-          "type": "COMBO",
-          "widget": {
-            "name": "camera_profile"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "model_name",
-          "name": "model_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "model_name"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "chat_format",
-          "name": "chat_format",
-          "type": "STRING",
-          "widget": {
-            "name": "chat_format"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "max_tokens",
-          "name": "max_tokens",
-          "type": "INT",
-          "widget": {
-            "name": "max_tokens"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "temperature",
-          "name": "temperature",
-          "type": "FLOAT",
-          "widget": {
-            "name": "temperature"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "top_p",
-          "name": "top_p",
-          "type": "FLOAT",
-          "widget": {
-            "name": "top_p"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "repetition_penalty",
-          "name": "repetition_penalty",
-          "type": "FLOAT",
-          "widget": {
-            "name": "repetition_penalty"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "gpu_layers",
-          "name": "gpu_layers",
-          "type": "INT",
-          "widget": {
-            "name": "gpu_layers"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "n_batch",
-          "name": "n_batch",
-          "type": "INT",
-          "widget": {
-            "name": "n_batch"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "n_ctx",
-          "name": "n_ctx",
-          "type": "INT",
-          "widget": {
-            "name": "n_ctx"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "flash_attn",
-          "name": "flash_attn",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "flash_attn"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "kv_cache_type",
-          "name": "kv_cache_type",
-          "type": "COMBO",
-          "widget": {
-            "name": "kv_cache_type"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "op_offload",
-          "name": "op_offload",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "op_offload"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "keep_model_loaded",
-          "name": "keep_model_loaded",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "keep_model_loaded"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "seed",
-          "name": "seed",
-          "type": "INT",
-          "widget": {
-            "name": "seed"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "cache_mode",
-          "name": "cache_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "cache_mode"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "concept_emd",
           "name": "concept_emd",
-          "shape": 7,
           "type": "STRING",
-          "widget": {
-            "name": "concept_emd"
-          },
           "link": 5
         },
         {
-          "localized_name": "observations_json",
-          "name": "observations_json",
-          "shape": 7,
+          "name": "scene_emd",
           "type": "STRING",
-          "widget": {
-            "name": "observations_json"
-          },
-          "link": 27
+          "link": 28
         }
       ],
       "outputs": [
         {
-          "localized_name": "direction",
           "name": "direction",
           "type": "MV_DIRECTOR_DIRECTION",
           "links": [
@@ -1854,7 +1468,6 @@
           ]
         },
         {
-          "localized_name": "direction_emd_preview",
           "name": "direction_emd_preview",
           "type": "STRING",
           "links": [
@@ -1862,7 +1475,6 @@
           ]
         },
         {
-          "localized_name": "status",
           "name": "status",
           "type": "STRING",
           "links": null
@@ -1874,7 +1486,7 @@
         "ue_properties": {
           "widget_ue_connectable": {
             "concept_emd": true,
-            "observations_json": true
+            "scene_emd": true
           },
           "version": "7.8",
           "input_ue_unconnectable": {}
@@ -1947,222 +1559,13 @@
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "image",
           "name": "image",
           "type": "IMAGE",
           "link": 1
-        },
-        {
-          "localized_name": "model_name",
-          "name": "model_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "model_name"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "analysis_profile",
-          "name": "analysis_profile",
-          "type": "COMBO",
-          "widget": {
-            "name": "analysis_profile"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "subject_hint",
-          "name": "subject_hint",
-          "type": "STRING",
-          "widget": {
-            "name": "subject_hint"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "additional_instruction",
-          "name": "additional_instruction",
-          "type": "STRING",
-          "widget": {
-            "name": "additional_instruction"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "hint_mode",
-          "name": "hint_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "hint_mode"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "hint_conflict",
-          "name": "hint_conflict",
-          "type": "COMBO",
-          "widget": {
-            "name": "hint_conflict"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "picture_reference_mode",
-          "name": "picture_reference_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "picture_reference_mode"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "concept_type",
-          "name": "concept_type",
-          "type": "COMBO",
-          "widget": {
-            "name": "concept_type"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "picture_index",
-          "name": "picture_index",
-          "type": "INT",
-          "widget": {
-            "name": "picture_index"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "analysis_max_edge",
-          "name": "analysis_max_edge",
-          "type": "INT",
-          "widget": {
-            "name": "analysis_max_edge"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "max_tokens",
-          "name": "max_tokens",
-          "type": "INT",
-          "widget": {
-            "name": "max_tokens"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "temperature",
-          "name": "temperature",
-          "type": "FLOAT",
-          "widget": {
-            "name": "temperature"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "top_p",
-          "name": "top_p",
-          "type": "FLOAT",
-          "widget": {
-            "name": "top_p"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "repetition_penalty",
-          "name": "repetition_penalty",
-          "type": "FLOAT",
-          "widget": {
-            "name": "repetition_penalty"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "gpu_layers",
-          "name": "gpu_layers",
-          "type": "INT",
-          "widget": {
-            "name": "gpu_layers"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "n_batch",
-          "name": "n_batch",
-          "type": "INT",
-          "widget": {
-            "name": "n_batch"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "n_ctx",
-          "name": "n_ctx",
-          "type": "INT",
-          "widget": {
-            "name": "n_ctx"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "flash_attn",
-          "name": "flash_attn",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "flash_attn"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "kv_cache_type",
-          "name": "kv_cache_type",
-          "type": "COMBO",
-          "widget": {
-            "name": "kv_cache_type"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "op_offload",
-          "name": "op_offload",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "op_offload"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "keep_model_loaded",
-          "name": "keep_model_loaded",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "keep_model_loaded"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "seed",
-          "name": "seed",
-          "type": "INT",
-          "widget": {
-            "name": "seed"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "cache_mode",
-          "name": "cache_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "cache_mode"
-          },
-          "link": null
         }
       ],
       "outputs": [
         {
-          "localized_name": "emd_fragment",
           "name": "emd_fragment",
           "type": "STRING",
           "links": [
@@ -2172,24 +1575,26 @@
           ]
         },
         {
-          "localized_name": "reference_bindings",
           "name": "reference_bindings",
           "type": "MV_DIRECTOR_REFERENCE_BINDINGS",
           "links": null
         },
         {
-          "localized_name": "image",
           "name": "image",
           "type": "IMAGE",
           "links": null
         },
         {
-          "localized_name": "observations_json",
           "name": "observations_json",
           "type": "STRING",
           "links": [
             18
           ]
+        },
+        {
+          "name": "scene_emd",
+          "type": "STRING",
+          "links": null
         }
       ],
       "title": "Character Vision / Subject EMD",
@@ -2272,244 +1677,38 @@
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "image",
           "name": "image",
           "type": "IMAGE",
           "link": 26
-        },
-        {
-          "localized_name": "model_name",
-          "name": "model_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "model_name"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "analysis_profile",
-          "name": "analysis_profile",
-          "type": "COMBO",
-          "widget": {
-            "name": "analysis_profile"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "subject_hint",
-          "name": "subject_hint",
-          "type": "STRING",
-          "widget": {
-            "name": "subject_hint"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "additional_instruction",
-          "name": "additional_instruction",
-          "type": "STRING",
-          "widget": {
-            "name": "additional_instruction"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "hint_mode",
-          "name": "hint_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "hint_mode"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "hint_conflict",
-          "name": "hint_conflict",
-          "type": "COMBO",
-          "widget": {
-            "name": "hint_conflict"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "picture_reference_mode",
-          "name": "picture_reference_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "picture_reference_mode"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "concept_type",
-          "name": "concept_type",
-          "type": "COMBO",
-          "widget": {
-            "name": "concept_type"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "picture_index",
-          "name": "picture_index",
-          "type": "INT",
-          "widget": {
-            "name": "picture_index"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "analysis_max_edge",
-          "name": "analysis_max_edge",
-          "type": "INT",
-          "widget": {
-            "name": "analysis_max_edge"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "max_tokens",
-          "name": "max_tokens",
-          "type": "INT",
-          "widget": {
-            "name": "max_tokens"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "temperature",
-          "name": "temperature",
-          "type": "FLOAT",
-          "widget": {
-            "name": "temperature"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "top_p",
-          "name": "top_p",
-          "type": "FLOAT",
-          "widget": {
-            "name": "top_p"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "repetition_penalty",
-          "name": "repetition_penalty",
-          "type": "FLOAT",
-          "widget": {
-            "name": "repetition_penalty"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "gpu_layers",
-          "name": "gpu_layers",
-          "type": "INT",
-          "widget": {
-            "name": "gpu_layers"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "n_batch",
-          "name": "n_batch",
-          "type": "INT",
-          "widget": {
-            "name": "n_batch"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "n_ctx",
-          "name": "n_ctx",
-          "type": "INT",
-          "widget": {
-            "name": "n_ctx"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "flash_attn",
-          "name": "flash_attn",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "flash_attn"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "kv_cache_type",
-          "name": "kv_cache_type",
-          "type": "COMBO",
-          "widget": {
-            "name": "kv_cache_type"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "op_offload",
-          "name": "op_offload",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "op_offload"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "keep_model_loaded",
-          "name": "keep_model_loaded",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "keep_model_loaded"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "seed",
-          "name": "seed",
-          "type": "INT",
-          "widget": {
-            "name": "seed"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "cache_mode",
-          "name": "cache_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "cache_mode"
-          },
-          "link": null
         }
       ],
       "outputs": [
         {
-          "localized_name": "emd_fragment",
           "name": "emd_fragment",
           "type": "STRING",
           "links": null
         },
         {
-          "localized_name": "reference_bindings",
           "name": "reference_bindings",
           "type": "MV_DIRECTOR_REFERENCE_BINDINGS",
           "links": null
         },
         {
-          "localized_name": "image",
           "name": "image",
           "type": "IMAGE",
           "links": null
         },
         {
-          "localized_name": "observations_json",
           "name": "observations_json",
           "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "scene_emd",
+          "type": "STRING",
           "links": [
-            27
+            28,
+            29
           ]
         }
       ],
@@ -2529,9 +1728,9 @@
         "人物、動物、キャラクター及び画面構成資料としての特徴は記述しない。場所、空間構成、建築、植生、時刻、天候及び環境照明だけを観察する。",
         "lock_identity",
         "warn",
-        "none",
+        "manual",
         "location",
-        1,
+        2,
         1024,
         1024,
         0.1,
@@ -2547,7 +1746,7 @@
         1,
         "fixed",
         "reuse",
-        "none"
+        "<Picture 2>"
       ],
       "widgets_values_named": {
         "model_name": "Qwen3-VL-4B-Instruct/Qwen3-VL-4B-Instruct-Q4_K_M.gguf",
@@ -2556,9 +1755,9 @@
         "additional_instruction": "人物、動物、キャラクター及び画面構成資料としての特徴は記述しない。場所、空間構成、建築、植生、時刻、天候及び環境照明だけを観察する。",
         "hint_mode": "lock_identity",
         "hint_conflict": "warn",
-        "picture_reference_mode": "none",
+        "picture_reference_mode": "manual",
         "concept_type": "location",
-        "picture_index": 1,
+        "picture_index": 2,
         "analysis_max_edge": 1024,
         "max_tokens": 1024,
         "temperature": 0.1,
@@ -2574,7 +1773,7 @@
         "seed": 1,
         "randomize": "fixed",
         "cache_mode": "reuse",
-        "resolved_picture_reference": "none"
+        "resolved_picture_reference": "<Picture 2>"
       }
     }
   ],
@@ -2616,7 +1815,7 @@
       3,
       0,
       8,
-      21,
+      0,
       "STRING"
     ],
     [
@@ -2640,7 +1839,7 @@
       8,
       0,
       9,
-      2,
+      3,
       "MV_DIRECTOR_DIRECTION"
     ],
     [
@@ -2732,14 +1931,6 @@
       "STRING"
     ],
     [
-      24,
-      22,
-      0,
-      8,
-      0,
-      "STRING"
-    ],
-    [
       25,
       3,
       0,
@@ -2756,11 +1947,19 @@
       "IMAGE"
     ],
     [
-      27,
+      28,
       25,
-      3,
+      4,
       8,
-      22,
+      1,
+      "STRING"
+    ],
+    [
+      29,
+      25,
+      4,
+      9,
+      2,
       "STRING"
     ]
   ],

@@ -28,7 +28,8 @@
 | `emd_fragment` | EnhancerまたはPlannerの`concept_emd`へ渡す編集可能なSubject EMD |
 | `reference_bindings` | 解決したPicture参照を持つtyped artifact |
 | `image` | H3の`ref_image_N`へ渡す元IMAGE pass-through |
-| `observations_json` | Enhancerへ渡す可視観察とprovenance |
+| `observations_json` | 可視観察とprovenanceを確認するdebug出力。Direction Enhancerへは接続しない |
+| `scene_emd` | `scene_only`時の`# シーン設定`断片。Direction EnhancerとTimeline Plannerへ同じ出力を接続する |
 
 ## 使い方
 

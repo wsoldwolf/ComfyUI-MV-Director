@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1120" viewBox="0 0 1600 1120" role="img" aria-labelledby="title desc">
   <title id="title">Direction EnhancerとTimeline Plannerの処理フロー</title>
-  <desc id="desc">人物identity用Subject EMDと背景環境用Vision観察を分離してDirection Enhancerへ入力し、Timeline PlannerがTemplate EMDへVisual Beat、Song Direction、Shot Layout、Action、Camera及びリップシンクdirectiveを展開して完全EMDを作る流れ。背景IMAGE自体は動画生成時に環境専用PictureとしてH3へ渡す。</desc>
+  <desc id="desc">人物identity用Subject EMDと背景環境用Scene EMDを分離してDirection EnhancerとTimeline Plannerへ入力し、PlannerがTemplate EMDへScene設定、Visual Beat、Song Direction、Shot Layout、Action、Camera及びリップシンクdirectiveを展開して完全EMDを作る流れ。Compilerが背景Picture契約を生成し、背景IMAGE自体は動画生成時にH3へ直接渡す。</desc>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
       <path d="M0 0L10 5L0 10Z" fill="#526273"/>
@@ -30,7 +30,7 @@
   <text class="label" x="177" y="299">入力authority</text>
   <text class="small" x="177" y="327">user_request</text>
   <text class="small" x="177" y="349">Subject EMD = 人物identity</text>
-  <text class="small" x="177" y="371">Background observations = 環境</text>
+  <text class="small" x="177" y="371">Scene EMD = 環境・時刻・背景Picture</text>
   <text class="small" x="177" y="393">retention / passthrough</text>
   <text class="tiny" x="177" y="421">人物と背景を同じ参照roleへ混在させない</text>
 
@@ -55,7 +55,7 @@
   <text class="small" x="1073" y="286">locked Styleを機械適用</text>
   <text class="small" x="1073" y="308">provenanceを固定enumで記録</text>
   <text class="small" x="1073" y="330">preview EMDをrender</text>
-  <text class="tiny" x="1073" y="354">背景IMAGEはPlannerでなく生成時H3へ別Picture入力</text>
+  <text class="tiny" x="1073" y="354">Scene EMDはPlannerへ、背景IMAGEは生成時H3へ入力</text>
 
   <rect class="artifact" x="1260" y="205" width="270" height="142" rx="12"/>
   <text class="label" x="1395" y="237">MVD_DIRECTION_V3</text>

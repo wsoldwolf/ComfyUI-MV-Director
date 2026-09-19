@@ -22,7 +22,7 @@
 
 | ノード | 役割 |
 |---|---|
-| [H3 Background Reference](h3-background-reference.md) | 動画生成時に背景画像を環境専用PictureとしてPlanとH3へ束縛する |
+| [H3 Background Reference](h3-background-reference.md) | 旧Planへ背景契約を後付けする互換ノード。新workflowでは不要 |
 
 ## Utilities
 

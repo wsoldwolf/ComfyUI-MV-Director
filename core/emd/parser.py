@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from ..artifacts.base import normalize_newlines
 from ..h3_contract import DEFAULT_H3_TIMING_PROFILE, H3TimingProfile
@@ -14,10 +14,12 @@ from .ast import (
     LyricAnnotation,
     RetentionDirective,
     Scene,
+    SceneSetting,
     Shot,
     Subject,
 )
 from .errors import EMDParseError
+from .scene_fragment import SceneEMDFragmentError, parse_scene_emd_fragment
 
 
 _TIME_RE = re.compile(r"([0-9]{2,}):([0-5][0-9])\.([0-9]{3})\Z")
@@ -133,8 +135,12 @@ class _Parser:
             raise EMDParseError(0, "empty EMD is not compiler-ready")
         self.expect("# サブジェクト")
         subjects = self.parse_subjects()
+        scene_setting: SceneSetting | None = None
         retention: tuple[RetentionDirective, ...] = ()
         common: tuple[tuple[str, tuple[str, ...]], ...] = ()
+        line = self.current()
+        if line and line.text == "# シーン設定":
+            scene_setting = self.parse_scene_setting()
         line = self.current()
         if line and line.text == "# 保持分析":
             retention = self.parse_retention(subjects)
@@ -146,7 +152,23 @@ class _Parser:
         if self.current() is not None:
             line = self.current()
             raise EMDParseError(line.number, "unexpected trailing content")
-        return EMDDocument(subjects, retention, common, scenes)
+        return EMDDocument(subjects, retention, common, scenes, scene_setting)
+
+    def parse_scene_setting(self) -> SceneSetting:
+        start = self.current()
+        assert start is not None
+        fragment_lines: list[str] = [self.take().text]
+        while (line := self.current()) is not None:
+            if line.text in {"# 保持分析", "# 共通プロンプト"}:
+                break
+            if line.text.startswith("> `シーン`"):
+                break
+            fragment_lines.append(self.take().text)
+        try:
+            setting = parse_scene_emd_fragment("\n".join(fragment_lines) + "\n")
+        except SceneEMDFragmentError as exc:
+            raise EMDParseError(start.number, f"invalid # シーン設定: {exc}") from exc
+        return replace(setting, line_number=start.number)
 
     @staticmethod
     def validate_concept_references(

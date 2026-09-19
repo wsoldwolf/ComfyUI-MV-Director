@@ -17,7 +17,9 @@ _KIND_HEADINGS = {
     "motion": "モーション",
     "camera": "カメラ",
 }
-_META_KEYS = frozenset({"locked", "retention", "scene_reinforcement"})
+_STYLE_META_KEYS = frozenset({"locked", "retention", "scene_reinforcement"})
+_CAMERA_META_KEYS = frozenset({"planner_policy"})
+_META_KEYS = _STYLE_META_KEYS | _CAMERA_META_KEYS
 
 
 class DirectionProfileError(ValueError):
@@ -33,6 +35,7 @@ class DirectionProfile:
     locked: bool = False
     retention: str = ""
     scene_reinforcement: str = ""
+    planner_policy: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,6 +46,7 @@ class DirectionProfileCatalog:
     locked_style: frozenset[str]
     style_retention: dict[str, str]
     style_scene_reinforcement: dict[str, str]
+    camera_planner_policy: dict[str, str]
 
 
 def _fail(path: Path, message: str) -> DirectionProfileError:
@@ -110,8 +114,17 @@ def load_direction_profile(path: Path, kind: str) -> DirectionProfile:
     if not body:
         raise _fail(path, f"{expected_heading} requires at least one list item")
 
-    if kind != "style" and metadata:
-        raise _fail(path, "metadata is supported only by style profiles")
+    allowed_metadata = (
+        _STYLE_META_KEYS
+        if kind == "style"
+        else _CAMERA_META_KEYS
+        if kind == "camera"
+        else frozenset()
+    )
+    unsupported_metadata = set(metadata) - allowed_metadata
+    if unsupported_metadata:
+        labels = ", ".join(sorted(unsupported_metadata))
+        raise _fail(path, f"metadata is not supported by {kind} profiles: {labels}")
     locked_value = metadata.get("locked", "false")
     if locked_value not in {"true", "false"}:
         raise _fail(path, "locked must be true or false")
@@ -123,6 +136,9 @@ def load_direction_profile(path: Path, kind: str) -> DirectionProfile:
             path,
             "retention must begin with `fully_preserved` or `partially_preserved`",
         )
+    planner_policy = metadata.get("planner_policy", "")
+    if planner_policy and not _PROFILE_ID_RE.fullmatch(planner_policy):
+        raise _fail(path, "planner_policy must be a lowercase policy id")
     return DirectionProfile(
         profile_id=profile_id,
         kind=kind,
@@ -131,6 +147,7 @@ def load_direction_profile(path: Path, kind: str) -> DirectionProfile:
         locked=locked_value == "true",
         retention=retention,
         scene_reinforcement=metadata.get("scene_reinforcement", ""),
+        planner_policy=planner_policy,
     )
 
 
@@ -165,5 +182,10 @@ def load_direction_profiles(root: Path = PROFILE_ROOT) -> DirectionProfileCatalo
             key: value.scene_reinforcement
             for key, value in styles.items()
             if value.scene_reinforcement
+        },
+        camera_planner_policy={
+            key: value.planner_policy
+            for key, value in grouped["camera"].items()
+            if value.planner_policy
         },
     )

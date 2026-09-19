@@ -25,6 +25,7 @@ try:
         PlannerContent,
         generate_planner_content,
         normalize_concept_emd,
+        normalize_scene_emd,
         parse_template_emd,
         render_planner_content,
     )
@@ -42,6 +43,7 @@ except ImportError:  # Standalone repository tests.
         PlannerContent,
         generate_planner_content,
         normalize_concept_emd,
+        normalize_scene_emd,
         parse_template_emd,
         render_planner_content,
     )
@@ -307,6 +309,7 @@ class MVDirectorTimelinePlanner:
             },
             "optional": {
                 "concept_emd": ("STRING", {"default": "", "multiline": True, "forceInput": True}),
+                "scene_emd": ("STRING", {"default": "", "multiline": True, "forceInput": True}),
                 "direction": ("MV_DIRECTOR_DIRECTION",),
                 "model_name_override": ("STRING", {"default": "", "forceInput": True}),
                 "save_debug_output": ("BOOLEAN", {"default": False}),
@@ -336,6 +339,7 @@ class MVDirectorTimelinePlanner:
         scenes_per_batch: int,
         cache_mode: str,
         concept_emd: str = "",
+        scene_emd: str = "",
         direction: DirectionArtifact | None = None,
         model_name_override: str = "",
         save_debug_output: bool = False,
@@ -351,6 +355,7 @@ class MVDirectorTimelinePlanner:
             selected_direction.validate()
             template = parse_template_emd(template_emd)
             concept = normalize_concept_emd(concept_emd)
+            scene = normalize_scene_emd(scene_emd)
             config = LlamaRuntimeConfig(
                 chat_format="" if chat_format == "auto" else chat_format,
                 max_tokens=max_tokens,
@@ -376,6 +381,7 @@ class MVDirectorTimelinePlanner:
                 inputs={
                     "template_emd": normalize_newlines(template_emd),
                     "concept_emd": concept,
+                    "scene_emd": scene,
                     "direction": selected_direction.to_dict(),
                     "lip_sync_active": lip_sync_mode != "off",
                     "lip_sync_target": lip_sync_target,
@@ -435,6 +441,7 @@ class MVDirectorTimelinePlanner:
                         self._backend,
                         template=template,
                         concept_emd=concept,
+                        scene_emd=scene,
                         direction=selected_direction,
                         lip_sync_mode=lip_sync_mode,
                         lip_sync_target=lip_sync_target,
@@ -457,6 +464,7 @@ class MVDirectorTimelinePlanner:
                 emd = render_planner_content(
                     content=content,
                     concept_emd=concept,
+                    scene_emd=scene,
                     template=template,
                     direction=selected_direction,
                     lip_sync_mode=lip_sync_mode,

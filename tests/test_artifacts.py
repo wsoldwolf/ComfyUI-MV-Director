@@ -122,7 +122,7 @@ class ArtifactTests(unittest.TestCase):
         artifact = RequiredReferencesArtifact()
         self.assertEqual(
             artifact.to_dict(),
-            {"schema": "MVD_REQUIRED_REFERENCES_V1", "references": []},
+            {"schema": "MVD_REQUIRED_REFERENCES_V2", "references": []},
         )
 
     def test_reference_slots_must_match_tags(self) -> None:

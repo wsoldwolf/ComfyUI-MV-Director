@@ -17,7 +17,12 @@ from .errors import ArtifactValidationError
 
 
 EMD_SCHEMAS = frozenset(
-    {"MVD_EMD_FRAGMENT_V1", "MVD_EMD_TEMPLATE_V1", "MVD_EMD_V1"}
+    {
+        "MVD_EMD_FRAGMENT_V1",
+        "MVD_SCENE_EMD_FRAGMENT_V1",
+        "MVD_EMD_TEMPLATE_V1",
+        "MVD_EMD_V1",
+    }
 )
 _HASH_RE = re.compile(r"[0-9a-f]{64}\Z")
 
@@ -71,4 +76,3 @@ class EMDTextArtifact:
         artifact = cls(schema=schema, text=value["text"], sha256=value["sha256"])
         artifact.validate()
         return artifact
-

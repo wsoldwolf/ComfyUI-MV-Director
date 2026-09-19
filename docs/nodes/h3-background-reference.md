@@ -1,6 +1,8 @@
 # H3 Background Reference
 
-コンパイル済みPlan JSONへ背景専用の`<Picture N>`契約を決定論的に追加し、同じ背景IMAGEをH3へpass-throughします。背景のVision認識やShot計画は行いません。前段では従来どおり`observations_json → Direction Enhancer`を使い、このノードは動画生成時だけ使用します。
+旧Planとの互換用ノードです。コンパイル済みPlan JSONへ背景専用の`<Picture N>`契約を決定論的に追加し、同じ背景IMAGEをH3へpass-throughします。背景のVision認識やShot計画は行いません。
+
+新しい標準workflowでは使用しません。背景Visionの`scene_emd`をDirection EnhancerとTimeline Plannerへ渡し、Compilerが環境契約を生成し、動画workflowは背景IMAGEをH3の対応slotへ直接接続します。
 
 ## 分離する理由
 

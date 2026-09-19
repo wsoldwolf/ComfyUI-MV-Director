@@ -5,7 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from ..artifacts import normalize_newlines
-from ..emd import EMDDocument, Scene, parse_emd
+from ..emd import (
+    EMDDocument,
+    Scene,
+    parse_emd,
+    parse_scene_emd_fragment,
+    render_scene_emd_fragment,
+)
 from ..emd.errors import EMDParseError
 from ..h3_contract import DEFAULT_H3_TIMING_PROFILE, H3TimingProfile
 from .errors import TimelinePlannerError
@@ -55,6 +61,18 @@ def normalize_concept_emd(
     except EMDParseError as exc:
         raise TimelinePlannerError(f"invalid concept_emd: {exc}") from exc
     return normalized + "\n"
+
+
+def normalize_scene_emd(scene_emd: str) -> str:
+    if not isinstance(scene_emd, str):
+        raise TimelinePlannerError("scene_emd must be a string")
+    normalized = normalize_newlines(scene_emd).strip()
+    if not normalized:
+        return ""
+    try:
+        return render_scene_emd_fragment(parse_scene_emd_fragment(normalized))
+    except ValueError as exc:
+        raise TimelinePlannerError(f"invalid scene_emd: {exc}") from exc
 
 
 def parse_template_emd(

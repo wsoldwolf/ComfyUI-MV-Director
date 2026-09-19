@@ -1,10 +1,15 @@
 """Pinned external ComfyUI and H3/Context Loop contracts."""
 
 from .camera import (
+    ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA,
     FACE_PERFORMANCE_CUT_ACTION,
     FACE_PERFORMANCE_CUT_CAMERA,
 )
-from .background_reference import bind_h3_background_reference
+from .background_reference import (
+    bind_h3_background_reference,
+    build_environment_definition,
+    build_environment_retention,
+)
 from .context_loop_0_6_9 import (
     COMFYUI_BASELINE_COMMIT,
     COMFYUI_BASELINE_VERSION,
@@ -25,9 +30,12 @@ __all__ = [
     "CONTEXT_LOOP_BASELINE_VERSION",
     "ContextLoopContract",
     "DEFAULT_H3_TIMING_PROFILE",
+    "ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA",
     "FACE_PERFORMANCE_CUT_ACTION",
     "FACE_PERFORMANCE_CUT_CAMERA",
     "H3TimingProfile",
     "bind_h3_background_reference",
+    "build_environment_definition",
+    "build_environment_retention",
     "TIMING_SCHEMA",
 ]

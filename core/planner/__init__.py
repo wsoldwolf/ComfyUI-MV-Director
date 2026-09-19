@@ -22,6 +22,7 @@ from .template import (
     DEFAULT_CONCEPT_EMD,
     PlannerTemplate,
     normalize_concept_emd,
+    normalize_scene_emd,
     parse_template_emd,
 )
 
@@ -39,6 +40,7 @@ __all__ = [
     "TimelinePlannerResult",
     "filter_generated_dialogue",
     "normalize_concept_emd",
+    "normalize_scene_emd",
     "generate_planner_content",
     "plan_timeline",
     "parse_template_emd",

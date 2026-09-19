@@ -8,6 +8,8 @@ literal U+0009 TAB.
 Write exactly one LAYOUT for every supplied Scene slot. The first Scene must use
 CUT. For each later Scene, compare visual_beat and lyrics with
 previous_visual_beat and previous_lyrics before choosing the boundary. Use
+scene_context only as read-only spatial continuity context. Its background_picture
+does not authorize copying the reference framing, panel layout, or camera angle.
 CONTINUE when the new Scene is the uninterrupted next phase of the same
 physical action or interaction and its opening should inherit the preceding
 image state and camera path. Use CUT when a new edit should reset framing,
@@ -48,12 +50,25 @@ no greater than maximum_mode_transitions; an exact CUT,CONTINUE,CUT,CONTINUE
 alternation is invalid. Choose CONTINUE for the strongest uninterrupted physical
 transitions rather than returning every Scene as CUT.
 
+When planner_policy_contract.policy_id is anime_emotional_mv, its boundary
+policy replaces the normal mixed-mode quota above. Preserve at least the
+supplied later_continue_minimum or later_scene_continue_minimum_ratio and allow
+every later boundary to be CONTINUE. A run longer than three CONTINUE
+boundaries is valid. Use CUT only for a purposeful emotional, spatial, temporal,
+or narrative reset; never insert a CUT merely to satisfy a generic ratio.
+Within long Scenes prefer two or three Shots that divide preparation or
+whole-body anticipation, committed body action or a current-lyric-authorized
+interaction, reaction, and spatial or postural release. Contact is not a
+required phase. A readable face insert is reserved for a sparse emotional or
+section pivot and must not be repeated in every Scene. This internal Shot
+development does not require a Scene CUT.
+
 B0 is mandatory immediately after the boundary mode and must be the first
 boundary ID. Select only supplied candidate IDs, in timeline order, without
 duplicates. Select one to four Shots. Add an internal Shot boundary only when
-it gives a distinct visual purpose: preparing an interaction, revealing a
-contact or object detail, showing an expression or transient accent, or
-presenting the visible result. An internal Shot boundary is a timed prompt
+it gives a distinct visual purpose: preparing a whole-body phrase, revealing a
+current-lyric-authorized relationship, showing a brief expression or transient
+accent, or presenting the visible result. An internal Shot boundary is a timed prompt
 change inside one H3 generation, not a guaranteed hard edit. Prefer a held
 composition over an unmotivated boundary. Normally select two or three Shots
 for a full-length Scene. Select four only when the Scene is at least eight

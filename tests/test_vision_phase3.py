@@ -344,6 +344,26 @@ class VisionPhase3Tests(unittest.TestCase):
             "restored omitted empty SUBJECT_POSE record",
             warnings,
         )
+        result = compose_image_to_subject(
+            observations,
+            prepared=prepared,
+            request=VisionObservationRequest(
+                analysis_profile="scene_only",
+                subject_hint="赤い鳥居。",
+                hint_mode="lock_identity",
+            ),
+            binding=resolve_picture_binding(
+                "manual", picture_index=2, prompt=None, unique_id=None
+            ),
+            concept_type="location",
+        )
+        self.assertIsNotNone(result.scene_emd)
+        assert result.scene_emd is not None
+        self.assertEqual(result.scene_emd.schema, "MVD_SCENE_EMD_FRAGMENT_V1")
+        self.assertIn("# シーン設定", result.scene_emd.text)
+        self.assertIn("* 赤い鳥居。", result.scene_emd.text)
+        self.assertIn("* `画像2`", result.scene_emd.text)
+        self.assertEqual(result.reference_bindings.bindings, ())
 
     def test_format_retry_stops_after_second_invalid_response(self) -> None:
         backend = SequenceObserver("broken", "still broken")

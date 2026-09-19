@@ -10,6 +10,7 @@ Lyric Segmentationが確定したScene/Shot枠へ、歌詞解釈、人物動作�
 |---|---|---|
 | `template_emd` | 必須 | Lyric Segmentationの出力 |
 | `concept_emd` | 任意 | Subject等の概念EMD。Picture参照なしでもよい |
+| `scene_emd` | 任意 | scene-only Visionの`# シーン設定`。完成EMDへAS ISで構造統合する |
 | `direction` | 任意 | Direction Enhancerのtyped出力 |
 | `lip_sync_mode` | `lyrics` | `off` / `context_loop` / `audio_reference` / `lyrics` |
 | `lip_sync_target` | `サブジェクト1` | リップシンク対象。`サブジェクト1..4` |
@@ -32,7 +33,7 @@ Lyric Segmentationが確定したScene/Shot枠へ、歌詞解釈、人物動作�
 
 ## 計画方針
 
-Plannerは歌詞内の具体物、場所、感情をvisual beatへ変換し、触れる、振り返る、視線を移す、環境へ反応する等の動作候補を作ります。単なる歩行、正面立ち、両手を広げる、手を上げる又は前を見る動作を既定にせず、歌詞ごとに場所の状態、具体物又は象徴的な環境モチーフ、人物の意図的反応及び可視結果を組み合わせます。Directionが許す時は、遠い鈴に反応する紙垂、風に動く鳥居周辺、狐火又は霊的な粒子等を選択的な節転換モチーフとして使えます。効果だけを装飾的に浮かべず、人物の接近、回避、誘導、接触又は解放へ結び付けます。同じ効果を全Sceneへ配置せず、再登場時は状態を変化させます。
+Plannerは現在Sceneの元歌詞又は作者指示だけから具体物、場所、感情又は外部effectをvisual beatへ活性化します。scene EMD、共通Direction及び過去Sceneは存在と配置の拘束でありAction sourceではありません。単なる歩行、正面立ち、両手を広げる、手を上げる、前を見る又は背景物へ触る動作を既定にしません。対象名だけでは接触を許可せず、歌詞に物理的な操作意味が無い場合は、まぶた、視線、頭、肩、胴体、骨盤、腕、手、支持脚、遊脚、重心及び身体レベルを連動した非接触の全身演技へ変換します。外部effectは既定で人物から独立して空間内を移動し、人物は視線、姿勢、回避又は一回の感情反応だけを返します。一つの歌詞triggerで使った対象は原則として一Sceneで消費し、後続Sceneでの再利用には新しい歌詞triggerを必要とします。
 
 各Shotには自然文と別に`performance_role`を付けます。複数ShotのSceneでは、顔と上半身のaccent、腕・手が主役の演技、環境との相互作用又は振り返り、異なる終端silhouetteへ役割を分散します。Scene-level visual beatが移動であっても、全Shotを同じ歩行cycleへせず、歩行は必要なShotの接続動作に限定します。Cameraにも`editorial_role`を付けます。ただし、リップシンク有効かつ歌詞sectionが初登場するCUT Sceneでは、section名を持つ最初の歌詞annotationが実際に属するShotだけを有限個の構造的な顔インサートとし、ActionとCameraをLLM要求から外してRenderer所有の固定文を割り当てます。Scene開始と歌詞開始が異なる場合も、無音のScene先頭へ顔歌唱を置きません。Actionは歩行や全身移動を禁止して両目、眉及び完全な口による歌唱演技だけを要求します。Cameraは`Zoom In with large amplitude at fast speed`で正面又は斜め正面の頭肩構図から極端な顔close-upへ進み、両目、両眉、鼻、完全な歌唱口及び顔輪郭を全行程で同時に表示します。Compilerはこの二つの英語文を翻訳LLMへ渡さず、そのままH3 promptへ保持します。それ以外のAction及びCameraは、合格したLLMのTEXTをAS ISで使います。これにより固定phraseが通常Shotへ漏れることと、顔Cameraへ歩行Actionが競合することを防ぎます。
 
@@ -48,15 +49,21 @@ UIの固定seedは実行全体の再現性を所有しますが、各LLM呼び�
 
 `anime_story_mv`では静かな溜めと、明確な加速、重心移動、方向転換、鋭い停止及び大きく異なる終端ポーズを対比させ、均一に緩慢な補間を避けます。二コマ・三コマ打ちは静止hold、表情の溜め及び末端追従へ限定し、主要な身体動作、関節軌道、接地及び重心移動は時間方向に連続させ、pose飛び、瞬間移動、四肢の往復反転及び痙攣状motionを要求しません。通常歩行は遊脚を地面から持ち上げ、前へ運び、踵又は足裏を接地して重心を移し、作者指定なしの摺り足、引き摺り及び滑走を生成しません。Camera行はMiniMax H3の正式名称から必ず開始します。`anime_story_mv`のCamera batchでは離れた最大二Shotを構造的な長尺Arcへ指定し、利用可能なShotのうち長いものを優先して60～120度の経路をShot尺の70～90%にわたり連続させます。固定顔インサートは頭肩構図から極端な顔アップへ進む`Zoom In with large amplitude at fast speed`とし、両目、両眉、鼻、完全な歌唱口及び顔輪郭を全行程で残します。固定顔インサートが無いリップシンクbatchでは、長尺Arcと競合しない表情結果又は上半身coverage一件へ同じ顔Zoom契約を追加します。隣接Arcは身体・環境から顔Zoomへ入るか、顔Zoomから上半身・全身・環境へ抜けるため、Arcと顔拡大が一連のCamera展開になります。別の移動Shotは`Tracking Shot`で追従します。Pythonは通常Camera自然文を書き換えず、LLMへ構造契約を渡して採用行をAS ISで使用します。従来の穏やかで映画的な動作・カメラ設計は`cinema_mv`として選択できます。
 
+`anime_emotional_mv`は27Bプロトタイプで有効だった一体的な演技とCamera展開を、現行の分割Plannerへ構造契約として移します。歩行は意味のある二状態をつなぐ補助動作に限定し、現在Sceneの元歌詞又は作者指示だけが具体物、場所要素又は外部effectをAction対象として活性化します。scene EMD、共通Direction及び過去Sceneは存在と配置の拘束でありAction sourceではありません。対象名だけでは接触を許可せず、現在歌詞に物理的な操作意味が無い時は、まぶた、視線、頭、肩、胴体、骨盤、腕、手、支持脚、遊脚、重心及び身体レベルを連動した非接触の全身演技を使います。一つの歌詞triggerで使った対象は原則として一Sceneで消費し、後続Sceneでの再利用には新しい歌詞triggerを必要とします。外部effectは既定で人物から独立して空間内を移動し、歌詞が操作を明示しない限り人物に保持又は誘導させません。Cameraでは適格な通常slotのおよそ半数を長尺Arc候補とする一方、顔Zoomは曲全体の疎な予算と既存section face cutから選び、35～55%で顔へ到達して短い表情accentだけを保持します。同一Scene内で可能ならArcから顔へ入る又は顔からArcで抜ける関係を与えます。後続Sceneの少なくとも4分の3をCONTINUE可能にし、すべてCONTINUEの計画も許します。通常profileの同一mode最大3連続及びCUT最小比率は、このpolicyへ適用しません。
+
+`anime_emotional_mv`の構造的な顔インサートはActionを固定文にせず、現在歌詞、直近Action履歴及び`face_and_upper_body_accent` roleを持つ通常ACTION要求としてLLMへ渡します。閉眼、半開き、伏し目、細め又は再開眼を含む歌詞固有の顔演技をAS ISで採用します。Cameraだけは専用の短い固定文を使い、35～55%で読み取れる顔scaleへ到達して短い表情accentだけを保持します。他profileの固定顔Action及びCameraは変更しません。
+
+この最適化はCamera profile EMDの`planner_policy` metadataから選ばれ、別のUI入力又はprofile IDのPython直書きでは切り替えません。Pythonが所有するのはslot役割、境界比率、Arc/顔Zoomの必要数及び遷移関係だけです。LLMが返したActionとCameraの自然文は従来通りAS ISでEMDへ渡します。
+
 歌詞又は作者が走行を明示しない限り、走る、駆ける、疾走する又は逃げるActionを生成しません。特に間奏では走行をMVの勢いの代用にせず、胴体の旋回、振り返り、高低差、腕の演技、環境相互作用、鋭い停止、異なる終端pose及び独立したCamera運動で強度を作ります。未指定の走行がActionへ出た場合は本文を書き換えず、そのslotだけを品質再要求します。
 
 Shot layoutは通常一Sceneあたり2～3 Shotを選び、4 Shotは8秒以上かつ4つの異なる視覚目的を各2秒以上確保できる場合だけに限定します。Cameraはlocked Actionに必要な身体部位と接触対象を画面内に残し、全身動作へ極端な顔cropを組み合わせません。MiniMax H3 Motion Typeと後続説明の物理動作も一致させ、`Static Shot`で接近する、`Tilt Down`で上昇する、`Pan`で平行移動する等の矛盾を禁止します。
 
 `anime_story_mv`の髪、体毛、動物耳、耳内部、尾、皮膚及び衣装は非発光素材として扱います。作者が発光を明示しない限り、ActionとCameraはこれらを「輝く」「光る」「glow」等の演技又は撮影目的にせず、月光、逆光及び灯火は通常の反射光へ限定します。耳内部の局所的なglow、bloom、halo、強い透過光及び白飛びも要求しません。この制約はPlanner出力を後段で書き換えるfilterではなく、固定Styleと各LLM taskの生成条件です。
 
-Scene境界ごとに`CUT`又は`CONTINUE`も選びます。新しい画角、detail、逆方向又は場所を編集点で提示する時は完成EMDのScene見出しから`継続`を外し、直前の画像状態とカメラ経路を引き継ぐ時だけ`継続`を残します。歌詞が記憶、問い、恐れ、孤独、涙、別れ、自己認識又は決意へ移るSceneでは、新しい編集点を選べます。実行可能な範囲で新section初出SceneをCUTとして保持し、極端な顔インサートはそのScene内で新sectionの歌詞を実際に持つ最初のShotへ置きます。通常coverageでは正面又は斜め正面のmedium、medium close-up又はhead-and-shoulders Shotを必要に応じて使い、手、髪、小物、後頭部又は完全な横顔で目や唇を隠しません。局所detailと顔を一つのCamera行へ同時要求せず、歌詞上必要なdetailは別Shotへ分離します。Concept EMDが1 Subjectだけなら、人物動作とカメラへ単独instance policyを渡し、各Camera行で画面内にその人物一体だけを置きます。参照設定画の左右panel、別角度、鏡像又は背景の似た人物を二人目として再現させません。候補数超過、区切り、重複又は未知候補だけのLAYOUT差異は、既知候補の時系列順整列、重複除去及び最大4 Shotへの切り詰めで機械修復します。各Sceneには直前の歌詞とVisual Beatも渡し、4 Scene以上で最初のmode列が後続境界数の4分の1以上のCUT、半数以上のCONTINUE、同一mode最大3連続及びmode遷移数上限を満たさない場合は、隣接関係を比較する境界mix再計画を一度だけ実行します。CUT/CONTINUEの完全交互列は遷移数超過として不合格です。再応答も構造契約を満たさない場合は、PythonがCUT/CONTINUE列だけを元の選択から最小変更で修復します。Action、Camera及び候補Shot本文は変更せず、変更したScene番号を`layout_repaired_scenes`へ記録します。実行有無は`layout_mix_retry=yes/no`へ出します。境界mode自体を認識できない場合だけ`CUT,B0`へfallbackします。境界mode変更時はPlannerが`H3長`とPlan上のScene/Shot時刻をH3格子へ再配分します。Scene内の`## ショット`は一回のH3生成内の時刻付きprompt変化であり、hard cutを保証しません。
+Scene境界ごとに`CUT`又は`CONTINUE`も選びます。新しい画角、detail、逆方向又は場所を編集点で提示する時は完成EMDのScene見出しから`継続`を外し、直前の画像状態とカメラ経路を引き継ぐ時だけ`継続`を残します。歌詞が記憶、問い、恐れ、孤独、涙、別れ、自己認識又は決意へ移るSceneでは、新しい編集点を選べます。実行可能な範囲で新section初出SceneをCUTとして保持し、極端な顔インサートはそのScene内で新sectionの歌詞を実際に持つ最初のShotへ置きます。通常coverageでは正面又は斜め正面のmedium、medium close-up又はhead-and-shoulders Shotを必要に応じて使い、手、髪、小物、後頭部又は完全な横顔で目や唇を隠しません。局所detailと顔を一つのCamera行へ同時要求せず、歌詞上必要なdetailは別Shotへ分離します。Concept EMDが1 Subjectだけなら、人物動作とカメラへ単独instance policyを渡し、各Camera行で画面内にその人物一体だけを置きます。参照設定画の左右panel、別角度、鏡像又は背景の似た人物を二人目として再現させません。候補数超過、区切り、重複又は未知候補だけのLAYOUT差異は、既知候補の時系列順整列、重複除去及び最大4 Shotへの切り詰めで機械修復します。各Sceneには直前の歌詞とVisual Beatも渡します。通常policyでは4 Scene以上のmode列に後続境界の4分の1以上のCUT、半数以上のCONTINUE、同一mode最大3連続及びmode遷移数上限を要求しますが、`anime_emotional_mv`は後続の4分の3以上をCONTINUEとする専用契約へ置換し、全後続SceneのCONTINUEも許します。契約を満たさない場合は隣接関係を比較する境界mix再計画を一度だけ実行します。再応答も構造契約を満たさない場合は、PythonがCUT/CONTINUE列だけを元の選択から最小変更で修復します。Action、Camera及び候補Shot本文は変更せず、変更したScene番号を`layout_repaired_scenes`へ記録します。実行有無は`layout_mix_retry=yes/no`へ出します。境界mode自体を認識できない場合だけ`CUT,B0`へfallbackします。境界mode変更時はPlannerが`H3長`とPlan上のScene/Shot時刻をH3格子へ再配分します。Scene内の`## ショット`は一回のH3生成内の時刻付きprompt変化であり、hard cutを保証しません。
 
-Action batchにはslow表現上限、単純な手の上下0件及び作者未指定の足元主体0件という構造予算を渡します。違反を検出した場合、PythonはAction本文を変更せず該当slotだけを`action_quality_budget`として一度再要求します。Camera batchは通常`Arc Shot`最大1件、`anime_story_mv`だけ最大2件、`Tracking Shot`最大1件、その他の同一Motion Type最大2件、slow表現上限及び作者未指定の足元detail 0件という構造予算を持ちます。`anime_story_mv`の`long_arc_emphasis`又は顔遷移がArc以外になった場合も、該当slotだけを`camera_quality_budget`として一度再要求します。PythonはCamera本文を機械生成又は書換えしません。再応答も違反する場合はAS ISで採用して品質警告へ数えます。
+Action batchにはslow表現上限、単純な手の上下0件及び作者未指定の足元主体0件という構造予算を渡します。違反を検出した場合、PythonはAction本文を変更せず該当slotだけを`action_quality_budget`として一度再要求します。Camera batchは通常`Arc Shot`最大1件、`anime_story_mv`だけ最大2件、`Tracking Shot`最大1件、その他の同一Motion Type最大2件、slow表現上限及び作者未指定の足元detail 0件という構造予算を持ちます。`anime_emotional_mv`ではこの疎なArc上限を専用policyへ置換し、適格slotのおよそ半数を長尺Arc候補にします。顔Zoomはbatchごとの下限を持たず、曲全体の予算から既存section face cutを差し引いて追加します。profile固有の`long_arc_emphasis`、顔遷移又は顔Zoomが要求Motionにならない場合は、該当slotだけを`camera_quality_budget`として一度再要求します。PythonはCamera本文を機械生成又は書換えしません。再応答も違反する場合はAS ISで採用して品質警告へ数えます。
 
 歌詞annotationは全modeでEMDへ残ります。mode変更は機械的なlip-sync directiveだけを変えるため、成功cacheがあれば人物動作とカメラを再生成しません。
 

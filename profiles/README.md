@@ -40,4 +40,15 @@ Styleだけは先頭へ任意の`# プロファイル`を置けます。
 - `retention`: `retention_policy=profile`時にSubjectごとへ出す保持分析です。先頭は`` `fully_preserved` ``又は`` `partially_preserved` ``にします。
 - `scene_reinforcement`: 各Scene最初のShotでも短く再掲するStyle条件です。
 
-MotionとCameraにはmetadataを置けません。選択したMotion/Camera profile本文は対応するtyped fieldを機械的に所有し、LLMのMOTION/CAMERA言い換えでは置換されません。これによりStyleや履物条件がCameraへ誤分類されることを防ぎます。ユーザーが完全なDirection EMDを直接管理する場合は外部profileではなく、Direction Enhancerの`passthrough`を使います。
+Motionにはmetadataを置けません。Cameraは任意の`planner_policy` metadataを一つ持てます。
+
+```markdown
+# プロファイル
+* `planner_policy` anime_emotional_mv
+
+# 共通プロンプト
+## カメラ
+* 長尺Arcと顔Zoomを連続した演出として使う。
+```
+
+`planner_policy`はUIへ別項目を追加せず、Camera profileを選んだ時にだけTimeline PlannerのShot配分、CUT/CONTINUE方針及びCamera構造予算を切り替える内部policy IDです。本文の自然文をPythonで書き換える機能ではありません。`anime_emotional_mv`では現在Sceneの元歌詞だけを対象triggerとし、scene EMD又はDirectionの環境inventoryをAction sourceにせず、対象の一Scene消費、外部effectの自律性、まぶたを含む全身演技及び曲全体で疎な顔Zoomをplanning stageへ共有します。未知policyは本文だけの通常profileとして動作し、実装済みpolicyだけが追加の構造契約を持ちます。選択したMotion/Camera profile本文は対応するtyped fieldを機械的に所有し、LLMのMOTION/CAMERA言い換えでは置換されません。これによりStyleや履物条件がCameraへ誤分類されることを防ぎます。ユーザーが完全なDirection EMDを直接管理する場合は外部profileではなく、Direction Enhancerの`passthrough`を使います。

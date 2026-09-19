@@ -17,6 +17,7 @@ from .passthrough import (
     parse_direction_passthrough,
 )
 from .profiles import (
+    CAMERA_PLANNER_POLICIES,
     CAMERA_PROFILES,
     DIRECTION_PRESETS,
     MOTION_PROFILES,
@@ -32,6 +33,7 @@ from .profile_loader import (
 )
 
 __all__ = [
+    "CAMERA_PLANNER_POLICIES",
     "CAMERA_PROFILES",
     "DIRECTION_PRESETS",
     "DirectionEnhancerBackend",

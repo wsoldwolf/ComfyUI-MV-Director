@@ -3,7 +3,6 @@ import json
 import unittest
 from unittest.mock import patch
 
-from core.artifacts import ObservationsArtifact, SubjectFeature
 from core.direction import (
     CAMERA_PROFILES,
     DIRECTION_PRESETS,
@@ -138,7 +137,7 @@ class DirectionEnhancerTests(unittest.TestCase):
         payload = json.loads(build_direction_payload(value))
         self.assertEqual(
             payload["authority_order"],
-            ["user", "vision_concept", "profile", "generated"],
+            ["user", "scene_emd", "vision_concept", "profile", "generated"],
         )
         self.assertEqual(payload["user_request"], "夜間にする。")
         self.assertEqual(payload["concept_emd"], concept.strip())
@@ -158,44 +157,28 @@ class DirectionEnhancerTests(unittest.TestCase):
             self.assertNotIn(source_medium_term, style)
 
     def test_direction_receives_scene_context_but_not_reference_pose(self) -> None:
-        observations = ObservationsArtifact(
-            overview="人物が両手を広げて立っている参照画像。",
-            primary_subject="狼娘",
-            hint_status="consistent",
-            hint_reason="特徴が一致する。",
-            subject_features=(
-                SubjectFeature("ears", "狼耳", "clear"),
-            ),
-            subject_pose="両手を広げた正面立ち。",
-            scene_setting="森の鳥居。",
-            scene_elements=("石段", "木々"),
-            lighting="月光。",
-            time_weather="夜。",
-            shot_size="全身。",
-            viewpoint="正面。",
-            subject_placement="中央。",
-            depth="浅い。",
-            style_medium="イラスト。",
-            style_rendering="セル塗り。",
-            style_palette="黒と赤。",
-            visible_text=(),
-            uncertainties=(),
+        scene_emd = (
+            "# シーン設定\n## 環境\n* 森の鳥居。\n* 石段\n* 木々\n\n"
+            "## 時間・照明\n* 夜。\n* 月光。\n\n## 背景参照\n* `画像2`\n"
         )
         payload = json.loads(
             build_direction_payload(
                 DirectionEnhancerInput(
                     concept_emd="# サブジェクト\n* 狼耳の人物。\n",
-                    observations_json=observations.to_json(),
+                    scene_emd=scene_emd,
                 )
             )
         )
         self.assertEqual(
-            payload["vision_scene_context"],
+            payload["scene_context"],
             {
-                "setting": "森の鳥居。",
-                "elements": ["石段", "木々"],
-                "lighting": "月光。",
-                "time_weather": "夜。",
+                "environment": ["森の鳥居。", "石段", "木々"],
+                "time_lighting": ["夜。", "月光。"],
+                "background_picture": "<Picture 2>",
+                "authority": (
+                    "Observed baseline only. Explicit user direction overrides its "
+                    "time, lighting, weather, season, and staging."
+                ),
             },
         )
         serialized = json.dumps(payload, ensure_ascii=False)
@@ -204,53 +187,20 @@ class DirectionEnhancerTests(unittest.TestCase):
         self.assertNotIn("subject_pose", serialized)
 
     def test_locked_scene_hint_is_preserved_exactly_in_environment(self) -> None:
-        observations = ObservationsArtifact(
-            overview="森の神社。",
-            primary_subject="",
-            hint_status="consistent",
-            hint_reason="赤い鳥居を確認できる。",
-            subject_features=(),
-            subject_pose="",
-            scene_setting="森の中の神社境内",
-            scene_elements=("鳥居", "石畳"),
-            lighting="月光",
-            time_weather="夜",
-            shot_size="",
-            viewpoint="",
-            subject_placement="",
-            depth="",
-            style_medium="",
-            style_rendering="",
-            style_palette="",
-            visible_text=(),
-            uncertainties=(),
-            provenance=(
-                {
-                    "kind": "analysis_controls",
-                    "analysis_profile": "scene_only",
-                    "hint_mode": "lock_identity",
-                    "hint_conflict": "warn",
-                },
-                {
-                    "kind": "subject_hint",
-                    "role": "user_authority",
-                    "raw": "赤い鳥居。",
-                    "normalized": "赤い鳥居。",
-                    "sent_to_vision": True,
-                },
-            ),
+        scene_emd = (
+            "# シーン設定\n## 環境\n* 赤い鳥居。\n* 森の中の神社境内\n"
+            "* 石畳\n\n## 時間・照明\n* 夜\n* 月光\n"
         )
         backend = FakeDirectionBackend(
             "STYLE\t1\t映画的なアニメ映像。\n"
             "ENVIRONMENT\t1\t森の神社境内と石畳を描く。"
         )
         value = DirectionEnhancerInput(
-            observations_json=observations.to_json(),
+            scene_emd=scene_emd,
         )
         payload = json.loads(build_direction_payload(value))
         self.assertEqual(
-            payload["vision_scene_context"]["locked_user_hint"],
-            "赤い鳥居。",
+            payload["scene_context"]["environment"][0], "赤い鳥居。"
         )
         result = enhance_direction(
             backend,
@@ -260,16 +210,9 @@ class DirectionEnhancerTests(unittest.TestCase):
         )
         self.assertEqual(
             result.direction.environment_direction,
-            ("森の神社境内と石畳を描く。", "赤い鳥居。"),
+            ("森の神社境内と石畳を描く。",),
         )
-        locked = next(
-            item
-            for item in result.direction.provenance
-            if item.source_ref == "vision_scene_context.locked_user_hint"
-        )
-        self.assertEqual(locked.source, "user")
-        self.assertEqual(locked.reason, "passthrough_enforced")
-        self.assertEqual(locked.target, "environment_direction[1]")
+        self.assertTrue(any(item.source_ref == "scene_emd" for item in result.direction.provenance))
 
     def test_locked_photoreal_conversion_is_not_requested_from_llm(self) -> None:
         backend = FakeDirectionBackend(
@@ -372,10 +315,10 @@ class DirectionEnhancerTests(unittest.TestCase):
         self.assertIn("reference-capture condition", system_prompt)
         self.assertIn("keep ENVIRONMENT free of lighting", system_prompt)
         self.assertIn("foxfire", system_prompt)
-        self.assertIn("locked_user_hint", system_prompt)
+        self.assertIn("scene_context.environment", system_prompt)
         self.assertIn("functional spatial topology", system_prompt)
-        self.assertIn("never move a fixture onto the route's\ncenterline", system_prompt)
-        self.assertIn("approach the fixture\nat the route edge", system_prompt)
+        self.assertIn("never move one onto a route's centerline", system_prompt)
+        self.assertIn("explicitly selects that exact object", system_prompt)
 
     def test_anime_story_mv_profiles_keep_local_costume_details_out_of_direction(self) -> None:
         self.assertIn("一又は二Shot", CAMERA_PROFILES["anime_story_mv"])
@@ -578,6 +521,7 @@ class DirectionEnhancerTests(unittest.TestCase):
             {
                 "reference_anime",
                 "anime_story_mv",
+                "anime_emotional_mv",
                 "reference_cinematic",
                 "illust_to_photoreal",
                 "reference_painterly",
@@ -588,6 +532,7 @@ class DirectionEnhancerTests(unittest.TestCase):
             {
                 "natural_performance", "expressive_mv", "limited_animation",
                 "cinema_mv", "anime_story_mv",
+                "anime_emotional_mv",
             },
         )
         self.assertEqual(
@@ -595,6 +540,7 @@ class DirectionEnhancerTests(unittest.TestCase):
             {
                 "readable_depth", "cinematic_depth", "rhythmic_mv",
                 "cinema_mv", "anime_story_mv",
+                "anime_emotional_mv",
             },
         )
         camera = CAMERA_PROFILES["anime_story_mv"]
@@ -617,6 +563,14 @@ class DirectionEnhancerTests(unittest.TestCase):
         self.assertIn("古傷", STYLE_PROFILES["anime_story_mv"])
         self.assertIn("皮膚と衣装を清潔で損傷のない状態", STYLE_PROFILES["anime_story_mv"])
         self.assertIn("cinema_mv", DIRECTION_PRESETS)
+        self.assertIn("概ね半数", CAMERA_PROFILES["anime_emotional_mv"])
+        self.assertIn("単なる歩行", MOTION_PROFILES["anime_emotional_mv"])
+        self.assertIn("短い閉眼、半開き、伏し目", MOTION_PROFILES["anime_emotional_mv"])
+        self.assertIn("支持脚、遊脚、重心", MOTION_PROFILES["anime_emotional_mv"])
+        self.assertIn("そのSceneの元歌詞", MOTION_PROFILES["anime_emotional_mv"])
+        self.assertNotIn("苔", MOTION_PROFILES["anime_emotional_mv"])
+        self.assertNotIn("狐火", MOTION_PROFILES["anime_emotional_mv"])
+        self.assertNotIn("灯籠", MOTION_PROFILES["anime_emotional_mv"])
         self.assertGreaterEqual(len(DIRECTION_PRESETS), 5)
 
     def test_environment_and_time_lighting_records_are_separate(self) -> None:
@@ -647,7 +601,8 @@ class DirectionEnhancerTests(unittest.TestCase):
             "randomize",
         )
         self.assertIn("concept_emd", inputs["optional"])
-        self.assertIn("observations_json", inputs["optional"])
+        self.assertIn("scene_emd", inputs["optional"])
+        self.assertNotIn("observations_json", inputs["optional"])
         self.assertIn("direction_emd_passthrough", inputs["optional"])
         self.assertTrue(
             inputs["optional"]["direction_emd_passthrough"][1]["forceInput"]

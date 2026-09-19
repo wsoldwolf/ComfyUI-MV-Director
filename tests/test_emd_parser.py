@@ -66,6 +66,51 @@ class EMDParserTests(unittest.TestCase):
         self.assertEqual(document.subjects[0].references, ())
         self.assertEqual(document.subjects[0].description, "石造りの回廊。")
 
+    def test_scene_setting_is_parsed_between_subjects_and_direction(self) -> None:
+        source = """# サブジェクト
+* `画像1` 狐巫女。
+# シーン設定
+## 環境
+* 森の中の神社境内。
+* 赤い鳥居と石畳の参道。
+## 時間・照明
+* 夜間。月明かりが差す。
+## 背景参照
+* `画像2`
+# 共通プロンプト
+## 時間・照明
+* 深夜の青い月光を優先する。
+> `シーン` 1
+# シーン 00:00.000 --> 00:01.000
+* `H3長` 22
+## ショット 00:00.000
+* `サブジェクト1`が鳥居を見上げる。
+"""
+        setting = parse_emd(source).scene_setting
+        self.assertIsNotNone(setting)
+        assert setting is not None
+        self.assertEqual(
+            setting.environment,
+            ("森の中の神社境内。", "赤い鳥居と石畳の参道。"),
+        )
+        self.assertEqual(setting.time_lighting, ("夜間。月明かりが差す。",))
+        self.assertEqual(setting.picture_ref, "<Picture 2>")
+
+    def test_scene_setting_requires_environment(self) -> None:
+        source = """# サブジェクト
+* 人物。
+# シーン設定
+## 背景参照
+* `画像2`
+> `シーン` 1
+# シーン 00:00.000 --> 00:01.000
+* `H3長` 22
+## ショット 00:00.000
+* 人物が立つ。
+"""
+        with self.assertRaisesRegex(EMDParseError, "requires ## 環境"):
+            parse_emd(source)
+
     def test_subject_line_order_and_media_tokens_define_bindings(self) -> None:
         source = """# サブジェクト
 * `画像3` 狐耳の少女。

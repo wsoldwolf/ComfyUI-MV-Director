@@ -2,7 +2,7 @@
   "id": "f97af838-5222-5864-8ec8-15d657333fdb",
   "revision": 0,
   "last_node_id": 47,
-  "last_link_id": 77,
+  "last_link_id": 75,
   "nodes": [
     {
       "id": 1,
@@ -24,7 +24,7 @@
           "name": "MODEL",
           "type": "MODEL",
           "links": [
-            70
+            68
           ]
         }
       ],
@@ -383,14 +383,14 @@
           "name": "audio_start",
           "type": "FLOAT",
           "links": [
-            75
+            73
           ]
         },
         {
           "name": "audio_duration",
           "type": "FLOAT",
           "links": [
-            76
+            74
           ]
         },
         {
@@ -588,7 +588,7 @@
         {
           "name": "ref_images.ref_image_1",
           "type": "IMAGE",
-          "link": 69
+          "link": 67
         },
         {
           "name": "ref_images.ref_image_2",
@@ -608,7 +608,7 @@
         {
           "name": "ref_audios.ref_audio_0",
           "type": "AUDIO",
-          "link": 77
+          "link": 75
         }
       ],
       "outputs": [
@@ -632,7 +632,7 @@
         "Node name for S&R": "MiniMaxH3ReferenceToVideo"
       },
       "widgets_values": [
-        "subject_definitions:\n<Picture 1> defines <Subject 1>, the performer in the reference image.\n\nsummary:\n[reference generation] A moonlit performance at a shrine approach.\n\nretention_analysis:\n<Subject 1>: fully_preserved - preserve identity, clothing, and proportions.\n<Picture 1>: fully_preserved - preserve the visible performer design.\n\ndetailed_description:\n[Shot 1] <Subject 1> walks toward the torii gate and sings.\n<Subject 1> performs visible lip movements synchronized to <Audio 1>.\n\noverall_soundscape:\nPreserve the selected music-video soundtrack policy.\n\nnon_diegetic_music:\nNo additional generated music is requested.",
+        "subject_definitions:\n<Picture 1> defines <Subject 1>, the performer in the reference image.\n<Picture 2> is the environment reference: Observed scene content: A moonlit shrine approach in a forest with a red torii gate.. Use only its stable architecture, vegetation, terrain, materials, and spatial identity as background evidence. It is not a Subject, performer, storyboard, panel layout, framing template, or lighting authority. Render one unified full-frame environment and never reproduce people, characters, poses, text, borders, split views, or inset compositions from this Picture. The written Scene environment and time-lighting directions are authoritative and replace every conflicting season, weather, time of day, illumination, camera angle, and composition visible in this Picture. Preserve functional spatial topology: keep paths, shrine approaches, stairs, doorways, and other circulation routes open and unobstructed. Fixed fixtures such as stone lanterns, lamps, posts, signs, and statues remain beside or outside the circulation route where established; never relocate one onto the centerline or directly into the Subject's travel path. When a Shot calls for interaction with a fixed fixture, move the Subject toward the fixture at the path edge instead of moving the fixture toward the Subject.\n\nsummary:\n[reference generation] A moonlit performance at a shrine approach.\n\nretention_analysis:\n<Subject 1>: fully_preserved - preserve identity, clothing, and proportions.\n<Picture 1>: fully_preserved - preserve the visible performer design.\n<Picture 2>: environment_partially_preserved - preserve stable architecture, vegetation, terrain, materials, spatial identity, open circulation routes, and the established placement of fixed fixtures only; restage framing and lighting for the current Shot and obey the written Scene environment and time-lighting directions.\n\ndetailed_description:\n[Shot 1] <Subject 1> walks toward the torii gate and sings.\n<Subject 1> performs visible lip movements synchronized to <Audio 1>.\n\noverall_soundscape:\nPreserve the selected music-video soundtrack policy.\n\nnon_diegetic_music:\nNo additional generated music is requested.",
         896,
         672,
         243,
@@ -1232,7 +1232,7 @@
         {
           "name": "model",
           "type": "MODEL",
-          "link": 71
+          "link": 69
         }
       ],
       "outputs": [
@@ -1349,7 +1349,7 @@
         {
           "name": "plan_json_input",
           "type": "STRING",
-          "link": 67
+          "link": 65
         },
         {
           "name": "project_assets",
@@ -1383,7 +1383,7 @@
         {
           "name": "width",
           "type": "INT",
-          "link": 72,
+          "link": 70,
           "widget": {
             "name": "width"
           }
@@ -1391,7 +1391,7 @@
         {
           "name": "height",
           "type": "INT",
-          "link": 73,
+          "link": 71,
           "widget": {
             "name": "height"
           }
@@ -1492,7 +1492,7 @@
         "Node name for S&R": "MiniMaxH3ChainPlanModern"
       },
       "widgets_values": [
-        "{\n  \"prompt_prefix\": [\n    \"Render every scene as photorealistic live-action cinema.\"\n  ],\n  \"defaults\": {\n    \"steps\": 8\n  },\n  \"shots\": [\n    {\n      \"id\": \"scene_0001\",\n      \"length\": 243,\n      \"prompt\": [\n        \"subject_definitions:\",\n        \"<Picture 1> defines <Subject 1>, the performer in the reference image.\",\n        \"\",\n        \"summary:\",\n        \"[reference generation] A moonlit performance at a shrine approach.\",\n        \"\",\n        \"retention_analysis:\",\n        \"<Subject 1>: fully_preserved - preserve identity, clothing, and proportions.\",\n        \"<Picture 1>: fully_preserved - preserve the visible performer design.\",\n        \"\",\n        \"detailed_description:\",\n        \"[Shot 1] <Subject 1> walks toward the torii gate and sings.\",\n        \"<Subject 1> performs visible lip movements synchronized to <Audio 1>.\",\n        \"\",\n        \"overall_soundscape:\",\n        \"Preserve the selected music-video soundtrack policy.\",\n        \"\",\n        \"non_diegetic_music:\",\n        \"No additional generated music is requested.\"\n      ],\n      \"context_length\": 0,\n      \"audio_context_length\": 22\n    }\n  ]\n}",
+        "{\n  \"prompt_prefix\": [\n    \"Render every scene as photorealistic live-action cinema.\"\n  ],\n  \"defaults\": {\n    \"steps\": 8\n  },\n  \"shots\": [\n    {\n      \"id\": \"scene_0001\",\n      \"length\": 243,\n      \"prompt\": [\n        \"subject_definitions:\",\n        \"<Picture 1> defines <Subject 1>, the performer in the reference image.\",\n        \"<Picture 2> is the environment reference: Observed scene content: A moonlit shrine approach in a forest with a red torii gate.. Use only its stable architecture, vegetation, terrain, materials, and spatial identity as background evidence. It is not a Subject, performer, storyboard, panel layout, framing template, or lighting authority. Render one unified full-frame environment and never reproduce people, characters, poses, text, borders, split views, or inset compositions from this Picture. The written Scene environment and time-lighting directions are authoritative and replace every conflicting season, weather, time of day, illumination, camera angle, and composition visible in this Picture. Preserve functional spatial topology: keep paths, shrine approaches, stairs, doorways, and other circulation routes open and unobstructed. Fixed fixtures such as stone lanterns, lamps, posts, signs, and statues remain beside or outside the circulation route where established; never relocate one onto the centerline or directly into the Subject's travel path. When a Shot calls for interaction with a fixed fixture, move the Subject toward the fixture at the path edge instead of moving the fixture toward the Subject.\",\n        \"\",\n        \"summary:\",\n        \"[reference generation] A moonlit performance at a shrine approach.\",\n        \"\",\n        \"retention_analysis:\",\n        \"<Subject 1>: fully_preserved - preserve identity, clothing, and proportions.\",\n        \"<Picture 1>: fully_preserved - preserve the visible performer design.\",\n        \"<Picture 2>: environment_partially_preserved - preserve stable architecture, vegetation, terrain, materials, spatial identity, open circulation routes, and the established placement of fixed fixtures only; restage framing and lighting for the current Shot and obey the written Scene environment and time-lighting directions.\",\n        \"\",\n        \"detailed_description:\",\n        \"[Shot 1] <Subject 1> walks toward the torii gate and sings.\",\n        \"<Subject 1> performs visible lip movements synchronized to <Audio 1>.\",\n        \"\",\n        \"overall_soundscape:\",\n        \"Preserve the selected music-video soundtrack policy.\",\n        \"\",\n        \"non_diegetic_music:\",\n        \"No additional generated music is requested.\"\n      ],\n      \"context_length\": 0,\n      \"audio_context_length\": 22\n    }\n  ]\n}",
         "mv_director_audio_reference",
         "mv-director-audio_reference-context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9",
         896,
@@ -1963,7 +1963,7 @@
         {
           "name": "plan_json",
           "type": "STRING",
-          "link": 68
+          "link": 66
         }
       ],
       "outputs": [
@@ -1990,7 +1990,7 @@
           "name": "reference_audio_b",
           "type": "AUDIO",
           "links": [
-            74
+            72
           ]
         }
       ],
@@ -2076,7 +2076,8 @@
           "name": "text",
           "type": "STRING",
           "links": [
-            65
+            65,
+            66
           ]
         }
       ],
@@ -2085,9 +2086,9 @@
         "Node name for S&R": "MVDirectorLoadTextFile"
       },
       "widgets_values": [
-        "ewogICJwcm9tcHRfcHJlZml4IjogWwogICAgIlJlbmRlciBldmVyeSBzY2VuZSBhcyBwaG90b3JlYWxpc3RpYyBsaXZlLWFjdGlvbiBjaW5lbWEuIgogIF0sCiAgImRlZmF1bHRzIjogewogICAgInN0ZXBzIjogOAogIH0sCiAgInNob3RzIjogWwogICAgewogICAgICAiaWQiOiAic2NlbmVfMDAwMSIsCiAgICAgICJsZW5ndGgiOiAyNDMsCiAgICAgICJwcm9tcHQiOiBbCiAgICAgICAgInN1YmplY3RfZGVmaW5pdGlvbnM6IiwKICAgICAgICAiPFBpY3R1cmUgMT4gZGVmaW5lcyA8U3ViamVjdCAxPiwgdGhlIHBlcmZvcm1lciBpbiB0aGUgcmVmZXJlbmNlIGltYWdlLiIsCiAgICAgICAgIiIsCiAgICAgICAgInN1bW1hcnk6IiwKICAgICAgICAiW3JlZmVyZW5jZSBnZW5lcmF0aW9uXSBBIG1vb25saXQgcGVyZm9ybWFuY2UgYXQgYSBzaHJpbmUgYXBwcm9hY2guIiwKICAgICAgICAiIiwKICAgICAgICAicmV0ZW50aW9uX2FuYWx5c2lzOiIsCiAgICAgICAgIjxTdWJqZWN0IDE+OiBmdWxseV9wcmVzZXJ2ZWQgLSBwcmVzZXJ2ZSBpZGVudGl0eSwgY2xvdGhpbmcsIGFuZCBwcm9wb3J0aW9ucy4iLAogICAgICAgICI8UGljdHVyZSAxPjogZnVsbHlfcHJlc2VydmVkIC0gcHJlc2VydmUgdGhlIHZpc2libGUgcGVyZm9ybWVyIGRlc2lnbi4iLAogICAgICAgICIiLAogICAgICAgICJkZXRhaWxlZF9kZXNjcmlwdGlvbjoiLAogICAgICAgICJbU2hvdCAxXSA8U3ViamVjdCAxPiB3YWxrcyB0b3dhcmQgdGhlIHRvcmlpIGdhdGUgYW5kIHNpbmdzLiIsCiAgICAgICAgIjxTdWJqZWN0IDE+IHBlcmZvcm1zIHZpc2libGUgbGlwIG1vdmVtZW50cyBzeW5jaHJvbml6ZWQgdG8gPEF1ZGlvIDE+LiIsCiAgICAgICAgIiIsCiAgICAgICAgIm92ZXJhbGxfc291bmRzY2FwZToiLAogICAgICAgICJQcmVzZXJ2ZSB0aGUgc2VsZWN0ZWQgbXVzaWMtdmlkZW8gc291bmR0cmFjayBwb2xpY3kuIiwKICAgICAgICAiIiwKICAgICAgICAibm9uX2RpZWdldGljX211c2ljOiIsCiAgICAgICAgIk5vIGFkZGl0aW9uYWwgZ2VuZXJhdGVkIG11c2ljIGlzIHJlcXVlc3RlZC4iCiAgICAgIF0sCiAgICAgICJjb250ZXh0X2xlbmd0aCI6IDAsCiAgICAgICJhdWRpb19jb250ZXh0X2xlbmd0aCI6IDIyCiAgICB9CiAgXQp9",
+        "ewogICJwcm9tcHRfcHJlZml4IjogWwogICAgIlJlbmRlciBldmVyeSBzY2VuZSBhcyBwaG90b3JlYWxpc3RpYyBsaXZlLWFjdGlvbiBjaW5lbWEuIgogIF0sCiAgImRlZmF1bHRzIjogewogICAgInN0ZXBzIjogOAogIH0sCiAgInNob3RzIjogWwogICAgewogICAgICAiaWQiOiAic2NlbmVfMDAwMSIsCiAgICAgICJsZW5ndGgiOiAyNDMsCiAgICAgICJwcm9tcHQiOiBbCiAgICAgICAgInN1YmplY3RfZGVmaW5pdGlvbnM6IiwKICAgICAgICAiPFBpY3R1cmUgMT4gZGVmaW5lcyA8U3ViamVjdCAxPiwgdGhlIHBlcmZvcm1lciBpbiB0aGUgcmVmZXJlbmNlIGltYWdlLiIsCiAgICAgICAgIjxQaWN0dXJlIDI+IGlzIHRoZSBlbnZpcm9ubWVudCByZWZlcmVuY2U6IE9ic2VydmVkIHNjZW5lIGNvbnRlbnQ6IEEgbW9vbmxpdCBzaHJpbmUgYXBwcm9hY2ggaW4gYSBmb3Jlc3Qgd2l0aCBhIHJlZCB0b3JpaSBnYXRlLi4gVXNlIG9ubHkgaXRzIHN0YWJsZSBhcmNoaXRlY3R1cmUsIHZlZ2V0YXRpb24sIHRlcnJhaW4sIG1hdGVyaWFscywgYW5kIHNwYXRpYWwgaWRlbnRpdHkgYXMgYmFja2dyb3VuZCBldmlkZW5jZS4gSXQgaXMgbm90IGEgU3ViamVjdCwgcGVyZm9ybWVyLCBzdG9yeWJvYXJkLCBwYW5lbCBsYXlvdXQsIGZyYW1pbmcgdGVtcGxhdGUsIG9yIGxpZ2h0aW5nIGF1dGhvcml0eS4gUmVuZGVyIG9uZSB1bmlmaWVkIGZ1bGwtZnJhbWUgZW52aXJvbm1lbnQgYW5kIG5ldmVyIHJlcHJvZHVjZSBwZW9wbGUsIGNoYXJhY3RlcnMsIHBvc2VzLCB0ZXh0LCBib3JkZXJzLCBzcGxpdCB2aWV3cywgb3IgaW5zZXQgY29tcG9zaXRpb25zIGZyb20gdGhpcyBQaWN0dXJlLiBUaGUgd3JpdHRlbiBTY2VuZSBlbnZpcm9ubWVudCBhbmQgdGltZS1saWdodGluZyBkaXJlY3Rpb25zIGFyZSBhdXRob3JpdGF0aXZlIGFuZCByZXBsYWNlIGV2ZXJ5IGNvbmZsaWN0aW5nIHNlYXNvbiwgd2VhdGhlciwgdGltZSBvZiBkYXksIGlsbHVtaW5hdGlvbiwgY2FtZXJhIGFuZ2xlLCBhbmQgY29tcG9zaXRpb24gdmlzaWJsZSBpbiB0aGlzIFBpY3R1cmUuIFByZXNlcnZlIGZ1bmN0aW9uYWwgc3BhdGlhbCB0b3BvbG9neToga2VlcCBwYXRocywgc2hyaW5lIGFwcHJvYWNoZXMsIHN0YWlycywgZG9vcndheXMsIGFuZCBvdGhlciBjaXJjdWxhdGlvbiByb3V0ZXMgb3BlbiBhbmQgdW5vYnN0cnVjdGVkLiBGaXhlZCBmaXh0dXJlcyBzdWNoIGFzIHN0b25lIGxhbnRlcm5zLCBsYW1wcywgcG9zdHMsIHNpZ25zLCBhbmQgc3RhdHVlcyByZW1haW4gYmVzaWRlIG9yIG91dHNpZGUgdGhlIGNpcmN1bGF0aW9uIHJvdXRlIHdoZXJlIGVzdGFibGlzaGVkOyBuZXZlciByZWxvY2F0ZSBvbmUgb250byB0aGUgY2VudGVybGluZSBvciBkaXJlY3RseSBpbnRvIHRoZSBTdWJqZWN0J3MgdHJhdmVsIHBhdGguIFdoZW4gYSBTaG90IGNhbGxzIGZvciBpbnRlcmFjdGlvbiB3aXRoIGEgZml4ZWQgZml4dHVyZSwgbW92ZSB0aGUgU3ViamVjdCB0b3dhcmQgdGhlIGZpeHR1cmUgYXQgdGhlIHBhdGggZWRnZSBpbnN0ZWFkIG9mIG1vdmluZyB0aGUgZml4dHVyZSB0b3dhcmQgdGhlIFN1YmplY3QuIiwKICAgICAgICAiIiwKICAgICAgICAic3VtbWFyeToiLAogICAgICAgICJbcmVmZXJlbmNlIGdlbmVyYXRpb25dIEEgbW9vbmxpdCBwZXJmb3JtYW5jZSBhdCBhIHNocmluZSBhcHByb2FjaC4iLAogICAgICAgICIiLAogICAgICAgICJyZXRlbnRpb25fYW5hbHlzaXM6IiwKICAgICAgICAiPFN1YmplY3QgMT46IGZ1bGx5X3ByZXNlcnZlZCAtIHByZXNlcnZlIGlkZW50aXR5LCBjbG90aGluZywgYW5kIHByb3BvcnRpb25zLiIsCiAgICAgICAgIjxQaWN0dXJlIDE+OiBmdWxseV9wcmVzZXJ2ZWQgLSBwcmVzZXJ2ZSB0aGUgdmlzaWJsZSBwZXJmb3JtZXIgZGVzaWduLiIsCiAgICAgICAgIjxQaWN0dXJlIDI+OiBlbnZpcm9ubWVudF9wYXJ0aWFsbHlfcHJlc2VydmVkIC0gcHJlc2VydmUgc3RhYmxlIGFyY2hpdGVjdHVyZSwgdmVnZXRhdGlvbiwgdGVycmFpbiwgbWF0ZXJpYWxzLCBzcGF0aWFsIGlkZW50aXR5LCBvcGVuIGNpcmN1bGF0aW9uIHJvdXRlcywgYW5kIHRoZSBlc3RhYmxpc2hlZCBwbGFjZW1lbnQgb2YgZml4ZWQgZml4dHVyZXMgb25seTsgcmVzdGFnZSBmcmFtaW5nIGFuZCBsaWdodGluZyBmb3IgdGhlIGN1cnJlbnQgU2hvdCBhbmQgb2JleSB0aGUgd3JpdHRlbiBTY2VuZSBlbnZpcm9ubWVudCBhbmQgdGltZS1saWdodGluZyBkaXJlY3Rpb25zLiIsCiAgICAgICAgIiIsCiAgICAgICAgImRldGFpbGVkX2Rlc2NyaXB0aW9uOiIsCiAgICAgICAgIltTaG90IDFdIDxTdWJqZWN0IDE+IHdhbGtzIHRvd2FyZCB0aGUgdG9yaWkgZ2F0ZSBhbmQgc2luZ3MuIiwKICAgICAgICAiPFN1YmplY3QgMT4gcGVyZm9ybXMgdmlzaWJsZSBsaXAgbW92ZW1lbnRzIHN5bmNocm9uaXplZCB0byA8QXVkaW8gMT4uIiwKICAgICAgICAiIiwKICAgICAgICAib3ZlcmFsbF9zb3VuZHNjYXBlOiIsCiAgICAgICAgIlByZXNlcnZlIHRoZSBzZWxlY3RlZCBtdXNpYy12aWRlbyBzb3VuZHRyYWNrIHBvbGljeS4iLAogICAgICAgICIiLAogICAgICAgICJub25fZGllZ2V0aWNfbXVzaWM6IiwKICAgICAgICAiTm8gYWRkaXRpb25hbCBnZW5lcmF0ZWQgbXVzaWMgaXMgcmVxdWVzdGVkLiIKICAgICAgXSwKICAgICAgImNvbnRleHRfbGVuZ3RoIjogMCwKICAgICAgImF1ZGlvX2NvbnRleHRfbGVuZ3RoIjogMjIKICAgIH0KICBdCn0=",
         "audio_reference_plan.txt",
-        "{\n  \"name\": \"audio_reference_plan.txt\",\n  \"size\": 1128,\n  \"type\": \"text/plain\"\n}"
+        "{\n  \"name\": \"audio_reference_plan.txt\",\n  \"size\": 2696,\n  \"type\": \"text/plain\"\n}"
       ]
     },
     {
@@ -2108,7 +2109,7 @@
         {
           "name": "model",
           "type": "MODEL",
-          "link": 70
+          "link": 68
         },
         {
           "name": "lora_name",
@@ -2132,7 +2133,7 @@
           "name": "MODEL",
           "type": "MODEL",
           "links": [
-            71
+            69
           ]
         }
       ],
@@ -2165,7 +2166,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            66
+            67
           ]
         },
         {
@@ -2180,62 +2181,6 @@
       },
       "widgets_values": [
         "image002_keinai.jpg"
-      ]
-    },
-    {
-      "id": 46,
-      "type": "MVDirectorH3BackgroundReference",
-      "pos": [
-        1550,
-        600
-      ],
-      "size": [
-        500,
-        180
-      ],
-      "flags": {},
-      "order": 46,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "plan_json",
-          "type": "STRING",
-          "link": 65
-        },
-        {
-          "name": "background_image",
-          "type": "IMAGE",
-          "link": 66
-        }
-      ],
-      "outputs": [
-        {
-          "name": "plan_json",
-          "type": "STRING",
-          "links": [
-            67,
-            68
-          ]
-        },
-        {
-          "name": "background_image",
-          "type": "IMAGE",
-          "links": [
-            69
-          ]
-        },
-        {
-          "name": "status",
-          "type": "STRING",
-          "links": null
-        }
-      ],
-      "title": "Bind Background • <Picture 2>",
-      "properties": {
-        "Node name for S&R": "MVDirectorH3BackgroundReference"
-      },
-      "widgets_values": [
-        2
       ]
     },
     {
@@ -2292,14 +2237,14 @@
           "name": "width",
           "type": "INT",
           "links": [
-            72
+            70
           ]
         },
         {
           "name": "height",
           "type": "INT",
           "links": [
-            73
+            71
           ]
         }
       ],
@@ -2433,12 +2378,12 @@
         {
           "name": "audio",
           "type": "AUDIO",
-          "link": 74
+          "link": 72
         },
         {
           "name": "start_index",
           "type": "FLOAT",
-          "link": 75,
+          "link": 73,
           "widget": {
             "name": "start_index"
           }
@@ -2446,7 +2391,7 @@
         {
           "name": "duration",
           "type": "FLOAT",
-          "link": 76,
+          "link": 74,
           "widget": {
             "name": "duration"
           }
@@ -2457,7 +2402,7 @@
           "name": "AUDIO",
           "type": "AUDIO",
           "links": [
-            77
+            75
           ]
         }
       ],
@@ -2972,44 +2917,28 @@
       65,
       39,
       0,
-      46,
-      0,
-      "STRING"
-    ],
-    [
-      66,
-      45,
-      0,
-      46,
-      1,
-      "IMAGE"
-    ],
-    [
-      67,
-      46,
-      0,
       24,
       1,
       "STRING"
     ],
     [
-      68,
-      46,
+      66,
+      39,
       0,
       37,
       4,
       "STRING"
     ],
     [
-      69,
-      46,
-      1,
+      67,
+      45,
+      0,
       11,
       8,
       "IMAGE"
     ],
     [
-      70,
+      68,
       1,
       0,
       44,
@@ -3017,7 +2946,7 @@
       "MODEL"
     ],
     [
-      71,
+      69,
       44,
       0,
       22,
@@ -3025,7 +2954,7 @@
       "MODEL"
     ],
     [
-      72,
+      70,
       47,
       0,
       24,
@@ -3033,7 +2962,7 @@
       "INT"
     ],
     [
-      73,
+      71,
       47,
       1,
       24,
@@ -3041,7 +2970,7 @@
       "INT"
     ],
     [
-      74,
+      72,
       37,
       3,
       40,
@@ -3049,7 +2978,7 @@
       "AUDIO"
     ],
     [
-      75,
+      73,
       8,
       10,
       40,
@@ -3057,7 +2986,7 @@
       "FLOAT"
     ],
     [
-      76,
+      74,
       8,
       11,
       40,
@@ -3065,7 +2994,7 @@
       "FLOAT"
     ],
     [
-      77,
+      75,
       40,
       0,
       11,

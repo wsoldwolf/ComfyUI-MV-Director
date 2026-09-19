@@ -38,6 +38,7 @@ def render_completed_emd(
     lip_sync_mode: str,
     lip_sync_target: str,
     lip_sync_audio_slot: int,
+    scene_emd: str = "",
     timing_profile: H3TimingProfile = DEFAULT_H3_TIMING_PROFILE,
 ) -> EMDTextArtifact:
     direction.validate()
@@ -49,6 +50,8 @@ def render_completed_emd(
         raise TimelinePlannerError("lip_sync_audio_slot must be in 1..3")
 
     lines = concept_emd.rstrip().split("\n")
+    if scene_emd.strip():
+        lines.extend(("", *scene_emd.rstrip().split("\n")))
     style_profile = direction.style_profile_id
     retention_policy = (
         STYLE_RETENTION_POLICIES.get(style_profile, "")

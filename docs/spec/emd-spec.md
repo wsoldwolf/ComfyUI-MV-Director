@@ -19,9 +19,10 @@ Compilerは演出の追加、要約、意味修復、画像内容の確認、音
 Compiler-ready EMDの順序は次のとおり。
 
 1. 必須 `# サブジェクト`
-2. 任意 `# 保持分析`
-3. 任意 `# 共通プロンプト`
-4. 一個以上のScene
+2. 任意 `# シーン設定`
+3. 任意 `# 保持分析`
+4. 任意 `# 共通プロンプト`
+5. 一個以上のScene
 
 空入力はEnhancerの入力として許されるが、Compiler-ready EMDとしては許されない。
 
@@ -86,7 +87,27 @@ Shot、保持分析及びlip-syncでSubjectを参照する場合は、派生ID `
 
 定義されていない番号の使用は構文エラーである。通常本文中の「サブジェクト1」はIDではなく、backtickを持つ完全tokenだけがIDである。
 
-## 4. 保持分析
+## 4. シーン設定
+
+`# シーン設定`は、背景の観測事実と環境専用PictureをSubjectから分離して運ぶ任意断片である。存在する場合は`# サブジェクト`の直後、`# 保持分析`より前に置く。
+
+```markdown
+# シーン設定
+## 環境
+* 森の中の神社境内、赤い鳥居、石畳の参道、紅葉及び道端の灯籠。
+
+## 時間・照明
+* 夜間。月明かりと灯籠の暖色光がある。
+
+## 背景参照
+* `画像2`
+```
+
+`## 環境`は必須で一個以上の通常list itemを持つ。`## 時間・照明`は任意で観測時のbaselineを持つ。`## 背景参照`は任意で、`画像1`～`画像9`のうち一個だけを持つ。subsectionはこの順序を変えない。
+
+背景Pictureは環境証拠であり、Subjectを追加しない。Compilerはこれを環境専用definition、`environment_partially_preserved`保持行及び`environment_reference` required inputへ変換する。人物、pose、文字、分割構図、camera angle又は参照画像の照明をコピーする用途には使わない。`# 共通プロンプト`又はDirectionで明示された環境、時刻及び照明は、この観測baselineより上位である。
+
+## 5. 保持分析
 
 `# 保持分析`は任意である。存在する場合は空にできず、各行を次の形にする。
 
@@ -110,7 +131,7 @@ Shot、保持分析及びlip-syncでSubjectを参照する場合は、派生ID `
 
 対象は`# サブジェクト`で定義済みでなければならない。章が省略された場合、Compilerは各Subjectに固定の保持文を出す。この既定文は記述済みの局所形状、個数、配置、大きさ、色、材質及び除外条件を文字どおり保持し、特殊な特徴を一般的な形へ置換しないよう要求する。Picture参照を持つ場合もPicture自体を独立した保持対象として自動追加しない。
 
-## 5. 共通プロンプト
+## 6. 共通プロンプト
 
 `# 共通プロンプト`は任意であり、次の任意subsectionを固定順で持つ。
 
@@ -141,7 +162,7 @@ Shot、保持分析及びlip-syncでSubjectを参照する場合は、派生ID `
 
 画風変換へ強く影響するため、Styleは`prompt_prefix`の先頭に置く。`環境`は接触可能な物体を含む物理世界、`時間・照明`は完成映像の時間帯と照明を表し、明示された夜間等の演出指定はVisionで観測した昼夜より上位とする。Compilerはどの区分もSceneへ推測複製せず、存在する行を固定順で一対一翻訳する。
 
-## 6. Scene
+## 7. Scene
 
 Sceneは番号annotationと見出しを物理的に連続する2行で書く。
 
@@ -170,7 +191,7 @@ CompilerはカットSceneへ`context_length: 0`、`audio_context_length: 0`を�
 
 `H3長`の後、最初のShotより前へ通常list itemを置くとScene descriptionになる。
 
-## 7. Shot
+## 8. Shot
 
 各Sceneは一個以上のShotを持つ。最初のShotはScene開始時刻と一致し、後続Shotは絶対時刻で昇順にする。自動PlannerはPythonが提示した、互いに1500 ms以上離れた境界IDからだけShot境界を選び、最大4 Shot、通常は2～3 Shotとし、4 Shotは8秒以上のSceneで四つの異なる視覚目的を各2秒以上確保できる場合だけ選び、複数Shot時は各Shot 1500 ms以上とする。Scene全体が1500 ms未満の場合は一Shotのまま許す。LLMは時刻を生成せず、Pythonが境界IDを絶対msへ機械変換する。不正な候補列は該当Sceneだけ一Shotへfallbackし、ActionとCameraの処理を継続する。手書きEMDは同じ時刻規則を満たせばよい。
 
@@ -185,13 +206,13 @@ Scene内の後続Shotは一回のH3生成に含まれる時刻付きprompt変化
 
 Compilerは最初を`[Shot 1]`、後続をScene相対時刻の`[Shot N] At MM:SS.mmm,`へ変換する。
 
-### 7.1 台詞保護
+### 8.1 台詞保護
 
 日本語の`「...」`は翻訳前に保護し、`<d>[Japanese]...</d>`としてH3へ渡す。
 
 明示的な`<d>...</d>`又は`<d>[Language]...</d>`も翻訳しない。tagの不整合、nest又は未閉鎖は構文エラーである。
 
-## 8. 歌詞annotation
+## 9. 歌詞annotation
 
 Lyric Segmentationが生成するannotationは、対象Shot見出しの直前へ置く。
 
@@ -206,9 +227,9 @@ Lyric Segmentationが生成するannotationは、対象Shot見出しの直前へ
 
 `歌詞`は必須、`セクション`は任意、開始と終了は両方を置くか両方を省略する。Compilerはannotation自体からlip-sync directiveを推測しない。
 
-## 9. lip-syncと音響
+## 10. lip-syncと音響
 
-### 9.1 歌詞方式
+### 10.1 歌詞方式
 
 歌詞方式だけはShot本文内へ明示する。
 
@@ -222,7 +243,7 @@ Compilerは歌詞原文を翻訳せず、対象Shotへ次の固定文を追加�
 <Subject 1> performs visible lip movements to <d>[Japanese]...</d>.
 ```
 
-### 9.2 Scene音響方式
+### 10.2 Scene音響方式
 
 Scene末尾の`## 音響`は任意であり、存在する場合は空にできない。
 
@@ -255,11 +276,19 @@ Timeline Plannerで`context_loop`を選んだ場合は、歌詞annotationのな�
 - `無音`は他の音響directive又は歌詞方式と併用できない。
 - `無音`はPlan JSONへ無音条件を出すフラグであり、PCM無音を保証しない。真の無音が必要な場合は下流PCM audio gateの責務。
 
-## 10. 完全例
+## 11. 完全例
 
 ```markdown
 # サブジェクト
 * `画像1` 狐耳の少女。長い金髪、赤い瞳、白と赤の着物風衣装を持つ。
+
+# シーン設定
+## 環境
+* 森の中の神社境内、赤い鳥居及び石畳の参道。
+## 時間・照明
+* 夜間。月明かりが木々の間から差す。
+## 背景参照
+* `画像2`
 
 # 保持分析
 * `サブジェクト1`: `partially_preserved` 髪、狐耳、尾、衣装と配色を保持する。
@@ -287,7 +316,7 @@ Timeline Plannerで`context_loop`を選んだ場合は、歌詞annotationのな�
 * `サブジェクト1`は立ち止まり正面を向く。
 ```
 
-## 11. Compiler出力契約
+## 12. Compiler出力契約
 
 CompilerはContext Loop Plan JSONをUTF-8相当のUnicode文字列として返し、次の表示形式を規範とする。
 
@@ -308,11 +337,11 @@ CompilerはContext Loop Plan JSONをUTF-8相当のUnicode文字列として返�
 
 `summary:`は翻訳したScene先頭記述又は先頭Shot本文の前へ、Compilerが固定task directive ``[reference generation]``を付ける。`subject_definitions:`では各`<Subject N>`を行頭から一回だけ定義し、Picture等の参照tokenは同じ行の文中で関連付ける。`# 保持分析`が省略された場合、`retention_analysis:`はSubjectごとの固定保持文だけを持ち、Picture tokenを独立保持対象として自動追加しない。作者が`# 保持分析`を明記した場合、Compilerは固定modeをそのまま写し、説明だけを英訳して文書順で使う。保持範囲を意味推測で補正しない。
 
-`required_references`は、Subject行及びAudio参照directiveで明示されたslotだけを列挙する。CompilerはComfyUI graphの実配線を検査しない。
+`required_references`は、Subject行、`# シーン設定`の背景Picture及びAudio参照directiveで明示されたslotだけを列挙する。背景Pictureのpurposeは`environment_reference`であり、`concept_id`又は`subject_ref`を持たない。CompilerはComfyUI graphの実配線を検査しない。
 
 日本語翻訳はline protocolで行い、一回の推論batchを最大7 unitに制限する。これは小型GGUFが長いslot列で番号を欠落又はshiftする事例を避けるためのprotocol上限であり、欠落slotを推測修復しない。
 
-## 12. 構文エラーとしない事項
+## 13. 構文エラーとしない事項
 
 Compilerは次を意味検証しない。
 

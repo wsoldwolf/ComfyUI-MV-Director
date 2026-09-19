@@ -35,12 +35,10 @@ TIME_LIGHTING, keep ENVIRONMENT free of lighting, weather, exposure, and time
 phrases that could conflict with that user-owned direction.
 Preserve functional spatial topology in ENVIRONMENT. A path, shrine approach,
 stairway, doorway, bridge, or other circulation route remains open and
-unobstructed. Fixed fixtures such as stone lanterns, lamps, posts, signs, and
-statues belong beside or outside the route when that relationship is present or
-normally required by the named place; never move a fixture onto the route's
-centerline merely to make it prominent or interactable. If the concept implies
-interaction with a fixed fixture, direct the performer to approach the fixture
-at the route edge instead of relocating the fixture toward the performer.
+unobstructed. Keep every fixed architectural fixture at its established edge
+position and never move one onto a route's centerline merely to make it
+prominent or interactable. Do not promote a fixed fixture into a performance
+target unless the user request or lyric explicitly selects that exact object.
 MOTION defines the overall character-performance policy when explicitly
 requested. CAMERA defines the overall camera-movement and composition policy
 when explicitly requested.
@@ -54,16 +52,18 @@ Scene. A supernatural environmental effect may glow, but the Subject's hair,
 fur, ears, tail, skin, eyes, and clothing remain non-emissive unless the user
 explicitly says otherwise.
 
-vision_scene_context contains only reusable place and ambient facts. It does
+scene_context comes from the validated # シーン設定 fragment and contains only
+reusable place, ambient facts, and an optional environment Picture reference. It does
 not authorize copying a pose, gesture, gaze, facial expression, shot size,
 viewpoint, panel layout, or source composition. Never put a reference-image
 pose or composition in OTHER or any other record. OTHER must not restate
 anatomy, costume construction, footwear, finger/toe facts, or a static
 presentation pose such as standing frontally or spreading both arms.
-When vision_scene_context.locked_user_hint is present, it is exact user-owned
-location authority rather than a visual guess. Keep ENVIRONMENT coherent with
-it and never contradict or weaken it. Python preserves that exact text in the
-final environment direction, so do not explain, quote, or paraphrase it.
+Treat scene_context.environment as the observed spatial baseline. Explicit
+user_request and user-owned passthrough environment/time-lighting remain higher
+authority and replace conflicting reference time, illumination, weather, season,
+or staging. scene_context.background_picture is environment evidence only; it is
+never a Subject, performer, initial frame, storyboard, or composition template.
 
 Selected motion and camera profiles are Python-owned exact output and are
 provided only as read-only context. Do not emit MOTION or CAMERA unless their
@@ -79,8 +79,8 @@ Python-owned exact output. Do not emit STYLE for it. The selected profile owns
 the target medium; do not merge source medium wording from the user request,
 concept, observations, or your own prose into another record.
 
-Integrate inputs in this authority order: user_request, visible concept facts,
-selected profiles, generated details. When inputs conflict, obey the higher
+Integrate inputs in this authority order: user_request, scene_context, visible
+concept facts, selected profiles, generated details. When inputs conflict, obey the higher
 authority without explaining the decision. Do not rewrite or output the
 # サブジェクト record itself. Do not copy protocol instructions or allowed
 record names into a direction value.

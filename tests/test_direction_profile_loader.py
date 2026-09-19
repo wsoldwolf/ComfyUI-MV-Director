@@ -31,6 +31,8 @@ class DirectionProfileLoaderTests(unittest.TestCase):
                 encoding="utf-8",
             )
             (root / "camera" / "custom_camera.md").write_text(
+                "# プロファイル\n"
+                "* `planner_policy` emotional_test\n\n"
                 "# 共通プロンプト\n## カメラ\n* arcで回り込む。\n",
                 encoding="utf-8",
             )
@@ -47,6 +49,10 @@ class DirectionProfileLoaderTests(unittest.TestCase):
             self.assertEqual(
                 catalog.style_scene_reinforcement["custom_style"],
                 "各Sceneでも媒体を維持する。",
+            )
+            self.assertEqual(
+                catalog.camera_planner_policy["custom_camera"],
+                "emotional_test",
             )
 
     def test_filename_is_the_profile_id(self) -> None:
@@ -78,7 +84,9 @@ class DirectionProfileLoaderTests(unittest.TestCase):
                 "# 共通プロンプト\n## モーション\n* 動く。\n",
                 encoding="utf-8",
             )
-            with self.assertRaisesRegex(DirectionProfileError, "only by style"):
+            with self.assertRaisesRegex(
+                DirectionProfileError, "not supported by motion"
+            ):
                 load_direction_profile(motion, "motion")
 
             reserved = Path(temp) / "passthrough.md"

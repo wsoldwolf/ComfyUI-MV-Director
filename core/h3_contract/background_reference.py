@@ -10,6 +10,39 @@ _SUBJECT_HEADING = "subject_definitions:"
 _RETENTION_HEADING = "retention_analysis:"
 
 
+def build_environment_definition(picture: str, description: str = "") -> str:
+    description_text = description.strip()
+    observed = f" Observed scene content: {description_text}." if description_text else ""
+    return (
+        f"{picture} is the environment reference:{observed} Use only its stable "
+        "architecture, vegetation, terrain, materials, and spatial identity as "
+        "background evidence. It is not a Subject, performer, storyboard, panel "
+        "layout, framing template, or lighting authority. Render one unified "
+        "full-frame environment and never reproduce people, characters, poses, "
+        "text, borders, split views, or inset compositions from this Picture. "
+        "The written Scene environment and time-lighting directions are authoritative "
+        "and replace every conflicting season, weather, time of day, illumination, "
+        "camera angle, and composition visible in this Picture. Preserve functional "
+        "spatial topology: keep paths, shrine approaches, stairs, doorways, and other "
+        "circulation routes open and unobstructed. Fixed fixtures such as stone "
+        "lanterns, lamps, posts, signs, and statues remain beside or outside the "
+        "circulation route where established; never relocate one onto the centerline "
+        "or directly into the Subject's travel path. When a Shot calls for interaction "
+        "with a fixed fixture, move the Subject toward the fixture at the path edge "
+        "instead of moving the fixture toward the Subject."
+    )
+
+
+def build_environment_retention(picture: str) -> str:
+    return (
+        f"{picture}: environment_partially_preserved - preserve stable architecture, "
+        "vegetation, terrain, materials, spatial identity, open circulation routes, "
+        "and the established placement of fixed fixtures only; restage framing and "
+        "lighting for the current Shot and obey the written Scene environment and "
+        "time-lighting directions."
+    )
+
+
 def _section_end(prompt: list[str], heading_index: int) -> int:
     index = heading_index + 1
     while index < len(prompt):
@@ -66,32 +99,8 @@ def bind_h3_background_reference(
     picture = f"<Picture {picture_index}>"
     definition_prefix = f"{picture} is the environment reference:"
     retention_prefix = f"{picture}: environment_partially_preserved -"
-    definition = (
-        f"{definition_prefix} use only its stable architecture, vegetation, "
-        "terrain, materials, and spatial identity as background evidence. It is "
-        "not a Subject, performer, storyboard, panel layout, framing template, "
-        "or lighting authority. Render one unified full-frame environment and "
-        "never reproduce people, characters, poses, text, borders, split views, "
-        "or inset compositions from this Picture. The written Scene environment "
-        "and time-lighting directions are authoritative and replace every "
-        "conflicting season, weather, time of day, illumination, camera angle, "
-        "and composition visible in this Picture."
-        " Preserve functional spatial topology: keep paths, shrine approaches, "
-        "stairs, doorways, and other circulation routes open and unobstructed. "
-        "Fixed fixtures such as stone lanterns, lamps, posts, signs, and statues "
-        "remain beside or outside the circulation route where established; never "
-        "relocate one onto the centerline or directly into the Subject's travel "
-        "path. When a Shot calls for interaction with a fixed fixture, move the "
-        "Subject toward the fixture at the path edge instead of moving the fixture "
-        "toward the Subject."
-    )
-    retention = (
-        f"{retention_prefix} preserve stable architecture, vegetation, terrain, "
-        "materials, spatial identity, open circulation routes, and the established "
-        "placement of fixed fixtures only; restage framing and lighting for the "
-        "current Shot and obey the written Scene environment and time-lighting "
-        "directions."
-    )
+    definition = build_environment_definition(picture)
+    retention = build_environment_retention(picture)
 
     bound = 0
     for shot_index, shot in enumerate(plan["shots"]):
@@ -128,4 +137,8 @@ def bind_h3_background_reference(
     )
 
 
-__all__ = ["bind_h3_background_reference"]
+__all__ = [
+    "bind_h3_background_reference",
+    "build_environment_definition",
+    "build_environment_retention",
+]

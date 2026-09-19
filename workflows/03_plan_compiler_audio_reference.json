@@ -1,6 +1,6 @@
 {
   "last_node_id": 15,
-  "last_link_id": 15,
+  "last_link_id": 16,
   "nodes": [
     {
       "id": 1,
@@ -105,6 +105,11 @@
         },
         {
           "name": "observations_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "scene_emd",
           "type": "STRING",
           "links": null
         }
@@ -228,7 +233,7 @@
           "type": "MV_DIRECTOR_H3_TIMING_PROFILE",
           "links": [
             4,
-            12
+            13
           ]
         },
         {
@@ -293,7 +298,7 @@
           "name": "srt_text",
           "type": "STRING",
           "links": [
-            15
+            16
           ]
         },
         {
@@ -341,7 +346,7 @@
           "link": 5
         },
         {
-          "name": "observations_json",
+          "name": "scene_emd",
           "type": "STRING",
           "link": 7
         }
@@ -351,7 +356,7 @@
           "name": "direction",
           "type": "MV_DIRECTOR_DIRECTION",
           "links": [
-            10
+            11
           ]
         },
         {
@@ -421,9 +426,14 @@
           "link": 9
         },
         {
+          "name": "scene_emd",
+          "type": "STRING",
+          "link": 10
+        },
+        {
           "name": "direction",
           "type": "MV_DIRECTOR_DIRECTION",
-          "link": 10
+          "link": 11
         },
         {
           "name": "model_name_override",
@@ -436,8 +446,8 @@
           "name": "emd_text",
           "type": "STRING",
           "links": [
-            11,
-            14
+            12,
+            15
           ]
         },
         {
@@ -497,12 +507,12 @@
         {
           "name": "emd_text",
           "type": "STRING",
-          "link": 11
+          "link": 12
         },
         {
           "name": "h3_timing_profile",
           "type": "MV_DIRECTOR_H3_TIMING_PROFILE",
-          "link": 12
+          "link": 13
         }
       ],
       "outputs": [
@@ -510,7 +520,7 @@
           "name": "plan_json",
           "type": "STRING",
           "links": [
-            13
+            14
           ]
         },
         {
@@ -567,7 +577,7 @@
         {
           "name": "text",
           "type": "STRING",
-          "link": 13
+          "link": 14
         }
       ],
       "outputs": [
@@ -604,7 +614,7 @@
         {
           "name": "text",
           "type": "STRING",
-          "link": 14
+          "link": 15
         }
       ],
       "outputs": [
@@ -641,7 +651,7 @@
         {
           "name": "text",
           "type": "STRING",
-          "link": 15
+          "link": 16
         }
       ],
       "outputs": [
@@ -737,8 +747,14 @@
         {
           "name": "observations_json",
           "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "scene_emd",
+          "type": "STRING",
           "links": [
-            7
+            7,
+            10
           ]
         }
       ],
@@ -753,9 +769,9 @@
         "人物、動物、キャラクター及び画面構成資料としての特徴は記述しない。場所、空間構成、建築、植生、時刻、天候及び環境照明だけを観察する。",
         "lock_identity",
         "warn",
-        "none",
+        "manual",
         "location",
-        1,
+        2,
         1024,
         1024,
         0.1,
@@ -771,7 +787,7 @@
         1,
         "fixed",
         "reuse",
-        "none"
+        "<Picture 2>"
       ]
     }
   ],
@@ -827,7 +843,7 @@
     [
       7,
       15,
-      3,
+      4,
       8,
       1,
       "STRING"
@@ -850,14 +866,22 @@
     ],
     [
       10,
-      8,
-      0,
+      15,
+      4,
       9,
       2,
-      "MV_DIRECTOR_DIRECTION"
+      "STRING"
     ],
     [
       11,
+      8,
+      0,
+      9,
+      3,
+      "MV_DIRECTOR_DIRECTION"
+    ],
+    [
+      12,
       9,
       0,
       10,
@@ -865,7 +889,7 @@
       "STRING"
     ],
     [
-      12,
+      13,
       6,
       0,
       10,
@@ -873,7 +897,7 @@
       "MV_DIRECTOR_H3_TIMING_PROFILE"
     ],
     [
-      13,
+      14,
       10,
       0,
       11,
@@ -881,7 +905,7 @@
       "STRING"
     ],
     [
-      14,
+      15,
       9,
       0,
       12,
@@ -889,7 +913,7 @@
       "STRING"
     ],
     [
-      15,
+      16,
       7,
       1,
       13,

@@ -16,7 +16,7 @@ from .errors import ArtifactValidationError
 
 
 BINDINGS_SCHEMA = "MVD_REFERENCE_BINDINGS_V1"
-REQUIRED_SCHEMA = "MVD_REQUIRED_REFERENCES_V1"
+REQUIRED_SCHEMA = "MVD_REQUIRED_REFERENCES_V2"
 _CONCEPT_RE = re.compile(r"サブジェクト[1-4]\Z")
 _SUBJECT_RE = re.compile(r"<Subject [1-4]>\Z")
 _PICTURE_RE = re.compile(r"<Picture ([1-9])>\Z")
@@ -151,15 +151,32 @@ class ReferenceBindingsArtifact:
 
 @dataclass(frozen=True, slots=True)
 class RequiredReference:
-    concept_id: str
+    concept_id: str | None
     h3_ref: str
     required_input: str
     purpose: str
     subject_ref: str | None = None
 
     def validate(self) -> None:
-        _validate_concept(self.concept_id, REQUIRED_SCHEMA, "concept_id")
-        if self.purpose == "visual_identity":
+        if self.purpose == "environment_reference":
+            match = _PICTURE_RE.fullmatch(self.h3_ref)
+            if match is None:
+                raise ArtifactValidationError(
+                    REQUIRED_SCHEMA, "h3_ref", "environment reference requires Picture"
+                )
+            if self.concept_id is not None or self.subject_ref is not None:
+                raise ArtifactValidationError(
+                    REQUIRED_SCHEMA,
+                    "concept_id",
+                    "environment reference must not identify a Subject",
+                )
+            expected = f"ref_images.ref_image_{int(match.group(1)) - 1}"
+        elif self.purpose == "visual_identity":
+            if self.concept_id is None:
+                raise ArtifactValidationError(
+                    REQUIRED_SCHEMA, "concept_id", "visual identity requires concept ID"
+                )
+            _validate_concept(self.concept_id, REQUIRED_SCHEMA, "concept_id")
             match = _PICTURE_RE.fullmatch(self.h3_ref)
             if match is None:
                 raise ArtifactValidationError(
@@ -173,6 +190,11 @@ class RequiredReference:
                 )
             expected = f"ref_images.ref_image_{int(match.group(1)) - 1}"
         elif self.purpose == "motion_reference":
+            if self.concept_id is None:
+                raise ArtifactValidationError(
+                    REQUIRED_SCHEMA, "concept_id", "motion reference requires concept ID"
+                )
+            _validate_concept(self.concept_id, REQUIRED_SCHEMA, "concept_id")
             match = _VIDEO_RE.fullmatch(self.h3_ref)
             if match is None:
                 raise ArtifactValidationError(
@@ -186,6 +208,11 @@ class RequiredReference:
                 )
             expected = f"ref_videos.ref_video_{int(match.group(1)) - 1}"
         elif self.purpose == "subject_audio_reference":
+            if self.concept_id is None:
+                raise ArtifactValidationError(
+                    REQUIRED_SCHEMA, "concept_id", "audio reference requires concept ID"
+                )
+            _validate_concept(self.concept_id, REQUIRED_SCHEMA, "concept_id")
             match = _AUDIO_RE.fullmatch(self.h3_ref)
             if match is None:
                 raise ArtifactValidationError(
@@ -199,6 +226,11 @@ class RequiredReference:
                 )
             expected = f"ref_audios.ref_audio_{int(match.group(1)) - 1}"
         elif self.purpose == "lip_sync_audio_reference":
+            if self.concept_id is None:
+                raise ArtifactValidationError(
+                    REQUIRED_SCHEMA, "concept_id", "lip-sync reference requires concept ID"
+                )
+            _validate_concept(self.concept_id, REQUIRED_SCHEMA, "concept_id")
             match = _AUDIO_RE.fullmatch(self.h3_ref)
             if match is None:
                 raise ArtifactValidationError(
@@ -223,11 +255,12 @@ class RequiredReference:
     def to_dict(self) -> dict[str, str]:
         self.validate()
         result = {
-            "concept_id": self.concept_id,
             "h3_ref": self.h3_ref,
             "required_input": self.required_input,
             "purpose": self.purpose,
         }
+        if self.concept_id is not None:
+            result["concept_id"] = self.concept_id
         if self.subject_ref is not None:
             result["subject_ref"] = self.subject_ref
         return result
@@ -238,11 +271,11 @@ class RequiredReference:
             value,
             schema=REQUIRED_SCHEMA,
             path="references[]",
-            required={"concept_id", "h3_ref", "required_input", "purpose"},
-            optional={"subject_ref"},
+            required={"h3_ref", "required_input", "purpose"},
+            optional={"concept_id", "subject_ref"},
         )
         result = cls(
-            concept_id=value["concept_id"],
+            concept_id=value.get("concept_id"),
             h3_ref=value["h3_ref"],
             required_input=value["required_input"],
             purpose=value["purpose"],

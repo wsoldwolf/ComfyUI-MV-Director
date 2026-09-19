@@ -15,6 +15,14 @@ class Subject:
 
 
 @dataclass(frozen=True, slots=True)
+class SceneSetting:
+    environment: tuple[str, ...]
+    time_lighting: tuple[str, ...] = ()
+    picture_ref: str | None = None
+    line_number: int = 0
+
+
+@dataclass(frozen=True, slots=True)
 class RetentionDirective:
     concept_id: str
     mode: str
@@ -67,6 +75,7 @@ class EMDDocument:
     retention: tuple[RetentionDirective, ...]
     common_prompt: tuple[tuple[str, tuple[str, ...]], ...]
     scenes: tuple[Scene, ...]
+    scene_setting: SceneSetting | None = None
 
     def common_prompt_dict(self) -> dict[str, tuple[str, ...]]:
         return dict(self.common_prompt)

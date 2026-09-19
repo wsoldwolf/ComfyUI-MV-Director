@@ -15,13 +15,13 @@ prompt、歌詞、画像又は音声payloadは記録しない。
 
 | 区分 | node type | 表示名 | 配置 | 責務 |
 |---|---|---|---|---|
-| Core | `MVDirectorImageToSubjectEMD` | `MV Director - Image to Subject EMD` | `nodes/node_image_to_subject_emd/` | IMAGEを観察し、`# サブジェクト` EMD、Picture binding、同一IMAGE pass-throughと読み取り専用Picture表示を返す |
-| Core | `MVDirectorDirectionEnhancer` | `MV Director - Direction Enhancer` | `nodes/node_direction_enhancer/` | 空でもよいuser・概念EMDと演出profileを短いStyle／Motion／Camera／Other方針へ統合し、利用者記述なしでも動作する |
-| Core | `MVDirectorTimelinePlanner` | `MV Director - Timeline Planner` | `nodes/node_timeline_planner/` | 確定済みScene/Shot枠へ演出とlip-sync directiveを展開する |
+| Core | `MVDirectorImageToSubjectEMD` | `MV Director - Image to Subject EMD` | `nodes/node_image_to_subject_emd/` | IMAGEを観察し、subject-onlyでは`# サブジェクト`、scene-onlyでは`# シーン設定` EMDを返す |
+| Core | `MVDirectorDirectionEnhancer` | `MV Director - Direction Enhancer` | `nodes/node_direction_enhancer/` | 空でもよいuser・概念EMD・Scene EMDと演出profileを全体方針へ統合する。raw observationsは受けない |
+| Core | `MVDirectorTimelinePlanner` | `MV Director - Timeline Planner` | `nodes/node_timeline_planner/` | Scene EMDを構造統合し、確定済みScene/Shot枠へ演出とlip-sync directiveを展開する |
 | Core | `MVDirectorEMDCompiler` | `MV Director - EMD Compiler (Ref2VA)` | `nodes/node_emd_compiler/` | 完全EMDをRef2VA六セクションとContext Loop Plan JSONへ変換する |
 | Input | `MVDirectorLyricSegmentation` | `MV Director - Lyric Segmentation` | `nodes/node_lyric_segmentation/` | Whisper/VAD、SRT、Template EMD、H3互換length付きtimelineを返す |
 | Audio | `MVDirectorAudioPadPair` | `MV Director - Audio Pad Pair (PCM Silence)` | `nodes/node_audio_pad_pair/` | full mixとvocal stemの短い側だけを共通尺へ末尾paddingする |
-| Video | `MVDirectorH3BackgroundReference` | `MV Director - H3 Background Reference` | `nodes/node_h3_background_reference/` | 動画生成時に背景IMAGEを環境専用Pictureとして全ShotのPlanとH3参照slotへ束縛する |
+| Video | `MVDirectorH3BackgroundReference` | `MV Director - H3 Background Reference` | `nodes/node_h3_background_reference/` | 旧Planへ背景契約を後付けする互換ノード。新workflowでは使用しない |
 | Utilities | `MVDirectorH3TimingProfile` | `MV Director - H3 Timing Profile` | `nodes/node_h3_timing_profile/` | Context Loop timing contractをLyric SegmentationとCompilerへ共有する |
 | Utilities | `MVDirectorSeed32` | `MV Director - 32-bit Seed` | `nodes/node_seed32/` | GGUFとH3へ同じ再現可能な正の32-bit seedを供給する |
 | Utilities | `MVDirectorStringCombo` | `MV Director - String Combo` | `nodes/node_string_combo/` | 利用者定義の有限な文字列候補を選びSTRINGとして出力する |
@@ -61,7 +61,7 @@ Load Text Fileはブラウザの`.txt`ファイル選択とD&D、UTF-8/UTF-8 BOM
 
 ### 1.5 Timeline Plannerの全socket
 
-Plannerの入力は表示順に、必須`template_emd`、任意`concept_emd`、任意`MV_DIRECTOR_DIRECTION`、lip-sync三項目、GGUF model選択とoverride、`chat_format`、`max_tokens`、`temperature`、`top_p`、`repetition_penalty`、`gpu_layers`、`n_batch`、`n_ctx`、`flash_attn`、`kv_cache_type`、`op_offload`、`keep_model_loaded`、`seed`、`scenes_per_batch`、`cache_mode`、任意`save_debug_output`とする。型、範囲、既定値の正本は最小コア仕様7.4の表を使う。
+Plannerの入力は表示順に、必須`template_emd`、任意`concept_emd`、任意`scene_emd`、任意`MV_DIRECTOR_DIRECTION`、lip-sync三項目、GGUF model選択とoverride、`chat_format`、`max_tokens`、`temperature`、`top_p`、`repetition_penalty`、`gpu_layers`、`n_batch`、`n_ctx`、`flash_attn`、`kv_cache_type`、`op_offload`、`keep_model_loaded`、`seed`、`scenes_per_batch`、`cache_mode`、任意`save_debug_output`とする。型、範囲、既定値の正本は最小コア仕様7.4の表を使う。
 
 旧Plannerにあったllama.cpp調整値は維持する。旧camera/vocal guard、visual enrichment profile、semantic guard及び可変retry回数は新Plannerへ持ち込まない。出力は編集可能な`emd_text`、内部typed `emd`、`status`の順とする。
 
@@ -83,9 +83,9 @@ Direction Enhancerでは`retention_policy`を先頭widgetに置く。LLM利用no
 
 ### 1.8 H3 Background Referenceの保持範囲
 
-`MVDirectorH3BackgroundReference`はCompiler後、動画生成前にだけ使用する。必須`plan_json`、`background_image`とINT `picture_index`（既定2、1～9）を受け、全Shotの`subject_definitions`及び`retention_analysis`へ環境専用固定契約を一組だけ追加する。同じPictureへの再適用は冪等とし、Scene、Shot、Action、Camera、時刻、音声及びsampling設定を変更しない。背景Pictureは建築、植生、地形、材質及び空間同一性だけを部分保持し、Direction由来の環境、時刻及び照明を上位authorityとする。参道等の通行空間は中央を空け、石灯籠等の固定設備は背景で確立された道端又は通行空間外へ保持する。固定設備との相互作用では設備を移動せず、人物のblockingを道端へ移す。
+`MVDirectorH3BackgroundReference`は旧Planとの互換用で、Compiler後、動画生成前にだけ使用する。新しい標準workflowは背景Visionの`scene_emd`をDirection EnhancerとPlannerへ渡し、Compilerが環境専用契約を生成するため、このノードを使用しない。
 
-人物と背景を同じPictureへ束縛すると人物identityの特徴が参照条件を占有し、環境特徴が希薄化又は欠落しやすい。このため標準workflowは人物を`<Picture 1>`、背景を`<Picture 2>`へ物理的に分離する。計画時は背景Visionの`observations_json`だけをDirection Enhancerへ渡し、Plannerへ背景IMAGE tensorを渡さない。生成時は同じ背景IMAGEを本ノードとH3 `ref_images.ref_image_1`へ渡し、環境証拠を独立条件として再導入する。この分離は背景再現率を改善するが、画素又は構図の完全一致を契約しない。
+人物と背景を同じPictureへ束縛すると人物identityの特徴が参照条件を占有し、環境特徴が希薄化又は欠落しやすい。このため標準workflowは人物を`<Picture 1>`、背景を`<Picture 2>`へ物理的に分離する。計画時は背景Visionの`scene_emd`をDirection EnhancerとPlannerへ渡し、生成時は同じ背景IMAGEをH3 `ref_images.ref_image_1`へ直接渡す。この分離は背景再現率を改善するが、画素又は構図の完全一致を契約しない。
 
 ## 2. 初期実装で登録しないノード
 

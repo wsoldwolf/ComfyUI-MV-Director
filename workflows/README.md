@@ -34,11 +34,11 @@
 
 同梱検証素材はソースコードのGPLとは別に`CC BY-NC 4.0`で提供する。対象ファイル、出自及び適用範囲は[`ASSET_LICENSES.md`](../ASSET_LICENSES.md)を参照する。
 
-人物Visionは`subject_only / person`で`# サブジェクト`を生成し、背景Visionは`scene_only / location / picture_reference_mode=none / hint_mode=lock_identity`で観察JSONだけを生成する。Direction Enhancerの`concept_emd`には人物Vision、`observations_json`には背景Visionを接続する。背景Visionの`subject_hint`へ`赤い鳥居。`等を書いた場合、その原文は完成Directionの`## 環境`へ保持される。人物と背景を同じ参照へまとめると人物identityが条件を占有して背景情報が希薄化又は消失しやすいため、背景は別画像として用意することを推奨する。
+人物Visionは`subject_only / person`で`# サブジェクト`を生成し、背景Visionは`scene_only / location / picture_reference_mode=manual / picture_index=2`で`# シーン設定`だけを決定的に生成する。Direction Enhancerの`concept_emd`には人物Vision、`scene_emd`には背景Visionを接続し、Plannerにも同じ`scene_emd`を接続する。`observations_json`はdebug出力であり、Direction Enhancerへは接続しない。人物と背景を同じ参照へまとめると人物identityが条件を占有して背景情報が希薄化又は消失しやすいため、背景は別画像として用意することを推奨する。
 
-動画生成WFでは`H3 Background Reference`がコンパイル済みPlanの全Shotへ`<Picture 2>`の環境専用契約を追加し、同じ画像を`ref_images.ref_image_1`へ渡す。人物`<Picture 1>`と環境`<Picture 2>`を独立条件にすることで背景の再現率を高める。Picture 2は建築、植生、地形、材質及び空間同一性だけを部分保持し、人物、pose、文字、分割構図、camera angle及び照明はコピーしない。ユーザーがDirection又は共通プロンプトで指定した環境、時刻及び照明を背景画像より優先する。これは画素単位の背景複製を保証しない。
+Plannerは`scene_emd`を完成EMDへAS ISで統合し、Compilerが`<Picture 2>`の環境専用定義、保持契約及びrequired referenceをPlanへ生成する。動画生成WFは同じ背景画像を`ref_images.ref_image_1`へ直接渡す。人物`<Picture 1>`と環境`<Picture 2>`を独立条件にすることで背景の再現率を高める。Picture 2は建築、植生、地形、材質及び空間同一性だけを部分保持し、人物、pose、文字、分割構図、camera angle及び照明はコピーしない。ユーザーがDirection又は共通プロンプトで指定した環境、時刻及び照明を背景画像より優先する。これは画素単位の背景複製を保証しない。
 
-`development/01_plan_compiler_context_loop_debug.json`も同じ人物・背景分離配線を持つ。`development/02_video_context_loop_debug.json`は背景Visionを重複実行せず、背景Load Imageを`H3 Background Reference`経由でPicture 2へ束縛する。
+`development/01_plan_compiler_context_loop_debug.json`も同じ人物・背景分離配線を持つ。`development/02_video_context_loop_debug.json`は背景Visionを重複実行せず、背景Load ImageをH3のPicture 2 slotへ直接接続する。
 
 ## 方式ごとの音声経路
 

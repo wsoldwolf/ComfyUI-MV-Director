@@ -13,10 +13,19 @@ import base64
 import copy
 import json
 from pathlib import Path
+import sys
 from typing import Any
 
-
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from core.h3_contract import (
+    build_environment_definition,
+    build_environment_retention,
+)
+
+
 CONTRACT_ID = "context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9"
 VIDEO_DENOISING_STEPS = 8
 H3_DIFFUSION_MODEL = (
@@ -252,7 +261,9 @@ def _disconnect_input(
         for output in node.get("outputs", []):
             if output.get("links"):
                 output["links"] = [
-                    value for value in output["links"] if int(value) != int(link_id)
+                    value
+                    for value in output["links"]
+                    if value is not None and int(value) != int(link_id)
                 ] or None
 
 
@@ -276,6 +287,10 @@ def _fallback_plan(mode: str) -> dict[str, Any]:
         "prompt": [
             "subject_definitions:",
             "<Picture 1> defines <Subject 1>, the performer in the reference image.",
+            build_environment_definition(
+                "<Picture 2>",
+                "A moonlit shrine approach in a forest with a red torii gate.",
+            ),
             "",
             "summary:",
             "[reference generation] A moonlit performance at a shrine approach.",
@@ -283,6 +298,7 @@ def _fallback_plan(mode: str) -> dict[str, Any]:
             "retention_analysis:",
             "<Subject 1>: fully_preserved - preserve identity, clothing, and proportions.",
             "<Picture 1>: fully_preserved - preserve the visible performer design.",
+            build_environment_retention("<Picture 2>"),
             "",
             "detailed_description:",
             "[Shot 1] <Subject 1> walks toward the torii gate and sings.",
@@ -434,6 +450,7 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
                 _output("reference_bindings", "MV_DIRECTOR_REFERENCE_BINDINGS"),
                 _output("image", "IMAGE"),
                 _output("observations_json", "STRING"),
+                _output("scene_emd", "STRING"),
             ],
             widgets=[
                 VISION_MODEL,
@@ -483,7 +500,7 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
             "Direction Enhancer",
             inputs=[
                 _input("concept_emd", "STRING"),
-                _input("observations_json", "STRING"),
+                _input("scene_emd", "STRING"),
             ],
             outputs=[
                 _output("direction", "MV_DIRECTOR_DIRECTION"),
@@ -525,6 +542,7 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
             inputs=[
                 _input("template_emd", "STRING"),
                 _input("concept_emd", "STRING"),
+                _input("scene_emd", "STRING"),
                 _input("direction", "MV_DIRECTOR_DIRECTION"),
                 _input("model_name_override", "STRING"),
             ],
@@ -635,6 +653,7 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
                 _output("reference_bindings", "MV_DIRECTOR_REFERENCE_BINDINGS"),
                 _output("image", "IMAGE"),
                 _output("observations_json", "STRING"),
+                _output("scene_emd", "STRING"),
             ],
             widgets=[
                 VISION_MODEL,
@@ -643,9 +662,9 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
                 BACKGROUND_INSTRUCTION,
                 "lock_identity",
                 "warn",
-                "none",
+                "manual",
                 "location",
-                1,
+                2,
                 1024,
                 1024,
                 0.1,
@@ -661,7 +680,7 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
                 1,
                 "fixed",
                 "reuse",
-                "none",
+                "<Picture 2>",
             ],
         ),
     ]
@@ -684,9 +703,10 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
     )
     _connect(workflow, 3, 0, 8, "concept_emd", "STRING")
     _connect(workflow, 14, 0, 15, "image", "IMAGE")
-    _connect(workflow, 15, 3, 8, "observations_json", "STRING")
+    _connect(workflow, 15, 4, 8, "scene_emd", "STRING")
     _connect(workflow, 7, 0, 9, "template_emd", "STRING")
     _connect(workflow, 3, 0, 9, "concept_emd", "STRING")
+    _connect(workflow, 15, 4, 9, "scene_emd", "STRING")
     _connect(workflow, 8, 0, 9, "direction", "MV_DIRECTOR_DIRECTION")
     _connect(workflow, 9, 0, 10, "emd_text", "STRING")
     _connect(
@@ -884,23 +904,6 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
             widgets=[BACKGROUND_IMAGE],
         ),
         _node(
-            46,
-            "MVDirectorH3BackgroundReference",
-            (1550, 600),
-            (500, 180),
-            "Bind Background • <Picture 2>",
-            inputs=[
-                _input("plan_json", "STRING"),
-                _input("background_image", "IMAGE"),
-            ],
-            outputs=[
-                _output("plan_json", "STRING"),
-                _output("background_image", "IMAGE"),
-                _output("status", "STRING"),
-            ],
-            widgets=[2],
-        ),
-        _node(
             47,
             "ResolutionSelector",
             (-294.2352129891423, 1022.9692406773994),
@@ -963,11 +966,9 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
     _connect(workflow, 38, 0, 7, "source_timeline", "H3_SOURCE_TIMELINE")
     _disconnect_input(workflow, 24, "plan_json_input")
     _disconnect_input(workflow, 37, "plan_json")
-    _connect(workflow, 39, 0, 46, "plan_json", "STRING")
-    _connect(workflow, 45, 0, 46, "background_image", "IMAGE")
-    _connect(workflow, 46, 0, 24, "plan_json_input", "STRING")
-    _connect(workflow, 46, 0, 37, "plan_json", "STRING")
-    _connect(workflow, 46, 1, 11, "ref_images.ref_image_1", "IMAGE")
+    _connect(workflow, 39, 0, 24, "plan_json_input", "STRING")
+    _connect(workflow, 39, 0, 37, "plan_json", "STRING")
+    _connect(workflow, 45, 0, 11, "ref_images.ref_image_1", "IMAGE")
     _connect(workflow, 1, 0, 44, "model", "MODEL")
     _connect(workflow, 44, 0, 22, "model", "MODEL")
     _connect(workflow, 47, 0, 24, "width", "INT")
@@ -1076,6 +1077,75 @@ def _sync_node_widgets(
         named[name] = copy.deepcopy(value)
 
 
+def _sync_node_interface(
+    workflow: dict[str, Any], target: dict[str, Any], source: dict[str, Any]
+) -> None:
+    """Migrate named sockets while preserving compatible debug links."""
+
+    old_inputs = {item["name"]: item.get("link") for item in target.get("inputs", [])}
+    old_outputs = {item["name"]: item.get("links") for item in target.get("outputs", [])}
+    retained_links: set[int] = set()
+    new_inputs = copy.deepcopy(source.get("inputs", []))
+    for slot, item in enumerate(new_inputs):
+        link_id = old_inputs.get(item["name"])
+        item["link"] = link_id
+        if link_id is not None:
+            retained_links.add(int(link_id))
+            for link in workflow["links"]:
+                if int(link[0]) == int(link_id):
+                    link[3] = int(target["id"])
+                    link[4] = slot
+                    break
+    new_outputs = copy.deepcopy(source.get("outputs", []))
+    for slot, item in enumerate(new_outputs):
+        link_ids = old_outputs.get(item["name"])
+        item["links"] = copy.deepcopy(link_ids)
+        for link_id in link_ids or ():
+            retained_links.add(int(link_id))
+            for link in workflow["links"]:
+                if int(link[0]) == int(link_id):
+                    link[1] = int(target["id"])
+                    link[2] = slot
+                    break
+    removed = {
+        int(link_id)
+        for link_id in (*old_inputs.values(), *(value for value in old_outputs.values()))
+        if link_id is not None
+        for link_id in ((link_id,) if isinstance(link_id, int) else link_id)
+        if int(link_id) not in retained_links
+    }
+    if removed:
+        workflow["links"] = [
+            link for link in workflow["links"] if int(link[0]) not in removed
+        ]
+        for node in workflow["nodes"]:
+            for item in node.get("inputs", []):
+                if item.get("link") in removed:
+                    item["link"] = None
+            for item in node.get("outputs", []):
+                if item.get("links"):
+                    item["links"] = [
+                        value for value in item["links"] if int(value) not in removed
+                    ] or None
+    target["inputs"] = new_inputs
+    target["outputs"] = new_outputs
+
+
+def _connect_if_empty(
+    workflow: dict[str, Any], origin: dict[str, Any], origin_slot: int,
+    target: dict[str, Any], target_name: str, type_name: str,
+) -> None:
+    if target["inputs"][_input_index(target, target_name)].get("link") is None:
+        _connect(
+            workflow,
+            int(origin["id"]),
+            origin_slot,
+            int(target["id"]),
+            target_name,
+            type_name,
+        )
+
+
 def _sync_development_workflows(
     output_dir: Path,
     reference_plan: dict[str, Any],
@@ -1141,6 +1211,59 @@ def _sync_development_workflows(
                 _node_by_type(workflow, type_name),
                 _node_by_type(reference, type_name),
             )
+        if path.name.startswith("01_plan_compiler"):
+            for title in (
+                "Character Vision / Subject EMD",
+                "Background Vision (Scene Only)",
+                "Direction Enhancer",
+                "Timeline Planner",
+            ):
+                _sync_node_interface(
+                    workflow,
+                    _node_by_title(workflow, title),
+                    _node_by_title(reference, title),
+                )
+            background = _node_by_title(workflow, "Background Vision (Scene Only)")
+            direction = _node_by_title(workflow, "Direction Enhancer")
+            planner = _node_by_title(workflow, "Timeline Planner")
+            # ComfyUI frontend extensions may persist connectable-widget metadata
+            # independently from the node's actual input interface. Remove the
+            # retired observations_json entry so regenerated debug workflows do
+            # not expose a ghost Direction Enhancer socket.
+            direction_connectable = (
+                direction.get("properties", {})
+                .get("ue_properties", {})
+                .get("widget_ue_connectable")
+            )
+            if isinstance(direction_connectable, dict):
+                direction_connectable.pop("observations_json", None)
+                direction_connectable["scene_emd"] = True
+            _connect_if_empty(workflow, background, 4, direction, "scene_emd", "STRING")
+            _connect_if_empty(workflow, background, 4, planner, "scene_emd", "STRING")
+        elif path.name.startswith("02_video"):
+            binder_ids = {
+                int(node["id"])
+                for node in workflow["nodes"]
+                if node.get("type") == "MVDirectorH3BackgroundReference"
+            }
+            if binder_ids:
+                _remove_nodes(workflow, binder_ids)
+            loader = _node_by_title(workflow, "Compiled Plan JSON (.txt handoff)")
+            background = _node_by_title(workflow, "Background Reference • <Picture 2>")
+            production = _node_by_title(workflow, "Production Plan")
+            audio_pad = _node_by_title(workflow, "Audio Pad Pair")
+            conditioning = _node_by_title(
+                workflow, "Reference Conditioning • MV Director Plan"
+            )
+            _disconnect_input(workflow, int(production["id"]), "plan_json_input")
+            _disconnect_input(workflow, int(audio_pad["id"]), "plan_json")
+            _disconnect_input(
+                workflow, int(conditioning["id"]), "ref_images.ref_image_1"
+            )
+            _connect(workflow, int(loader["id"]), 0, int(production["id"]), "plan_json_input", "STRING")
+            _connect(workflow, int(loader["id"]), 0, int(audio_pad["id"]), "plan_json", "STRING")
+            _connect(workflow, int(background["id"]), 0, int(conditioning["id"]), "ref_images.ref_image_1", "IMAGE")
+            workflow["last_node_id"] = max(int(node["id"]) for node in workflow["nodes"])
         validate_workflow(workflow)
         path.write_text(_json_text(workflow) + "\n", encoding="utf-8")
 

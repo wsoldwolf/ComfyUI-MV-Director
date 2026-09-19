@@ -11,6 +11,7 @@ from core.emd import parse_emd
 from core.emd.ast import Scene
 from core.inference import LlamaRuntimeConfig
 from core.h3_contract import (
+    ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA,
     FACE_PERFORMANCE_CUT_ACTION,
     FACE_PERFORMANCE_CUT_CAMERA,
 )
@@ -32,6 +33,7 @@ from core.planner.layout import (
     repair_scene_layout_selection,
 )
 from core.planner.engine import (
+    _anime_emotional_mv_camera_emphasis,
     _anime_story_mv_face_zoom_key,
     _anime_story_mv_long_arc_keys,
     _camera_editorial_role,
@@ -630,7 +632,12 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertIn("Never invent running to\nfill an instrumental Shot", prompt)
         self.assertIn("Fit the performance to shot_duration_ms", prompt)
         self.assertIn("preserve open\ncirculation space", prompt)
-        self.assertIn("moving from the route toward that edge\nfixture", prompt)
+        self.assertIn("never turn one into the\nAction's contact target", prompt)
+        self.assertIn("planner_policy_contract.policy_id is anime_emotional_mv", prompt)
+        self.assertIn("half-lidded hold", prompt)
+        self.assertIn("support leg, free leg", prompt)
+        self.assertIn("keep the effect autonomous", prompt)
+        self.assertIn("current Scene's original lyric", prompt)
 
     def test_visual_beat_prompt_treats_complete_direction_as_immutable(self) -> None:
         prompt = (
@@ -642,6 +649,7 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertIn("immutable common constraint set", prompt)
         self.assertIn("must not shine, glow, radiate, bloom", prompt)
         self.assertIn("subject_roster", prompt)
+        self.assertIn("generic_locomotion_is_support_only", prompt)
         self.assertIn("not creative source material", prompt)
         self.assertIn("footwear", prompt)
         self.assertIn("replace every background and lighting", prompt)
@@ -651,7 +659,14 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertIn("twelve-Scene negative motif ledger", prompt)
         self.assertIn("especially strict\nfor an instrumental Scene", prompt)
         self.assertIn("functional spatial topology", prompt)
-        self.assertIn("leave\nthe centerline and approach that established edge position", prompt)
+        self.assertIn(
+            "never use one\nas the Beat's contact target", prompt
+        )
+        self.assertIn("current Scene's original lyrics", prompt)
+        self.assertIn("lyric-selected target is consumed", prompt)
+        self.assertIn("support leg", prompt)
+        self.assertIn("moves independently through", prompt)
+        self.assertIn("Do not\nplace it in the Subject's hand", prompt)
 
     def test_camera_prompt_keeps_arc_and_closeup_shot_local(self) -> None:
         prompt = (
@@ -663,7 +678,7 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertIn("Use an arc only when", prompt)
         self.assertIn("use a close-up only", prompt)
         self.assertIn("Never impose either choice on the whole Scene", prompt)
-        self.assertIn("the first Shot must use a face close-up", prompt)
+        self.assertIn("does not force every CUT Scene into a close-up", prompt)
         self.assertIn("both eyes, both eyebrows", prompt)
         self.assertIn("arc_required", prompt)
         self.assertIn("camera contract, not a suggestion", prompt)
@@ -684,10 +699,16 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertIn("must remain non-emissive", prompt)
         self.assertIn("translucent lamp effect", prompt)
         self.assertIn("highest-priority immutable common constraint set", prompt)
-        self.assertIn("every Scene represented by the", prompt)
-        self.assertIn("complete speaking mouth", prompt)
+        self.assertNotIn("every Scene represented by the", prompt)
+        self.assertIn("does not require a close-up or", prompt)
+        self.assertIn("complete mouth", prompt)
         self.assertIn("incompatible body-part detail", prompt)
-        self.assertIn("every essential body part and contact", prompt)
+        self.assertIn("every essential body part and", prompt)
+        self.assertIn("support leg, free leg", prompt)
+        self.assertIn("35-to-55", prompt)
+        self.assertIn("face_zoom_duration_fraction", prompt)
+        self.assertIn("70-90%", prompt)
+        self.assertIn("half-open gaze", prompt)
         self.assertIn("Static Shot keeps camera position", prompt)
         self.assertIn("label-versus-prose consistency", prompt)
         self.assertIn("face_arc_transition", prompt)
@@ -1105,6 +1126,56 @@ class TimelinePlannerCoreTests(unittest.TestCase):
             {"scene_number": 1, "shot_index": 1},
         )
 
+    def test_anime_emotional_mv_metadata_reaches_every_planning_stage(self) -> None:
+        backend = FakePlannerBackend()
+        result = plan_timeline(
+            backend,
+            template_emd=TEMPLATE,
+            concept_emd=CONCEPT,
+            direction=DirectionArtifact(
+                style_direction=("手描きセルアニメ。",),
+                motion_direction=("感情的な身体演技。",),
+                camera_direction=("長尺Arcと顔Zoomを接続する。",),
+                style_profile_id="anime_emotional_mv",
+                motion_profile_id="anime_emotional_mv",
+                camera_profile_id="anime_emotional_mv",
+            ),
+            lip_sync_mode="lyrics",
+            lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1,
+            scenes_per_batch=3,
+            system_prompts=prompts(),
+            runtime_config=runtime(),
+        )
+        self.assertTrue(result.complete)
+        self.assertNotEqual(
+            result.content.actions[0][2],
+            FACE_PERFORMANCE_CUT_ACTION,
+        )
+        self.assertEqual(
+            result.content.cameras[0][2],
+            ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA,
+        )
+        payloads = {task: payload for task, payload in backend.calls}
+        for task in ("visual-beats", "shot-layout", "actions", "cameras"):
+            self.assertEqual(
+                payloads[task]["planner_policy_contract"]["policy_id"],
+                "anime_emotional_mv",
+            )
+        camera_contract = payloads["cameras"]["camera_batch_contract"]
+        self.assertLessEqual(camera_contract["face_zoom_emphasis_count"], 1)
+        self.assertGreaterEqual(camera_contract["arc_shot_maximum"], 0)
+        policy = payloads["cameras"]["planner_policy_contract"]
+        self.assertEqual(
+            policy["lyric_trigger_scope"],
+            "current_scene_original_lyrics_only",
+        )
+        self.assertTrue(policy["environment_inventory_is_not_action_source"])
+        self.assertEqual(
+            policy["eye_expression_mode"],
+            "vary_eyelids_with_lyric_phase",
+        )
+
     def test_missing_action_retries_only_affected_scene_once(self) -> None:
         backend = FakePlannerBackend(miss_action_slot_two=1)
         result = plan_timeline(
@@ -1359,6 +1430,68 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertEqual(
             _anime_story_mv_face_zoom_key(entities, {(1, 1)}),
             (1, 2),
+        )
+
+    def test_anime_emotional_mv_selects_dense_arc_and_requested_face_phrases(self) -> None:
+        entities = [
+            type("Entity", (), {
+                "scene_number": 1 + index // 3,
+                "key": (1 + index // 3, 1 + index % 3),
+                "value": {
+                    "editorial_role": (
+                        "expressive_result_coverage"
+                        if index % 3 == 2
+                        else "upper_body_performance_coverage"
+                    ),
+                    "shot_duration_ms": 3000 + index * 100,
+                },
+            })()
+            for index in range(12)
+        ]
+        arc_keys, face_keys, transitions = (
+            _anime_emotional_mv_camera_emphasis(entities, face_target=2)
+        )
+        self.assertEqual(len(arc_keys), 6)
+        self.assertEqual(len(face_keys), 2)
+        self.assertTrue(transitions)
+        self.assertTrue(set(transitions).issubset(arc_keys))
+        self.assertFalse(arc_keys & face_keys)
+
+        _, sparse_face_keys, _ = _anime_emotional_mv_camera_emphasis(entities)
+        self.assertEqual(len(sparse_face_keys), 1)
+
+    def test_anime_emotional_mv_boundary_contract_allows_long_continue_run(self) -> None:
+        scenes = tuple(
+            Scene(
+                scene_number=index,
+                start_ms=(index - 1) * 2000,
+                end_ms=index * 2000,
+                h3_length=56,
+                descriptions=(),
+                shots=(),
+                audio_directives=(),
+                line_number=index,
+                continuation=False,
+            )
+            for index in range(1, 9)
+        )
+        template = PlannerTemplate(scenes)
+        all_continue = {1: False, **{index: True for index in range(2, 9)}}
+        self.assertTrue(
+            _satisfies_boundary_contract(
+                template,
+                all_continue,
+                planner_policy="anime_emotional_mv",
+            )
+        )
+        repaired, _ = _repair_boundary_contract(
+            template,
+            {index: False for index in range(1, 9)},
+            planner_policy="anime_emotional_mv",
+        )
+        self.assertGreaterEqual(
+            sum(repaired[index] for index in range(2, 9)),
+            6,
         )
 
     def test_face_insert_moves_to_shot_that_contains_new_section_lyric(self) -> None:

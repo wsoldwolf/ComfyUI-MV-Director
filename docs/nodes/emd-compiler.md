@@ -24,12 +24,14 @@
 | 出力 | 用途 |
 |---|---|
 | `plan_json` | Unicode非escape、2 space indent、LF、末尾LFのJSON |
-| `required_references` | 実際にEMDへ書かれたPicture/Video/Audio参照 |
+| `required_references` | 実際にEMDへ書かれたSubject Picture、環境Picture及びAudio参照 |
 | `status` | Scene数、参照数、cache等 |
 
 ## 動作境界
 
 - Subjectは`# サブジェクト`直下のlist item順で`<Subject 1..4>`へ割り当てます。
+- `# シーン設定`の環境・時間照明を共通Directionより前のbaselineとして`prompt_prefix`へ置きます。後続の明示Directionが優先されます。
+- `# シーン設定`の背景PictureはSubjectにせず、環境専用definition、保持契約及び`environment_reference` required inputへ変換します。
 - ``画像1``、``動画1``、``音声1``等を`<Picture 1>`、`<Video 1>`、`<Audio 1>`へ変換します。
 - `<d>...</d>`、参照ID及びMiniMax H3正式Camera Motion Typeは自由文から分離し、翻訳LLMへ渡しません。前後の日本語fragmentだけを翻訳して原位置へ再結合するため、`Arc Shot`、`Tracking Shot`、`with large amplitude`、`at fast speed`等はLLMのplaceholder出力に依存せず完全一致でPlanへ残ります。
 - 英語だけの行は完全pass-throughします。

@@ -9,12 +9,12 @@ from typing import Any, Protocol
 
 from ..artifacts import (
     DirectionArtifact,
-    ObservationsArtifact,
     ProvenanceRecord,
     canonical_json,
     normalize_newlines,
     sha256_text,
 )
+from ..emd import parse_scene_emd_fragment, render_scene_emd_fragment
 from ..inference import LlamaRuntimeConfig
 from ..protocols import LLMRecord, LLMRecordIssue, parse_llm_records
 from .profiles import (
@@ -26,7 +26,7 @@ from .profiles import (
 from .passthrough import DirectionPassthrough, parse_direction_passthrough
 
 
-DIRECTION_PROMPT_VERSION = "mvd-direction-enhancer-v19"
+DIRECTION_PROMPT_VERSION = "mvd-direction-enhancer-v20"
 PASSTHROUGH_PROFILE = "passthrough"
 RETENTION_POLICIES = ("profile", "compiler_default", "passthrough")
 _ALLOWED = {
@@ -67,7 +67,7 @@ class DirectionEnhancerBackend(Protocol):
 @dataclass(frozen=True, slots=True)
 class DirectionEnhancerInput:
     concept_emd: str = ""
-    observations_json: str = ""
+    scene_emd: str = ""
     user_request: str = ""
     style_profile: str = "reference_anime"
     motion_profile: str = "natural_performance"
@@ -78,7 +78,7 @@ class DirectionEnhancerInput:
     def validate(self) -> None:
         for name in (
             "concept_emd",
-            "observations_json",
+            "scene_emd",
             "user_request",
             "direction_emd_passthrough",
         ):
@@ -102,14 +102,11 @@ class DirectionEnhancerInput:
                 raise DirectionEnhancerError(
                     "concept_emd must be one # サブジェクト fragment"
                 )
-        if self.normalized_observations_json:
+        if self.normalized_scene_emd:
             try:
-                value = json.loads(self.normalized_observations_json)
-            except json.JSONDecodeError as exc:
-                raise DirectionEnhancerError("observations_json is invalid JSON") from exc
-            if not isinstance(value, dict):
-                raise DirectionEnhancerError("observations_json must contain an object")
-            ObservationsArtifact.from_dict(value)
+                parse_scene_emd_fragment(self.normalized_scene_emd)
+            except ValueError as exc:
+                raise DirectionEnhancerError(f"invalid scene_emd: {exc}") from exc
         passthrough = self.passthrough
         selected = {
             "style": self.style_profile == PASSTHROUGH_PROFILE,
@@ -140,8 +137,11 @@ class DirectionEnhancerInput:
         return normalize_newlines(self.concept_emd).strip()
 
     @property
-    def normalized_observations_json(self) -> str:
-        return normalize_newlines(self.observations_json).strip()
+    def normalized_scene_emd(self) -> str:
+        normalized = normalize_newlines(self.scene_emd).strip()
+        if not normalized:
+            return ""
+        return render_scene_emd_fragment(parse_scene_emd_fragment(normalized)).strip()
 
     @property
     def normalized_user_request(self) -> str:
@@ -194,33 +194,12 @@ class DirectionEnhancerResult:
     retried_missing: tuple[tuple[str, int], ...]
 
 
-def _locked_scene_hint(observations: ObservationsArtifact) -> str:
-    analysis_profile = ""
-    hint_mode = ""
-    hint = ""
-    sent_to_vision = False
-    for item in observations.provenance:
-        if item.get("kind") == "analysis_controls":
-            analysis_profile = str(item.get("analysis_profile", ""))
-            hint_mode = str(item.get("hint_mode", ""))
-        elif item.get("kind") == "subject_hint":
-            hint = str(item.get("normalized", "")).strip()
-            sent_to_vision = bool(item.get("sent_to_vision", False))
-    if (
-        analysis_profile == "scene_only"
-        and hint_mode == "lock_identity"
-        and sent_to_vision
-    ):
-        return hint
-    return ""
-
-
 def build_direction_payload(value: DirectionEnhancerInput) -> str:
     value.validate()
     payload: dict[str, object] = {
         "protocol": "MVD_LLM_RECORDS_V1",
         "task": DIRECTION_PROMPT_VERSION,
-        "authority_order": ["user", "vision_concept", "profile", "generated"],
+        "authority_order": ["user", "scene_emd", "vision_concept", "profile", "generated"],
         "user_request": value.normalized_user_request,
         "concept_emd": value.normalized_concept_emd,
         "requested_records": list(value.requested_record_types),
@@ -234,6 +213,17 @@ def build_direction_payload(value: DirectionEnhancerInput) -> str:
             "other": list(value.passthrough.other),
         },
     }
+    if value.normalized_scene_emd:
+        setting = parse_scene_emd_fragment(value.normalized_scene_emd)
+        payload["scene_context"] = {
+            "environment": list(setting.environment),
+            "time_lighting": list(setting.time_lighting),
+            "background_picture": setting.picture_ref or "",
+            "authority": (
+                "Observed baseline only. Explicit user direction overrides its "
+                "time, lighting, weather, season, and staging."
+            ),
+        }
     profiles = payload["profiles"]
     if value.style_profile != PASSTHROUGH_PROFILE:
         profiles["style"] = {
@@ -251,24 +241,6 @@ def build_direction_payload(value: DirectionEnhancerInput) -> str:
             "id": value.camera_profile,
             "text": CAMERA_PROFILES[value.camera_profile],
         }
-    if value.normalized_observations_json:
-        observations = ObservationsArtifact.from_dict(
-            json.loads(value.normalized_observations_json)
-        )
-        # Direction may use the photographed place and ambient conditions, but
-        # never the reference-sheet pose or composition. Passing the complete
-        # observation made small models promote a presentation pose into a
-        # whole-video direction, which then forced every Scene to repeat it.
-        scene_context = {
-            "setting": observations.scene_setting,
-            "elements": list(observations.scene_elements),
-            "lighting": observations.lighting,
-            "time_weather": observations.time_weather,
-        }
-        locked_hint = _locked_scene_hint(observations)
-        if locked_hint:
-            scene_context["locked_user_hint"] = locked_hint
-        payload["vision_scene_context"] = scene_context
     return canonical_json(payload)
 
 
@@ -278,10 +250,8 @@ def _input_provenance(value: DirectionEnhancerInput) -> list[ProvenanceRecord]:
         items.append(("user", "user_request", value.normalized_user_request))
     if value.normalized_concept_emd:
         items.append(("vision", "concept_emd", value.normalized_concept_emd))
-    if value.normalized_observations_json:
-        items.append(
-            ("vision", "observations_json", value.normalized_observations_json)
-        )
+    if value.normalized_scene_emd:
+        items.append(("vision", "scene_emd", value.normalized_scene_emd))
     for profile_id, profiles in (
         (value.style_profile, STYLE_PROFILES),
         (value.motion_profile, MOTION_PROFILES),
@@ -591,31 +561,6 @@ def enhance_direction(
                 sha256=sha256_text(output_text),
             )
         )
-    if value.normalized_observations_json and not passthrough.environment:
-        observations = ObservationsArtifact.from_dict(
-            json.loads(value.normalized_observations_json)
-        )
-        locked_hint = _locked_scene_hint(observations)
-        if locked_hint and locked_hint not in values["environment_direction"]:
-            target_index = len(values["environment_direction"])
-            values["environment_direction"].append(locked_hint)
-            output_counts["environment_direction"] += 1
-            provenance.append(
-                ProvenanceRecord(
-                    record_id=(
-                        "out_environment_locked_"
-                        f"{output_counts['environment_direction']:04d}"
-                    ),
-                    record_kind="output",
-                    source="user",
-                    source_ref="vision_scene_context.locked_user_hint",
-                    source_position=0,
-                    target=f"environment_direction[{target_index}]",
-                    disposition="accepted",
-                    reason="passthrough_enforced",
-                    sha256=sha256_text(locked_hint),
-                )
-            )
     for index, text in enumerate(passthrough.retention):
         provenance.append(
             ProvenanceRecord(

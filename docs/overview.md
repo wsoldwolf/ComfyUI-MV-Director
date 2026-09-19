@@ -11,7 +11,7 @@ ComfyUI-MV-Directorは、利用者が完成promptを手書きしなくても、�
 3. Timeline Plannerが確定済みScene/Shot枠へ歌詞解釈、人物動作、カメラ、リップシンク方式を展開します。
 4. EMD Compilerが日本語promptだけを英訳し、Ref2VA用Context Loop Plan JSONへ機械的に変換します。
 
-人物参照と背景参照は別系統です。人物画像はSubject identity用`<Picture 1>`、背景画像は環境用`<Picture 2>`としてH3へ渡します。一つの参照へ両方を担わせると人物の顔、髪、衣装及びposeが参照条件を占有し、背景の建築、植生及び空間構成が弱くなりやすいためです。計画時は背景Visionの`observations_json`をDirection Enhancerへ、動画生成時は同じ背景画像をH3 Background Referenceへ渡します。
+人物参照と背景参照は別系統です。人物画像はSubject identity用`<Picture 1>`、背景画像は環境用`<Picture 2>`としてH3へ渡します。一つの参照へ両方を担わせると人物の顔、髪、衣装及びposeが参照条件を占有し、背景の建築、植生及び空間構成が弱くなりやすいためです。計画時は背景Visionが作る`scene_emd`をDirection EnhancerとPlannerへ渡し、Compilerが環境専用Picture契約を生成します。動画生成時は同じ背景画像をH3の対応slotへ直接渡します。
 
 Direction EnhancerとTimeline Planner内部の詳しい流れは[処理フロー図](architecture/direction-planner-flow.md)を参照してください。DirectionのStyle、Motion、Cameraは[`profiles/`](../profiles/README.md)の外部EMDとして追加できます。
 
@@ -22,6 +22,7 @@ Lyric Segmentationはこの経路と独立して歌詞、SRT、typed timelineを
 EMDは **Easy MarkDown** です。人が確認・編集できる中間表現で、主に次を持ちます。
 
 - `# サブジェクト`: 1 list itemを文書順に`<Subject 1..4>`へ割り当てます。行頭の``画像N``、``動画N``、``音声N``は任意のH3参照です。
+- `# シーン設定`: 背景環境、観測時の時刻・照明baseline及び環境専用Pictureを持ちます。明示Directionが観測条件より優先します。
 - `# 保持分析`: Subjectのどの識別要素を保持するかを記述します。
 - `# 共通プロンプト`: 任意の`## スタイル`、`## 背景`、`## 時間・照明`、`## モーション`、`## カメラ`、`## その他`を持ちます。
 - `# シーン`: `00:00.000`形式の絶対ms timeline、Shot、歌詞annotation、予約directiveを持ちます。

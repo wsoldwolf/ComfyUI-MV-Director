@@ -13,7 +13,12 @@ from ..artifacts.references import (
 )
 from ..emd import EMDDocument, parse_emd
 from ..emd.ast import AudioDirective, Scene, Shot, Subject
-from ..h3_contract import DEFAULT_H3_TIMING_PROFILE, H3TimingProfile
+from ..h3_contract import (
+    DEFAULT_H3_TIMING_PROFILE,
+    H3TimingProfile,
+    build_environment_definition,
+    build_environment_retention,
+)
 
 from .protection import protect_unit
 from .translator import PromptTranslator, translate_exact
@@ -61,6 +66,11 @@ class _TranslationTable:
 
         for subject_index, subject in enumerate(self.document.subjects):
             add(f"subject.{subject_index}.description", subject.description)
+        if self.document.scene_setting is not None:
+            for index, text in enumerate(self.document.scene_setting.environment):
+                add(f"scene_setting.environment.{index}", text)
+            for index, text in enumerate(self.document.scene_setting.time_lighting):
+                add(f"scene_setting.time_lighting.{index}", text)
         for index, directive in enumerate(self.document.retention):
             add(f"retention.{index}.description", directive.description)
         for section, values in self.document.common_prompt:
@@ -169,24 +179,44 @@ def _subject_definition(
 def _retention_lines(
     document: EMDDocument, translations: _TranslationTable
 ) -> list[str]:
+    lines: list[str] = []
     if document.retention:
         subject_refs = {
             subject.concept_id: subject.subject_ref for subject in document.subjects
         }
-        return [
+        lines.extend(
             f"{subject_refs[directive.concept_id]}: {directive.mode} - "
             f"{translations.get(f'retention.{index}.description')}"
             for index, directive in enumerate(document.retention)
-        ]
-    lines: list[str] = []
-    for subject in document.subjects:
-        lines.append(
-            f"{subject.subject_ref}: fully_preserved - preserve the described "
-            "identity and attributes across shots. Preserve every stated local "
-            "shape, count, placement, scale, color, material, and exclusion "
-            "literally; never replace an unusual feature with a conventional default."
         )
+    else:
+        for subject in document.subjects:
+            lines.append(
+                f"{subject.subject_ref}: fully_preserved - preserve the described "
+                "identity and attributes across shots. Preserve every stated local "
+                "shape, count, placement, scale, color, material, and exclusion "
+                "literally; never replace an unusual feature with a conventional default."
+            )
+    if document.scene_setting is not None and document.scene_setting.picture_ref:
+        lines.append(build_environment_retention(document.scene_setting.picture_ref))
     return lines
+
+
+def _environment_description(
+    document: EMDDocument, translations: _TranslationTable
+) -> str:
+    setting = document.scene_setting
+    if setting is None:
+        return ""
+    parts = [
+        translations.get(f"scene_setting.environment.{index}")
+        for index in range(len(setting.environment))
+    ]
+    parts.extend(
+        translations.get(f"scene_setting.time_lighting.{index}")
+        for index in range(len(setting.time_lighting))
+    )
+    return " ".join(value.strip() for value in parts if value.strip())
 
 
 def _shot_marker(scene: Scene, shot: Shot, index: int) -> str:
@@ -254,6 +284,13 @@ def _scene_prompt(
     subject_lines: list[str] = []
     for subject_index, subject in enumerate(document.subjects):
         subject_lines.extend(_subject_definition(subject, subject_index, translations))
+    if document.scene_setting is not None and document.scene_setting.picture_ref:
+        subject_lines.append(
+            build_environment_definition(
+                document.scene_setting.picture_ref,
+                _environment_description(document, translations),
+            )
+        )
 
     scene_lines = [
         translations.get(f"scene.{scene_index}.description.{index}")
@@ -303,6 +340,18 @@ def _scene_prompt(
 
 def _required_references(document: EMDDocument) -> RequiredReferencesArtifact:
     references: list[RequiredReference] = []
+    if document.scene_setting is not None and document.scene_setting.picture_ref:
+        h3_ref = document.scene_setting.picture_ref
+        slot = int(h3_ref.removeprefix("<Picture ").removesuffix(">"))
+        references.append(
+            RequiredReference(
+                concept_id=None,
+                subject_ref=None,
+                h3_ref=h3_ref,
+                required_input=f"ref_images.ref_image_{slot - 1}",
+                purpose="environment_reference",
+            )
+        )
     for subject in document.subjects:
         for h3_ref in subject.references:
             if h3_ref.startswith("<Picture "):
@@ -366,10 +415,26 @@ def compile_ref2va(
 
     plan: dict[str, Any] = {"defaults": {"steps": steps}, "shots": []}
     prefix = [
+        translations.get(f"scene_setting.environment.{index}")
+        for index in range(
+            len(document.scene_setting.environment)
+            if document.scene_setting is not None
+            else 0
+        )
+    ]
+    prefix.extend(
+        translations.get(f"scene_setting.time_lighting.{index}")
+        for index in range(
+            len(document.scene_setting.time_lighting)
+            if document.scene_setting is not None
+            else 0
+        )
+    )
+    prefix.extend(
         translations.get(f"common.{section}.{index}")
         for section, values in document.common_prompt
         for index in range(len(values))
-    ]
+    )
     if prefix:
         plan["prompt_prefix"] = prefix
     for index, scene in enumerate(document.scenes):

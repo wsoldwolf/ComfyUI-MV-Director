@@ -5,6 +5,7 @@ from .subject_emd import (
     SubjectEMDResult,
     render_subject_emd,
 )
+from .scene_emd import SceneEMDResult, render_scene_emd
 from .graph_binding import (
     PictureBinding,
     PictureBindingError,
@@ -48,6 +49,7 @@ __all__ = [
     "LlamaCppVisionLifecycle",
     "SubjectEMDError",
     "SubjectEMDResult",
+    "SceneEMDResult",
     "VisionImageError",
     "VisionModelPair",
     "VisionModelSelectionError",
@@ -60,6 +62,7 @@ __all__ = [
     "observe_image",
     "prepare_comfy_image",
     "render_subject_emd",
+    "render_scene_emd",
     "resolve_picture_binding",
     "resolve_vision_model_pair",
 ]

@@ -1,0 +1,6 @@
+# プロファイル
+* `planner_policy` anime_emotional_mv
+
+# 共通プロンプト
+## カメラ
+* 感情を伴うアニメMVとして、人物の全身演技、歌詞によって現在Sceneだけに選ばれた対象との関係及び可視の結果を一つのcamera choreographyへまとめる。Camera motionはMiniMax H3の正式名称 Zoom In、Zoom Out、Push In、Pull Out、Pan Left、Pan Right、Truck Left、Truck Right、Tilt Up、Tilt Down、Pedestal Up、Pedestal Down、Arc Shot、Tracking Shot、Static Shot、Shake Slightly、Shake Strongly、POV、Roll Clockwise又はRoll Counterclockwiseのいずれかをそのまま明記し、必要に応じて with small amplitude、with large amplitude、at slow speed又はat fast speedを続ける。複数ShotではArc Shotを主要な展開手段として使い、適格なShotの概ね半数で60度から120度の経路をShot尺の70%から90%にわたり連続して進み、開始視点、前景・中景・背景の強い視差及び明確に異なる終了視点を作る。連続Arcは同じ軌道の反復にせず、身体又は環境を示す構図から正面若しくは斜め正面の頭肩構図へ入る長尺Arcと、読み取れる顔構図から半径を広げて上半身、全身又は環境へ抜ける長尺Arcを選択的に使う。顔へのZoom In又は顔から全身へ抜けるArcとの接続は、歌詞の感情転換又はsection上の要点に限定し、各Sceneの定型句にしない。顔へのZoom Inは頭肩構図から始め、両目、両眉、鼻、口全体及び顔輪郭を全行程で同時に残し、目又は口だけへ切り詰めない。顔拡大への移行はShotの35%から55%で完了し、短い表情accentだけを読ませ、同じscaleを長時間保持しない。閉眼、半開き、伏し目又は再び目を開く演技も構図内で読めるようにし、常に全開の目を要求しない。全身演技では手、腕、肩、胴体、骨盤、支持脚、遊脚及び重心変化が同時に読めるscaleを優先し、足元だけの構図にしない。長尺Arc及び顔Zoomは必要に応じて at fast speedを使い、早く到着して残りを静止しない。歩行又は明確な位置移動を追う場合だけTracking Shotを使い、単なる移動をcameraの主題として反復しない。低い斜め前方、側面、後方三分の四、over-shoulder、垂直方向及び奥行き方向を使い分け、同じscale、方向又はMotion Typeを連続反復しない。固定設備又はシーン参照内の装飾物をcamera目的として選ばず、人物の全身感情、現在歌詞に固有の一回限りの対象、表情反応及び異なる終端silhouetteを優先する。

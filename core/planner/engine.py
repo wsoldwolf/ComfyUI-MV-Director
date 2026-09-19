@@ -9,7 +9,10 @@ import re
 from typing import Any, Mapping, Protocol
 
 from ..artifacts import DirectionArtifact, EMDTextArtifact, canonical_json, normalize_newlines
+from ..direction.profiles import CAMERA_PLANNER_POLICIES
+from ..emd import parse_scene_emd_fragment
 from ..h3_contract import (
+    ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA,
     FACE_PERFORMANCE_CUT_ACTION,
     FACE_PERFORMANCE_CUT_CAMERA,
 )
@@ -25,10 +28,15 @@ from .layout import (
     repair_scene_layout_selection,
 )
 from .renderer import render_completed_emd
-from .template import PlannerTemplate, normalize_concept_emd, parse_template_emd
+from .template import (
+    PlannerTemplate,
+    normalize_concept_emd,
+    normalize_scene_emd,
+    parse_template_emd,
+)
 
 
-PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v34"
+PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v36"
 TASKS = ("visual-beats", "song-direction", "shot-layout", "actions", "cameras")
 _CAMERA_MOTION_TYPES = (
     "Roll Counterclockwise",
@@ -930,6 +938,102 @@ def _anime_story_mv_face_zoom_key(
     return selected.key
 
 
+def _anime_emotional_mv_camera_emphasis(
+    entities: list[_Entity],
+    *,
+    face_target: int | None = None,
+) -> tuple[
+    set[tuple[int, ...]],
+    set[tuple[int, ...]],
+    dict[tuple[int, ...], str],
+]:
+    """Select long Arcs and a sparse face phrase without Camera prose."""
+
+    if not entities:
+        return set(), set(), {}
+    role_priority = {
+        "expressive_result_coverage": 0,
+        "upper_body_performance_coverage": 1,
+        "continuity_bridge": 2,
+        "spatial_reveal_or_interaction_coverage": 3,
+        "new_scene_establishing_edit": 4,
+    }
+    if face_target is None:
+        face_target = max(1, (len(entities) + 11) // 12)
+    face_target = max(0, min(face_target, len(entities)))
+    face_indices: list[int] = []
+    face_scenes: set[int] = set()
+    ordered_face_candidates = sorted(
+        range(len(entities)),
+        key=lambda value: (
+            role_priority.get(
+                str(entities[value].value.get("editorial_role")), 9
+            ),
+            value,
+        ),
+    )
+    for index in ordered_face_candidates if face_target else ():
+        scene_number = entities[index].scene_number
+        if scene_number in face_scenes:
+            continue
+        if any(abs(index - selected) < 3 for selected in face_indices):
+            continue
+        face_indices.append(index)
+        face_scenes.add(scene_number)
+        if len(face_indices) >= face_target:
+            break
+    if 0 < len(face_indices) < face_target:
+        for index in range(len(entities)):
+            if index not in face_indices:
+                face_indices.append(index)
+                if len(face_indices) >= face_target:
+                    break
+
+    arc_indices: set[int] = set()
+    transitions: dict[tuple[int, ...], str] = {}
+    for face_index in sorted(face_indices):
+        neighbours = (
+            (face_index - 1, "arc_into_next_face_cut"),
+            (face_index + 1, "arc_out_of_previous_face_cut"),
+        )
+        for candidate, relation in neighbours:
+            if not 0 <= candidate < len(entities):
+                continue
+            if entities[candidate].scene_number != entities[face_index].scene_number:
+                continue
+            if candidate in face_indices or candidate in arc_indices:
+                continue
+            arc_indices.add(candidate)
+            transitions[entities[candidate].key] = relation
+            break
+
+    arc_target = max(len(arc_indices), (len(entities) + 1) // 2)
+    candidates = sorted(
+        (
+            index
+            for index in range(len(entities))
+            if index not in face_indices and index not in arc_indices
+        ),
+        key=lambda index: (
+            -int(entities[index].value.get("shot_duration_ms", 0)),
+            role_priority.get(
+                str(entities[index].value.get("editorial_role")), 9
+            ),
+            index,
+        ),
+    )
+    for index in candidates:
+        if len(arc_indices) >= arc_target:
+            break
+        arc_indices.add(index)
+
+    return (
+        {entities[index].key for index in arc_indices},
+        {entities[index].key for index in face_indices},
+        transitions,
+    )
+
+
 def _action_budget_violations(
     entities: list[_Entity],
     values: Mapping[tuple[int, ...], str],
@@ -1111,10 +1215,38 @@ def _face_arc_transitions(
 def _protected_context(
     template: PlannerTemplate,
     concept_emd: str,
+    scene_emd: str,
     direction: DirectionArtifact,
-) -> tuple[DialogueProtector, str, dict[tuple[int, int], dict[str, object]], dict[str, list[str]]]:
+) -> tuple[
+    DialogueProtector,
+    str,
+    dict[str, object],
+    dict[tuple[int, int], dict[str, object]],
+    dict[str, list[str]],
+]:
     protector = DialogueProtector()
     protected_concept = protector.protect(concept_emd, source_ref="concept_emd")
+    scene_setting = (
+        parse_scene_emd_fragment(scene_emd) if scene_emd.strip() else None
+    )
+    scene_context: dict[str, object] = {}
+    if scene_setting is not None:
+        scene_context = {
+            "environment": [
+                protector.protect(value, source_ref="scene_emd:environment")
+                for value in scene_setting.environment
+            ],
+            "time_lighting": [
+                protector.protect(value, source_ref="scene_emd:time_lighting")
+                for value in scene_setting.time_lighting
+            ],
+            "background_picture": scene_setting.picture_ref or "",
+            "authority": (
+                "Observed baseline only. Explicit Direction and user instructions "
+                "override time, lighting, weather, season, and staging. The Picture "
+                "is environment evidence, never a performer or composition template."
+            ),
+        }
     shots = _shot_context(template, protector)
     directions = {
         "style": [protector.protect(value, source_ref="direction:style") for value in direction.style_direction],
@@ -1130,7 +1262,7 @@ def _protected_context(
         "camera": [protector.protect(value, source_ref="direction:camera") for value in direction.camera_direction],
         "other": [protector.protect(value, source_ref="direction:other") for value in direction.other_direction],
     }
-    return protector, protected_concept, shots, directions
+    return protector, protected_concept, scene_context, shots, directions
 
 
 def _decode_layout_texts(
@@ -1176,6 +1308,8 @@ def _decode_layout_texts(
 def _satisfies_boundary_contract(
     template: PlannerTemplate,
     continuations: Mapping[int, bool],
+    *,
+    planner_policy: str = "",
 ) -> bool:
     """Validate the structural boundary contract sent on the mix retry."""
 
@@ -1190,6 +1324,9 @@ def _satisfies_boundary_contract(
     ]
     if not later:
         return True
+    if planner_policy == "anime_emotional_mv":
+        minimum_continuations = (len(later) * 3 + 3) // 4
+        return later.count(True) >= minimum_continuations
     minimum_cuts = max(1, len(later) // 4)
     minimum_continuations = max(1, (len(later) + 1) // 2)
     later_cut_capacity = len(later) - minimum_continuations
@@ -1223,6 +1360,8 @@ def _satisfies_boundary_contract(
 def _repair_boundary_contract(
     template: PlannerTemplate,
     continuations: Mapping[int, bool],
+    *,
+    planner_policy: str = "",
 ) -> tuple[dict[int, bool], tuple[int, ...]]:
     """Minimally repair only the structural CUT/CONTINUE sequence."""
 
@@ -1235,6 +1374,35 @@ def _repair_boundary_contract(
     if later_count == 0:
         repaired = {scene_numbers[0]: False}
         changed = () if not original[0] else (scene_numbers[0],)
+        return repaired, changed
+
+    if planner_policy == "anime_emotional_mv":
+        repaired_values = [False, *later_original]
+        minimum_continuations = (later_count * 3 + 3) // 4
+        needed = minimum_continuations - later_original.count(True)
+        section_entries = set(_section_entry_scene_numbers(template))
+        candidates = [
+            index
+            for index, value in enumerate(later_original, 1)
+            if not value and scene_numbers[index] not in section_entries
+        ]
+        candidates.extend(
+            index
+            for index, value in enumerate(later_original, 1)
+            if not value
+            and scene_numbers[index] in section_entries
+            and index not in candidates
+        )
+        for index in candidates[:max(0, needed)]:
+            repaired_values[index] = True
+        repaired = dict(zip(scene_numbers, repaired_values))
+        changed = tuple(
+            number
+            for number, before, after in zip(
+                scene_numbers, original, repaired_values
+            )
+            if before != after
+        )
         return repaired, changed
 
     minimum_cuts = max(1, later_count // 4)
@@ -1347,6 +1515,7 @@ def generate_planner_content(
     scenes_per_batch: int,
     system_prompts: Mapping[str, str],
     runtime_config: LlamaRuntimeConfig,
+    scene_emd: str = "",
     interrupt_callback: Any = None,
 ) -> tuple[PlannerContent | None, tuple[tuple[str, int, int], ...]]:
     if not 1 <= scenes_per_batch <= 6:
@@ -1357,9 +1526,10 @@ def generate_planner_content(
         raise TimelinePlannerError("all five Planner system prompts are required")
     direction.validate()
     runtime_config.validate()
-    protector, _protected_concept, shot_context, directions = _protected_context(
-        template, concept_emd, direction
+    protector, _protected_concept, scene_context, shot_context, directions = _protected_context(
+        template, concept_emd, scene_emd, direction
     )
+    scene_shared = {"scene_context": scene_context} if scene_context else {}
     dialogue_filter = DialogueFilter(protector.records)
     subject_count = sum(
         1 for line in concept_emd.rstrip().split("\n") if line.startswith("* ")
@@ -1385,6 +1555,31 @@ def generate_planner_content(
     performance_directions = {
         key: value for key, value in directions.items() if key != "camera"
     }
+    planner_policy = CAMERA_PLANNER_POLICIES.get(
+        direction.camera_profile_id, ""
+    )
+    planner_policy_contract = (
+        {
+            "policy_id": "anime_emotional_mv",
+            "performance_mode": "lyric_specific_emotional_choreography",
+            "generic_locomotion_is_support_only": True,
+            "incidental_fixed_fixture_interaction": "forbidden",
+            "lyric_trigger_scope": "current_scene_original_lyrics_only",
+            "environment_inventory_is_not_action_source": True,
+            "lyric_target_consumption": "one_scene_then_requires_new_trigger",
+            "external_effect_mode": "autonomous_unless_current_lyric_operates_it",
+            "eye_expression_mode": "vary_eyelids_with_lyric_phase",
+            "whole_body_emotion_mode": "coordinated_head_torso_pelvis_limbs_weight",
+            "camera_phrase": "long_arc_sparse_short_face_pivot",
+            "face_zoom_frequency": "sparse_section_or_emotional_pivot",
+            "later_scene_continue_minimum_ratio": "3/4",
+            "all_later_continue_allowed": True,
+        }
+        if planner_policy == "anime_emotional_mv"
+        else {"policy_id": planner_policy}
+        if planner_policy
+        else {}
+    )
 
     beat_values: dict[tuple[int, ...], str] = {}
     previous_beat = ""
@@ -1432,8 +1627,10 @@ def generate_planner_content(
             record_type="BEAT",
             entities=entities,
             shared={
+                **scene_shared,
                 "subject_roster": subject_roster,
                 "direction": performance_directions,
+                "planner_policy_contract": planner_policy_contract,
                 "recent_visual_beat_history": recent_beat_history[-12:],
             },
             history=recent_beat_history,
@@ -1466,7 +1663,7 @@ def generate_planner_content(
         task="song-direction",
         record_type="DIRECTION",
         entities=[direction_entity],
-        shared={},
+        shared={**scene_shared},
         system_prompt=system_prompts["song-direction"],
         runtime_config=runtime_config,
         interrupt_callback=interrupt_callback,
@@ -1564,7 +1761,11 @@ def generate_planner_content(
         record_type="LAYOUT",
         entities=layout_entities,
         batch_size=scenes_per_batch,
-        shared={"song_direction": song_direction},
+        shared={
+            **scene_shared,
+            "song_direction": song_direction,
+            "planner_policy_contract": planner_policy_contract,
+        },
         system_prompt=system_prompts["shot-layout"],
         runtime_config=runtime_config,
         interrupt_callback=interrupt_callback,
@@ -1583,14 +1784,25 @@ def generate_planner_content(
     layout_mix_retry = False
     if (
         len(template.scenes) >= 4
-        and not _satisfies_boundary_contract(template, continuations)
+        and not _satisfies_boundary_contract(
+            template,
+            continuations,
+            planner_policy=planner_policy,
+        )
     ):
         layout_mix_retry = True
         later_values = [
             continuations[scene.scene_number]
             for scene in template.scenes[1:]
         ]
-        if later_values and all(later_values):
+        if planner_policy == "anime_emotional_mv":
+            retry_reason = (
+                "The emotional choreography profile requires at least three "
+                "quarters of later Scene boundaries to remain CONTINUE. Keep "
+                "the uninterrupted performance and camera path unless a CUT "
+                "is a purposeful emotional or spatial reset."
+            )
+        elif later_values and all(later_values):
             retry_reason = (
                 "Every later boundary was CONTINUE. Keep CONTINUE only for an "
                 "uninterrupted action and introduce lyric-driven CUT edits."
@@ -1622,17 +1834,30 @@ def generate_planner_content(
             entities=layout_entities,
             batch_size=scenes_per_batch,
             shared={
+                **scene_shared,
                 "song_direction": song_direction,
+                "planner_policy_contract": planner_policy_contract,
                 "boundary_mix_retry_reason": retry_reason,
                 "boundary_contract": {
                     "first_scene": "CUT",
-                    "later_cut_minimum": max(
-                        1, (len(template.scenes) - 1) // 4
+                    "later_cut_minimum": (
+                        0
+                        if planner_policy == "anime_emotional_mv"
+                        else max(1, (len(template.scenes) - 1) // 4)
                     ),
                     "later_continue_minimum": max(
-                        1, len(template.scenes) // 2
+                        1,
+                        (
+                            (later_count * 3 + 3) // 4
+                            if planner_policy == "anime_emotional_mv"
+                            else len(template.scenes) // 2
+                        ),
                     ),
-                    "maximum_consecutive_same_mode": 3,
+                    "maximum_consecutive_same_mode": (
+                        later_count
+                        if planner_policy == "anime_emotional_mv"
+                        else 3
+                    ),
                     "maximum_mode_transitions": max(
                         2, (later_count * 2 + 2) // 3
                     ),
@@ -1656,9 +1881,15 @@ def generate_planner_content(
             continuations = retry_continuations
             layout_repaired_scenes = retry_repaired
             layout_fallback_scenes = retry_fallback
-        if not _satisfies_boundary_contract(template, continuations):
+        if not _satisfies_boundary_contract(
+            template,
+            continuations,
+            planner_policy=planner_policy,
+        ):
             continuations, boundary_repaired = _repair_boundary_contract(
-                template, continuations
+                template,
+                continuations,
+                planner_policy=planner_policy,
             )
             layout_repaired_scenes = sorted(
                 {*layout_repaired_scenes, *boundary_repaired}
@@ -1695,7 +1926,10 @@ def generate_planner_content(
             )
             if prior_key is None:
                 context["previous_batch_action"] = previous_action
-            if context["performance_role"] == "face_and_upper_body_accent":
+            if (
+                context["performance_role"] == "face_and_upper_body_accent"
+                and planner_policy != "anime_emotional_mv"
+            ):
                 action_values[key] = FACE_PERFORMANCE_CUT_ACTION
             else:
                 entities.append(_Entity(key[0], key, context))
@@ -1714,8 +1948,10 @@ def generate_planner_content(
                 record_type="ACTION",
                 entities=entities,
                 shared={
+                    **scene_shared,
                     "subject_roster": subject_roster,
                     "direction": performance_directions,
+                    "planner_policy_contract": planner_policy_contract,
                     "song_direction": song_direction,
                     "primary_action_concept": lip_sync_target,
                     "subject_instance_policy": subject_instance_policy,
@@ -1764,8 +2000,10 @@ def generate_planner_content(
                         record_type="ACTION",
                         entities=retry_entities,
                         shared={
+                            **scene_shared,
                             "subject_roster": subject_roster,
                             "direction": performance_directions,
+                            "planner_policy_contract": planner_policy_contract,
                             "song_direction": song_direction,
                             "primary_action_concept": lip_sync_target,
                             "subject_instance_policy": subject_instance_policy,
@@ -1829,6 +2067,15 @@ def generate_planner_content(
     face_arc_transitions = _face_arc_transitions(
         all_shot_keys, face_cut_keys
     )
+    emotional_face_zoom_remaining = (
+        max(
+            0,
+            max(1, (len(planned_template.scenes) + 7) // 8)
+            - len(face_cut_keys),
+        )
+        if planner_policy == "anime_emotional_mv"
+        else 0
+    )
     for scene_batch in _chunks(list(planned_template.scenes), scenes_per_batch):
         keys = [
             key for key in planned_template.shot_keys
@@ -1849,15 +2096,41 @@ def generate_planner_content(
                 "face_arc_transition": face_arc_transitions.get(key, ""),
             }
             if context["editorial_role"] == "face_performance_cut":
-                camera_values[key] = FACE_PERFORMANCE_CUT_CAMERA
+                camera_values[key] = (
+                    ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA
+                    if planner_policy == "anime_emotional_mv"
+                    else FACE_PERFORMANCE_CUT_CAMERA
+                )
             else:
                 entities.append(_Entity(key[0], key, context))
         if entities:
-            anime_story_mv = direction.camera_profile_id == "anime_story_mv"
-            long_arc_keys = (
-                _anime_story_mv_long_arc_keys(entities) if anime_story_mv else set()
-            )
+            anime_story_mv = planner_policy == "anime_story_mv"
+            anime_emotional_mv = planner_policy == "anime_emotional_mv"
+            emotional_transitions: dict[tuple[int, ...], str] = {}
+            face_zoom_keys: set[tuple[int, ...]] = set()
             batch_has_face_cut = any(key in face_cut_keys for key in keys)
+            if anime_emotional_mv:
+                batch_face_target = (
+                    1
+                    if emotional_face_zoom_remaining > 0
+                    and not batch_has_face_cut
+                    else 0
+                )
+                (
+                    long_arc_keys,
+                    face_zoom_keys,
+                    emotional_transitions,
+                ) = _anime_emotional_mv_camera_emphasis(
+                    entities,
+                    face_target=batch_face_target,
+                )
+                emotional_face_zoom_remaining -= len(face_zoom_keys)
+            else:
+                long_arc_keys = (
+                    _anime_story_mv_long_arc_keys(entities)
+                    if anime_story_mv
+                    else set()
+                )
             face_zoom_key = (
                 _anime_story_mv_face_zoom_key(entities, long_arc_keys)
                 if anime_story_mv
@@ -1865,16 +2138,27 @@ def generate_planner_content(
                 and not batch_has_face_cut
                 else None
             )
-            if long_arc_keys or face_zoom_key is not None:
+            if face_zoom_key is not None:
+                face_zoom_keys.add(face_zoom_key)
+            if long_arc_keys or face_zoom_keys:
                 entities = [
                     _Entity(
                         entity.scene_number,
                         entity.key,
                         {
                             **entity.value,
+                            "face_arc_transition": (
+                                emotional_transitions.get(entity.key)
+                                or entity.value.get("face_arc_transition", "")
+                            ),
                             "long_arc_emphasis": entity.key in long_arc_keys,
                             "long_arc_duration_fraction": "70-90%",
-                            "face_zoom_emphasis": entity.key == face_zoom_key,
+                            "face_zoom_emphasis": entity.key in face_zoom_keys,
+                            "face_zoom_duration_fraction": (
+                                "35-55%"
+                                if anime_emotional_mv
+                                else "70-90%"
+                            ),
                         },
                     )
                     for entity in entities
@@ -1884,7 +2168,7 @@ def generate_planner_content(
                 for entity in entities
             )
             arc_required = (
-                not anime_story_mv
+                not (anime_story_mv or anime_emotional_mv)
                 and face_arc_count == 0
                 and not any(
                     re.search(r"(?i)\barc(?: shot)?\b", value)
@@ -1902,7 +2186,7 @@ def generate_planner_content(
                 "face_arc_transition_count": face_arc_count,
                 "long_arc_emphasis_count": len(long_arc_keys),
                 "long_arc_duration_fraction": "70-90%" if long_arc_keys else "none",
-                "face_zoom_emphasis_count": int(face_zoom_key is not None),
+                "face_zoom_emphasis_count": len(face_zoom_keys),
                 "tracking_shot_maximum": 1,
                 "same_other_motion_type_maximum": 2,
                 "slow_speed_maximum": max(1, len(entities) // 4),
@@ -1921,7 +2205,9 @@ def generate_planner_content(
                 record_type="CAMERA",
                 entities=entities,
                 shared={
+                    **scene_shared,
                     "direction": directions,
+                    "planner_policy_contract": planner_policy_contract,
                     "song_direction": song_direction,
                     "subject_instance_policy": subject_instance_policy,
                     "arc_required": arc_required,
@@ -1974,7 +2260,9 @@ def generate_planner_content(
                         record_type="CAMERA",
                         entities=retry_entities,
                         shared={
+                            **scene_shared,
                             "direction": directions,
+                            "planner_policy_contract": planner_policy_contract,
                             "song_direction": song_direction,
                             "subject_instance_policy": subject_instance_policy,
                             "arc_required": False,
@@ -2073,6 +2361,7 @@ def render_planner_content(
     lip_sync_mode: str,
     lip_sync_target: str,
     lip_sync_audio_slot: int,
+    scene_emd: str = "",
 ) -> EMDTextArtifact:
     planned_template = apply_shot_layouts(
         template,
@@ -2084,6 +2373,7 @@ def render_planner_content(
     )
     return render_completed_emd(
         concept_emd=concept_emd,
+        scene_emd=scene_emd,
         template=planned_template,
         direction=direction,
         actions={(scene, shot): text for scene, shot, text in content.actions},
@@ -2106,15 +2396,18 @@ def plan_timeline(
     scenes_per_batch: int,
     system_prompts: Mapping[str, str],
     runtime_config: LlamaRuntimeConfig,
+    scene_emd: str = "",
     interrupt_callback: Any = None,
 ) -> TimelinePlannerResult:
     template = parse_template_emd(template_emd)
     concept = normalize_concept_emd(concept_emd)
+    scene = normalize_scene_emd(scene_emd)
     selected_direction = direction or DirectionArtifact()
     content, missing = generate_planner_content(
         backend,
         template=template,
         concept_emd=concept,
+        scene_emd=scene,
         direction=selected_direction,
         lip_sync_mode=lip_sync_mode,
         lip_sync_target=lip_sync_target,
@@ -2133,6 +2426,7 @@ def plan_timeline(
     emd = render_planner_content(
         content=content,
         concept_emd=concept,
+        scene_emd=scene,
         template=template,
         direction=selected_direction,
         lip_sync_mode=lip_sync_mode,

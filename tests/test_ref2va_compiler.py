@@ -4,6 +4,7 @@ import unittest
 
 from core.compiler import CompilerError, compile_ref2va
 from core.h3_contract import (
+    ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA,
     FACE_PERFORMANCE_CUT_ACTION,
     FACE_PERFORMANCE_CUT_CAMERA,
     H3TimingProfile,
@@ -36,6 +37,7 @@ class CameraDirectiveMutatingTranslator:
             directive in unit
             for unit in units
             for directive in (
+                ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA,
                 FACE_PERFORMANCE_CUT_ACTION,
                 FACE_PERFORMANCE_CUT_CAMERA,
                 "Arc Shot",
@@ -113,6 +115,50 @@ class Ref2VACompilerTests(unittest.TestCase):
         )
         self.assertNotIn("VERSE1", "\n".join(scene["prompt"]))
         self.assertEqual(result.required_references.references, ())
+
+    def test_scene_setting_compiles_environment_picture_without_subject(self) -> None:
+        source = """# サブジェクト
+* `画像1` 狐巫女。
+# シーン設定
+## 環境
+* 森の中の神社境内。
+## 時間・照明
+* 昼の自然光。
+## 背景参照
+* `画像2`
+# 共通プロンプト
+## 時間・照明
+* 夜間の月明かりを優先する。
+> `シーン` 1
+# シーン 00:00.000 --> 00:01.000
+* `H3長` 22
+## ショット 00:00.000
+* `サブジェクト1`が鳥居を見上げる。
+"""
+        result = compile_ref2va(source, EchoTranslator())
+        self.assertEqual(
+            result.plan["prompt_prefix"],
+            [
+                "EN:森の中の神社境内。",
+                "EN:昼の自然光。",
+                "EN:夜間の月明かりを優先する。",
+            ],
+        )
+        prompt = result.plan["shots"][0]["prompt"]
+        self.assertTrue(
+            any(line.startswith("<Picture 2> is the environment reference:") for line in prompt)
+        )
+        self.assertTrue(
+            any(line.startswith("<Picture 2>: environment_partially_preserved") for line in prompt)
+        )
+        references = result.required_references.to_dict()["references"]
+        environment = next(
+            item for item in references if item["purpose"] == "environment_reference"
+        )
+        self.assertEqual(environment["h3_ref"], "<Picture 2>")
+        self.assertEqual(environment["required_input"], "ref_images.ref_image_1")
+        self.assertNotIn("concept_id", environment)
+        self.assertNotIn("subject_ref", environment)
 
     def test_already_english_prompt_is_passed_through_exactly(self) -> None:
         source = """# サブジェクト
@@ -345,11 +391,13 @@ class Ref2VACompilerTests(unittest.TestCase):
 ## ショット 00:00.000
 * {FACE_PERFORMANCE_CUT_ACTION}
 * {FACE_PERFORMANCE_CUT_CAMERA}
+* {ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA}
 """
         result = compile_ref2va(source, CameraDirectiveMutatingTranslator())
         prompt = "\n".join(result.plan["shots"][0]["prompt"])
         self.assertIn(FACE_PERFORMANCE_CUT_ACTION, prompt)
         self.assertIn(FACE_PERFORMANCE_CUT_CAMERA, prompt)
+        self.assertIn(ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA, prompt)
 
     def test_context_loop_mode_sets_only_its_fixed_fields(self) -> None:
         source = """# サブジェクト

@@ -1,8 +1,8 @@
 {
   "id": "d89034f0-15f1-402e-988a-a6f7b9b296e2",
   "revision": 0,
-  "last_node_id": 46,
-  "last_link_id": 78,
+  "last_node_id": 45,
+  "last_link_id": 84,
   "nodes": [
     {
       "id": 3,
@@ -670,7 +670,7 @@
           "name": "ref_images.ref_image_1",
           "shape": 7,
           "type": "IMAGE",
-          "link": 78
+          "link": 84
         },
         {
           "localized_name": "ref_video_0",
@@ -777,14 +777,14 @@
         }
       },
       "widgets_values": [
-        "subject_definitions:\n<Picture 1> defines <Subject 1>, the performer in the reference image.\n\nsummary:\n[reference generation] A moonlit performance at a shrine approach.\n\nretention_analysis:\n<Subject 1>: fully_preserved - preserve identity, clothing, and proportions.\n<Picture 1>: fully_preserved - preserve the visible performer design.\n\ndetailed_description:\n[Shot 1] <Subject 1> walks toward the torii gate and sings.\n<Subject 1> performs visible lip movements synchronized to the locked source vocal.\n\noverall_soundscape:\nPreserve the selected music-video soundtrack policy.\n\nnon_diegetic_music:\nNo additional generated music is requested.",
+        "subject_definitions:\n<Picture 1> defines <Subject 1>, the performer in the reference image.\n<Picture 2> is the environment reference: Observed scene content: A moonlit shrine approach in a forest with a red torii gate.. Use only its stable architecture, vegetation, terrain, materials, and spatial identity as background evidence. It is not a Subject, performer, storyboard, panel layout, framing template, or lighting authority. Render one unified full-frame environment and never reproduce people, characters, poses, text, borders, split views, or inset compositions from this Picture. The written Scene environment and time-lighting directions are authoritative and replace every conflicting season, weather, time of day, illumination, camera angle, and composition visible in this Picture. Preserve functional spatial topology: keep paths, shrine approaches, stairs, doorways, and other circulation routes open and unobstructed. Fixed fixtures such as stone lanterns, lamps, posts, signs, and statues remain beside or outside the circulation route where established; never relocate one onto the centerline or directly into the Subject's travel path. When a Shot calls for interaction with a fixed fixture, move the Subject toward the fixture at the path edge instead of moving the fixture toward the Subject.\n\nsummary:\n[reference generation] A moonlit performance at a shrine approach.\n\nretention_analysis:\n<Subject 1>: fully_preserved - preserve identity, clothing, and proportions.\n<Picture 1>: fully_preserved - preserve the visible performer design.\n<Picture 2>: environment_partially_preserved - preserve stable architecture, vegetation, terrain, materials, spatial identity, open circulation routes, and the established placement of fixed fixtures only; restage framing and lighting for the current Shot and obey the written Scene environment and time-lighting directions.\n\ndetailed_description:\n[Shot 1] <Subject 1> walks toward the torii gate and sings.\n<Subject 1> performs visible lip movements synchronized to the locked source vocal.\n\noverall_soundscape:\nPreserve the selected music-video soundtrack policy.\n\nnon_diegetic_music:\nNo additional generated music is requested.",
         896,
         672,
         243,
         "max"
       ],
       "widgets_values_named": {
-        "prompt": "subject_definitions:\n<Picture 1> defines <Subject 1>, the performer in the reference image.\n\nsummary:\n[reference generation] A moonlit performance at a shrine approach.\n\nretention_analysis:\n<Subject 1>: fully_preserved - preserve identity, clothing, and proportions.\n<Picture 1>: fully_preserved - preserve the visible performer design.\n\ndetailed_description:\n[Shot 1] <Subject 1> walks toward the torii gate and sings.\n<Subject 1> performs visible lip movements synchronized to the locked source vocal.\n\noverall_soundscape:\nPreserve the selected music-video soundtrack policy.\n\nnon_diegetic_music:\nNo additional generated music is requested.",
+        "prompt": "subject_definitions:\n<Picture 1> defines <Subject 1>, the performer in the reference image.\n<Picture 2> is the environment reference: Observed scene content: A moonlit shrine approach in a forest with a red torii gate.. Use only its stable architecture, vegetation, terrain, materials, and spatial identity as background evidence. It is not a Subject, performer, storyboard, panel layout, framing template, or lighting authority. Render one unified full-frame environment and never reproduce people, characters, poses, text, borders, split views, or inset compositions from this Picture. The written Scene environment and time-lighting directions are authoritative and replace every conflicting season, weather, time of day, illumination, camera angle, and composition visible in this Picture. Preserve functional spatial topology: keep paths, shrine approaches, stairs, doorways, and other circulation routes open and unobstructed. Fixed fixtures such as stone lanterns, lamps, posts, signs, and statues remain beside or outside the circulation route where established; never relocate one onto the centerline or directly into the Subject's travel path. When a Shot calls for interaction with a fixed fixture, move the Subject toward the fixture at the path edge instead of moving the fixture toward the Subject.\n\nsummary:\n[reference generation] A moonlit performance at a shrine approach.\n\nretention_analysis:\n<Subject 1>: fully_preserved - preserve identity, clothing, and proportions.\n<Picture 1>: fully_preserved - preserve the visible performer design.\n<Picture 2>: environment_partially_preserved - preserve stable architecture, vegetation, terrain, materials, spatial identity, open circulation routes, and the established placement of fixed fixtures only; restage framing and lighting for the current Shot and obey the written Scene environment and time-lighting directions.\n\ndetailed_description:\n[Shot 1] <Subject 1> walks toward the torii gate and sings.\n<Subject 1> performs visible lip movements synchronized to the locked source vocal.\n\noverall_soundscape:\nPreserve the selected music-video soundtrack policy.\n\nnon_diegetic_music:\nNo additional generated music is requested.",
         "width": 896,
         "height": 672,
         "length": 243,
@@ -2096,7 +2096,7 @@
           "name": "plan_json",
           "shape": 7,
           "type": "STRING",
-          "link": 77
+          "link": 83
         },
         {
           "localized_name": "extra_padding_ms",
@@ -2416,8 +2416,8 @@
           "name": "text",
           "type": "STRING",
           "links": [
-            null,
-            74
+            82,
+            83
           ]
         }
       ],
@@ -2954,7 +2954,7 @@
           "name": "plan_json_input",
           "shape": 7,
           "type": "STRING",
-          "link": 76
+          "link": 82
         },
         {
           "localized_name": "project_assets",
@@ -3130,7 +3130,7 @@
         "h3_chain_scene_colors": {}
       },
       "widgets_values": [
-        "{\n  \"prompt_prefix\": [\n    \"Render every scene as photorealistic live-action cinema.\"\n  ],\n  \"defaults\": {\n    \"steps\": 8\n  },\n  \"shots\": [\n    {\n      \"id\": \"scene_0001\",\n      \"length\": 243,\n      \"prompt\": [\n        \"subject_definitions:\",\n        \"<Picture 1> defines <Subject 1>, the performer in the reference image.\",\n        \"\",\n        \"summary:\",\n        \"[reference generation] A moonlit performance at a shrine approach.\",\n        \"\",\n        \"retention_analysis:\",\n        \"<Subject 1>: fully_preserved - preserve identity, clothing, and proportions.\",\n        \"<Picture 1>: fully_preserved - preserve the visible performer design.\",\n        \"\",\n        \"detailed_description:\",\n        \"[Shot 1] <Subject 1> walks toward the torii gate and sings.\",\n        \"<Subject 1> performs visible lip movements synchronized to the locked source vocal.\",\n        \"\",\n        \"overall_soundscape:\",\n        \"Preserve the selected music-video soundtrack policy.\",\n        \"\",\n        \"non_diegetic_music:\",\n        \"No additional generated music is requested.\"\n      ],\n      \"context_length\": 0,\n      \"audio_context_length\": 22,\n      \"source_reference\": \"off\",\n      \"generated_continuity\": \"off\",\n      \"source_audio_target\": \"locked\"\n    }\n  ]\n}",
+        "{\n  \"prompt_prefix\": [\n    \"Render every scene as photorealistic live-action cinema.\"\n  ],\n  \"defaults\": {\n    \"steps\": 8\n  },\n  \"shots\": [\n    {\n      \"id\": \"scene_0001\",\n      \"length\": 243,\n      \"prompt\": [\n        \"subject_definitions:\",\n        \"<Picture 1> defines <Subject 1>, the performer in the reference image.\",\n        \"<Picture 2> is the environment reference: Observed scene content: A moonlit shrine approach in a forest with a red torii gate.. Use only its stable architecture, vegetation, terrain, materials, and spatial identity as background evidence. It is not a Subject, performer, storyboard, panel layout, framing template, or lighting authority. Render one unified full-frame environment and never reproduce people, characters, poses, text, borders, split views, or inset compositions from this Picture. The written Scene environment and time-lighting directions are authoritative and replace every conflicting season, weather, time of day, illumination, camera angle, and composition visible in this Picture. Preserve functional spatial topology: keep paths, shrine approaches, stairs, doorways, and other circulation routes open and unobstructed. Fixed fixtures such as stone lanterns, lamps, posts, signs, and statues remain beside or outside the circulation route where established; never relocate one onto the centerline or directly into the Subject's travel path. When a Shot calls for interaction with a fixed fixture, move the Subject toward the fixture at the path edge instead of moving the fixture toward the Subject.\",\n        \"\",\n        \"summary:\",\n        \"[reference generation] A moonlit performance at a shrine approach.\",\n        \"\",\n        \"retention_analysis:\",\n        \"<Subject 1>: fully_preserved - preserve identity, clothing, and proportions.\",\n        \"<Picture 1>: fully_preserved - preserve the visible performer design.\",\n        \"<Picture 2>: environment_partially_preserved - preserve stable architecture, vegetation, terrain, materials, spatial identity, open circulation routes, and the established placement of fixed fixtures only; restage framing and lighting for the current Shot and obey the written Scene environment and time-lighting directions.\",\n        \"\",\n        \"detailed_description:\",\n        \"[Shot 1] <Subject 1> walks toward the torii gate and sings.\",\n        \"<Subject 1> performs visible lip movements synchronized to the locked source vocal.\",\n        \"\",\n        \"overall_soundscape:\",\n        \"Preserve the selected music-video soundtrack policy.\",\n        \"\",\n        \"non_diegetic_music:\",\n        \"No additional generated music is requested.\"\n      ],\n      \"context_length\": 0,\n      \"audio_context_length\": 22,\n      \"source_reference\": \"off\",\n      \"generated_continuity\": \"off\",\n      \"source_audio_target\": \"locked\"\n    }\n  ]\n}",
         "mv_director_context_loop",
         "mv-director-context_loop-context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9",
         896,
@@ -3144,7 +3144,7 @@
         0
       ],
       "widgets_values_named": {
-        "plan_json": "{\n  \"prompt_prefix\": [\n    \"Render every scene as photorealistic live-action cinema.\"\n  ],\n  \"defaults\": {\n    \"steps\": 8\n  },\n  \"shots\": [\n    {\n      \"id\": \"scene_0001\",\n      \"length\": 243,\n      \"prompt\": [\n        \"subject_definitions:\",\n        \"<Picture 1> defines <Subject 1>, the performer in the reference image.\",\n        \"\",\n        \"summary:\",\n        \"[reference generation] A moonlit performance at a shrine approach.\",\n        \"\",\n        \"retention_analysis:\",\n        \"<Subject 1>: fully_preserved - preserve identity, clothing, and proportions.\",\n        \"<Picture 1>: fully_preserved - preserve the visible performer design.\",\n        \"\",\n        \"detailed_description:\",\n        \"[Shot 1] <Subject 1> walks toward the torii gate and sings.\",\n        \"<Subject 1> performs visible lip movements synchronized to the locked source vocal.\",\n        \"\",\n        \"overall_soundscape:\",\n        \"Preserve the selected music-video soundtrack policy.\",\n        \"\",\n        \"non_diegetic_music:\",\n        \"No additional generated music is requested.\"\n      ],\n      \"context_length\": 0,\n      \"audio_context_length\": 22,\n      \"source_reference\": \"off\",\n      \"generated_continuity\": \"off\",\n      \"source_audio_target\": \"locked\"\n    }\n  ]\n}",
+        "plan_json": "{\n  \"prompt_prefix\": [\n    \"Render every scene as photorealistic live-action cinema.\"\n  ],\n  \"defaults\": {\n    \"steps\": 8\n  },\n  \"shots\": [\n    {\n      \"id\": \"scene_0001\",\n      \"length\": 243,\n      \"prompt\": [\n        \"subject_definitions:\",\n        \"<Picture 1> defines <Subject 1>, the performer in the reference image.\",\n        \"<Picture 2> is the environment reference: Observed scene content: A moonlit shrine approach in a forest with a red torii gate.. Use only its stable architecture, vegetation, terrain, materials, and spatial identity as background evidence. It is not a Subject, performer, storyboard, panel layout, framing template, or lighting authority. Render one unified full-frame environment and never reproduce people, characters, poses, text, borders, split views, or inset compositions from this Picture. The written Scene environment and time-lighting directions are authoritative and replace every conflicting season, weather, time of day, illumination, camera angle, and composition visible in this Picture. Preserve functional spatial topology: keep paths, shrine approaches, stairs, doorways, and other circulation routes open and unobstructed. Fixed fixtures such as stone lanterns, lamps, posts, signs, and statues remain beside or outside the circulation route where established; never relocate one onto the centerline or directly into the Subject's travel path. When a Shot calls for interaction with a fixed fixture, move the Subject toward the fixture at the path edge instead of moving the fixture toward the Subject.\",\n        \"\",\n        \"summary:\",\n        \"[reference generation] A moonlit performance at a shrine approach.\",\n        \"\",\n        \"retention_analysis:\",\n        \"<Subject 1>: fully_preserved - preserve identity, clothing, and proportions.\",\n        \"<Picture 1>: fully_preserved - preserve the visible performer design.\",\n        \"<Picture 2>: environment_partially_preserved - preserve stable architecture, vegetation, terrain, materials, spatial identity, open circulation routes, and the established placement of fixed fixtures only; restage framing and lighting for the current Shot and obey the written Scene environment and time-lighting directions.\",\n        \"\",\n        \"detailed_description:\",\n        \"[Shot 1] <Subject 1> walks toward the torii gate and sings.\",\n        \"<Subject 1> performs visible lip movements synchronized to the locked source vocal.\",\n        \"\",\n        \"overall_soundscape:\",\n        \"Preserve the selected music-video soundtrack policy.\",\n        \"\",\n        \"non_diegetic_music:\",\n        \"No additional generated music is requested.\"\n      ],\n      \"context_length\": 0,\n      \"audio_context_length\": 22,\n      \"source_reference\": \"off\",\n      \"generated_continuity\": \"off\",\n      \"source_audio_target\": \"locked\"\n    }\n  ]\n}",
         "run_name": "mv_director_context_loop",
         "generation_fingerprint": "mv-director-context_loop-context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9",
         "width": 896,
@@ -3692,8 +3692,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            null,
-            75
+            84
           ]
         },
         {
@@ -3708,64 +3707,6 @@
       },
       "widgets_values": [
         "image002_keinai.jpg"
-      ]
-    },
-    {
-      "id": 46,
-      "type": "MVDirectorH3BackgroundReference",
-      "pos": [
-        1550,
-        600
-      ],
-      "size": [
-        500,
-        180
-      ],
-      "flags": {},
-      "order": 46,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "plan_json",
-          "type": "STRING",
-          "link": 74
-        },
-        {
-          "name": "background_image",
-          "type": "IMAGE",
-          "link": 75
-        }
-      ],
-      "outputs": [
-        {
-          "name": "plan_json",
-          "type": "STRING",
-          "links": [
-            null,
-            76,
-            77
-          ]
-        },
-        {
-          "name": "background_image",
-          "type": "IMAGE",
-          "links": [
-            null,
-            78
-          ]
-        },
-        {
-          "name": "status",
-          "type": "STRING",
-          "links": null
-        }
-      ],
-      "title": "Bind Background • <Picture 2>",
-      "properties": {
-        "Node name for S&R": "MVDirectorH3BackgroundReference"
-      },
-      "widgets_values": [
-        2
       ]
     }
   ],
@@ -4307,41 +4248,25 @@
       "MODEL"
     ],
     [
-      74,
+      82,
       39,
-      0,
-      46,
-      0,
-      "STRING"
-    ],
-    [
-      75,
-      45,
-      0,
-      46,
-      1,
-      "IMAGE"
-    ],
-    [
-      76,
-      46,
       0,
       24,
       1,
       "STRING"
     ],
     [
-      77,
-      46,
+      83,
+      39,
       0,
       37,
       4,
       "STRING"
     ],
     [
-      78,
-      46,
-      1,
+      84,
+      45,
+      0,
       11,
       4,
       "IMAGE"

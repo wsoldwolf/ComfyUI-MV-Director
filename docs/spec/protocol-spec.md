@@ -25,12 +25,13 @@ V1は後方互換を要求しない。未知schema、旧`CL...` schema又はvers
 |---|---|---|
 | `MVD_OBSERVATIONS_V1` | `ObservationsArtifact` | Visionの検証済み観察 |
 | `MVD_EMD_FRAGMENT_V1` | `EMDTextArtifact` | Subjectだけの編集可能EMD |
+| `MVD_SCENE_EMD_FRAGMENT_V1` | `EMDTextArtifact` | Scene環境だけの編集可能EMD |
 | `MVD_REFERENCE_BINDINGS_V1` | `ReferenceBindingsArtifact` | IMAGEとPictureの物理束縛 |
 | `MVD_DIRECTION_V3` | `DirectionArtifact` | 六方向、profile ID、保持方針とprovenance |
 | `MVD_TIMELINE_V1` | `TimelineArtifact` | source音声、歌詞、Scene、Shot |
 | `MVD_EMD_TEMPLATE_V1` | `EMDTextArtifact` | 時間枠と歌詞annotation |
 | `MVD_EMD_V1` | `EMDTextArtifact` | 完成EMD |
-| `MVD_REQUIRED_REFERENCES_V1` | `RequiredReferencesArtifact` | Compilerが要求するH3入力 |
+| `MVD_REQUIRED_REFERENCES_V2` | `RequiredReferencesArtifact` | Compilerが要求するSubject・環境・音声入力 |
 
 ## 4. EMD text artifact
 
@@ -38,7 +39,7 @@ V1は後方互換を要求しない。未知schema、旧`CL...` schema又はvers
 {"schema":"MVD_EMD_V1","text":"# サブジェクト\n...","sha256":"..."}
 ```
 
-`schema`は三つのEMD schemaのいずれか、`text`はLFへ正規化した文字列、`sha256`は正規化後textのUTF-8 SHA-256とする。hash不一致を修復しない。
+`schema`は四つのEMD schemaのいずれか、`text`はLFへ正規化した文字列、`sha256`は正規化後textのUTF-8 SHA-256とする。hash不一致を修復しない。`MVD_SCENE_EMD_FRAGMENT_V1`は`# シーン設定`だけを持ち、文法はEMD仕様を正本とする。
 
 ## 5. Direction artifact
 
@@ -62,7 +63,7 @@ V1は後方互換を要求しない。未知schema、旧`CL...` schema又はvers
 
 六方向は空文字列を含まない文字列配列で、順序を保持する。`environment_direction`は物理的な場所、構造、地形及び接触可能な物体、`time_lighting_direction`は完成映像の時刻・照明を表す。明示的なユーザー指定は参照画像で観測した昼夜又は照明より上位である。`retention_policy`は`profile` / `compiler_default` / `passthrough`のいずれかとする。`retention_lines`は`passthrough`時だけ非空で、各要素は先頭の`* `を除いたEMD保持record `` `サブジェクトN`: `fully_preserved|partially_preserved` 説明``である。三profile IDはPlannerがテキスト一致推測をせず機械policyを適用するために保存する。provenance recordは次の固定shapeを使う。
 
-標準workflowでは人物identityのConcept EMDと背景環境の`MVD_OBSERVATIONS_V1`を別入力としてDirection Enhancerへ渡す。背景観察を人物Subjectへ結合しない。動画生成時も人物`<Picture 1>`と環境`<Picture 2>`を別H3参照slotへ束縛する。同一Pictureへ人物と背景の保持責務を集中させると人物identityが参照条件を占有し、環境特徴が希薄化又は欠落しやすいためである。環境専用Pictureは背景再現率を改善するための証拠であり、構図、時刻、照明又は画素一致のauthorityではない。
+標準workflowでは人物identityのConcept EMDと背景環境の`MVD_SCENE_EMD_FRAGMENT_V1`を別入力としてDirection Enhancerへ渡す。Plannerにも同じScene EMDを渡し、完成EMDへAS ISで構造統合する。`MVD_OBSERVATIONS_V1`はVisionのdebug・provenance出力でありDirection Enhancerへ接続しない。動画生成時も人物`<Picture 1>`と環境`<Picture 2>`を別H3参照slotへ束縛する。同一Pictureへ人物と背景の保持責務を集中させると人物identityが参照条件を占有し、環境特徴が希薄化又は欠落しやすいためである。環境専用Pictureは背景再現率を改善するための証拠であり、構図、時刻、照明又は画素一致のauthorityではない。
 
 ```json
 {
@@ -148,7 +149,7 @@ semanticな採用、上書き又は破棄理由を生成しない。
 
 ```json
 {
-  "schema": "MVD_REQUIRED_REFERENCES_V1",
+  "schema": "MVD_REQUIRED_REFERENCES_V2",
   "references": [
     {
       "concept_id": "サブジェクト1",
@@ -156,12 +157,17 @@ semanticな採用、上書き又は破棄理由を生成しない。
       "h3_ref": "<Picture 1>",
       "required_input": "ref_images.ref_image_0",
       "purpose": "visual_identity"
+    },
+    {
+      "h3_ref": "<Picture 2>",
+      "required_input": "ref_images.ref_image_1",
+      "purpose": "environment_reference"
     }
   ]
 }
 ```
 
-`purpose`は`visual_identity`、`motion_reference`、`subject_audio_reference`又は`lip_sync_audio_reference`。Picture、Video、Audioのいずれも不要なら`references`は空配列であり成功である。
+`purpose`は`visual_identity`、`motion_reference`、`subject_audio_reference`、`lip_sync_audio_reference`又は`environment_reference`。環境参照は`concept_id`と`subject_ref`を持たず、Subjectとして数えない。Picture、Video、Audioのいずれも不要なら`references`は空配列であり成功である。
 
 ## 8. Timeline
 
@@ -239,7 +245,7 @@ Compilerの`translation-ja-en`は描写文の一対一翻訳だけを返す。�
 
 Compilerが翻訳backendへ自由描写を渡す前に、内部ID、`<Subject 1..4>`、`<Picture 1..9>`、`<Video 1..3>`、`<Audio 1..3>`、`「...」`、明示`<d>...</d>`及びMiniMax H3正式Camera directiveをopaque spanとして分離する。opaque spanはplaceholderを含め翻訳backendへ一切渡さず、その前後にある翻訳対象fragmentだけを翻訳する。Pythonは翻訳後のfragment間へ原文spanを元の順序と位置で機械的に再結合する。このため翻訳backendのtoken欠落、変形又は並べ替えに依存しない。
 
-`<Video N>`は翻訳保護だけを受けるopaque tokenである。`MVD_REQUIRED_REFERENCES_V1`は現行どおりPictureとlip-sync Audioだけを対象とし、V1 CompilerはVideo接続要求を生成又は検証しない。
+`<Video N>`は翻訳保護だけを受けるopaque tokenである。`MVD_REQUIRED_REFERENCES_V2`はSubject Picture、環境Picture及びlip-sync Audioを対象とし、CompilerはVideo接続要求を生成又は検証しない。
 
 ## 10. Vision行protocol
 
@@ -258,6 +264,8 @@ Plannerの初回応答でslotが欠落した場合、同一Sceneの欠落slotだ
 `HINT_STATUS`が`consistent`、`ambiguous`又は`conflict`で、固定行`HINT_REASON`の値だけが空の場合は、statusを保持したままwarningとして受理する。理由本文をPythonで合成せず、この欠落だけをformat retry条件にしない。`not_used`は空理由だけを受理する。
 
 全profileで、protocol上「値又は空」と定義された単値recordの行自体が省略された場合は、そのfieldを空文字として復元しwarningを残す。対象は`PRIMARY_SUBJECT`、`HINT_REASON`、`SUBJECT_POSE`、`SCENE_SETTING`、`LIGHTING`、`TIME_WEATHER`、`SHOT_SIZE`、`VIEWPOINT`、`SUBJECT_PLACEMENT`、`DEPTH`及び三つのstyle fieldに限定する。これは空値の構造的正規化だけであり、観察本文を生成又は書換えない。全profileで既知recordの逆順は正規化するが、未知record、必須`HINT_STATUS`欠落又は不正値は推測せず拒否する。
+
+`planner_policy=anime_emotional_mv`では`face_performance_cut`のActionだけをRenderer固定文から外し、通常のACTION line protocolでLLMへ要求する。現在歌詞と直近Action履歴に基づく閉眼、半開き、伏し目、細め又は再開眼を含むTEXTをAS ISで採用する。Cameraは専用Renderer固定文とし、35～55%で読み取れる顔scaleへ到達して短い表情accentだけを保持する。この専用Camera文もopaque spanとして翻訳backendから隔離する。他profileの固定Action及び固定Camera protocolは変更しない。
 
 ## 11. protocol変更
 

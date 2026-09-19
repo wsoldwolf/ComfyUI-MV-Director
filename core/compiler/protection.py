@@ -12,6 +12,7 @@ from dataclasses import dataclass
 
 from ..emd.ast import Subject
 from ..h3_contract import (
+    ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA,
     FACE_PERFORMANCE_CUT_ACTION,
     FACE_PERFORMANCE_CUT_CAMERA,
 )
@@ -24,6 +25,7 @@ _REFERENCE_RE = re.compile(
 _D_SPAN_RE = re.compile(r"<d(?:\[[^\]\r\n]+\])?>.*?</d>")
 _DIALOGUE_RE = re.compile(r"「([^「」]*)」")
 _H3_CAMERA_DIRECTIVES = (
+    ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA,
     FACE_PERFORMANCE_CUT_ACTION,
     FACE_PERFORMANCE_CUT_CAMERA,
     "Roll Counterclockwise",

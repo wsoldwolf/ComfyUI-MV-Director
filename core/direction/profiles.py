@@ -13,15 +13,16 @@ CAMERA_PROFILES = _CATALOG.camera
 LOCKED_STYLE_PROFILES = _CATALOG.locked_style
 STYLE_RETENTION_POLICIES = _CATALOG.style_retention
 STYLE_SCENE_REINFORCEMENTS = _CATALOG.style_scene_reinforcement
+CAMERA_PLANNER_POLICIES = _CATALOG.camera_planner_policy
 
 
 # Presets only group three independently selectable external profiles. They are
 # not a second source of prompt text.
 DIRECTION_PRESETS = {
     "anime_emotional": (
-        "reference_anime",
-        "anime_story_mv",
-        "anime_story_mv",
+        "anime_emotional_mv",
+        "anime_emotional_mv",
+        "anime_emotional_mv",
     ),
     "cinematic_anime_story_mv": (
         "anime_story_mv",
