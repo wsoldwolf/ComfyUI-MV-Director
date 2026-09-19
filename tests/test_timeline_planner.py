@@ -32,8 +32,8 @@ from core.planner.layout import (
     repair_scene_layout_selection,
 )
 from core.planner.engine import (
-    _anime_mv_face_zoom_key,
-    _anime_mv_long_arc_keys,
+    _anime_story_mv_face_zoom_key,
+    _anime_story_mv_long_arc_keys,
     _camera_editorial_role,
     _face_arc_transitions,
     _performance_role,
@@ -629,6 +629,8 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertIn("unrequested_running_maximum", prompt)
         self.assertIn("Never invent running to\nfill an instrumental Shot", prompt)
         self.assertIn("Fit the performance to shot_duration_ms", prompt)
+        self.assertIn("preserve open\ncirculation space", prompt)
+        self.assertIn("moving from the route toward that edge\nfixture", prompt)
 
     def test_visual_beat_prompt_treats_complete_direction_as_immutable(self) -> None:
         prompt = (
@@ -648,6 +650,8 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertIn("visible skin and clothing clean and intact", prompt)
         self.assertIn("twelve-Scene negative motif ledger", prompt)
         self.assertIn("especially strict\nfor an instrumental Scene", prompt)
+        self.assertIn("functional spatial topology", prompt)
+        self.assertIn("leave\nthe centerline and approach that established edge position", prompt)
 
     def test_camera_prompt_keeps_arc_and_closeup_shot_local(self) -> None:
         prompt = (
@@ -998,7 +1002,7 @@ class TimelinePlannerCoreTests(unittest.TestCase):
                 style_direction=("実写映画として描写する。",),
                 motion_direction=("接地を明瞭にする。",),
                 camera_direction=("奥行きを保つ。",),
-                camera_profile_id="anime_mv",
+                camera_profile_id="anime_story_mv",
             ),
             lip_sync_mode="lyrics",
             lip_sync_target="サブジェクト1",
@@ -1053,7 +1057,7 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         )
         self.assertEqual(
             camera_payload["camera_batch_contract"]["camera_profile_id"],
-            "anime_mv",
+            "anime_story_mv",
         )
         self.assertEqual(
             camera_payload["subject_instance_policy"],
@@ -1318,7 +1322,7 @@ class TimelinePlannerCoreTests(unittest.TestCase):
             {(1, 2): "arc_into_next_face_cut"},
         )
 
-    def test_anime_mv_selects_up_to_two_sparse_long_arc_slots(self) -> None:
+    def test_anime_story_mv_selects_up_to_two_sparse_long_arc_slots(self) -> None:
         entities = [
             type("Entity", (), {
                 "key": (1, index + 1),
@@ -1330,12 +1334,12 @@ class TimelinePlannerCoreTests(unittest.TestCase):
             })()
             for index in range(5)
         ]
-        selected = _anime_mv_long_arc_keys(entities)
+        selected = _anime_story_mv_long_arc_keys(entities)
         self.assertEqual(selected, {(1, 2), (1, 4)})
         selected_indices = sorted(key[1] for key in selected)
         self.assertGreater(selected_indices[1] - selected_indices[0], 1)
 
-    def test_anime_mv_face_zoom_avoids_long_arc_and_prefers_expression(self) -> None:
+    def test_anime_story_mv_face_zoom_avoids_long_arc_and_prefers_expression(self) -> None:
         entities = [
             type("Entity", (), {
                 "key": (1, 1),
@@ -1353,7 +1357,7 @@ class TimelinePlannerCoreTests(unittest.TestCase):
             })(),
         ]
         self.assertEqual(
-            _anime_mv_face_zoom_key(entities, {(1, 1)}),
+            _anime_story_mv_face_zoom_key(entities, {(1, 1)}),
             (1, 2),
         )
 

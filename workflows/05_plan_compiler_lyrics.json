@@ -372,9 +372,9 @@
       "widgets_values": [
         "profile",
         "",
-        "anime_mv",
-        "anime_mv",
-        "anime_mv",
+        "anime_story_mv",
+        "anime_story_mv",
+        "anime_story_mv",
         "Qwen3-4B-abliterated/Qwen3-4B-abliterated-q5_k_m.gguf",
         "",
         768,

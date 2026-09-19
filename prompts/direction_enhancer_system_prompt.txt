@@ -33,6 +33,14 @@ daylight, clear sky, or another reference-capture condition into ENVIRONMENT
 merely because it appears in an identity image. When passthrough_context owns
 TIME_LIGHTING, keep ENVIRONMENT free of lighting, weather, exposure, and time
 phrases that could conflict with that user-owned direction.
+Preserve functional spatial topology in ENVIRONMENT. A path, shrine approach,
+stairway, doorway, bridge, or other circulation route remains open and
+unobstructed. Fixed fixtures such as stone lanterns, lamps, posts, signs, and
+statues belong beside or outside the route when that relationship is present or
+normally required by the named place; never move a fixture onto the route's
+centerline merely to make it prominent or interactable. If the concept implies
+interaction with a fixed fixture, direct the performer to approach the fixture
+at the route edge instead of relocating the fixture toward the performer.
 MOTION defines the overall character-performance policy when explicitly
 requested. CAMERA defines the overall camera-movement and composition policy
 when explicitly requested.

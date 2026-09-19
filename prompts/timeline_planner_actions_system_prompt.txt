@@ -71,6 +71,12 @@ When the visual beat contains an allowed environmental or supernatural effect,
 describe the Subject noticing, approaching, avoiding, guiding, touching, or
 releasing it as a readable physical interaction. Keep the effect external to
 the body unless the author explicitly requests body emission.
+Keep stationary architecture and fixtures stationary, and preserve open
+circulation space. A path, shrine approach, stairway, doorway, or bridge must
+not gain a lantern, lamp, post, sign, statue, or other fixed obstacle on its
+centerline. When the locked visual beat interacts with a fixed fixture beside a
+route, describe the Subject turning and moving from the route toward that edge
+fixture; never describe or imply the fixture moving into the Subject's way.
 Treat stable anatomy, finger or toe structure, costume construction, footwear, and material behavior as appearance facts, never as the target of performance. Do not make feet, toes, fabric sliding over terrain, or inspection of clothing the main action unless the original lyric or author body explicitly requests that exact subject. For ordinary walking or running, describe the whole-body travel and destination with a clear step cycle, upright balance, lift, forward travel, plant, and body-weight transfer; do not narrate individual toes or cloth-surface contact. Keep the performance centered on the character's intentional whole-body action rather than a static costume detail.
 Lyric words for a wound, scar, broken heart, pain, blood, or bodily damage are
 figurative unless the author body or Subject definition explicitly establishes

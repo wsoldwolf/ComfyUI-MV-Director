@@ -18,7 +18,7 @@ Subject EMD、Vision観察、ユーザー希望、三つのprofileを統合し�
 
 `max_tokens`は利用者が指定する生成上限ですが、Directionの応答は少数の型付き行に限定されます。そのため実推論では入力を削らず、出力予約だけを最大1024 tokenへ自動調整します。さらにcontextが狭い場合は、安全余白を維持したまま128 token以上の範囲で縮小します。調整時は`requested_max_tokens`と`effective_max_tokens`をINFOログへ出します。128 tokenも確保できない場合だけ、入力を黙って切り詰めず`ContextBudgetError`で停止します。
 
-profileには`reference_anime`、`anime_mv`、`reference_cinematic`、`illust_to_photoreal`、`reference_painterly`等があります。Motion/Cameraにも`anime_mv`があります。profile本文は[`profiles/style`、`profiles/motion`、`profiles/camera`](../../profiles/README.md)の外部EMDから起動時に読み込み、ファイル名をnode comboのIDとして自動列挙します。利用者はPythonを編集せず独自profileを追加できます。追加・変更後はComfyUIを再起動してください。
+profileには`reference_anime`、`anime_story_mv`、`reference_cinematic`、`illust_to_photoreal`、`reference_painterly`等があります。Motion/Cameraにも`anime_story_mv`があります。profile本文は[`profiles/style`、`profiles/motion`、`profiles/camera`](../../profiles/README.md)の外部EMDから起動時に読み込み、ファイル名をnode comboのIDとして自動列挙します。利用者はPythonを編集せず独自profileを追加できます。追加・変更後はComfyUIを再起動してください。
 
 選択したMotion及びCamera profileは、それぞれ完成Directionの`## モーション`及び`## カメラ`を機械的に所有します。これらのrecordはLLMへ要求せず、外部profile EMD本文をそのまま採用します。locked Styleも同様です。LLMには未固定Style及び環境・時間・照明・その他の統合判断だけを担当させるため、profile本文の欠落や言い換えを理由に停止しません。ユーザーが本文を直接管理する場合だけ、対応comboを`passthrough`にして外部Direction EMDを入力します。
 

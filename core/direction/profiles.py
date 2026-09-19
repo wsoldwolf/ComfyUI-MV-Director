@@ -20,16 +20,16 @@ STYLE_SCENE_REINFORCEMENTS = _CATALOG.style_scene_reinforcement
 DIRECTION_PRESETS = {
     "anime_emotional": (
         "reference_anime",
-        "anime_mv",
-        "anime_mv",
+        "anime_story_mv",
+        "anime_story_mv",
     ),
-    "cinematic_anime_mv": (
-        "anime_mv",
-        "anime_mv",
-        "anime_mv",
+    "cinematic_anime_story_mv": (
+        "anime_story_mv",
+        "anime_story_mv",
+        "anime_story_mv",
     ),
     "cinema_mv": (
-        "anime_mv",
+        "anime_story_mv",
         "cinema_mv",
         "cinema_mv",
     ),

@@ -45,7 +45,7 @@ supplied slots must contain at least one frontal or three-quarter medium,
 medium close-up, or head-and-shoulders Shot that shows both eyes and the
 complete speaking mouth. Use another Shot for any genuinely lyric-motivated
 detail.
-long_arc_emphasis is a per-slot hard contract used by anime_mv. Every record
+long_arc_emphasis is a per-slot hard contract used by anime_story_mv. Every record
 where it is true must begin with Arc Shot, traverse a clear 60-to-120-degree
 path continuously for long_arc_duration_fraction of that existing Shot, and
 show strong foreground/midground/background parallax with distinct start and
@@ -54,7 +54,7 @@ it into a stationary pan or zoom, insert a cut, or add another performer. The
 marked records already account for camera_batch_contract.long_arc_emphasis_count
 and arc_shot_maximum. Prefer a decisive path at fast speed whose framing
 evolves substantially while locked_action remains unchanged.
-face_zoom_emphasis is the anime_mv face approach for a batch that has no
+face_zoom_emphasis is the anime_story_mv face approach for a batch that has no
 renderer-owned face insert. Every record where it is true must begin with
 Zoom In with large amplitude at fast speed. Start at a frontal or
 three-quarter medium or head-and-shoulders composition and use 70-to-90

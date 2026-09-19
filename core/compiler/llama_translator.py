@@ -19,7 +19,7 @@ from ..protocols import parse_llm_records
 from .errors import CompilerError
 
 
-TRANSLATION_PROMPT_VERSION = "mvd-prompt-translation-ja-en-v11"
+TRANSLATION_PROMPT_VERSION = "mvd-prompt-translation-ja-en-v12"
 TRANSLATION_RECORD_TYPE = "TRANSLATION"
 TRANSLATION_MAX_BATCH_UNITS = 7
 TRANSLATION_RECOVERY_CHUNK_CHARS = 120
@@ -379,7 +379,18 @@ class LlamaPromptTranslator:
     ) -> None:
         if not parsed.issues:
             return
-        harmless_reasons = {"field_count", "unknown_type", "duplicate"}
+        # Extra records cannot change the one-to-one mapping once every required
+        # slot is present. Small models sometimes append a stale or invented slot
+        # after the complete answer, including during an isolated retry. Keep the
+        # required records AS IS and discard only that structurally unreferenced
+        # output. A response containing only an unknown slot is still fatal because
+        # parsed.missing is nonempty.
+        harmless_reasons = {
+            "field_count",
+            "unknown_type",
+            "unknown_slot",
+            "duplicate",
+        }
         reasons = {issue.reason for issue in parsed.issues}
         if (
             not parsed.missing
@@ -390,7 +401,7 @@ class LlamaPromptTranslator:
                 f"{reason}={sum(issue.reason == reason for issue in parsed.issues)}"
                 for reason in sorted(reasons)
             )
-            _LOGGER.warning(
+            _LOGGER.info(
                 "[MV Director - EMD Compiler (Ref2VA)] recovered complete "
                 "translation records with extra output; issues=%s; "
                 "conflicting_duplicate_slots=%s",

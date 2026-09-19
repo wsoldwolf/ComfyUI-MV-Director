@@ -426,7 +426,7 @@ class LlamaPromptTranslatorTests(unittest.TestCase):
             system_prompt="translate",
             runtime_config=LlamaRuntimeConfig(max_tokens=32, n_ctx=1100),
         )
-        with self.assertLogs("mv_director.compiler", level="WARNING"):
+        with self.assertLogs("mv_director.compiler", level="INFO"):
             translated = translator.translate(("一",))
         self.assertEqual(translated, ("English 1",))
         self.assertEqual(len(lifecycle.chat_calls), 1)
@@ -438,7 +438,7 @@ class LlamaPromptTranslatorTests(unittest.TestCase):
             system_prompt="translate",
             runtime_config=LlamaRuntimeConfig(max_tokens=32, n_ctx=1100),
         )
-        with self.assertLogs("mv_director.compiler", level="WARNING") as captured:
+        with self.assertLogs("mv_director.compiler", level="INFO") as captured:
             translated = translator.translate(("一", "二"))
         self.assertEqual(translated, ("English 1", "English 2"))
         self.assertEqual(len(lifecycle.chat_calls), 1)
@@ -454,7 +454,7 @@ class LlamaPromptTranslatorTests(unittest.TestCase):
             system_prompt="translate",
             runtime_config=LlamaRuntimeConfig(max_tokens=32, n_ctx=1100),
         )
-        with self.assertLogs("mv_director.compiler", level="WARNING") as captured:
+        with self.assertLogs("mv_director.compiler", level="INFO") as captured:
             translated = translator.translate(("一", "二"))
         self.assertEqual(translated, ("English 1", "English 2"))
         self.assertEqual(len(lifecycle.chat_calls), 1)
@@ -476,15 +476,60 @@ class LlamaPromptTranslatorTests(unittest.TestCase):
             "\n".join(captured.output),
         )
 
-    def test_unknown_translation_slot_remains_fatal(self) -> None:
+    def test_complete_translation_ignores_extra_unknown_slot(self) -> None:
         lifecycle = FakeLifecycle(unknown_slot_response=True)
         translator = LlamaPromptTranslator(
             lifecycle,
             system_prompt="translate",
             runtime_config=LlamaRuntimeConfig(max_tokens=32, n_ctx=1100),
         )
-        with self.assertRaisesRegex(CompilerError, "line protocol"):
+        with self.assertLogs("mv_director.compiler", level="INFO") as captured:
+            translated = translator.translate(("一",))
+        self.assertEqual(translated, ("English 1",))
+        self.assertEqual(len(lifecycle.chat_calls), 1)
+        self.assertIn("unknown_slot=1", "\n".join(captured.output))
+
+    def test_unknown_slot_without_required_translation_remains_fatal(self) -> None:
+        class OnlyUnknownSlotLifecycle(FakeLifecycle):
+            def complete_chat(self, messages, config, interrupt_callback=None):
+                content = messages[-1]["content"]
+                payload = json.loads(content.removeprefix("/no_think\n"))
+                self.chat_calls.append(payload)
+                return "TRANSLATION\t99\tUnknown slot"
+
+        lifecycle = OnlyUnknownSlotLifecycle()
+        translator = LlamaPromptTranslator(
+            lifecycle,
+            system_prompt="translate",
+            runtime_config=LlamaRuntimeConfig(max_tokens=32, n_ctx=1100),
+        )
+        with self.assertRaisesRegex(CompilerError, "unknown_slot"):
             translator.translate(("一",))
+        self.assertEqual(len(lifecycle.chat_calls), 2)
+
+    def test_isolated_retry_keeps_required_slot_and_discards_extra_unknown_slot(
+        self,
+    ) -> None:
+        lifecycle = FakeLifecycle(
+            invalid_last_slot_once=True,
+            unknown_slot_response=True,
+        )
+        lifecycle.effective_n_ctx = 32768
+        translator = LlamaPromptTranslator(
+            lifecycle,
+            system_prompt="translate",
+            runtime_config=LlamaRuntimeConfig(max_tokens=4096, n_ctx=32768),
+        )
+
+        with self.assertLogs("mv_director.compiler", level="INFO") as captured:
+            translated = translator.translate(
+                ("一", "二", "三", "四", "五", "六", "七")
+            )
+
+        self.assertEqual(translated[:6], tuple(f"English {index}" for index in range(1, 7)))
+        self.assertEqual(translated[6], "English 1")
+        self.assertEqual([len(call["slots"]) for call in lifecycle.chat_calls], [7, 1])
+        self.assertIn("unknown_slot=1", "\n".join(captured.output))
 
     def test_missing_slot_is_retried_once_as_an_isolated_unit(self) -> None:
         lifecycle = FakeLifecycle(invalid_last_slot_once=True)

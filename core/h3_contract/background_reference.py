@@ -76,12 +76,21 @@ def bind_h3_background_reference(
         "and time-lighting directions are authoritative and replace every "
         "conflicting season, weather, time of day, illumination, camera angle, "
         "and composition visible in this Picture."
+        " Preserve functional spatial topology: keep paths, shrine approaches, "
+        "stairs, doorways, and other circulation routes open and unobstructed. "
+        "Fixed fixtures such as stone lanterns, lamps, posts, signs, and statues "
+        "remain beside or outside the circulation route where established; never "
+        "relocate one onto the centerline or directly into the Subject's travel "
+        "path. When a Shot calls for interaction with a fixed fixture, move the "
+        "Subject toward the fixture at the path edge instead of moving the fixture "
+        "toward the Subject."
     )
     retention = (
         f"{retention_prefix} preserve stable architecture, vegetation, terrain, "
-        "materials, and spatial identity only; restage framing and lighting for "
-        "the current Shot and obey the written Scene environment and "
-        "time-lighting directions."
+        "materials, spatial identity, open circulation routes, and the established "
+        "placement of fixed fixtures only; restage framing and lighting for the "
+        "current Shot and obey the written Scene environment and time-lighting "
+        "directions."
     )
 
     bound = 0

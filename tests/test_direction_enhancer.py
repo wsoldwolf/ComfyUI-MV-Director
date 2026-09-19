@@ -314,20 +314,20 @@ class DirectionEnhancerTests(unittest.TestCase):
         result = enhance_direction(
             backend,
             value=DirectionEnhancerInput(
-                style_profile="anime_mv",
-                motion_profile="anime_mv",
-                camera_profile="anime_mv",
+                style_profile="anime_story_mv",
+                motion_profile="anime_story_mv",
+                camera_profile="anime_story_mv",
             ),
             system_prompt="fixed",
             runtime_config=LlamaRuntimeConfig(),
         )
         self.assertEqual(
             result.direction.motion_direction,
-            (MOTION_PROFILES["anime_mv"],),
+            (MOTION_PROFILES["anime_story_mv"],),
         )
         self.assertEqual(
             result.direction.camera_direction,
-            (CAMERA_PROFILES["anime_mv"],),
+            (CAMERA_PROFILES["anime_story_mv"],),
         )
         enforced = {
             item.source_ref
@@ -335,7 +335,7 @@ class DirectionEnhancerTests(unittest.TestCase):
             if item.record_kind == "output"
             and item.reason == "profile_enforced"
         }
-        self.assertEqual(enforced, {"anime_mv"})
+        self.assertEqual(enforced, {"anime_story_mv"})
         self.assertEqual(
             json.loads(backend.calls[0]["payload"])["requested_records"],
             [],
@@ -373,16 +373,19 @@ class DirectionEnhancerTests(unittest.TestCase):
         self.assertIn("keep ENVIRONMENT free of lighting", system_prompt)
         self.assertIn("foxfire", system_prompt)
         self.assertIn("locked_user_hint", system_prompt)
+        self.assertIn("functional spatial topology", system_prompt)
+        self.assertIn("never move a fixture onto the route's\ncenterline", system_prompt)
+        self.assertIn("approach the fixture\nat the route edge", system_prompt)
 
-    def test_anime_mv_profiles_keep_local_costume_details_out_of_direction(self) -> None:
-        self.assertIn("一又は二Shot", CAMERA_PROFILES["anime_mv"])
-        self.assertIn("70%から90%", CAMERA_PROFILES["anime_mv"])
-        self.assertIn("Arc Shot", CAMERA_PROFILES["anime_mv"])
+    def test_anime_story_mv_profiles_keep_local_costume_details_out_of_direction(self) -> None:
+        self.assertIn("一又は二Shot", CAMERA_PROFILES["anime_story_mv"])
+        self.assertIn("70%から90%", CAMERA_PROFILES["anime_story_mv"])
+        self.assertIn("Arc Shot", CAMERA_PROFILES["anime_story_mv"])
         combined = " ".join(
             (
-                STYLE_PROFILES["anime_mv"],
-                MOTION_PROFILES["anime_mv"],
-                CAMERA_PROFILES["anime_mv"],
+                STYLE_PROFILES["anime_story_mv"],
+                MOTION_PROFILES["anime_story_mv"],
+                CAMERA_PROFILES["anime_story_mv"],
             )
         ).casefold()
         for local_detail in ("足袋", "足指", "つま先", "裸足", "tabi", "toe"):
@@ -574,7 +577,7 @@ class DirectionEnhancerTests(unittest.TestCase):
             set(STYLE_PROFILES),
             {
                 "reference_anime",
-                "anime_mv",
+                "anime_story_mv",
                 "reference_cinematic",
                 "illust_to_photoreal",
                 "reference_painterly",
@@ -584,35 +587,35 @@ class DirectionEnhancerTests(unittest.TestCase):
             set(MOTION_PROFILES),
             {
                 "natural_performance", "expressive_mv", "limited_animation",
-                "cinema_mv", "anime_mv",
+                "cinema_mv", "anime_story_mv",
             },
         )
         self.assertEqual(
             set(CAMERA_PROFILES),
             {
                 "readable_depth", "cinematic_depth", "rhythmic_mv",
-                "cinema_mv", "anime_mv",
+                "cinema_mv", "anime_story_mv",
             },
         )
-        camera = CAMERA_PROFILES["anime_mv"]
+        camera = CAMERA_PROFILES["anime_story_mv"]
         self.assertIn("隣接ShotでArcを反復しない", camera)
         self.assertIn("60度から120度の経路", camera)
         self.assertIn("続くZoom Inへ接続", camera)
         self.assertIn("Tracking Shot", camera)
         self.assertIn("Pedestal Up", camera)
         self.assertIn("両目、両眉、鼻、口全体", camera)
-        self.assertIn("二コマ打ち又は三コマ打ち", MOTION_PROFILES["anime_mv"])
-        self.assertIn("明確な加速", MOTION_PROFILES["anime_mv"])
-        self.assertIn("地面から明確に持ち上げ", MOTION_PROFILES["anime_mv"])
-        self.assertIn("時間方向に連続", MOTION_PROFILES["anime_mv"])
-        self.assertIn("痙攣状motion", MOTION_PROFILES["anime_mv"])
+        self.assertIn("二コマ打ち又は三コマ打ち", MOTION_PROFILES["anime_story_mv"])
+        self.assertIn("明確な加速", MOTION_PROFILES["anime_story_mv"])
+        self.assertIn("地面から明確に持ち上げ", MOTION_PROFILES["anime_story_mv"])
+        self.assertIn("時間方向に連続", MOTION_PROFILES["anime_story_mv"])
+        self.assertIn("痙攣状motion", MOTION_PROFILES["anime_story_mv"])
         self.assertIn("短いポーズ保持", MOTION_PROFILES["cinema_mv"])
         self.assertIn("移動が不要なら静止構図", CAMERA_PROFILES["cinema_mv"])
         self.assertIn("reference_anime", STYLE_PROFILES)
-        self.assertIn("動物耳、耳内部、尾", STYLE_PROFILES["anime_mv"])
-        self.assertIn("局所的なglow、bloom", STYLE_PROFILES["anime_mv"])
-        self.assertIn("古傷", STYLE_PROFILES["anime_mv"])
-        self.assertIn("皮膚と衣装を清潔で損傷のない状態", STYLE_PROFILES["anime_mv"])
+        self.assertIn("動物耳、耳内部、尾", STYLE_PROFILES["anime_story_mv"])
+        self.assertIn("局所的なglow、bloom", STYLE_PROFILES["anime_story_mv"])
+        self.assertIn("古傷", STYLE_PROFILES["anime_story_mv"])
+        self.assertIn("皮膚と衣装を清潔で損傷のない状態", STYLE_PROFILES["anime_story_mv"])
         self.assertIn("cinema_mv", DIRECTION_PRESETS)
         self.assertGreaterEqual(len(DIRECTION_PRESETS), 5)
 

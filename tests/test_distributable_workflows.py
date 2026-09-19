@@ -162,7 +162,7 @@ class DistributableWorkflowTests(unittest.TestCase):
             self.assertEqual(planner["widgets_values"][1], "サブジェクト1")
             self.assertEqual(planner["widgets_values"][5], 1536)
             self.assertEqual(planner["widgets_values"][11], 16384)
-            self.assertEqual(direction["widgets_values"][2:5], ["anime_mv"] * 3)
+            self.assertEqual(direction["widgets_values"][2:5], ["anime_story_mv"] * 3)
             self.assertEqual(direction["widgets_values"][13], 16384)
             self.assertIn("眉毛は丸く", character_vision["widgets_values"][2])
             self.assertIn("木製台全体は黒色", character_vision["widgets_values"][2])

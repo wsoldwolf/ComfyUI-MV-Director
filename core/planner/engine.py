@@ -856,8 +856,8 @@ def _camera_budget_violations(
     return {key: tuple(value) for key, value in violations.items()}
 
 
-def _anime_mv_long_arc_keys(entities: list[_Entity]) -> set[tuple[int, ...]]:
-    """Choose a sparse, deterministic set of long Arc slots for anime_mv."""
+def _anime_story_mv_long_arc_keys(entities: list[_Entity]) -> set[tuple[int, ...]]:
+    """Choose a sparse, deterministic set of long Arc slots for anime_story_mv."""
 
     if not entities:
         return set()
@@ -899,7 +899,7 @@ def _anime_mv_long_arc_keys(entities: list[_Entity]) -> set[tuple[int, ...]]:
     return {entities[index].key for index in selected_indices}
 
 
-def _anime_mv_face_zoom_key(
+def _anime_story_mv_face_zoom_key(
     entities: list[_Entity],
     long_arc_keys: set[tuple[int, ...]],
 ) -> tuple[int, ...] | None:
@@ -1853,14 +1853,14 @@ def generate_planner_content(
             else:
                 entities.append(_Entity(key[0], key, context))
         if entities:
-            anime_mv = direction.camera_profile_id == "anime_mv"
+            anime_story_mv = direction.camera_profile_id == "anime_story_mv"
             long_arc_keys = (
-                _anime_mv_long_arc_keys(entities) if anime_mv else set()
+                _anime_story_mv_long_arc_keys(entities) if anime_story_mv else set()
             )
             batch_has_face_cut = any(key in face_cut_keys for key in keys)
             face_zoom_key = (
-                _anime_mv_face_zoom_key(entities, long_arc_keys)
-                if anime_mv
+                _anime_story_mv_face_zoom_key(entities, long_arc_keys)
+                if anime_story_mv
                 and lip_sync_mode != "off"
                 and not batch_has_face_cut
                 else None
@@ -1884,7 +1884,7 @@ def generate_planner_content(
                 for entity in entities
             )
             arc_required = (
-                not anime_mv
+                not anime_story_mv
                 and face_arc_count == 0
                 and not any(
                     re.search(r"(?i)\barc(?: shot)?\b", value)

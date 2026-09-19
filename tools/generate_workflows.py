@@ -493,9 +493,9 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
             widgets=[
                 "profile",
                 "",
-                "anime_mv",
-                "anime_mv",
-                "anime_mv",
+                "anime_story_mv",
+                "anime_story_mv",
+                "anime_story_mv",
                 TEXT_MODEL,
                 "",
                 768,

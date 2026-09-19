@@ -41,7 +41,7 @@
 - GGUF backend: モデル探索、ロード、token計測、中断、解放を共通化する。
 - PromptTranslator: prompt本文の日本語から英語への一方向変換だけを行う交換可能なinterface。初期実装はローカル4B又は8Bを想定するが、LLM固有の契約にはしない。
 - Audio Pad Pair: full mixとvocal stemを同じ基準尺へ末尾無音補完し、明示mode時だけsource SceneをPlan frame位置へPCM無音で配置した参照専用vocalも返す公開support node。単体Audio Padは公開しない。
-- H3 Background Reference: 動画生成時にコンパイル済みPlanの全Shotへ環境専用`<Picture N>`契約を追加し、同じ背景IMAGEをH3へpass-throughする公開video node。人物Pictureと背景Pictureを分離して、人物identityによる参照条件の占有から環境情報を守り、背景再現率を高める。Planner又はCompilerの創作本文、Scene、Shot、時刻及び音声は変更せず、画素単位の背景複製も保証しない。
+- H3 Background Reference: 動画生成時にコンパイル済みPlanの全Shotへ環境専用`<Picture N>`契約を追加し、同じ背景IMAGEをH3へpass-throughする公開video node。人物Pictureと背景Pictureを分離して、人物identityによる参照条件の占有から環境情報を守り、背景再現率を高める。参道、道、階段、出入口及び橋を開いた通行空間として保持し、石灯籠等の固定設備を背景で確立された道端又は通行空間外へ維持する。相互作用時は固定設備を人物の前へ移さず、人物が道端へ近づく。Planner又はCompilerの創作本文、Scene、Shot、時刻及び音声は変更せず、画素単位の背景複製も保証しない。
 - H3 Timing Profile: Context Loop基準contract、24fps、anchor mode、visual/audio context lengthを一つの`MV_DIRECTOR_H3_TIMING_PROFILE`へまとめ、Lyric SegmentationとCompilerへ共有する公開utility node。
 - 32-bit Seed: GGUF系とH3系へ同じ再現可能な符号付き32-bit正整数seedを分岐する公開utility node。旧実装の有限なrandom/fixed/一回保持処理だけを再利用する。
 - String Combo: 文字列候補を通常の接続可能なSTRINGとして選択・出力する公開utility node。
@@ -156,7 +156,7 @@ Style文書だけは`# 共通プロンプト`の前に任意の`# プロファ�
 | 軸 | profile | H3へ伝える肯定的な核 |
 |---|---|---|
 | 画風 | `reference_anime`（既定） | 参照画像の顔・体格・衣装・配色を同じ設計で保ち、整理された線、明瞭な色面、セル影、繊細な光で手描き2Dアニメとして描く |
-| 画風 | `anime_mv` | 人物の識別要素は保ちながら、入力画像の線画・塗り・画材表現は固定せず、映像作品として統一されたセルアニメMVへ強く再構成する。髪、体毛、動物耳、耳内部、尾、皮膚及び衣装は非発光素材とし、明示指示なしの局所glow、bloom、halo、強い透過光及び白飛びを禁止する |
+| 画風 | `anime_story_mv` | 人物の識別要素は保ちながら、入力画像の線画・塗り・画材表現は固定せず、映像作品として統一されたセルアニメMVへ強く再構成する。髪、体毛、動物耳、耳内部、尾、皮膚及び衣装は非発光素材とし、明示指示なしの局所glow、bloom、halo、強い透過光及び白飛びを禁止する |
 | 画風 | `reference_cinematic` | 参照画像の人物設計を保ち、自然な皮膚・布・材質、映画照明、レンズによる奥行きで実写映画として描く |
 | 画風 | `illust_to_photoreal` | 2026-09-16 20:30に実写風生成へ成功した保存Planの長い英語anchorを`prompt_prefix`先頭へ完全一致で置き、各Scene先頭Shotにも成功時の短い実写文を明示する。保持分析も同Planの識別要素範囲を使う |
 | 画風 | `reference_painterly` | 参照画像の形と配色を保ち、紙目、透明な色層、柔らかな境界を持つ手描き絵画として描く |
@@ -164,26 +164,26 @@ Style文書だけは`# 共通プロンプト`の前に任意の`# プロファ�
 | 動作 | `expressive_mv` | 静かな区間は小さな重心と手の動き、強い区間は踏み込み、胴体のひねり、腕の広い軌道へ変化させる |
 | 動作 | `limited_animation` | 大きく読めるキーポーズとポーズ間の移行を使い、身体と口形のタイミングを別々に保つ |
 | 動作 | `cinema_mv` | 従来のセルアニメ2コマ・3コマ打ち、短いポーズ保持、ポーズ・トゥ・ポーズ及び自然な収束を使う穏やかな映画的MV演技 |
-| 動作 | `anime_mv` | セルアニメの2コマ・3コマ打ちとポーズ・トゥ・ポーズを使うが、コマ打ちは静止hold、表情の溜め及び末端追従へ限定する。主要な身体動作、関節軌道、接地及び重心移動は時間方向に連続させ、pose飛び、瞬間移動、往復反転及び痙攣状motionを避ける。静かな溜めに対して加速、重心移動、方向転換、鋭い停止及び大きな終端pose差を歌詞と拍へ合わせる。通常歩行では遊脚を持ち上げて前へ運び、接地後に重心を移し、明示のない摺り足を避ける |
+| 動作 | `anime_story_mv` | セルアニメの2コマ・3コマ打ちとポーズ・トゥ・ポーズを使うが、コマ打ちは静止hold、表情の溜め及び末端追従へ限定する。主要な身体動作、関節軌道、接地及び重心移動は時間方向に連続させ、pose飛び、瞬間移動、往復反転及び痙攣状motionを避ける。静かな溜めに対して加速、重心移動、方向転換、鋭い停止及び大きな終端pose差を歌詞と拍へ合わせる。通常歩行では遊脚を持ち上げて前へ運び、接地後に重心を移し、明示のない摺り足を避ける |
 | カメラ | `readable_depth`（既定） | 顔、全身動作、接触点を読める距離を保ち、安定した構図、緩やかな接近・後退・横移動を使い分ける |
 | カメラ | `cinematic_depth` | 開始視点、被写体の側面を通る経路、終了視点、前景・中景・遠景の視差を明示する |
 | カメラ | `rhythmic_mv` | 楽曲強度に合わせて移動量と構図保持を変え、Scene間で角度、高さ、距離、移動方向を展開する |
 | カメラ | `cinema_mv` | 従来の穏やかな映画的camera設計を保持し、Shot目的に必要な時だけarc又はclose-upを選ぶ |
-| カメラ | `anime_mv` | Shotごとの意味に合わせ、MiniMax H3正式Motion Typeを各Camera行頭へそのまま置く。離れた最大二Shotへ60～120度かつShot尺70～90%の長尺`Arc Shot`と強い視差を使い、移動する別Shotは`Tracking Shot`で追う。各リップシンクbatchは固定顔インサート又は追加の`face_zoom_emphasis`を一件持ち、頭肩構図から両目、両眉、鼻、口全体及び顔輪郭を保ったまま顔アップへ`Zoom In`する |
+| カメラ | `anime_story_mv` | Shotごとの意味に合わせ、MiniMax H3正式Motion Typeを各Camera行頭へそのまま置く。離れた最大二Shotへ60～120度かつShot尺70～90%の長尺`Arc Shot`と強い視差を使い、移動する別Shotは`Tracking Shot`で追う。各リップシンクbatchは固定顔インサート又は追加の`face_zoom_emphasis`を一件持ち、頭肩構図から両目、両眉、鼻、口全体及び顔輪郭を保ったまま顔アップへ`Zoom In`する |
 
 「禁止リストを増やす」のではなく、実現したい材質、形、動き、軌道を記述する。ただしユーザー自身が否定条件を指定した場合は削除しない。
 
 DirectionはPlannerの全LLM task及び完成Planの全Scene `prompt_prefix`へ共通適用される。特定の衣装部品、身体部位又は小物の局所形状は共通Directionへ置かず、参照画像、Subject定義、保持分析又は対象Shotだけの作者本文で所有する。局所形状をStyle、Motion又はCamera profileへ置いて全Shotへ反復し、その部品を演技又はdetail構図の主題へ昇格させてはならない。
 
-STYLE recordは必ず目標medium又はrendering treatmentから書き始める。`illust_to_photoreal`と`anime_mv`はlocked STYLE profileとし、Direction EnhancerはSTYLEをLLMへ要求せず、選択profileの固定anchorを機械的に`style_direction[0]`へ設定して`profile_enforced`をprovenanceへ残す。`reference_anime`と`reference_cinematic`は通常profileとしてLLMが統合する。Motion及びCameraも選択profile本文が対応typed fieldを機械的に所有し、MOTION/CAMERA record自体をLLMへ要求しない。ユーザー本文を直接所有させる場合だけ対応profileを`passthrough`にする。
+STYLE recordは必ず目標medium又はrendering treatmentから書き始める。`illust_to_photoreal`と`anime_story_mv`はlocked STYLE profileとし、Direction EnhancerはSTYLEをLLMへ要求せず、選択profileの固定anchorを機械的に`style_direction[0]`へ設定して`profile_enforced`をprovenanceへ残す。`reference_anime`と`reference_cinematic`は通常profileとしてLLMが統合する。Motion及びCameraも選択profile本文が対応typed fieldを機械的に所有し、MOTION/CAMERA record自体をLLMへ要求しない。ユーザー本文を直接所有させる場合だけ対応profileを`passthrough`にする。
 
 locked集合、profile保持分析及びScene reinforcementもStyle EMD metadataから構築し、別のPython対応表を正本にしない。profile本文とmetadataはDirection cache keyへ入るpayload及びDirection artifactへ反映される。
 
 最初の比較presetは次の3個に限定する。
 
-- `anime_emotional`: `reference_anime` + `anime_mv` + `anime_mv`
-- `cinematic_anime_mv`: `anime_mv` + `anime_mv` + `anime_mv`
-- `cinema_mv`: `anime_mv` + `cinema_mv` + `cinema_mv`
+- `anime_emotional`: `reference_anime` + `anime_story_mv` + `anime_story_mv`
+- `cinematic_anime_story_mv`: `anime_story_mv` + `anime_story_mv` + `anime_story_mv`
+- `cinema_mv`: `anime_story_mv` + `cinema_mv` + `cinema_mv`
 - `cinematic_performance`: `reference_cinematic` + `natural_performance` + `readable_depth`
 - `painterly_mv`: `reference_painterly` + `natural_performance` + `cinematic_depth`
 
@@ -614,7 +614,7 @@ Plannerの順序は次で固定する。
 4. `shot-layout`: PythonがScene開始、既存Shot及び安全な均等位置から、互いにも1500ms以上離れた候補IDを作る。LLMは各Sceneへ`CUT`又は`CONTINUE`を一個選び、その後へ候補IDを最大4個並べる。先頭Sceneは`CUT`固定。新しい画角、detail、逆方向又は場所を編集点で提示する場合は`CUT`、直前の画像状態とカメラ経路を物理的に引き継ぐ場合だけ`CONTINUE`とする。各Sceneへ直前Sceneの歌詞とvisual beatに加え、`first_section_appearance`、`new_sections`及び`section_entry_shot_index`を明示する。同じ物理動作又は接触の次段階なら`CONTINUE`とし、実行可能な範囲で新section初出Sceneを`CUT`として保持する。4 Scene以上では、最初のmode列がScene 1をCUT、後続境界の4分の1以上をCUT、半数以上をCONTINUE、同一mode最大3連続及びmode遷移数上限という構造契約を満たさない場合、隣接歌詞とvisual beatを比較させる境界mix再計画を一度行う。完全なCUT/CONTINUE交互列は遷移数上限違反である。再応答も満たさない場合、PythonはCUT/CONTINUE列だけを元の選択から最小変更で契約内へ修復し、変更Sceneを`layout_repaired_scenes`へ記録する。Action、Camera、歌詞、Shot候補及び自然文は修復しない。時刻を生成させず、通常は2～3 Shotを選び、4 ShotはSceneが8秒以上で四つの異なる視覚目的を各2秒以上確保できる場合だけにし、複数Shot時は各Shotを1500ms以上にする。Scene全体が1500ms未満なら一個のShotを許す。候補数超過、区切り差、重複、順序違反又は未知候補を含む応答は、既知IDの抽出、時系列順整列、重複除去及び最大4 Shotへの切り詰めだけで機械修復し、修復Sceneをstatusへ記録する。境界mode自体を認識できない場合はLLMを再試行せず`CUT,B0`へfallbackする。
 5. Pythonが選択候補をShot構造へ展開し、カット／継続modeに合わせて累積H3格子上のraw length、Scene時刻及びShot時刻を再配分し、既存本文と歌詞annotationを時刻順に再配置する。
 6. `actions`: DirectionのStyle、Environment、Time/Lighting、Motion、Other制約、visual beat、対象Scene、該当歌詞、Shot終了・長さ・Scene内Shot数、必要な直前状態、直近18 Shotの採用action、Subject instance policy、Python所有Shot枠及び構造的`performance_role`から、Shot IDごとの人物動作を生成する。Camera profileは渡さず、`Arc Shot`等の撮影語をActionへ混入させない。複数Shot Sceneでは、先頭の顔・上半身accent又は継続状態の変化、二番目の腕・手主体の演技、三番目の環境相互作用又は身体方向転換、四番目の異なる終端silhouetteへroleを分配する。Scene-level visual beatが移動でも全Shotを同じ歩行cycleへせず、割り当てroleでは歩行を接続動作へ降格する。段階Directionをvisual beatより上位とし、beatの対象、物理動詞、接触及び結果は維持する一方、Directionと矛盾する付随的な外見、材質、照明、変形、動作又は構図の句は出力しない。同一Scene内の各Shotは同じ主動詞と結果を反復せず、準備、接触、反応、収束等の異なる位相を持つ。MVアクセントでは加速、強い重心移動、方向転換、反動又は鋭い停止を使い、静かな区間とのpose差を作る。Action batchはslow表現上限、単純な手の上下0件及び作者未指定のlower-body主体0件及び作者・歌詞未指定の走行0件という予算を持ち、違反slotだけを一度LLMへ再要求する。比喩的な傷表現は清潔で損傷のない皮膚と衣装の上で、視線、呼吸、肩、胴体、手及び終端poseによる感情演技へ変換する。歌詞transcript自体を身体状態の指示として扱わない。
-7. `cameras`: Direction六区分の完全な共通制約、同じShot枠、visual beat、確定したaction、Subject instance policy、構造的`editorial_role`、直近12件までのcamera履歴及びCamera profileから、Shot IDごとの構図とカメラを生成する。通常slotではPythonはcamera自然文を生成又は書き換えず、LLMが選んだCamera行をAS ISで渡す。例外として、リップシンク有効かつ歌詞sectionが初登場するCUT Sceneでは、新section名を持つ最初の歌詞annotationが属するShotだけを`face_performance_cut`とし、そのActionとCameraをLLM要求から除外してRenderer所有の固定文へ割り当てる。Scene開始と歌詞開始が異なる場合も前倒ししない。Actionは歩行、足運び、走行及び全身移動を禁止し、両目、眉及び完全な口による歌詞対応の顔演技だけを要求する。Cameraは頭肩構図から極端な顔close-upへ進む`Zoom In with large amplitude at fast speed`とし、全行程で両目、両眉、鼻、完全な歌唱口及び顔輪郭を残す。Compilerは二つの固定文をopaque spanとして翻訳backendから隔離する。各通常Camera行はMiniMax H3正式Motion Typeの一つから始める。Camera batchは通常Arc最大1、`anime_mv`では離れた最大二slotを`long_arc_emphasis`として60～120度かつShot尺70～90%の長尺Arcにする。顔インサートと構造的に連携するArc、Tracking最大1、その他の同一Motion Type最大2、slow上限及び作者未指定のlower-body detail 0という予算を持ち、違反slotだけを一度LLMへ再要求する。共通Directionに反する付随表現を撮影目的、照明効果又は視覚的強調へ拡大しない。action本文を再出力せず、一Shotでは一つの主要なCamera Motion Typeだけを選ぶ。固定顔インサートと同一Scene内で隣接する通常Shot一個へ`face_arc_transition`を割り当て、顔Zoomへ入る又は顔Zoomから抜ける60～120度の長尺Arcを必須化する。
+7. `cameras`: Direction六区分の完全な共通制約、同じShot枠、visual beat、確定したaction、Subject instance policy、構造的`editorial_role`、直近12件までのcamera履歴及びCamera profileから、Shot IDごとの構図とカメラを生成する。通常slotではPythonはcamera自然文を生成又は書き換えず、LLMが選んだCamera行をAS ISで渡す。例外として、リップシンク有効かつ歌詞sectionが初登場するCUT Sceneでは、新section名を持つ最初の歌詞annotationが属するShotだけを`face_performance_cut`とし、そのActionとCameraをLLM要求から除外してRenderer所有の固定文へ割り当てる。Scene開始と歌詞開始が異なる場合も前倒ししない。Actionは歩行、足運び、走行及び全身移動を禁止し、両目、眉及び完全な口による歌詞対応の顔演技だけを要求する。Cameraは頭肩構図から極端な顔close-upへ進む`Zoom In with large amplitude at fast speed`とし、全行程で両目、両眉、鼻、完全な歌唱口及び顔輪郭を残す。Compilerは二つの固定文をopaque spanとして翻訳backendから隔離する。各通常Camera行はMiniMax H3正式Motion Typeの一つから始める。Camera batchは通常Arc最大1、`anime_story_mv`では離れた最大二slotを`long_arc_emphasis`として60～120度かつShot尺70～90%の長尺Arcにする。顔インサートと構造的に連携するArc、Tracking最大1、その他の同一Motion Type最大2、slow上限及び作者未指定のlower-body detail 0という予算を持ち、違反slotだけを一度LLMへ再要求する。共通Directionに反する付随表現を撮影目的、照明効果又は視覚的強調へ拡大しない。action本文を再出力せず、一Shotでは一つの主要なCamera Motion Typeだけを選ぶ。固定顔インサートと同一Scene内で隣接する通常Shot一個へ`face_arc_transition`を割り当て、顔Zoomへ入る又は顔Zoomから抜ける60～120度の長尺Arcを必須化する。
 8. Pythonが採用した行recordの`TEXT`から新規生成された引用台詞とplaceholder echoを削除する。
 9. Pythonが任意のサブジェクトEMD、direction、annotation、action、camera、audio templateを完全EMDへ合成し、選択したlip-sync modeのdirectiveを最後に挿入する。`<Subject N>`と`<Picture N>`の関連は変更しない。`` `H3長` ``はstep 5で境界modeと同時に確定した値をそのまま出し、Compilerには再計算させない。
 

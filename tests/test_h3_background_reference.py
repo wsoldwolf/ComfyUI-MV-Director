@@ -90,7 +90,12 @@ class H3BackgroundReferenceTests(unittest.TestCase):
             self.assertIn("not a Subject, performer", definition)
             self.assertIn("written Scene environment", definition)
             self.assertIn("time-lighting directions are authoritative", definition)
+            self.assertIn("keep paths, shrine approaches", definition)
+            self.assertIn("remain beside or outside the circulation route", definition)
+            self.assertIn("move the Subject toward the fixture", definition)
             self.assertIn("restage framing and lighting", retention)
+            self.assertIn("open circulation routes", retention)
+            self.assertIn("placement of fixed fixtures", retention)
             self.assertLess(
                 prompt.index(definition), prompt.index("summary:")
             )
