@@ -1,7 +1,6 @@
 # ComfyUI-MV-Director
 
-[![【MV】千里の秋を駆ける - MiniMax H3+Context Loop+MV Director Demo](https://youtu.be/OLffZGlcZOs)](https://youtu.be/OLffZGlcZOs)
-
+[![【MV】千里の秋を駆ける - MiniMax H3+Context Loop+MV Director Demo](https://img.youtube.com/vi/OLffZGlcZOs/maxresdefault.jpg)](https://youtu.be/OLffZGlcZOs)
 ※本作品は東方Projectの二次創作であり、公式作品ではありません。
 
 画像、歌詞、ボーカルステム、フルミックスから、MiniMax H3 / Context Loop用のMV計画を作るComfyUIカスタムノードです。VisionによるSubject EMD、演出方針、歌詞タイムライン、Shot計画を分離し、最後にRef2VA Plan JSONへコンパイルします。
