@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / "workflows"
 CONTRACT_ID = "context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9"
 H3_DIFFUSION_MODEL = (
-    "MiniMaxH3\\minimax_h3_ref2va_pruned_int8_convrot.safetensors"
+    "MiniMaxH3\\minimax_h3_fl2va_pruned_int8_convrot.safetensors"
 )
 H3_TEXT_ENCODER = (
     "MiniMaxH3\\qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors"

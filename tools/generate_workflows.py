@@ -3,7 +3,8 @@
 The video graphs deliberately start from the pinned Context Loop Ref2V Basic
 workflow.  This preserves its recursive sampling, checkpoint, review, and
 assembly wiring while replacing only the authoring and audio-policy edges
-owned by MV Director.
+owned by MV Director.  MV Director currently recommends the FL2VA diffusion
+checkpoint for its character-motion and camera-work behavior.
 """
 
 from __future__ import annotations
@@ -28,7 +29,7 @@ from core.h3_contract import (
 CONTRACT_ID = "context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9"
 VIDEO_DENOISING_STEPS = 8
 H3_DIFFUSION_MODEL = (
-    "MiniMaxH3\\minimax_h3_ref2va_pruned_int8_convrot.safetensors"
+    "MiniMaxH3\\minimax_h3_fl2va_pruned_int8_convrot.safetensors"
 )
 H3_TEXT_ENCODER = (
     "MiniMaxH3\\qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors"

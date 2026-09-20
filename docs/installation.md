@@ -172,6 +172,34 @@ certutil -hashfile "C:\Software\ComfyUI\models\LLM\GGUF\Qwen3-VL-4B-Instruct\Qwe
 | `qwen3-8b-abliterated-Q4_K_M.gguf` | `8625e48da4c4be9bcba2414fd8cad4095ff3a538d5b0111c2b26b5f6209538b9` |
 | `medium.pt` | `345ae4da62f9b3d59415adc60127b97c714f32e89e936602e85993674d08dcb1` |
 
+### `02_video_context_loop.json`の既定H3モデル
+
+配布workflowの動画生成側（`02_video_context_loop.json`、`04_video_audio_reference.json`、`06_video_lyrics.json`）は、現在FL2VA checkpointを既定値としています。本プロジェクトの検証ではRef2VAよりもキャラクターモーションとカメラワークが改善する傾向が見られたため、現時点ではFL2VAを推奨します。これは本プロジェクトの制作条件に基づく推奨であり、MiniMax H3全用途に対する一般的な優劣を示すものではありません。
+
+全ファイルの配布元は[Comfy-Org/MiniMax-H3](https://huggingface.co/Comfy-Org/MiniMax-H3)です。次の直接リンクから取得し、表の配置先へ保存してください。Turbo LoRAは、現行workflowで検証している`ref2v_turbo_4step_v0.1`をFL2VA checkpointへ適用する構成です。
+
+| 用途 | workflowで選択されるファイル | ComfyUIモデルルートからの配置先 | 取得元 |
+| --- | --- | --- | --- |
+| FL2VA diffusion model | `minimax_h3_fl2va_pruned_int8_convrot.safetensors` | `diffusion_models\MiniMaxH3\` | [ダウンロード](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors?download=true) |
+| Text Encoder (TE) | `qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors` | `text_encoders\MiniMaxH3\` | [ダウンロード](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors?download=true) |
+| Video VAE | `minimax_h3_video_vae_fp16.safetensors` | `vae\MiniMaxH3\` | [ダウンロード](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_fp16.safetensors?download=true) |
+| Audio VAE | `minimax_h3_audio_vae_fp32.safetensors` | `vae\MiniMaxH3\` | [ダウンロード](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors?download=true) |
+| Turbo LoRA | `minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors` | `loras\MiniMaxH3\` | [ダウンロード](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/loras/minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors?download=true) |
+
+取得後は、例えば次のように各ファイルのSHA-256を確認できます。
+
+```bat
+certutil -hashfile "C:\Software\ComfyUI\models\diffusion_models\MiniMaxH3\minimax_h3_fl2va_pruned_int8_convrot.safetensors" SHA256
+```
+
+| ファイル | SHA-256 |
+| --- | --- |
+| `minimax_h3_fl2va_pruned_int8_convrot.safetensors` | `e889202c41dafb67b10d67b97f0d8541508036a6090af23425a5c2615d03c47a` |
+| `qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors` | `35a88d51044231fe332301d7a62aa81e3f2cba62febeb446e2c1e3e0ef76f2c6` |
+| `minimax_h3_video_vae_fp16.safetensors` | `7c1f131492e7eddacaac9069a61b81bdd39de5cc96561e677c5eab1cdce5e522` |
+| `minimax_h3_audio_vae_fp32.safetensors` | `8e505d95dd1561d47abd43d4238fd40d9bb1ae9e147ed0a4cba778d76ae4db48` |
+| `minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors` | `5b9ab5ade15d0775676d01a907268a69a1468dc6033b3b0d3ded5502f3ebb84c` |
+
 ## 6. 起動確認
 
 ComfyUIを再起動し、ノード検索で`MV Director`を確認します。11ノードがCore、Input、Audio、Utilitiesに表示されます。
