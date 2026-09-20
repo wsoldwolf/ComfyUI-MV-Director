@@ -4,7 +4,7 @@
 
 EMDは **Easy MarkDown** の略です。Extended Markdownではありません。
 
-![人物参照と背景参照を分離し、背景を計画時の環境観察と生成時の専用Pictureへ渡す最小パイプライン](docs/assets/minimal-pipeline.png)
+![人物参照と背景参照を分離し、Plan Compiler段階と動画生成段階の間に再利用可能なPlan JSON保存境界を置くプロジェクト概要](docs/assets/minimal-pipeline.png)
 
 ## はじめに
 

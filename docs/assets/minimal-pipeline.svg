@@ -1,201 +1,182 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1180" viewBox="0 0 1600 1180" role="img" aria-labelledby="title description">
-  <title id="title">ComfyUI-MV-Director 最小パイプライン</title>
-  <desc id="description">人物参照と背景参照を分離し、背景は計画時にScene EMDをDirectionとPlannerへ、動画生成時に環境専用PictureをH3へ直接渡す。CompilerがScene EMDから環境契約を生成する。歌詞、ボーカル、フルミックスから完全EMDとContext Loop Plan JSONを作る流れ、Compiler単独経路及びSRT単独出力も示す。</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="2200" height="1280" viewBox="0 0 2200 1280" role="img" aria-labelledby="title desc">
+  <title id="title">ComfyUI-MV-Director 現行プロジェクト概要</title>
+  <desc id="desc">人物・背景Vision、歌詞整列、Direction、Timeline Planner、Compilerから保存済みPlan JSONを作る第一段階と、同じPlanで動画生成段階だけを再実行できるMiniMax H3生成の第二段階を分離した全体図。</desc>
   <defs>
-    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#526273"/>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0L10 5L0 10Z" fill="#526273"/>
+    </marker>
+    <marker id="dashArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0L10 5L0 10Z" fill="#7c3aed"/>
     </marker>
     <style>
-      .canvas { fill: #f8fafc; }
-      .lane { fill: #64748b; font: 600 18px "Yu Gothic UI", "Noto Sans JP", sans-serif; letter-spacing: .04em; }
-      .node { fill: #e7f1ff; stroke: #3977b8; stroke-width: 2; }
-      .input { fill: #fff4df; stroke: #b7791f; stroke-width: 2; }
-      .artifact { fill: #eaf8ef; stroke: #3a8b58; stroke-width: 2; }
-      .output { fill: #f2eafe; stroke: #7950a8; stroke-width: 2; }
-      .target { fill: #263547; stroke: #152232; stroke-width: 2; }
-      .title { fill: #172333; font: 700 22px "Yu Gothic UI", "Noto Sans JP", sans-serif; text-anchor: middle; }
-      .label { fill: #25364a; font: 600 19px "Yu Gothic UI", "Noto Sans JP", sans-serif; text-anchor: middle; }
-      .small { fill: #526273; font: 500 16px "Yu Gothic UI", "Noto Sans JP", sans-serif; text-anchor: middle; }
-      .target-label { fill: #ffffff; font: 700 21px "Yu Gothic UI", "Noto Sans JP", sans-serif; text-anchor: middle; }
-      .target-small { fill: #dbe7f2; font: 500 16px "Yu Gothic UI", "Noto Sans JP", sans-serif; text-anchor: middle; }
-      .edge { fill: none; stroke: #526273; stroke-width: 3; marker-end: url(#arrow); }
-      .edge-dashed { fill: none; stroke: #64748b; stroke-width: 2.5; stroke-dasharray: 9 7; marker-end: url(#arrow); }
-      .edge-label { fill: #526273; font: 500 15px "Yu Gothic UI", "Noto Sans JP", sans-serif; text-anchor: middle; paint-order: stroke; stroke: #f8fafc; stroke-width: 7; stroke-linejoin: round; }
-      .section { fill: none; stroke: #d2dae4; stroke-width: 1.5; stroke-dasharray: 5 7; }
+      .canvas{fill:#f8fafc}.stage{fill:#fff;stroke:#cbd5e1;stroke-width:2}.input{fill:#fff4df;stroke:#b7791f;stroke-width:2}.node{fill:#e7f1ff;stroke:#3977b8;stroke-width:2}.py{fill:#eaf8ef;stroke:#3a8b58;stroke-width:2}.artifact{fill:#f2eafe;stroke:#7950a8;stroke-width:2}.save{fill:#fff0f1;stroke:#c24156;stroke-width:3}.target{fill:#263547;stroke:#152232;stroke-width:2}.edge{fill:none;stroke:#526273;stroke-width:3;marker-end:url(#arrow)}.dash{fill:none;stroke:#7c3aed;stroke-width:3.5;stroke-dasharray:12 8;marker-end:url(#dashArrow)}.title{fill:#172333;font:700 28px "Yu Gothic UI","Noto Sans JP",sans-serif;text-anchor:middle}.stageTitle{fill:#334155;font:700 22px "Yu Gothic UI","Noto Sans JP",sans-serif}.label{fill:#25364a;font:700 18px "Yu Gothic UI","Noto Sans JP",sans-serif;text-anchor:middle}.small{fill:#526273;font:500 14px "Yu Gothic UI","Noto Sans JP",sans-serif;text-anchor:middle}.tiny{fill:#526273;font:500 12px "Yu Gothic UI","Noto Sans JP",sans-serif;text-anchor:middle}.white{fill:#fff;font:700 19px "Yu Gothic UI","Noto Sans JP",sans-serif;text-anchor:middle}.whiteSmall{fill:#dbe7f2;font:500 14px "Yu Gothic UI","Noto Sans JP",sans-serif;text-anchor:middle}.note{fill:#475569;font:600 15px "Yu Gothic UI","Noto Sans JP",sans-serif;text-anchor:middle}.edgeLabel{fill:#6d28d9;font:700 13px "Yu Gothic UI","Noto Sans JP",sans-serif;text-anchor:middle;paint-order:stroke;stroke:#fff;stroke-width:8;stroke-linejoin:round}
     </style>
   </defs>
 
-  <rect class="canvas" x="0" y="0" width="1600" height="1180" rx="18"/>
-  <text class="title" x="800" y="44">ComfyUI-MV-Director — 選定した最小パイプライン</text>
+  <rect class="canvas" width="2200" height="1280" rx="18"/>
+  <text class="title" x="1100" y="48">ComfyUI-MV-Director — 現行プロジェクト概要</text>
 
-  <text class="lane" x="45" y="82">入力</text>
-  <text class="lane" x="325" y="82">解析・準備ノード</text>
-  <text class="lane" x="675" y="82">中間成果</text>
-  <text class="lane" x="1010" y="82">計画・コンパイル</text>
-  <text class="lane" x="1360" y="82">Context Loop / H3</text>
+  <rect class="stage" x="28" y="82" width="2144" height="710" rx="18"/>
+  <text class="stageTitle" x="54" y="118">Stage 1 — Plan / Compiler：認識・歌詞時刻・演出を固定して保存</text>
 
-  <rect class="section" x="22" y="94" width="1556" height="542" rx="16"/>
-  <rect class="section" x="22" y="662" width="1556" height="430" rx="16"/>
+  <rect class="input" x="55" y="150" width="220" height="76" rx="12"/>
+  <text class="label" x="165" y="181">人物参照画像</text>
+  <text class="small" x="165" y="205">identity / Picture 1</text>
+  <rect class="node" x="330" y="140" width="265" height="96" rx="12"/>
+  <text class="label" x="462.5" y="176">Image to Subject EMD</text>
+  <text class="small" x="462.5" y="202">subject_only / person</text>
+  <rect class="artifact" x="650" y="150" width="245" height="76" rx="12"/>
+  <text class="label" x="772.5" y="181">Concept EMD</text>
+  <text class="small" x="772.5" y="205">Subject identity</text>
+  <path class="edge" d="M275 188H330"/>
+  <path class="edge" d="M595 188H650"/>
 
-  <!-- Image branch -->
-  <rect class="input" x="45" y="120" width="220" height="72" rx="12"/>
-  <text class="label" x="155" y="153">人物参照画像</text>
-  <text class="small" x="155" y="178">identity専用</text>
+  <rect class="input" x="55" y="265" width="220" height="76" rx="12"/>
+  <text class="label" x="165" y="296">背景参照画像</text>
+  <text class="small" x="165" y="320">environment / Picture 2</text>
+  <rect class="node" x="330" y="255" width="265" height="96" rx="12"/>
+  <text class="label" x="462.5" y="291">Background Vision</text>
+  <text class="small" x="462.5" y="317">scene_only / location</text>
+  <rect class="artifact" x="650" y="265" width="245" height="76" rx="12"/>
+  <text class="label" x="772.5" y="296">Scene EMD</text>
+  <text class="small" x="772.5" y="320">環境・時刻baseline</text>
+  <path class="edge" d="M275 303H330"/>
+  <path class="edge" d="M595 303H650"/>
 
-  <rect class="node" x="325" y="108" width="300" height="96" rx="12"/>
-  <text class="label" x="475" y="147">Image to Subject EMD</text>
-  <text class="small" x="475" y="177">画像認識 + Picture自動束縛</text>
+  <rect class="input" x="55" y="390" width="220" height="100" rx="12"/>
+  <text class="label" x="165" y="421">歌詞 + vocal</text>
+  <text class="small" x="165" y="447">plain lyrics / PCM</text>
+  <text class="small" x="165" y="470">H3 Timing Profile</text>
+  <rect class="node" x="330" y="385" width="265" height="110" rx="12"/>
+  <text class="label" x="462.5" y="420">Lyric Segmentation</text>
+  <text class="small" x="462.5" y="446">Whisper + VAD + targeted retry</text>
+  <text class="small" x="462.5" y="470">Scene / lyric timeline</text>
+  <rect class="artifact" x="650" y="390" width="245" height="100" rx="12"/>
+  <text class="label" x="772.5" y="421">Template EMD</text>
+  <text class="small" x="772.5" y="447">確定Scene時間枠</text>
+  <text class="small" x="772.5" y="470">+ SRT</text>
+  <path class="edge" d="M275 440H330"/>
+  <path class="edge" d="M595 440H650"/>
 
-  <rect class="artifact" x="680" y="108" width="255" height="72" rx="12"/>
-  <text class="label" x="807.5" y="139">サブジェクトEMD</text>
-  <text class="small" x="807.5" y="164">&lt;Subject N&gt; ↔ &lt;Picture N&gt;</text>
+  <rect class="input" x="650" y="550" width="245" height="100" rx="12"/>
+  <text class="label" x="772.5" y="581">利用者希望</text>
+  <text class="small" x="772.5" y="607">Style / Motion / Camera</text>
+  <text class="small" x="772.5" y="630">外部profile EMD</text>
 
-  <rect class="artifact" x="680" y="198" width="255" height="72" rx="12"/>
-  <text class="label" x="807.5" y="229">必要参照画像</text>
-  <text class="small" x="807.5" y="254">同じIMAGE pass-through</text>
+  <rect class="node" x="1000" y="150" width="285" height="225" rx="14"/>
+  <text class="label" x="1142.5" y="185">Direction Enhancer</text>
+  <text class="small" x="1142.5" y="216">concept_emd</text>
+  <text class="small" x="1142.5" y="242">scene_emd</text>
+  <text class="small" x="1142.5" y="278">利用者希望 + Profile</text>
+  <text class="small" x="1142.5" y="316">全Scene共通方針を一回統合</text>
+  <text class="tiny" x="1142.5" y="346">明示DirectionをVision baselineより優先</text>
 
-  <path class="edge" d="M265 156 H325"/>
-  <path class="edge" d="M625 142 H680"/>
-  <path class="edge" d="M625 174 C650 174 650 234 680 234"/>
+  <path class="dash" d="M895 188H1000"/>
+  <text class="edgeLabel" x="947" y="176">concept_emd</text>
+  <path class="dash" d="M895 303H950V242H1000"/>
+  <text class="edgeLabel" x="940" y="291">scene_emd</text>
+  <path class="edge" d="M895 600H955V330H1000"/>
 
-  <!-- Direction branch -->
-  <rect class="input" x="45" y="264" width="220" height="82" rx="12"/>
-  <text class="label" x="155" y="298">短い希望</text>
-  <text class="small" x="155" y="325">+ 演出プロファイル</text>
+  <rect class="artifact" x="1000" y="415" width="285" height="90" rx="12"/>
+  <text class="label" x="1142.5" y="448">MVD_DIRECTION_V3</text>
+  <text class="small" x="1142.5" y="474">typed Direction + preview</text>
+  <path class="edge" d="M1142.5 375V415"/>
 
-  <rect class="node" x="325" y="257" width="300" height="96" rx="12"/>
-  <text class="label" x="475" y="296">Direction Enhancer</text>
-  <text class="small" x="475" y="326">希望 + Scene EMD → 全体方針</text>
+  <rect class="node" x="1370" y="180" width="300" height="280" rx="14"/>
+  <text class="label" x="1520" y="217">Timeline Planner v55</text>
+  <text class="small" x="1520" y="248">条件付き Lyric Cue Discovery</text>
+  <text class="small" x="1520" y="274">Visual Beats → Song Direction</text>
+  <text class="small" x="1520" y="300">Shot Layout → Actions</text>
+  <text class="small" x="1520" y="326">Action Audit → Cameras</text>
+  <text class="small" x="1520" y="352">CUT/CONTINUE・H3格子</text>
+  <text class="small" x="1520" y="378">作者台詞・lip-syncを構造合成</text>
+  <text class="tiny" x="1520" y="418">合格Action / Camera自然文はAS IS</text>
 
-  <rect class="artifact" x="680" y="282" width="255" height="72" rx="12"/>
-  <text class="label" x="807.5" y="326">Direction</text>
+  <path class="edge" d="M895 440H930V525H1325V405H1370"/>
+  <text class="edgeLabel" x="1195" y="516">template_emd</text>
+  <path class="edge" d="M1285 460H1325V370H1370"/>
+  <text class="edgeLabel" x="1320" y="476">direction</text>
+  <path class="dash" d="M895 188H930V132H1325V240H1370"/>
+  <text class="edgeLabel" x="1180" y="146">concept_emd</text>
+  <path class="dash" d="M895 303H930V395H1325V305H1370"/>
+  <text class="edgeLabel" x="1180" y="389">scene_emd</text>
 
-  <path class="edge" d="M265 305 H325"/>
-  <path class="edge" d="M625 305 C650 305 650 318 680 318"/>
+  <rect class="artifact" x="1730" y="210" width="210" height="92" rx="12"/>
+  <text class="label" x="1835" y="245">完成EMD</text>
+  <text class="small" x="1835" y="271">人が確認・編集可能</text>
+  <path class="edge" d="M1670 256H1730"/>
+  <rect class="node" x="1730" y="350" width="210" height="112" rx="12"/>
+  <text class="label" x="1835" y="384">EMD Compiler</text>
+  <text class="small" x="1835" y="410">Ref2VA構造化</text>
+  <text class="small" x="1835" y="434">日本語自由文だけ英訳</text>
+  <path class="edge" d="M1835 302V350"/>
 
-  <!-- Lyrics branch -->
-  <rect class="input" x="45" y="410" width="220" height="72" rx="12"/>
-  <text class="label" x="155" y="440">歌詞ファイル</text>
-  <text class="small" x="155" y="465">TXT / LRC / SRT</text>
+  <rect class="save" x="1980" y="300" width="155" height="142" rx="14"/>
+  <text class="label" x="2057.5" y="337">保存境界</text>
+  <text class="small" x="2057.5" y="366">Plan JSON</text>
+  <text class="small" x="2057.5" y="390">.txt handoff</text>
+  <text class="tiny" x="2057.5" y="416">前段を再実行せず</text>
+  <text class="tiny" x="2057.5" y="433">後段へ渡す</text>
+  <path class="edge" d="M1940 406H1980"/>
 
-  <rect class="node" x="325" y="399" width="300" height="94" rx="12"/>
-  <text class="label" x="475" y="438">Load Text File</text>
-  <text class="small" x="475" y="468">選択 / D&amp;D → STRING</text>
+  <rect class="py" x="1000" y="550" width="940" height="148" rx="14"/>
+  <text class="label" x="1470" y="584">責務境界</text>
+  <text class="small" x="1470" y="613">LLM：Vision観測、演出候補、Action監査、翻訳自由文</text>
+  <text class="small" x="1470" y="639">Python：typed artifact、時間、slot、protocol、directive、JSON</text>
+  <text class="small" x="1470" y="665">人物Picture 1と背景Picture 2は別authority・別H3 slot。不完全な必須出力は後段へ流さず停止</text>
+  <text class="tiny" x="1470" y="687">成功cacheとINFOログで長い処理を追跡</text>
 
-  <rect class="input" x="45" y="523" width="220" height="72" rx="12"/>
-  <text class="label" x="155" y="566">ボーカルステム</text>
+  <text class="note" x="1100" y="756">Stage 1の成果を固定し、同じ計画からVideo段階だけを安全に再実行する</text>
 
-  <rect class="node" x="680" y="400" width="255" height="142" rx="12"/>
-  <text class="label" x="807.5" y="438">Lyric Segmentation</text>
-  <text class="small" x="807.5" y="468">Whisper + VAD</text>
-  <text class="small" x="807.5" y="493">H3長 / Scene / Shot</text>
-  <text class="small" x="807.5" y="518">元音源msの歌詞位置</text>
+  <rect class="stage" x="28" y="824" width="2144" height="390" rx="18"/>
+  <text class="stageTitle" x="54" y="860">Stage 2 — Video：保存済みPlanを再利用し、MiniMax H3の生成・Review・連結だけを実行</text>
 
-  <rect class="output" x="680" y="564" width="255" height="54" rx="12"/>
-  <text class="label" x="807.5" y="598">SRT（単独利用可）</text>
+  <rect class="save" x="55" y="905" width="220" height="104" rx="12"/>
+  <text class="label" x="165" y="941">Compiled Plan JSON</text>
+  <text class="small" x="165" y="967">Stage 1の.txt</text>
+  <text class="small" x="165" y="990">方式ごとの対応Plan</text>
 
-  <path class="edge" d="M265 446 H325"/>
-  <path class="edge" d="M625 446 H680"/>
-  <path class="edge" d="M265 559 C460 559 500 518 680 510"/>
-  <path class="edge" d="M807.5 542 V564"/>
+  <rect class="input" x="55" y="1040" width="220" height="104" rx="12"/>
+  <text class="label" x="165" y="1074">生成時入力</text>
+  <text class="small" x="165" y="1100">Picture 1 / Picture 2</text>
+  <text class="small" x="165" y="1123">full mix / vocal PCM</text>
 
-  <!-- Planner and Compiler -->
-  <rect class="node" x="1010" y="174" width="280" height="142" rx="12"/>
-  <text class="label" x="1150" y="215">Timeline Planner</text>
-  <text class="small" x="1150" y="246">Template EMD + Timeline</text>
-  <text class="small" x="1150" y="271">演出 + lip-sync directive</text>
-  <text class="small" x="1150" y="296">→ 完全EMD</text>
+  <rect class="py" x="350" y="930" width="280" height="156" rx="12"/>
+  <text class="label" x="490" y="966">Audio Pad Pair</text>
+  <text class="small" x="490" y="992">Plan frame尺へPCM無音補完</text>
+  <text class="label" x="490" y="1027">Scene Debug Splitter</text>
+  <text class="small" x="490" y="1053">PlanとPCMを同範囲へ切出し</text>
 
-  <path class="edge" d="M935 144 C970 144 972 207 1010 207"/>
-  <path class="edge" d="M935 318 C972 318 972 273 1010 273"/>
-  <path class="edge" d="M935 462 C982 462 982 300 1010 300"/>
-  <text class="edge-label" x="968" y="426">Template EMD + Timeline</text>
+  <rect class="input" x="720" y="885" width="330" height="92" rx="12"/>
+  <text class="label" x="885" y="919">Video生成設定</text>
+  <text class="small" x="885" y="946">Scene Seed / sampler / steps / Review</text>
 
-  <rect class="input" x="680" y="690" width="255" height="72" rx="12"/>
-  <text class="label" x="807.5" y="720">手書き完全EMD</text>
-  <text class="small" x="807.5" y="745">Compiler単独経路</text>
+  <rect class="target" x="720" y="1005" width="330" height="156" rx="14"/>
+  <text class="white" x="885" y="1045">Context Loop / MiniMax H3</text>
+  <text class="whiteSmall" x="885" y="1074">TurboLoRA → Attention Backend</text>
+  <text class="whiteSmall" x="885" y="1100">→ Video/Audio Shift → Sampling</text>
+  <text class="whiteSmall" x="885" y="1127">Scene生成・Review・連結</text>
 
-  <rect class="node" x="1010" y="405" width="280" height="142" rx="12"/>
-  <text class="label" x="1150" y="446">EMD Compiler</text>
-  <text class="small" x="1150" y="476">Ref2VA専用 / as-is</text>
-  <text class="small" x="1150" y="501">日本語描写だけ英訳</text>
-  <text class="small" x="1150" y="526">六セクションへ直列化</text>
+  <rect class="artifact" x="1190" y="985" width="310" height="136" rx="14"/>
+  <text class="label" x="1345" y="1023">生成された動画候補</text>
+  <text class="small" x="1345" y="1051">保存Planの演出・歌詞・Cameraを使用</text>
+  <text class="small" x="1345" y="1077">H3の生成結果を確認</text>
+  <text class="small" x="1345" y="1103">segment / checkpoint / final</text>
 
-  <path class="edge" d="M1150 316 V405"/>
-  <text class="edge-label" x="1198" y="365">完全EMD</text>
-  <path class="edge-dashed" d="M935 726 C980 726 980 520 1010 520"/>
+  <rect class="py" x="1600" y="985" width="390" height="136" rx="14"/>
+  <text class="label" x="1795" y="1023">必要ならStage 2だけ再Queue</text>
+  <text class="small" x="1795" y="1051">保存済みPlanと前段成果を再利用</text>
+  <text class="small" x="1795" y="1077">後段停止でもVision・Whisper・LLMを再実行しない</text>
+  <text class="small" x="1795" y="1103">設定変更時は実在するVideoノード上で行う</text>
 
-  <rect class="output" x="1360" y="402" width="205" height="72" rx="12"/>
-  <text class="label" x="1462.5" y="432">Plan JSON</text>
-  <text class="small" x="1462.5" y="458">Context Loop互換</text>
+  <path class="edge" d="M275 957H350"/>
+  <path class="edge" d="M275 1092C310 1092 310 1050 350 1050"/>
+  <path class="edge" d="M630 1008H680V1083H720"/>
+  <path class="edge" d="M885 977V1005"/>
+  <path class="edge" d="M1050 1083H1190"/>
+  <path class="edge" d="M1500 1053H1600"/>
+  <path class="dash" d="M1795 1121V1175H885V1161"/>
+  <text class="edgeLabel" x="1340" y="1164">同じPlanでVideo段階だけ再実行</text>
 
-  <rect class="output" x="1360" y="495" width="205" height="72" rx="12"/>
-  <text class="label" x="1462.5" y="525">固定artifact</text>
-  <text class="small" x="1462.5" y="551">必要参照一覧</text>
-
-  <path class="edge" d="M1290 449 C1325 449 1325 438 1360 438"/>
-  <path class="edge" d="M1290 503 C1325 503 1325 531 1360 531"/>
-
-  <!-- Audio branch -->
-  <rect class="input" x="45" y="700" width="220" height="72" rx="12"/>
-  <text class="label" x="155" y="730">フルミックス</text>
-  <text class="small" x="155" y="755">最終音声</text>
-
-  <rect class="input" x="45" y="798" width="220" height="72" rx="12"/>
-  <text class="label" x="155" y="828">ボーカルステム</text>
-  <text class="small" x="155" y="853">解析 / lip-sync用</text>
-
-  <rect class="node" x="325" y="736" width="300" height="98" rx="12"/>
-  <text class="label" x="475" y="776">Audio Pad Pair</text>
-  <text class="small" x="475" y="806">短い側だけをPCM無音補完</text>
-
-  <rect class="artifact" x="680" y="800" width="255" height="72" rx="12"/>
-  <text class="label" x="807.5" y="830">H3 Audio Tracks</text>
-  <text class="small" x="807.5" y="855">+ Source Timeline</text>
-
-  <path class="edge" d="M265 736 C295 736 295 765 325 765"/>
-  <path class="edge" d="M265 834 H325"/>
-  <path class="edge" d="M625 785 C652 785 652 836 680 836"/>
-
-  <!-- Separate background branch -->
-  <rect class="input" x="45" y="910" width="220" height="82" rx="12"/>
-  <text class="label" x="155" y="941">背景参照画像</text>
-  <text class="small" x="155" y="968">人物画像とは別ファイル</text>
-
-  <rect class="node" x="325" y="900" width="300" height="102" rx="12"/>
-  <text class="label" x="475" y="932">Background Vision</text>
-  <text class="small" x="475" y="958">計画時: scene_only / location</text>
-  <text class="small" x="475" y="982">Picture束縛なし</text>
-
-  <rect class="artifact" x="680" y="900" width="255" height="102" rx="12"/>
-  <text class="label" x="807.5" y="932">Scene EMD</text>
-  <text class="small" x="807.5" y="958">Directionへ環境証拠</text>
-  <text class="small" x="807.5" y="982">人物Subjectへ結合しない</text>
-
-  <rect class="node" x="1010" y="900" width="280" height="102" rx="12"/>
-  <text class="label" x="1150" y="932">Compiler環境契約</text>
-  <text class="small" x="1150" y="958">生成時: &lt;Picture 2&gt;</text>
-  <text class="small" x="1150" y="982">環境条件を独立して保持</text>
-
-  <path class="edge" d="M265 951 H325"/>
-  <path class="edge" d="M625 951 H680"/>
-  <path class="edge-dashed" d="M680 940 H650 V343 H625"/>
-  <text class="edge-label" x="642" y="626">emd_fragment → scene_emd</text>
-  <path class="edge-dashed" d="M265 980 V1050 H980 C1000 1050 1000 974 1010 974"/>
-  <text class="edge-label" x="617" y="1042">同じ背景IMAGEをH3へ直接接続</text>
-  <path class="edge" d="M1462.5 474 V1060 H1150 V1002"/>
-  <text class="edge-label" x="1362" y="1052">Compiled Plan JSON</text>
-  <path class="edge" d="M1150 900 V888"/>
-
-  <!-- Final target -->
-  <rect class="target" x="1110" y="760" width="455" height="128" rx="14"/>
-  <text class="target-label" x="1337.5" y="808">Context Loop / MiniMax H3</text>
-  <text class="target-label" x="1337.5" y="838">Ref2VA</text>
-  <text class="target-small" x="1337.5" y="866">Plan JSON + 参照画像 + Source Timeline</text>
-
-  <path class="edge" d="M935 234 C970 234 970 660 1045 660 H1380 C1405 660 1405 738 1405 760"/>
-  <path class="edge" d="M935 836 H1110"/>
-
-  <text class="small" x="800" y="1130">人物 &lt;Picture 1&gt; と背景 &lt;Picture 2&gt; を分離すると、人物identityによる条件占有を避けて背景再現率を高められる</text>
-  <text class="small" x="800" y="1155">独立利用: 手書き完全EMD → Compiler ／ 画像なしサブジェクトEMD → Enhancer・Planner ／ Lyric Segmentation → SRT</text>
+  <text class="note" x="1100" y="1246">前段から作り直す変更：歌詞・音源時刻・Direction・profile・Planner seed・Subject/Scene EMD・Compiler条件</text>
 </svg>

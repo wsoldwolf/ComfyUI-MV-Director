@@ -1,11 +1,11 @@
 # Timeline Planner
 
-Planner v54の`anime_emotional_mv`は、プロファイル内の
+Planner v55は、v54で導入した`anime_emotional_mv`の歌詞Cue Discoveryを引き継ぎます。プロファイル内の
 `lyric_interpretation=bounded`と`lyric_cue_mode=automatic`で歌詞行Discoveryを
 有効にします。同じ原文行は一回だけ、16行ずつ最大768出力tokenで具体対象候補を
 抽出します。Scene内の原文順で最後の非body候補を選び、対象・根拠をVisual Beatへ
 結び付けます。候補と選択はINFOへ出ます。新しいUI・EMD項目・Vision実行はありません。
-詳しくは[プロファイル設定](../../profiles/README.md)と
+詳しくは[Direction / Planner処理フロー](../architecture/direction-planner-flow.md)、[プロファイル設定](../../profiles/README.md)と
 [実装・実8B検証](../research/planner-v54-lyric-cue-discovery-2026-09-20.md)を参照してください。
 
 boundedでは以前のBeat/Action自然文履歴を生成requestへ再掲せず、監査と反復検査に

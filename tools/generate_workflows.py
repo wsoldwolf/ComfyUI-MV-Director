@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import argparse
 import base64
-import copy
 import json
 from pathlib import Path
 import sys
@@ -45,14 +44,14 @@ OUTPUT_MULTIPLE = 32
 TURBO_LORA_NAME = (
     "MiniMaxH3\\minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors"
 )
-TEXT_MODEL = "Qwen3-4B-abliterated/Qwen3-4B-abliterated-q5_k_m.gguf"
+TEXT_MODEL = "Qwen3-8B-Abliterated/qwen3-8b-abliterated-Q4_K_M.gguf"
 VISION_MODEL = "Qwen3-VL-4B-Instruct/Qwen3-VL-4B-Instruct-Q4_K_M.gguf"
 WHISPER_MODEL = "medium.pt"
-CHARACTER_IMAGE = "image001_mikofox (2).jpg"
+CHARACTER_IMAGE = "image001_mikofox.jpg"
 BACKGROUND_IMAGE = "image002_keinai.jpg"
-FULL_MIX_AUDIO = "autumn_fox_shrine.mp3"
-VOCAL_AUDIO = "autumn_fox_shrine_vocal.mp3"
-LYRICS_BASENAME = "autumn_fox_shrine.txt"
+FULL_MIX_AUDIO = "bgm_millennium_torii.mp3"
+VOCAL_AUDIO = "bgm_millennium_torii_vocal.mp3"
+LYRICS_BASENAME = "bgm_millennium_torii_lyrics.txt"
 CHARACTER_HINT = (
     "狐巫女。狐耳、耳の先端は黒い。狐尻尾、尾の先端は白。"
     "白い足袋と、赤い鼻緒の黒い木下駄を着用する。"
@@ -64,6 +63,15 @@ BACKGROUND_INSTRUCTION = (
     "人物、動物、キャラクター及び画面構成資料としての特徴は記述しない。"
     "場所、空間構成、建築、植生、時刻、天候及び環境照明だけを観察する。"
 )
+
+SOURCE_COLOR = "#232"
+SOURCE_BGCOLOR = "#353"
+PROCESS_COLOR = "#223"
+PROCESS_BGCOLOR = "#335"
+NOTE_COLOR = "#432"
+NOTE_BGCOLOR = "#653"
+README_COLOR = "#322"
+README_BGCOLOR = "#533"
 
 MODES = {
     "context_loop": {
@@ -159,6 +167,103 @@ def _note(node_id: int, pos: tuple[int, int], title: str, text: str) -> dict[str
         (960, 280),
         title,
         widgets=[text],
+    )
+
+
+def _set_palette(
+    node: dict[str, Any], color: str, bgcolor: str
+) -> dict[str, Any]:
+    node["color"] = color
+    node["bgcolor"] = bgcolor
+    return node
+
+
+def _markdown_note(
+    node_id: int,
+    pos: tuple[int, int],
+    size: tuple[int, int],
+    title: str,
+    text: str,
+    *,
+    readme: bool = False,
+    order: int | None = None,
+) -> dict[str, Any]:
+    node = _node(
+        node_id,
+        "MarkdownNote",
+        pos,
+        size,
+        title,
+        widgets=[text],
+        order=order,
+    )
+    node["properties"] = {
+        "ue_properties": {
+            "widget_ue_connectable": {},
+            "version": "7.8",
+            "input_ue_unconnectable": {},
+        }
+    }
+    node["widgets_values_named"] = {"text": text}
+    return _set_palette(
+        node,
+        README_COLOR if readme else NOTE_COLOR,
+        README_BGCOLOR if readme else NOTE_BGCOLOR,
+    )
+
+
+def _workflow_label(
+    node_id: int,
+    pos: tuple[int, int],
+    size: tuple[int, int],
+    title: str,
+    *,
+    order: int | None = None,
+) -> dict[str, Any]:
+    node = _node(
+        node_id,
+        "Label (rgthree)",
+        pos,
+        size,
+        title,
+        order=order,
+    )
+    node["flags"] = {"allow_interaction": True}
+    node["properties"] = {
+        "fontSize": 48,
+        "fontFamily": "Arial",
+        "fontColor": "#00ffff",
+        "textAlign": "left",
+        "backgroundColor": "transparent",
+        "padding": 0,
+        "borderRadius": 0,
+        "angle": 0,
+        "ue_properties": {
+            "widget_ue_connectable": {},
+            "input_ue_unconnectable": {},
+            "version": "7.8",
+        },
+    }
+    return _set_palette(node, "#fff0", "#fff0")
+
+
+def _shared_seed_node(node_id: int, pos: tuple[int, int]) -> dict[str, Any]:
+    return _set_palette(
+        _node(
+            node_id,
+            "MVDirectorSeed32",
+            pos,
+            (330, 318),
+            "",
+            inputs=[
+                _widget_input("mode", "COMBO"),
+                _widget_input("seed", "INT"),
+            ],
+            outputs=[_output("seed", "INT")],
+            widgets=["fixed", 42],
+        ),
+        SOURCE_COLOR,
+        SOURCE_BGCOLOR,
     )
 
 
@@ -718,6 +823,336 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
     _connect(workflow, 10, 0, 11, "text", "STRING")
     _connect(workflow, 9, 0, 12, "text", "STRING")
     _connect(workflow, 7, 1, 13, "text", "STRING")
+    return _decorate_plan_workflow(workflow, mode)
+
+
+def _decorate_plan_workflow(
+    workflow: dict[str, Any], mode: str
+) -> dict[str, Any]:
+    """Apply the documented layout and palette established by workflow 01."""
+
+    spec = MODES[mode]
+    _remove_nodes(workflow, {1})
+    layout: dict[int, tuple[list[float], list[float], int]] = {
+        2: ([40, 340], [340, 360], 2),
+        14: ([40, 750], [340, 360], 3),
+        6: ([43, 1342], [330, 100], 4),
+        4: ([40, 1920], [330, 140], 5),
+        5: ([40, 1780], [330, 180], 6),
+        3: ([450, 330], [500, 800], 14),
+        15: ([450, 1180], [500, 800], 15),
+        7: ([460, 2040], [480, 240], 16),
+        8: ([1020, 330], [500, 720], 17),
+        9: ([1020, 1120], [500, 620], 18),
+        10: ([1591, 1118], [500, 510], 19),
+        11: ([2171, 1118], [350, 170], 20),
+        12: ([2171, 1338], [350, 170], 21),
+        13: ([2171, 1558], [350, 170], 22),
+    }
+    source_ids = {2, 4, 5, 14}
+    for node_id, (pos, size, order) in layout.items():
+        node = _node_by_id(workflow, node_id)
+        node["pos"] = pos
+        node["size"] = size
+        node["order"] = order
+        _set_palette(
+            node,
+            SOURCE_COLOR if node_id in source_ids else PROCESS_COLOR,
+            SOURCE_BGCOLOR if node_id in source_ids else PROCESS_BGCOLOR,
+        )
+
+    seed = _shared_seed_node(16, (40, 1590))
+    seed["order"] = 7
+    workflow["nodes"].append(seed)
+    for target_id in (3, 8, 9, 10, 15):
+        target = _node_by_id(workflow, target_id)
+        _ensure_widget_inputs(target, (("seed", "INT"),))
+        _connect(workflow, 16, 0, target_id, "seed", "INT")
+
+    mode_readme = {
+        "context_loop": (
+            "この版はContext Loop標準リップシンクを使用します。"
+            "VRAM 8GB環境では動画生成段階が停止しやすいため、"
+            "Audio Reference版又はLyrics版も検討してください。"
+        ),
+        "audio_reference": (
+            "この版はSceneごとのvocal区間を<Audio 1>として参照し、"
+            "Context Loopのsource-audio lockを使用しません。"
+        ),
+        "lyrics": (
+            "この版は歌詞directiveだけで口形を誘導し、追加の音声参照又は"
+            "Context Loop Lip-Sync Optionsを使用しません。"
+        ),
+    }[mode]
+    readme = (
+        "このワークフローはMV生成を自動化する言語フロントエンドです。"
+        "人物・背景画像、歌詞、ボーカルステムから、動画生成段階で使用する"
+        "Context Loop Plan JSONを生成します。\n\n"
+        "Plan / CompilerとVideoは意図的に分離しています。生成したPlanを固定したまま"
+        "Video段階だけを再Queueでき、動画側で停止してもVision、Whisper、Planner及び"
+        "Compilerを再実行せずに済みます。\n\n"
+        + mode_readme
+    )
+    output_number = int(spec["number"]) * 2
+    output_note = (
+        "ComfyUI\\output\\mv_director に次の三ファイルを保存します。\n\n"
+        "|名称|説明|\n|----|----|\n"
+        f"|{mode}_plan_XXXXX.txt|動画生成Plan JSON|\n"
+        f"|{mode}_emd_XXXXX.md|Compiler入力前の完成EMD|\n"
+        f"|{mode}_lyrics_XXXXX.txt|拡張子を.srtへ変更できる字幕本文|\n\n"
+        "対応するVideo workflowへ人物・背景画像、vocal、full mixと保存済みPlanを"
+        "指定してください。\n\n"
+        f"> ComfyUI-MV-Director\\workflows\\{output_number:02d}_video_{mode}.json"
+    )
+    notes = [
+        _workflow_label(
+            17,
+            (-350, 54),
+            (1100, 48),
+            f"MV-Director {spec['label']} Lip-Sync ワークフロー",
+            order=8,
+        ),
+        _markdown_note(
+            18,
+            (-350, 340),
+            (350, 350),
+            "1. キャラクター立ち絵を設定",
+            (
+                "全身が見える人物参照を指定します。正面一枚でも使用できますが、"
+                "背面等の見えない情報はMiniMax H3の概念で補完されます。\n\n"
+                "複数構図を一枚へ置く場合は、同一人物のreference sheetとして"
+                "判読できる余白と統一した衣装を保ってください。"
+            ),
+            order=9,
+        ),
+        _markdown_note(
+            19,
+            (-340, 760),
+            (350, 350),
+            "2. 背景画像を設定",
+            (
+                "MVの舞台となる背景画像を指定します。人物参照とは別Pictureとして"
+                "扱い、建築、植生、地形及び空間同一性を補助します。\n\n"
+                "中央下部に人物が動ける空間のある構図は、H3が移動可能領域を"
+                "認識しやすくなります。"
+            ),
+            order=10,
+        ),
+        _markdown_note(
+            20,
+            (-340, 1590),
+            (330, 110),
+            "3. シードの設定",
+            (
+                "共有seedをVision、Direction、Planner、Compilerへ渡します。"
+                "比較検証ではfixedにすると、設定変更による差を追跡しやすくなります。"
+            ),
+            order=11,
+        ),
+        _markdown_note(
+            21,
+            (-340, 1770),
+            (330, 110),
+            "4. 歌詞の設定",
+            (
+                "歌詞をUTF-8テキストで指定します。歌詞とvocalからWhisper及び"
+                "整列アルゴリズムがScene時間枠とTemplate EMDを生成します。"
+            ),
+            order=12,
+        ),
+        _markdown_note(
+            22,
+            (-340, 1930),
+            (330, 130),
+            "5. ボーカルステムの設定",
+            (
+                "ボーカルだけの音源を指定します。楽器を含むfull mixは歌詞整列の"
+                "入力にしません。Suno等で分離したvocal stemを使用できます。"
+            ),
+            order=13,
+        ),
+        _markdown_note(
+            23,
+            (2540, 1120),
+            (390, 610),
+            "6. 出力の確認",
+            output_note,
+            order=23,
+        ),
+        _markdown_note(
+            24,
+            (-350, 150),
+            (760, 150),
+            "README",
+            readme,
+            readme=True,
+            order=1,
+        ),
+    ]
+    workflow["nodes"].extend(notes)
+    workflow["nodes"].sort(key=lambda item: (int(item.get("order", 0)), int(item["id"])))
+    workflow["last_node_id"] = 24
+    workflow["extra"]["ds"] = {
+        "scale": 0.54,
+        "offset": [617, 126],
+    }
+    return workflow
+
+
+def _decorate_video_workflow(
+    workflow: dict[str, Any], mode: str
+) -> dict[str, Any]:
+    """Apply workflow 01's palette and documentation language to video graphs."""
+
+    spec = MODES[mode]
+    source_types = {
+        "LoadImage",
+        "LoadAudio",
+        "MVDirectorLoadTextFile",
+        "MVDirectorH3TimingProfile",
+        "MVDirectorSceneDebugSplitter",
+        "RandomNoise",
+        "ResolutionSelector",
+    }
+    for node in workflow["nodes"]:
+        _set_palette(
+            node,
+            SOURCE_COLOR if node["type"] in source_types else PROCESS_COLOR,
+            SOURCE_BGCOLOR if node["type"] in source_types else PROCESS_BGCOLOR,
+        )
+
+    resolution = _node_by_id(workflow, 47)
+    resolution["pos"] = [80, 500]
+    profile = _node_by_id(workflow, 30)
+    profile["pos"] = [420, 500]
+
+    readme = (
+        "このワークフローは保存済みContext Loop Plan JSONからMiniMax H3の"
+        "Sceneを生成し、Review、checkpoint及び最終連結を行うVideo段階です。\n\n"
+        "Plan / Compiler段階を分離しているため、同じ演出計画を固定したまま"
+        "Video段階だけを再Queueできます。動画生成又はReviewで停止しても、Vision、Whisper、"
+        "Direction、Planner及びCompilerを再実行する必要はありません。\n\n"
+        f"方式: {spec['summary']}。"
+    )
+    readme_node = _markdown_note(
+        31,
+        (-350, 150),
+        (1350, 230),
+        "README",
+        readme,
+        readme=True,
+        order=30,
+    )
+    workflow["nodes"] = [
+        readme_node if int(node["id"]) == 31 else node
+        for node in workflow["nodes"]
+    ]
+
+    plan_note = (
+        f"対応する {int(spec['number']) * 2 - 1:02d}_plan_compiler_{mode}.json "
+        f"が保存した {mode}_plan_XXXXX.txt をCompiled Plan JSONへ指定します。\n\n"
+        "Production PlanはPlanのScene/Shot、prompt、frame数を読み取ります。"
+        "Planを変更したい場合はこのworkflowでJSONを手編集せず、前段から再生成します。"
+    )
+    audio_mode_note = {
+        "context_loop": (
+            "full mixとvocalを別々に指定します。vocalはContext Loop Lip-Sync "
+            "Optionsへ渡し、full mixは最終soundtrackとして保持します。"
+        ),
+        "audio_reference": (
+            "前段と同じ歌詞・vocalでLyric Segmentation cacheを再利用し、"
+            "各Sceneのvocal区間を<Audio 1>へ渡します。"
+        ),
+        "lyrics": (
+            "full mixとvocalを別々に指定します。口形はPlan内の歌詞directiveで"
+            "誘導し、追加lip-sync経路は使用しません。"
+        ),
+    }[mode]
+    notes = [
+        _workflow_label(
+            49,
+            (-350, 54),
+            (1400, 48),
+            f"MV-Director {spec['label']} Video ワークフロー",
+            order=49,
+        ),
+        _markdown_note(
+            50,
+            (-350, 810),
+            (390, 410),
+            "1. Planと生成設定",
+            plan_note,
+            order=50,
+        ),
+        _markdown_note(
+            51,
+            (-350, 2060),
+            (390, 410),
+            "2. 音声と参照素材",
+            (
+                audio_mode_note
+                + "\n\n人物は<Picture 1>、背景は<Picture 2>へ別々に指定します。"
+                "前段のSubject/Scene EMDと同じ参照を使ってください。"
+            ),
+            order=51,
+        ),
+        _markdown_note(
+            52,
+            (1110, 2250),
+            (340, 300),
+            "3. 部分生成と音声整列",
+            (
+                "Audio Pad PairはPlanの最終frame境界までPCM無音を追加します。"
+                "Scene Debug Splitterは既定で無効です。問題Sceneだけを確認する時は"
+                "enableを有効にし、1ベースのscene_startとscene_lengthを指定します。"
+            ),
+            order=52,
+        ),
+        _markdown_note(
+            53,
+            (2420, 20),
+            (720, 115),
+            "4. H3モデルとSampling",
+            (
+                "H3 diffusion、text encoder、Video/Audio VAE、TurboLoRA、"
+                "Attention Backend及びVideo/Audio Shiftを確認します。"
+                f"既定denoising stepsは{VIDEO_DENOISING_STEPS}です。"
+            ),
+            order=53,
+        ),
+        _markdown_note(
+            54,
+            (5330, 20),
+            (760, 115),
+            "5. Reviewと継続",
+            (
+                "Review Gateは既定で無効です。有効時は候補を確認してからLoopを"
+                "継続します。checkpointからの復旧時はRECOVERYノードを使用します。"
+            ),
+            order=54,
+        ),
+        _markdown_note(
+            55,
+            (6240, 620),
+            (440, 310),
+            "6. 出力",
+            (
+                "各Sceneはsegmentとcheckpointを保存し、全Scene完了後に"
+                "Assemble Final Videoが連結します。\n\n"
+                "別の映像候補が必要な場合はPlanを変えず、Video段階だけを"
+                "再Queueします。演出又は歌詞対応を変える場合は"
+                "Plan / Compiler段階から再生成します。"
+            ),
+            order=55,
+        ),
+    ]
+    workflow["nodes"].extend(notes)
+    workflow["nodes"].sort(key=lambda item: (int(item.get("order", 0)), int(item["id"])))
+    workflow["last_node_id"] = 55
+    workflow["extra"]["ds"] = {
+        "scale": 0.42,
+        "offset": [260, 95],
+    }
     return workflow
 
 
@@ -1052,7 +1487,7 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
         "contract": CONTRACT_ID,
         "context_loop_base": "Ref2V Basic - MiniMax H3 0.6.json",
     }
-    return workflow
+    return _decorate_video_workflow(workflow, mode)
 
 
 def validate_workflow(workflow: dict[str, Any]) -> None:
@@ -1076,301 +1511,6 @@ def validate_workflow(workflow: dict[str, Any]) -> None:
             raise ValueError(f"link {link_id} origin type mismatch")
 
 
-def _node_by_title(workflow: dict[str, Any], title: str) -> dict[str, Any]:
-    matches = [node for node in workflow["nodes"] if node.get("title") == title]
-    if len(matches) != 1:
-        raise ValueError(f"expected one workflow node titled {title!r}")
-    return matches[0]
-
-
-def _node_by_type(workflow: dict[str, Any], type_name: str) -> dict[str, Any]:
-    matches = [node for node in workflow["nodes"] if node.get("type") == type_name]
-    if len(matches) != 1:
-        raise ValueError(f"expected one workflow node of type {type_name!r}")
-    return matches[0]
-
-
-def _sync_node_widgets(
-    target: dict[str, Any], source: dict[str, Any]
-) -> None:
-    """Copy generated defaults while retaining debug layout and wiring."""
-
-    values = copy.deepcopy(source.get("widgets_values", []))
-    target["widgets_values"] = values
-    named = target.get("widgets_values_named")
-    if not isinstance(named, dict):
-        return
-    # ComfyUI stores control_after_generate ("randomize") in the named map
-    # even though it is not a graph input.  Preserve that serialized order so
-    # the following cache_mode value cannot shift by one position.
-    for name, value in zip(tuple(named), values):
-        named[name] = copy.deepcopy(value)
-
-
-def _sync_node_interface(
-    workflow: dict[str, Any], target: dict[str, Any], source: dict[str, Any]
-) -> None:
-    """Migrate named sockets while preserving compatible debug links."""
-
-    old_inputs = {item["name"]: item.get("link") for item in target.get("inputs", [])}
-    old_outputs = {item["name"]: item.get("links") for item in target.get("outputs", [])}
-    retained_links: set[int] = set()
-    new_inputs = copy.deepcopy(source.get("inputs", []))
-    for slot, item in enumerate(new_inputs):
-        link_id = old_inputs.get(item["name"])
-        item["link"] = link_id
-        if link_id is not None:
-            retained_links.add(int(link_id))
-            for link in workflow["links"]:
-                if int(link[0]) == int(link_id):
-                    link[3] = int(target["id"])
-                    link[4] = slot
-                    break
-    new_outputs = copy.deepcopy(source.get("outputs", []))
-    for slot, item in enumerate(new_outputs):
-        link_ids = old_outputs.get(item["name"])
-        item["links"] = copy.deepcopy(link_ids)
-        for link_id in link_ids or ():
-            retained_links.add(int(link_id))
-            for link in workflow["links"]:
-                if int(link[0]) == int(link_id):
-                    link[1] = int(target["id"])
-                    link[2] = slot
-                    break
-    removed = {
-        int(link_id)
-        for link_id in (*old_inputs.values(), *(value for value in old_outputs.values()))
-        if link_id is not None
-        for link_id in ((link_id,) if isinstance(link_id, int) else link_id)
-        if int(link_id) not in retained_links
-    }
-    if removed:
-        workflow["links"] = [
-            link for link in workflow["links"] if int(link[0]) not in removed
-        ]
-        for node in workflow["nodes"]:
-            for item in node.get("inputs", []):
-                if item.get("link") in removed:
-                    item["link"] = None
-            for item in node.get("outputs", []):
-                if item.get("links"):
-                    item["links"] = [
-                        value for value in item["links"] if int(value) not in removed
-                    ] or None
-    target["inputs"] = new_inputs
-    target["outputs"] = new_outputs
-
-
-def _connect_if_empty(
-    workflow: dict[str, Any], origin: dict[str, Any], origin_slot: int,
-    target: dict[str, Any], target_name: str, type_name: str,
-) -> None:
-    if target["inputs"][_input_index(target, target_name)].get("link") is None:
-        _connect(
-            workflow,
-            int(origin["id"]),
-            origin_slot,
-            int(target["id"]),
-            target_name,
-            type_name,
-        )
-
-
-def _connect_if_different(
-    workflow: dict[str, Any], origin: dict[str, Any], origin_slot: int,
-    target: dict[str, Any], target_name: str, type_name: str,
-) -> None:
-    """Keep an existing equivalent link so workflow generation is idempotent."""
-
-    target_input = target["inputs"][_input_index(target, target_name)]
-    link_id = target_input.get("link")
-    if link_id is not None:
-        existing = next(
-            (link for link in workflow["links"] if int(link[0]) == int(link_id)),
-            None,
-        )
-        if (
-            existing is not None
-            and int(existing[1]) == int(origin["id"])
-            and int(existing[2]) == origin_slot
-            and existing[5] == type_name
-        ):
-            return
-        _disconnect_input(workflow, int(target["id"]), target_name)
-    _connect(
-        workflow,
-        int(origin["id"]),
-        origin_slot,
-        int(target["id"]),
-        target_name,
-        type_name,
-    )
-
-
-def _sync_development_workflows(
-    output_dir: Path,
-    reference_plan: dict[str, Any],
-    reference_video: dict[str, Any],
-) -> None:
-    """Keep hand-edited debug graphs on the same runtime defaults.
-
-    Debug-only Preview nodes, pass-through prompts, positions, and links remain
-    untouched.  Only user-facing configuration widgets are synchronized.
-    """
-
-    development = output_dir / "development"
-    pairs = (
-        (
-            development / "01_plan_compiler_context_loop_debug.json",
-            reference_plan,
-            (
-                "Character Reference Image",
-                "Character Vision / Subject EMD",
-                "Vocal Stem",
-                "Plain Lyrics",
-                "Lyric Segmentation",
-                "Direction Enhancer",
-                "Timeline Planner",
-                "Ref2VA EMD Compiler",
-                "Background Reference Image",
-                "Background Vision (Scene Only)",
-            ),
-            (),
-        ),
-        (
-            development / "02_video_context_loop_debug.json",
-            reference_video,
-            (
-                "H3 Diffusion Model",
-                "H3 Text Encoder",
-                "Video VAE",
-                "Audio VAE",
-                "Reference Conditioning • MV Director Plan",
-                "Model Attention Backend",
-                "Production Plan",
-                "Review Candidates",
-                "Reference Image • <Picture 1>",
-                "Full Mix",
-                "Vocal Stem",
-                "LIGHTX2V TURBO — 4 STEP v0.1",
-                "Background Reference • <Picture 2>",
-            ),
-            ("ResolutionSelector",),
-        ),
-    )
-    for path, reference, titles, type_names in pairs:
-        if not path.is_file():
-            continue
-        workflow = json.loads(path.read_text(encoding="utf-8"))
-        for title in titles:
-            _sync_node_widgets(
-                _node_by_title(workflow, title),
-                _node_by_title(reference, title),
-            )
-        for type_name in type_names:
-            _sync_node_widgets(
-                _node_by_type(workflow, type_name),
-                _node_by_type(reference, type_name),
-            )
-        if path.name.startswith("01_plan_compiler"):
-            for title in (
-                "Character Vision / Subject EMD",
-                "Background Vision (Scene Only)",
-                "Direction Enhancer",
-                "Timeline Planner",
-            ):
-                _sync_node_interface(
-                    workflow,
-                    _node_by_title(workflow, title),
-                    _node_by_title(reference, title),
-                )
-            background = _node_by_title(workflow, "Background Vision (Scene Only)")
-            direction = _node_by_title(workflow, "Direction Enhancer")
-            planner = _node_by_title(workflow, "Timeline Planner")
-            # ComfyUI frontend extensions may persist connectable-widget metadata
-            # independently from the node's actual input interface. Remove the
-            # retired observations_json entry so regenerated debug workflows do
-            # not expose a ghost Direction Enhancer socket.
-            direction_connectable = (
-                direction.get("properties", {})
-                .get("ue_properties", {})
-                .get("widget_ue_connectable")
-            )
-            if isinstance(direction_connectable, dict):
-                direction_connectable.pop("observations_json", None)
-                direction_connectable["scene_emd"] = True
-            _connect_if_empty(workflow, background, 0, direction, "scene_emd", "STRING")
-            _connect_if_empty(workflow, background, 0, planner, "scene_emd", "STRING")
-        elif path.name.startswith("02_video"):
-            loader = _node_by_title(workflow, "Compiled Plan JSON (.txt handoff)")
-            background = _node_by_title(workflow, "Background Reference • <Picture 2>")
-            production = _node_by_title(workflow, "Production Plan")
-            audio_pad = _node_by_title(workflow, "Audio Pad Pair")
-            audio_tracks = _node_by_title(workflow, "H3 Audio Tracks")
-            conditioning = _node_by_title(
-                workflow, "Reference Conditioning • MV Director Plan"
-            )
-            splitters = [
-                node
-                for node in workflow["nodes"]
-                if node.get("type") == "MVDirectorSceneDebugSplitter"
-            ]
-            if len(splitters) > 1:
-                raise ValueError("expected at most one Scene Debug Splitter")
-            if splitters:
-                splitter = splitters[0]
-                _sync_node_interface(
-                    workflow,
-                    splitter,
-                    _node_by_title(reference, "Scene Debug Splitter"),
-                )
-                _sync_node_widgets(
-                    splitter,
-                    _node_by_title(reference, "Scene Debug Splitter"),
-                )
-            else:
-                splitter_id = max(int(node["id"]) for node in workflow["nodes"]) + 1
-                splitter = _scene_debug_splitter_node(splitter_id)
-                workflow["nodes"].append(splitter)
-            audio_tracks["pos"] = [2460, 2580]
-            _connect_if_different(
-                workflow, loader, 0, splitter, "plan_json", "STRING"
-            )
-            _connect_if_different(
-                workflow, splitter, 0, production, "plan_json_input", "STRING"
-            )
-            _connect_if_different(
-                workflow, loader, 0, audio_pad, "plan_json", "STRING"
-            )
-            _connect_if_different(
-                workflow, audio_pad, 1, splitter, "vocal_audio", "AUDIO"
-            )
-            _connect_if_different(
-                workflow, audio_pad, 0, splitter, "full_mix_audio", "AUDIO"
-            )
-            _connect_if_different(
-                workflow, splitter, 2, audio_tracks, "full_mix", "AUDIO"
-            )
-            _connect_if_different(
-                workflow, splitter, 1, audio_tracks, "vocals", "AUDIO"
-            )
-            lip = _node_by_title(workflow, "Context Loop Lip-Sync Options")
-            _connect_if_different(
-                workflow, splitter, 1, lip, "voice", "AUDIO"
-            )
-            _connect_if_different(
-                workflow,
-                background,
-                0,
-                conditioning,
-                "ref_images.ref_image_1",
-                "IMAGE",
-            )
-            workflow["last_node_id"] = max(int(node["id"]) for node in workflow["nodes"])
-        validate_workflow(workflow)
-        path.write_text(_json_text(workflow) + "\n", encoding="utf-8")
-
-
 def write_workflows(context_loop_root: Path, output_dir: Path) -> None:
     base_path = (
         context_loop_root
@@ -1380,22 +1520,16 @@ def write_workflows(context_loop_root: Path, output_dir: Path) -> None:
     if not base_path.is_file():
         raise FileNotFoundError(base_path)
     output_dir.mkdir(parents=True, exist_ok=True)
-    generated: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {}
     for mode, spec in MODES.items():
         number = int(spec["number"])
         plan = build_plan_workflow(mode)
         video = build_video_workflow(mode, base_path)
         validate_workflow(plan)
         validate_workflow(video)
-        generated[mode] = (plan, video)
         plan_path = output_dir / f"{number * 2 - 1:02d}_plan_compiler_{mode}.json"
         video_path = output_dir / f"{number * 2:02d}_video_{mode}.json"
         plan_path.write_text(_json_text(plan) + "\n", encoding="utf-8")
         video_path.write_text(_json_text(video) + "\n", encoding="utf-8")
-    _sync_development_workflows(
-        output_dir,
-        *generated["context_loop"],
-    )
 
 
 def main() -> None:

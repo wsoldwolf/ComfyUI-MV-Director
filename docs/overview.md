@@ -1,19 +1,28 @@
 # プロジェクト概要
 
-ComfyUI-MV-Directorは、利用者が完成promptを手書きしなくても、画像、歌詞、ボーカル、楽曲からMiniMax H3 / Context Loop用のMV計画を組み立てるフロントエンドです。生成結果の美術的な採否は人間が判断します。
+ComfyUI-MV-Directorは、利用者が完成promptを手書きしなくても、人物・背景画像、歌詞、ボーカル、楽曲からMiniMax H3 / Context Loop用のMV計画を組み立てるフロントエンドです。計画と動画生成を分離し、編集可能なEMDと再利用可能なPlan JSONを中間成果として残します。生成結果の美術的な採否は人間が判断します。
 
-![人物参照と背景参照を分離したMV Directorの最小パイプライン](assets/minimal-pipeline.png)
+![人物参照と背景参照を分離し、Plan Compiler段階と動画生成段階を保存済みPlan JSONで接続するMV Directorの全体構成](assets/minimal-pipeline.png)
+
+## 二段階の全体構成
+
+配布workflowは、次の二段階を一対一の組として提供します。
+
+1. **Plan / Compiler段階**: Vision、歌詞整列、Direction、Timeline Planner及び翻訳Compilerを実行し、EMD、SRT、Context Loop Plan JSONを保存します。
+2. **Video段階**: 保存済みPlan JSON、人物・背景参照、full mix及びvocalを読み、MiniMax H3 / Context LoopでSceneを生成、確認、連結します。
+
+分離の主目的は、計画を固定したままVideo段階だけを再Queueし、同じ演出設計から生成結果を比較できるようにすることです。また、統合workflowの途中で停止した時にVision、Whisper、複数のPlanner LLM task、翻訳等の重い前段処理を繰り返す負担を避けます。前段成果を保存境界にすることで、失敗時の再開範囲とVRAMを占有するモデル群も分離できます。詳しい運用と再実行条件は[Plan / Videoを分離する理由](tips/two-stage-workflow.md)を参照してください。
 
 ## 四つのコア
 
 1. Image to Subject EMDが参照画像の可視情報をSubjectとして記述します。
 2. Direction Enhancerがスタイル、環境、時間・照明、モーション、カメラ、その他の全体方針を作ります。
-3. Timeline Plannerが確定済みScene/Shot枠へ歌詞解釈、人物動作、カメラ、リップシンク方式を展開します。
+3. Timeline Plannerが確定済みScene枠へ歌詞Cue、Visual Beat、曲全体の演出弧、CUT/CONTINUE、人物動作、Action監査、カメラ及びリップシンク方式を段階的に展開します。
 4. EMD Compilerが日本語promptだけを英訳し、Ref2VA用Context Loop Plan JSONへ機械的に変換します。
 
 人物参照と背景参照は別系統です。計画時は背景Visionが`scene_only`時に`emd_fragment`へ出すScene EMDをDirection EnhancerとPlannerの`scene_emd`へ渡し、動画生成時は同じ背景画像をH3の対応slotへ直接渡します。理由と推奨配線は[人物参照と背景参照を分ける](tips/separate-subject-and-background-references.md)を参照してください。
 
-Direction EnhancerとTimeline Planner内部の詳しい流れは[処理フロー図](architecture/direction-planner-flow.md)を参照してください。DirectionのStyle、Motion、Cameraは[`profiles/`](../profiles/README.md)の外部EMDとして追加できます。
+Direction EnhancerとTimeline Planner内部の詳しい流れは[処理フロー図](architecture/direction-planner-flow.md)を参照してください。DirectionのStyle、Motion、Cameraは[`profiles/`](../profiles/README.md)の外部EMDとして追加できます。現在の配布workflowは三項とも`anime_emotional_mv`を既定とし、profile metadataからPlannerの感情演技、歌詞Cue、長尺Arc、顔Zoom及びScene継続方針も切り替えます。
 
 Lyric Segmentationはこの経路と独立して歌詞、SRT、typed timelineを生成できます。Audio Pad Pairはfull mixとvocalを混合せず、PCM無音で必要尺へそろえます。
 
@@ -31,7 +40,7 @@ EMDは **Easy MarkDown** です。人が確認・編集できる中間表現で�
 
 ## LLMへ任せる範囲
 
-Vision、演出、Shot計画、英訳にはローカルGGUFを使いますが、JSONやEMDそのものをLLMへ生成させません。LLM応答は短い行指向protocolで受け、typed artifact、EMD、最終JSONはPythonが組み立てます。
+Vision、演出、Shot計画、Action監査、英訳にはローカルGGUFを使いますが、JSONやEMDそのものをLLMへ生成させません。LLM応答は短い行指向protocolで受け、typed artifact、EMD、最終JSONはPythonが組み立てます。Plannerの合格ActionとCamera本文はAS ISで保持し、Pythonは意味を書き換えず構造、時刻、slot、directive及び有限検証を担当します。
 
 Compilerは補強、要約、並べ替えをせず、EMD文法と予約directiveを機械的に処理します。作者が書いた`<d>...</d>`は翻訳せず、そのままH3へ渡します。
 

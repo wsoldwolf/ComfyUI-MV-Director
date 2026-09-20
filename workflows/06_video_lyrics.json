@@ -1,7 +1,7 @@
 {
   "id": "f97af838-5222-5864-8ec8-15d657333fdb",
   "revision": 0,
-  "last_node_id": 48,
+  "last_node_id": 55,
   "last_link_id": 70,
   "nodes": [
     {
@@ -35,7 +35,9 @@
       "widgets_values": [
         "MiniMaxH3\\minimax_h3_ref2va_pruned_int8_convrot.safetensors",
         "default"
-      ]
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
     },
     {
       "id": 2,
@@ -69,7 +71,9 @@
         "MiniMaxH3\\qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
         "minimax",
         "default"
-      ]
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
     },
     {
       "id": 3,
@@ -101,7 +105,9 @@
       },
       "widgets_values": [
         "res_multistep"
-      ]
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
     },
     {
       "id": 4,
@@ -135,7 +141,9 @@
       },
       "widgets_values": [
         "MiniMaxH3\\minimax_h3_video_vae_fp16.safetensors"
-      ]
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
     },
     {
       "id": 5,
@@ -168,7 +176,9 @@
       },
       "widgets_values": [
         "MiniMaxH3\\minimax_h3_audio_vae_fp32.safetensors"
-      ]
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
     },
     {
       "id": 6,
@@ -205,7 +215,9 @@
       "properties": {
         "Node name for S&R": "MiniMaxH3ChainScenePromptEditor"
       },
-      "widgets_values": []
+      "widgets_values": [],
+      "color": "#223",
+      "bgcolor": "#335"
     },
     {
       "id": 7,
@@ -282,7 +294,9 @@
         1,
         "",
         true
-      ]
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
     },
     {
       "id": 8,
@@ -411,7 +425,9 @@
       },
       "widgets_values": [
         false
-      ]
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
     },
     {
       "id": 9,
@@ -470,7 +486,9 @@
         "off",
         "off",
         false
-      ]
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
     },
     {
       "id": 10,
@@ -512,7 +530,9 @@
       "widgets_values": [
         0,
         "fixed"
-      ]
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
     },
     {
       "id": 11,
@@ -633,7 +653,9 @@
         672,
         243,
         "max"
-      ]
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
     },
     {
       "id": 12,
@@ -728,7 +750,9 @@
       "properties": {
         "Node name for S&R": "MiniMaxH3ChainContext"
       },
-      "widgets_values": []
+      "widgets_values": [],
+      "color": "#223",
+      "bgcolor": "#335"
     },
     {
       "id": 13,
@@ -768,7 +792,86 @@
       "widgets_values": [
         12,
         3
-      ]
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 47,
+      "type": "ResolutionSelector",
+      "pos": [
+        80,
+        500
+      ],
+      "size": [
+        270,
+        150
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "aspect_ratio",
+          "type": "COMBO",
+          "link": null,
+          "widget": {
+            "name": "aspect_ratio"
+          }
+        },
+        {
+          "name": "megapixels",
+          "type": "FLOAT",
+          "link": null,
+          "widget": {
+            "name": "megapixels"
+          }
+        },
+        {
+          "name": "multiple",
+          "type": "INT",
+          "link": null,
+          "widget": {
+            "name": "multiple"
+          }
+        },
+        {
+          "name": "preview",
+          "type": "RESOLUTION_PREVIEW",
+          "link": null,
+          "widget": {
+            "name": "preview"
+          },
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "width",
+          "type": "INT",
+          "links": [
+            69
+          ]
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": [
+            70
+          ]
+        }
+      ],
+      "title": "Output Resolution",
+      "properties": {
+        "Node name for S&R": "ResolutionSelector"
+      },
+      "widgets_values": [
+        "16:9 (Widescreen)",
+        0.4,
+        32
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
     },
     {
       "id": 14,
@@ -809,7 +912,9 @@
       "properties": {
         "Node name for S&R": "BasicGuider"
       },
-      "widgets_values": []
+      "widgets_values": [],
+      "color": "#223",
+      "bgcolor": "#335"
     },
     {
       "id": 15,
@@ -857,7 +962,9 @@
         "simple",
         8,
         1
-      ]
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
     },
     {
       "id": 16,
@@ -921,7 +1028,9 @@
       "properties": {
         "Node name for S&R": "SamplerCustomAdvanced"
       },
-      "widgets_values": []
+      "widgets_values": [],
+      "color": "#223",
+      "bgcolor": "#335"
     },
     {
       "id": 17,
@@ -962,7 +1071,9 @@
       "properties": {
         "Node name for S&R": "VAEDecode"
       },
-      "widgets_values": []
+      "widgets_values": [],
+      "color": "#223",
+      "bgcolor": "#335"
     },
     {
       "id": 18,
@@ -1003,7 +1114,9 @@
       "properties": {
         "Node name for S&R": "VAEDecodeAudio"
       },
-      "widgets_values": []
+      "widgets_values": [],
+      "color": "#223",
+      "bgcolor": "#335"
     },
     {
       "id": 19,
@@ -1083,7 +1196,9 @@
         24,
         true,
         0
-      ]
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
     },
     {
       "id": 20,
@@ -1149,7 +1264,9 @@
       "properties": {
         "Node name for S&R": "MiniMaxH3ChainSegmentSave"
       },
-      "widgets_values": []
+      "widgets_values": [],
+      "color": "#223",
+      "bgcolor": "#335"
     },
     {
       "id": 21,
@@ -1208,7 +1325,9 @@
         "off",
         "off",
         false
-      ]
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
     },
     {
       "id": 22,
@@ -1246,7 +1365,9 @@
       },
       "widgets_values": [
         "comfy kitchen attention"
-      ]
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
     },
     {
       "id": 23,
@@ -1320,7 +1441,9 @@
       "widgets_values": [
         "off",
         "recursive_legacy"
-      ]
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
     },
     {
       "id": 24,
@@ -1500,7 +1623,9 @@
         0,
         20,
         0
-      ]
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
     },
     {
       "id": 25,
@@ -1561,7 +1686,9 @@
       "properties": {
         "Node name for S&R": "MiniMaxH3ChainManifestLoad"
       },
-      "widgets_values": []
+      "widgets_values": [],
+      "color": "#223",
+      "bgcolor": "#335"
     },
     {
       "id": 26,
@@ -1597,8 +1724,10 @@
         "Node name for S&R": "LoadImage"
       },
       "widgets_values": [
-        "image001_mikofox (2).jpg"
-      ]
+        "image001_mikofox.jpg"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
     },
     {
       "id": 28,
@@ -1663,7 +1792,9 @@
         "checkpointed",
         1,
         false
-      ]
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
     },
     {
       "id": 29,
@@ -1743,14 +1874,16 @@
         1,
         "",
         true
-      ]
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
     },
     {
       "id": 30,
       "type": "MiniMaxH3GenerationProfile",
       "pos": [
-        80,
-        610
+        420,
+        500
       ],
       "size": [
         360,
@@ -1787,31 +1920,42 @@
       "widgets_values": [
         "Visual continuity",
         "Use source soundtrack only"
-      ]
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
     },
     {
       "id": 31,
-      "type": "Note",
+      "type": "MarkdownNote",
       "pos": [
-        80,
-        180
+        -350,
+        150
       ],
       "size": [
-        1000,
-        330
+        1350,
+        230
       ],
       "flags": {},
       "order": 30,
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "START HERE • MV Director • Lyrics",
+      "title": "README",
       "properties": {
-        "Node name for S&R": "Note"
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
       },
       "widgets_values": [
-        "歌詞directiveだけで口形を誘導し追加lip-sync経路を使用しない。\n\n1. lyrics_plan_*.txtをPlan JSONノードへD&Dします。\n2. full mix、vocal stem、人物・背景参照画像を確認します。\n3. H3モデル/VAEを確認してQueueします。\n4. 動画生成側ではLyric Segmentationを再実行しません。\n\nAudio Referenceだけは整列済みvocalをCurrent Scene時刻で切り出し、固定ref_audio_0へ渡します。\nBaseline: context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9"
-      ]
+        "このワークフローは保存済みContext Loop Plan JSONからMiniMax H3のSceneを生成し、Review、checkpoint及び最終連結を行うVideo段階です。\n\nPlan / Compiler段階を分離しているため、同じ演出計画を固定したままVideo段階だけを再Queueできます。動画生成又はReviewで停止しても、Vision、Whisper、Direction、Planner及びCompilerを再実行する必要はありません。\n\n方式: 歌詞directiveだけで口形を誘導し追加lip-sync経路を使用しない。"
+      ],
+      "widgets_values_named": {
+        "text": "このワークフローは保存済みContext Loop Plan JSONからMiniMax H3のSceneを生成し、Review、checkpoint及び最終連結を行うVideo段階です。\n\nPlan / Compiler段階を分離しているため、同じ演出計画を固定したままVideo段階だけを再Queueできます。動画生成又はReviewで停止しても、Vision、Whisper、Direction、Planner及びCompilerを再実行する必要はありません。\n\n方式: 歌詞directiveだけで口形を誘導し追加lip-sync経路を使用しない。"
+      },
+      "color": "#322",
+      "bgcolor": "#533"
     },
     {
       "id": 32,
@@ -1842,8 +1986,10 @@
         "Node name for S&R": "LoadAudio"
       },
       "widgets_values": [
-        "autumn_fox_shrine.mp3"
-      ]
+        "bgm_millennium_torii.mp3"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
     },
     {
       "id": 33,
@@ -1874,8 +2020,10 @@
         "Node name for S&R": "LoadAudio"
       },
       "widgets_values": [
-        "autumn_fox_shrine_vocal.mp3"
-      ]
+        "bgm_millennium_torii_vocal.mp3"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
     },
     {
       "id": 35,
@@ -1917,7 +2065,9 @@
       },
       "widgets_values": [
         "context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9"
-      ]
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
     },
     {
       "id": 37,
@@ -1995,7 +2145,9 @@
         0,
         "end",
         "off"
-      ]
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
     },
     {
       "id": 38,
@@ -2046,7 +2198,142 @@
       "properties": {
         "Node name for S&R": "MiniMaxH3AudioTracks"
       },
-      "widgets_values": []
+      "widgets_values": [],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 39,
+      "type": "MVDirectorLoadTextFile",
+      "pos": [
+        76.77573693416907,
+        2427.2389436196327
+      ],
+      "size": [
+        360,
+        90
+      ],
+      "flags": {},
+      "order": 39,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "links": [
+            63,
+            65
+          ]
+        }
+      ],
+      "title": "Compiled Plan JSON (.txt handoff)",
+      "properties": {
+        "Node name for S&R": "MVDirectorLoadTextFile"
+      },
+      "widgets_values": [
+        "ewogICJwcm9tcHRfcHJlZml4IjogWwogICAgIlJlbmRlciBldmVyeSBzY2VuZSBhcyBwaG90b3JlYWxpc3RpYyBsaXZlLWFjdGlvbiBjaW5lbWEuIgogIF0sCiAgImRlZmF1bHRzIjogewogICAgInN0ZXBzIjogOAogIH0sCiAgInNob3RzIjogWwogICAgewogICAgICAiaWQiOiAic2NlbmVfMDAwMSIsCiAgICAgICJsZW5ndGgiOiAyNDMsCiAgICAgICJwcm9tcHQiOiBbCiAgICAgICAgInN1YmplY3RfZGVmaW5pdGlvbnM6IiwKICAgICAgICAiPFBpY3R1cmUgMT4gZGVmaW5lcyA8U3ViamVjdCAxPiwgdGhlIHBlcmZvcm1lciBpbiB0aGUgcmVmZXJlbmNlIGltYWdlLiIsCiAgICAgICAgIjxQaWN0dXJlIDI+IGlzIHRoZSBlbnZpcm9ubWVudCByZWZlcmVuY2U6IE9ic2VydmVkIHNjZW5lIGNvbnRlbnQ6IEEgbW9vbmxpdCBzaHJpbmUgYXBwcm9hY2ggaW4gYSBmb3Jlc3Qgd2l0aCBhIHJlZCB0b3JpaSBnYXRlLi4gVXNlIG9ubHkgaXRzIHN0YWJsZSBhcmNoaXRlY3R1cmUsIHZlZ2V0YXRpb24sIHRlcnJhaW4sIG1hdGVyaWFscywgYW5kIHNwYXRpYWwgaWRlbnRpdHkgYXMgYmFja2dyb3VuZCBldmlkZW5jZS4gSXQgaXMgbm90IGEgU3ViamVjdCwgcGVyZm9ybWVyLCBzdG9yeWJvYXJkLCBwYW5lbCBsYXlvdXQsIGZyYW1pbmcgdGVtcGxhdGUsIG9yIGxpZ2h0aW5nIGF1dGhvcml0eS4gUmVuZGVyIG9uZSB1bmlmaWVkIGZ1bGwtZnJhbWUgZW52aXJvbm1lbnQgYW5kIG5ldmVyIHJlcHJvZHVjZSBwZW9wbGUsIGNoYXJhY3RlcnMsIHBvc2VzLCB0ZXh0LCBib3JkZXJzLCBzcGxpdCB2aWV3cywgb3IgaW5zZXQgY29tcG9zaXRpb25zIGZyb20gdGhpcyBQaWN0dXJlLiBUaGUgd3JpdHRlbiBTY2VuZSBlbnZpcm9ubWVudCBhbmQgdGltZS1saWdodGluZyBkaXJlY3Rpb25zIGFyZSBhdXRob3JpdGF0aXZlIGFuZCByZXBsYWNlIGV2ZXJ5IGNvbmZsaWN0aW5nIHNlYXNvbiwgd2VhdGhlciwgdGltZSBvZiBkYXksIGlsbHVtaW5hdGlvbiwgY2FtZXJhIGFuZ2xlLCBhbmQgY29tcG9zaXRpb24gdmlzaWJsZSBpbiB0aGlzIFBpY3R1cmUuIFByZXNlcnZlIGZ1bmN0aW9uYWwgc3BhdGlhbCB0b3BvbG9neToga2VlcCBwYXRocywgc2hyaW5lIGFwcHJvYWNoZXMsIHN0YWlycywgZG9vcndheXMsIGFuZCBvdGhlciBjaXJjdWxhdGlvbiByb3V0ZXMgb3BlbiBhbmQgdW5vYnN0cnVjdGVkLiBGaXhlZCBmaXh0dXJlcyBzdWNoIGFzIHN0b25lIGxhbnRlcm5zLCBsYW1wcywgcG9zdHMsIHNpZ25zLCBhbmQgc3RhdHVlcyByZW1haW4gYmVzaWRlIG9yIG91dHNpZGUgdGhlIGNpcmN1bGF0aW9uIHJvdXRlIHdoZXJlIGVzdGFibGlzaGVkOyBuZXZlciByZWxvY2F0ZSBvbmUgb250byB0aGUgY2VudGVybGluZSBvciBkaXJlY3RseSBpbnRvIHRoZSBTdWJqZWN0J3MgdHJhdmVsIHBhdGguIFdoZW4gYSBTaG90IGNhbGxzIGZvciBpbnRlcmFjdGlvbiB3aXRoIGEgZml4ZWQgZml4dHVyZSwgbW92ZSB0aGUgU3ViamVjdCB0b3dhcmQgdGhlIGZpeHR1cmUgYXQgdGhlIHBhdGggZWRnZSBpbnN0ZWFkIG9mIG1vdmluZyB0aGUgZml4dHVyZSB0b3dhcmQgdGhlIFN1YmplY3QuIiwKICAgICAgICAiIiwKICAgICAgICAic3VtbWFyeToiLAogICAgICAgICJbcmVmZXJlbmNlIGdlbmVyYXRpb25dIEEgbW9vbmxpdCBwZXJmb3JtYW5jZSBhdCBhIHNocmluZSBhcHByb2FjaC4iLAogICAgICAgICIiLAogICAgICAgICJyZXRlbnRpb25fYW5hbHlzaXM6IiwKICAgICAgICAiPFN1YmplY3QgMT46IGZ1bGx5X3ByZXNlcnZlZCAtIHByZXNlcnZlIGlkZW50aXR5LCBjbG90aGluZywgYW5kIHByb3BvcnRpb25zLiIsCiAgICAgICAgIjxQaWN0dXJlIDE+OiBmdWxseV9wcmVzZXJ2ZWQgLSBwcmVzZXJ2ZSB0aGUgdmlzaWJsZSBwZXJmb3JtZXIgZGVzaWduLiIsCiAgICAgICAgIjxQaWN0dXJlIDI+OiBlbnZpcm9ubWVudF9wYXJ0aWFsbHlfcHJlc2VydmVkIC0gcHJlc2VydmUgc3RhYmxlIGFyY2hpdGVjdHVyZSwgdmVnZXRhdGlvbiwgdGVycmFpbiwgbWF0ZXJpYWxzLCBzcGF0aWFsIGlkZW50aXR5LCBvcGVuIGNpcmN1bGF0aW9uIHJvdXRlcywgYW5kIHRoZSBlc3RhYmxpc2hlZCBwbGFjZW1lbnQgb2YgZml4ZWQgZml4dHVyZXMgb25seTsgcmVzdGFnZSBmcmFtaW5nIGFuZCBsaWdodGluZyBmb3IgdGhlIGN1cnJlbnQgU2hvdCBhbmQgb2JleSB0aGUgd3JpdHRlbiBTY2VuZSBlbnZpcm9ubWVudCBhbmQgdGltZS1saWdodGluZyBkaXJlY3Rpb25zLiIsCiAgICAgICAgIiIsCiAgICAgICAgImRldGFpbGVkX2Rlc2NyaXB0aW9uOiIsCiAgICAgICAgIltTaG90IDFdIDxTdWJqZWN0IDE+IHdhbGtzIHRvd2FyZCB0aGUgdG9yaWkgZ2F0ZSBhbmQgc2luZ3MuIiwKICAgICAgICAiPFN1YmplY3QgMT4gcGVyZm9ybXMgdmlzaWJsZSBsaXAgbW92ZW1lbnRzIHRvIDxkPltKYXBhbmVzZV3ljYPlubTps6XlsYXjgpLjgY/jgZDjgovjgZ3jgarjgZ/jgog8L2Q+LiIsCiAgICAgICAgIiIsCiAgICAgICAgIm92ZXJhbGxfc291bmRzY2FwZToiLAogICAgICAgICJQcmVzZXJ2ZSB0aGUgc2VsZWN0ZWQgbXVzaWMtdmlkZW8gc291bmR0cmFjayBwb2xpY3kuIiwKICAgICAgICAiIiwKICAgICAgICAibm9uX2RpZWdldGljX211c2ljOiIsCiAgICAgICAgIk5vIGFkZGl0aW9uYWwgZ2VuZXJhdGVkIG11c2ljIGlzIHJlcXVlc3RlZC4iCiAgICAgIF0sCiAgICAgICJjb250ZXh0X2xlbmd0aCI6IDAsCiAgICAgICJhdWRpb19jb250ZXh0X2xlbmd0aCI6IDIyCiAgICB9CiAgXQp9",
+        "lyrics_plan.txt",
+        "{\n  \"name\": \"lyrics_plan.txt\",\n  \"size\": 2727,\n  \"type\": \"text/plain\"\n}"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 44,
+      "type": "LoraLoaderModelOnly",
+      "pos": [
+        1663.157664449174,
+        3023.105301372301
+      ],
+      "size": [
+        650,
+        100
+      ],
+      "flags": {},
+      "order": 44,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 67
+        },
+        {
+          "name": "lora_name",
+          "type": "COMBO",
+          "link": null,
+          "widget": {
+            "name": "lora_name"
+          }
+        },
+        {
+          "name": "strength_model",
+          "type": "FLOAT",
+          "link": null,
+          "widget": {
+            "name": "strength_model"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            68
+          ]
+        }
+      ],
+      "title": "LIGHTX2V TURBO — 4 STEP v0.1",
+      "properties": {
+        "Node name for S&R": "LoraLoaderModelOnly"
+      },
+      "widgets_values": [
+        "MiniMaxH3\\minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors",
+        1.0
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 45,
+      "type": "LoadImage",
+      "pos": [
+        2431.488682584539,
+        1797.7764759658048
+      ],
+      "size": [
+        360,
+        360
+      ],
+      "flags": {},
+      "order": 45,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            66
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "title": "Background Reference • <Picture 2>",
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "image002_keinai.jpg"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
     },
     {
       "id": 48,
@@ -2134,209 +2421,245 @@
         false,
         1,
         1
-      ]
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
     },
     {
-      "id": 39,
-      "type": "MVDirectorLoadTextFile",
+      "id": 49,
+      "type": "Label (rgthree)",
       "pos": [
-        76.77573693416907,
-        2427.2389436196327
+        -350,
+        54
       ],
       "size": [
-        360,
-        90
+        1400,
+        48
       ],
-      "flags": {},
-      "order": 39,
+      "flags": {
+        "allow_interaction": true
+      },
+      "order": 49,
       "mode": 0,
       "inputs": [],
-      "outputs": [
-        {
-          "name": "text",
-          "type": "STRING",
-          "links": [
-            63,
-            65
-          ]
-        }
-      ],
-      "title": "Compiled Plan JSON (.txt handoff)",
+      "outputs": [],
+      "title": "MV-Director Lyrics Video ワークフロー",
       "properties": {
-        "Node name for S&R": "MVDirectorLoadTextFile"
+        "fontSize": 48,
+        "fontFamily": "Arial",
+        "fontColor": "#00ffff",
+        "textAlign": "left",
+        "backgroundColor": "transparent",
+        "padding": 0,
+        "borderRadius": 0,
+        "angle": 0,
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
       },
-      "widgets_values": [
-        "ewogICJwcm9tcHRfcHJlZml4IjogWwogICAgIlJlbmRlciBldmVyeSBzY2VuZSBhcyBwaG90b3JlYWxpc3RpYyBsaXZlLWFjdGlvbiBjaW5lbWEuIgogIF0sCiAgImRlZmF1bHRzIjogewogICAgInN0ZXBzIjogOAogIH0sCiAgInNob3RzIjogWwogICAgewogICAgICAiaWQiOiAic2NlbmVfMDAwMSIsCiAgICAgICJsZW5ndGgiOiAyNDMsCiAgICAgICJwcm9tcHQiOiBbCiAgICAgICAgInN1YmplY3RfZGVmaW5pdGlvbnM6IiwKICAgICAgICAiPFBpY3R1cmUgMT4gZGVmaW5lcyA8U3ViamVjdCAxPiwgdGhlIHBlcmZvcm1lciBpbiB0aGUgcmVmZXJlbmNlIGltYWdlLiIsCiAgICAgICAgIjxQaWN0dXJlIDI+IGlzIHRoZSBlbnZpcm9ubWVudCByZWZlcmVuY2U6IE9ic2VydmVkIHNjZW5lIGNvbnRlbnQ6IEEgbW9vbmxpdCBzaHJpbmUgYXBwcm9hY2ggaW4gYSBmb3Jlc3Qgd2l0aCBhIHJlZCB0b3JpaSBnYXRlLi4gVXNlIG9ubHkgaXRzIHN0YWJsZSBhcmNoaXRlY3R1cmUsIHZlZ2V0YXRpb24sIHRlcnJhaW4sIG1hdGVyaWFscywgYW5kIHNwYXRpYWwgaWRlbnRpdHkgYXMgYmFja2dyb3VuZCBldmlkZW5jZS4gSXQgaXMgbm90IGEgU3ViamVjdCwgcGVyZm9ybWVyLCBzdG9yeWJvYXJkLCBwYW5lbCBsYXlvdXQsIGZyYW1pbmcgdGVtcGxhdGUsIG9yIGxpZ2h0aW5nIGF1dGhvcml0eS4gUmVuZGVyIG9uZSB1bmlmaWVkIGZ1bGwtZnJhbWUgZW52aXJvbm1lbnQgYW5kIG5ldmVyIHJlcHJvZHVjZSBwZW9wbGUsIGNoYXJhY3RlcnMsIHBvc2VzLCB0ZXh0LCBib3JkZXJzLCBzcGxpdCB2aWV3cywgb3IgaW5zZXQgY29tcG9zaXRpb25zIGZyb20gdGhpcyBQaWN0dXJlLiBUaGUgd3JpdHRlbiBTY2VuZSBlbnZpcm9ubWVudCBhbmQgdGltZS1saWdodGluZyBkaXJlY3Rpb25zIGFyZSBhdXRob3JpdGF0aXZlIGFuZCByZXBsYWNlIGV2ZXJ5IGNvbmZsaWN0aW5nIHNlYXNvbiwgd2VhdGhlciwgdGltZSBvZiBkYXksIGlsbHVtaW5hdGlvbiwgY2FtZXJhIGFuZ2xlLCBhbmQgY29tcG9zaXRpb24gdmlzaWJsZSBpbiB0aGlzIFBpY3R1cmUuIFByZXNlcnZlIGZ1bmN0aW9uYWwgc3BhdGlhbCB0b3BvbG9neToga2VlcCBwYXRocywgc2hyaW5lIGFwcHJvYWNoZXMsIHN0YWlycywgZG9vcndheXMsIGFuZCBvdGhlciBjaXJjdWxhdGlvbiByb3V0ZXMgb3BlbiBhbmQgdW5vYnN0cnVjdGVkLiBGaXhlZCBmaXh0dXJlcyBzdWNoIGFzIHN0b25lIGxhbnRlcm5zLCBsYW1wcywgcG9zdHMsIHNpZ25zLCBhbmQgc3RhdHVlcyByZW1haW4gYmVzaWRlIG9yIG91dHNpZGUgdGhlIGNpcmN1bGF0aW9uIHJvdXRlIHdoZXJlIGVzdGFibGlzaGVkOyBuZXZlciByZWxvY2F0ZSBvbmUgb250byB0aGUgY2VudGVybGluZSBvciBkaXJlY3RseSBpbnRvIHRoZSBTdWJqZWN0J3MgdHJhdmVsIHBhdGguIFdoZW4gYSBTaG90IGNhbGxzIGZvciBpbnRlcmFjdGlvbiB3aXRoIGEgZml4ZWQgZml4dHVyZSwgbW92ZSB0aGUgU3ViamVjdCB0b3dhcmQgdGhlIGZpeHR1cmUgYXQgdGhlIHBhdGggZWRnZSBpbnN0ZWFkIG9mIG1vdmluZyB0aGUgZml4dHVyZSB0b3dhcmQgdGhlIFN1YmplY3QuIiwKICAgICAgICAiIiwKICAgICAgICAic3VtbWFyeToiLAogICAgICAgICJbcmVmZXJlbmNlIGdlbmVyYXRpb25dIEEgbW9vbmxpdCBwZXJmb3JtYW5jZSBhdCBhIHNocmluZSBhcHByb2FjaC4iLAogICAgICAgICIiLAogICAgICAgICJyZXRlbnRpb25fYW5hbHlzaXM6IiwKICAgICAgICAiPFN1YmplY3QgMT46IGZ1bGx5X3ByZXNlcnZlZCAtIHByZXNlcnZlIGlkZW50aXR5LCBjbG90aGluZywgYW5kIHByb3BvcnRpb25zLiIsCiAgICAgICAgIjxQaWN0dXJlIDE+OiBmdWxseV9wcmVzZXJ2ZWQgLSBwcmVzZXJ2ZSB0aGUgdmlzaWJsZSBwZXJmb3JtZXIgZGVzaWduLiIsCiAgICAgICAgIjxQaWN0dXJlIDI+OiBlbnZpcm9ubWVudF9wYXJ0aWFsbHlfcHJlc2VydmVkIC0gcHJlc2VydmUgc3RhYmxlIGFyY2hpdGVjdHVyZSwgdmVnZXRhdGlvbiwgdGVycmFpbiwgbWF0ZXJpYWxzLCBzcGF0aWFsIGlkZW50aXR5LCBvcGVuIGNpcmN1bGF0aW9uIHJvdXRlcywgYW5kIHRoZSBlc3RhYmxpc2hlZCBwbGFjZW1lbnQgb2YgZml4ZWQgZml4dHVyZXMgb25seTsgcmVzdGFnZSBmcmFtaW5nIGFuZCBsaWdodGluZyBmb3IgdGhlIGN1cnJlbnQgU2hvdCBhbmQgb2JleSB0aGUgd3JpdHRlbiBTY2VuZSBlbnZpcm9ubWVudCBhbmQgdGltZS1saWdodGluZyBkaXJlY3Rpb25zLiIsCiAgICAgICAgIiIsCiAgICAgICAgImRldGFpbGVkX2Rlc2NyaXB0aW9uOiIsCiAgICAgICAgIltTaG90IDFdIDxTdWJqZWN0IDE+IHdhbGtzIHRvd2FyZCB0aGUgdG9yaWkgZ2F0ZSBhbmQgc2luZ3MuIiwKICAgICAgICAiPFN1YmplY3QgMT4gcGVyZm9ybXMgdmlzaWJsZSBsaXAgbW92ZW1lbnRzIHRvIDxkPltKYXBhbmVzZV3ljYPlubTps6XlsYXjgpLjgY/jgZDjgovjgZ3jgarjgZ/jgog8L2Q+LiIsCiAgICAgICAgIiIsCiAgICAgICAgIm92ZXJhbGxfc291bmRzY2FwZToiLAogICAgICAgICJQcmVzZXJ2ZSB0aGUgc2VsZWN0ZWQgbXVzaWMtdmlkZW8gc291bmR0cmFjayBwb2xpY3kuIiwKICAgICAgICAiIiwKICAgICAgICAibm9uX2RpZWdldGljX211c2ljOiIsCiAgICAgICAgIk5vIGFkZGl0aW9uYWwgZ2VuZXJhdGVkIG11c2ljIGlzIHJlcXVlc3RlZC4iCiAgICAgIF0sCiAgICAgICJjb250ZXh0X2xlbmd0aCI6IDAsCiAgICAgICJhdWRpb19jb250ZXh0X2xlbmd0aCI6IDIyCiAgICB9CiAgXQp9",
-        "lyrics_plan.txt",
-        "{\n  \"name\": \"lyrics_plan.txt\",\n  \"size\": 2727,\n  \"type\": \"text/plain\"\n}"
-      ]
+      "widgets_values": [],
+      "color": "#fff0",
+      "bgcolor": "#fff0"
     },
     {
-      "id": 44,
-      "type": "LoraLoaderModelOnly",
+      "id": 50,
+      "type": "MarkdownNote",
       "pos": [
-        1663.157664449174,
-        3023.105301372301
+        -350,
+        810
       ],
       "size": [
-        650,
-        100
+        390,
+        410
       ],
       "flags": {},
-      "order": 44,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "model",
-          "type": "MODEL",
-          "link": 67
-        },
-        {
-          "name": "lora_name",
-          "type": "COMBO",
-          "link": null,
-          "widget": {
-            "name": "lora_name"
-          }
-        },
-        {
-          "name": "strength_model",
-          "type": "FLOAT",
-          "link": null,
-          "widget": {
-            "name": "strength_model"
-          }
-        }
-      ],
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "links": [
-            68
-          ]
-        }
-      ],
-      "title": "LIGHTX2V TURBO — 4 STEP v0.1",
-      "properties": {
-        "Node name for S&R": "LoraLoaderModelOnly"
-      },
-      "widgets_values": [
-        "MiniMaxH3\\minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors",
-        1.0
-      ]
-    },
-    {
-      "id": 45,
-      "type": "LoadImage",
-      "pos": [
-        2431.488682584539,
-        1797.7764759658048
-      ],
-      "size": [
-        360,
-        360
-      ],
-      "flags": {},
-      "order": 45,
+      "order": 50,
       "mode": 0,
       "inputs": [],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            66
-          ]
-        },
-        {
-          "name": "MASK",
-          "type": "MASK",
-          "links": null
-        }
-      ],
-      "title": "Background Reference • <Picture 2>",
+      "outputs": [],
+      "title": "1. Planと生成設定",
       "properties": {
-        "Node name for S&R": "LoadImage"
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
       },
       "widgets_values": [
-        "image002_keinai.jpg"
-      ]
+        "対応する 05_plan_compiler_lyrics.json が保存した lyrics_plan_XXXXX.txt をCompiled Plan JSONへ指定します。\n\nProduction PlanはPlanのScene/Shot、prompt、frame数を読み取ります。Planを変更したい場合はこのworkflowでJSONを手編集せず、前段から再生成します。"
+      ],
+      "widgets_values_named": {
+        "text": "対応する 05_plan_compiler_lyrics.json が保存した lyrics_plan_XXXXX.txt をCompiled Plan JSONへ指定します。\n\nProduction PlanはPlanのScene/Shot、prompt、frame数を読み取ります。Planを変更したい場合はこのworkflowでJSONを手編集せず、前段から再生成します。"
+      },
+      "color": "#432",
+      "bgcolor": "#653"
     },
     {
-      "id": 47,
-      "type": "ResolutionSelector",
+      "id": 51,
+      "type": "MarkdownNote",
       "pos": [
-        -294.2352129891423,
-        1022.9692406773994
+        -350,
+        2060
       ],
       "size": [
-        270,
-        150
+        390,
+        410
       ],
       "flags": {},
-      "order": 12,
+      "order": 51,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "aspect_ratio",
-          "type": "COMBO",
-          "link": null,
-          "widget": {
-            "name": "aspect_ratio"
-          }
-        },
-        {
-          "name": "megapixels",
-          "type": "FLOAT",
-          "link": null,
-          "widget": {
-            "name": "megapixels"
-          }
-        },
-        {
-          "name": "multiple",
-          "type": "INT",
-          "link": null,
-          "widget": {
-            "name": "multiple"
-          }
-        },
-        {
-          "name": "preview",
-          "type": "RESOLUTION_PREVIEW",
-          "link": null,
-          "widget": {
-            "name": "preview"
-          },
-          "shape": 7
-        }
-      ],
-      "outputs": [
-        {
-          "name": "width",
-          "type": "INT",
-          "links": [
-            69
-          ]
-        },
-        {
-          "name": "height",
-          "type": "INT",
-          "links": [
-            70
-          ]
-        }
-      ],
-      "title": "Output Resolution",
+      "inputs": [],
+      "outputs": [],
+      "title": "2. 音声と参照素材",
       "properties": {
-        "Node name for S&R": "ResolutionSelector"
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
       },
       "widgets_values": [
-        "16:9 (Widescreen)",
-        0.4,
-        32
-      ]
+        "full mixとvocalを別々に指定します。口形はPlan内の歌詞directiveで誘導し、追加lip-sync経路は使用しません。\n\n人物は<Picture 1>、背景は<Picture 2>へ別々に指定します。前段のSubject/Scene EMDと同じ参照を使ってください。"
+      ],
+      "widgets_values_named": {
+        "text": "full mixとvocalを別々に指定します。口形はPlan内の歌詞directiveで誘導し、追加lip-sync経路は使用しません。\n\n人物は<Picture 1>、背景は<Picture 2>へ別々に指定します。前段のSubject/Scene EMDと同じ参照を使ってください。"
+      },
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 52,
+      "type": "MarkdownNote",
+      "pos": [
+        1110,
+        2250
+      ],
+      "size": [
+        340,
+        300
+      ],
+      "flags": {},
+      "order": 52,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "3. 部分生成と音声整列",
+      "properties": {
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "Audio Pad PairはPlanの最終frame境界までPCM無音を追加します。Scene Debug Splitterは既定で無効です。問題Sceneだけを確認する時はenableを有効にし、1ベースのscene_startとscene_lengthを指定します。"
+      ],
+      "widgets_values_named": {
+        "text": "Audio Pad PairはPlanの最終frame境界までPCM無音を追加します。Scene Debug Splitterは既定で無効です。問題Sceneだけを確認する時はenableを有効にし、1ベースのscene_startとscene_lengthを指定します。"
+      },
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 53,
+      "type": "MarkdownNote",
+      "pos": [
+        2420,
+        20
+      ],
+      "size": [
+        720,
+        115
+      ],
+      "flags": {},
+      "order": 53,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "4. H3モデルとSampling",
+      "properties": {
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "H3 diffusion、text encoder、Video/Audio VAE、TurboLoRA、Attention Backend及びVideo/Audio Shiftを確認します。既定denoising stepsは8です。"
+      ],
+      "widgets_values_named": {
+        "text": "H3 diffusion、text encoder、Video/Audio VAE、TurboLoRA、Attention Backend及びVideo/Audio Shiftを確認します。既定denoising stepsは8です。"
+      },
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 54,
+      "type": "MarkdownNote",
+      "pos": [
+        5330,
+        20
+      ],
+      "size": [
+        760,
+        115
+      ],
+      "flags": {},
+      "order": 54,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "5. Reviewと継続",
+      "properties": {
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "Review Gateは既定で無効です。有効時は候補を確認してからLoopを継続します。checkpointからの復旧時はRECOVERYノードを使用します。"
+      ],
+      "widgets_values_named": {
+        "text": "Review Gateは既定で無効です。有効時は候補を確認してからLoopを継続します。checkpointからの復旧時はRECOVERYノードを使用します。"
+      },
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 55,
+      "type": "MarkdownNote",
+      "pos": [
+        6240,
+        620
+      ],
+      "size": [
+        440,
+        310
+      ],
+      "flags": {},
+      "order": 55,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "6. 出力",
+      "properties": {
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "各Sceneはsegmentとcheckpointを保存し、全Scene完了後にAssemble Final Videoが連結します。\n\n別の映像候補が必要な場合はPlanを変えず、Video段階だけを再Queueします。演出又は歌詞対応を変える場合はPlan / Compiler段階から再生成します。"
+      ],
+      "widgets_values_named": {
+        "text": "各Sceneはsegmentとcheckpointを保存し、全Scene完了後にAssemble Final Videoが連結します。\n\n別の映像候補が必要な場合はPlanを変えず、Video段階だけを再Queueします。演出又は歌詞対応を変える場合はPlan / Compiler段階から再生成します。"
+      },
+      "color": "#432",
+      "bgcolor": "#653"
     }
   ],
   "links": [
@@ -2998,10 +3321,10 @@
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.52,
+      "scale": 0.42,
       "offset": [
-        20,
-        20
+        260,
+        95
       ]
     },
     "comfyui_mcp": {

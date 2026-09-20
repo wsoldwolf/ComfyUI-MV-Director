@@ -1,162 +1,183 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1120" viewBox="0 0 1600 1120" role="img" aria-labelledby="title desc">
-  <title id="title">Direction EnhancerとTimeline Plannerの処理フロー</title>
-  <desc id="desc">人物identity用Subject EMDと背景環境用Scene EMDを分離してDirection EnhancerとTimeline Plannerへ入力し、PlannerがTemplate EMDへScene設定、Visual Beat、Song Direction、Shot Layout、Action、Camera及びリップシンクdirectiveを展開して完全EMDを作る流れ。Compilerが背景Picture契約を生成し、背景IMAGE自体は動画生成時にH3へ直接渡す。</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1420" viewBox="0 0 1800 1420" role="img" aria-labelledby="title desc">
+  <title id="title">Direction EnhancerとTimeline Planner v55の処理フロー</title>
+  <desc id="desc">Direction Enhancerが人物Concept、背景Scene、利用者希望、外部ProfileをMVD_DIRECTION_V3へ統合し、Timeline Planner v55が条件付き歌詞Cue発見、Visual Beats、Song Direction、Shot Layout、Actions、Action Audit、Camerasを経て完成EMDを作る。LLM自然文のAS IS境界とPython所有処理を示す。</desc>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
       <path d="M0 0L10 5L0 10Z" fill="#526273"/>
     </marker>
     <style>
-      .canvas{fill:#f8fafc}.panel{fill:none;stroke:#cbd5e1;stroke-width:2}.input{fill:#fff4df;stroke:#b7791f;stroke-width:2}.llm{fill:#e7f1ff;stroke:#3977b8;stroke-width:2}.python{fill:#eaf8ef;stroke:#3a8b58;stroke-width:2}.artifact{fill:#f2eafe;stroke:#7950a8;stroke-width:2}.output{fill:#263547;stroke:#152232;stroke-width:2}.edge{fill:none;stroke:#526273;stroke-width:3;marker-end:url(#arrow)}.edge2{fill:none;stroke:#64748b;stroke-width:2.5;stroke-dasharray:8 6;marker-end:url(#arrow)}.title{fill:#172333;font:700 26px "Yu Gothic UI","Noto Sans JP",sans-serif;text-anchor:middle}.section{fill:#334155;font:700 21px "Yu Gothic UI","Noto Sans JP",sans-serif}.label{fill:#25364a;font:700 18px "Yu Gothic UI","Noto Sans JP",sans-serif;text-anchor:middle}.small{fill:#526273;font:500 14px "Yu Gothic UI","Noto Sans JP",sans-serif;text-anchor:middle}.tiny{fill:#526273;font:500 12px "Yu Gothic UI","Noto Sans JP",sans-serif;text-anchor:middle}.white{fill:#fff;font:700 18px "Yu Gothic UI","Noto Sans JP",sans-serif;text-anchor:middle}.whiteSmall{fill:#dbe7f2;font:500 14px "Yu Gothic UI","Noto Sans JP",sans-serif;text-anchor:middle}.legend{fill:#475569;font:500 14px "Yu Gothic UI","Noto Sans JP",sans-serif}.edgeLabel{fill:#526273;font:600 13px "Yu Gothic UI","Noto Sans JP",sans-serif;text-anchor:middle;paint-order:stroke;stroke:#f8fafc;stroke-width:6;stroke-linejoin:round}
+      .canvas{fill:#f8fafc}.panel{fill:#fff;stroke:#cbd5e1;stroke-width:2}.input{fill:#fff4df;stroke:#b7791f;stroke-width:2}.llm{fill:#e7f1ff;stroke:#3977b8;stroke-width:2}.python{fill:#eaf8ef;stroke:#3a8b58;stroke-width:2}.artifact{fill:#f2eafe;stroke:#7950a8;stroke-width:2}.output{fill:#263547;stroke:#152232;stroke-width:2}.edge{fill:none;stroke:#526273;stroke-width:3;marker-end:url(#arrow)}.dash{fill:none;stroke:#64748b;stroke-width:2.5;stroke-dasharray:9 7;marker-end:url(#arrow)}.title{fill:#172333;font:700 28px "Yu Gothic UI","Noto Sans JP",sans-serif;text-anchor:middle}.section{fill:#334155;font:700 22px "Yu Gothic UI","Noto Sans JP",sans-serif}.label{fill:#25364a;font:700 18px "Yu Gothic UI","Noto Sans JP",sans-serif;text-anchor:middle}.small{fill:#526273;font:500 14px "Yu Gothic UI","Noto Sans JP",sans-serif;text-anchor:middle}.tiny{fill:#526273;font:500 12px "Yu Gothic UI","Noto Sans JP",sans-serif;text-anchor:middle}.white{fill:#fff;font:700 19px "Yu Gothic UI","Noto Sans JP",sans-serif;text-anchor:middle}.whiteSmall{fill:#dbe7f2;font:500 14px "Yu Gothic UI","Noto Sans JP",sans-serif;text-anchor:middle}.legend{fill:#475569;font:500 14px "Yu Gothic UI","Noto Sans JP",sans-serif}.edgeLabel{fill:#526273;font:600 13px "Yu Gothic UI","Noto Sans JP",sans-serif;text-anchor:middle;paint-order:stroke;stroke:#f8fafc;stroke-width:7;stroke-linejoin:round}
     </style>
   </defs>
 
-  <rect class="canvas" width="1600" height="1120" rx="18"/>
-  <text class="title" x="800" y="44">Direction Enhancer → Timeline Planner 処理フロー</text>
+  <rect class="canvas" width="1800" height="1420" rx="18"/>
+  <text class="title" x="900" y="48">Direction Enhancer → Timeline Planner v55</text>
 
-  <rect class="input" x="400" y="66" width="22" height="18" rx="3"/><text class="legend" x="432" y="80">入力・外部EMD</text>
-  <rect class="llm" x="585" y="66" width="22" height="18" rx="3"/><text class="legend" x="617" y="80">LLM task</text>
-  <rect class="python" x="735" y="66" width="22" height="18" rx="3"/><text class="legend" x="767" y="80">決定的Python処理</text>
-  <rect class="artifact" x="955" y="66" width="22" height="18" rx="3"/><text class="legend" x="987" y="80">typed artifact</text>
+  <rect class="input" x="450" y="70" width="22" height="18" rx="3"/><text class="legend" x="482" y="84">入力・外部EMD</text>
+  <rect class="llm" x="650" y="70" width="22" height="18" rx="3"/><text class="legend" x="682" y="84">LLM task</text>
+  <rect class="python" x="810" y="70" width="22" height="18" rx="3"/><text class="legend" x="842" y="84">決定的Python処理</text>
+  <rect class="artifact" x="1030" y="70" width="22" height="18" rx="3"/><text class="legend" x="1062" y="84">typed artifact</text>
 
-  <rect class="panel" x="28" y="112" width="1544" height="362" rx="16"/>
-  <text class="section" x="52" y="144">1. Direction Enhancer — MV全体の方針を一度だけ統合</text>
+  <rect class="panel" x="30" y="115" width="1740" height="410" rx="18"/>
+  <text class="section" x="55" y="150">1. Direction Enhancer — 全Scene共通のauthorityを一度だけ統合</text>
 
-  <rect class="input" x="52" y="168" width="250" height="82" rx="12"/>
-  <text class="label" x="177" y="198">外部profile EMD</text>
-  <text class="small" x="177" y="222">profiles/style/*.md</text>
-  <text class="small" x="177" y="242">motion/*.md ・ camera/*.md</text>
+  <rect class="input" x="55" y="180" width="270" height="132" rx="12"/>
+  <text class="label" x="190" y="214">入力authority</text>
+  <text class="small" x="190" y="242">retention_policy / user_request</text>
+  <text class="small" x="190" y="266">Concept EMD = 人物identity</text>
+  <text class="small" x="190" y="290">Scene EMD = 環境・時刻baseline</text>
 
-  <rect class="input" x="52" y="268" width="250" height="174" rx="12"/>
-  <text class="label" x="177" y="299">入力authority</text>
-  <text class="small" x="177" y="327">user_request</text>
-  <text class="small" x="177" y="349">Subject EMD = 人物identity</text>
-  <text class="small" x="177" y="371">Scene EMD = 環境・時刻・背景Picture</text>
-  <text class="small" x="177" y="393">retention / passthrough</text>
-  <text class="tiny" x="177" y="421">人物と背景を同じ参照roleへ混在させない</text>
+  <rect class="input" x="55" y="335" width="270" height="142" rx="12"/>
+  <text class="label" x="190" y="369">外部profile EMD</text>
+  <text class="small" x="190" y="397">Style / Motion / Camera</text>
+  <text class="small" x="190" y="421">planner_policy metadata</text>
+  <text class="small" x="190" y="445">passthrough Direction EMD</text>
 
-  <rect class="python" x="352" y="205" width="240" height="142" rx="12"/>
-  <text class="label" x="472" y="237">Profile loader + 検証</text>
-  <text class="small" x="472" y="263">ID・subsection・metadata</text>
-  <text class="small" x="472" y="285">locked / retention / Scene強化</text>
-  <text class="small" x="472" y="307">passthrough所有区分を確定</text>
-  <text class="tiny" x="472" y="330">構造とauthorityはPython所有</text>
+  <rect class="python" x="390" y="235" width="280" height="176" rx="12"/>
+  <text class="label" x="530" y="270">Profile loader + 構造検証</text>
+  <text class="small" x="530" y="298">ID・subsection・metadata</text>
+  <text class="small" x="530" y="322">locked section / retention</text>
+  <text class="small" x="530" y="346">Scene EMDを厳格parse</text>
+  <text class="small" x="530" y="370">明示DirectionをVisionより優先</text>
+  <text class="tiny" x="530" y="394">authorityと構造はPython所有</text>
 
-  <rect class="llm" x="646" y="205" width="244" height="142" rx="12"/>
-  <text class="label" x="768" y="237">Direction LLM</text>
-  <text class="small" x="768" y="263">STYLE / ENVIRONMENT</text>
-  <text class="small" x="768" y="285">TIME_LIGHTING / MOTION</text>
-  <text class="small" x="768" y="307">CAMERA / OTHER</text>
-  <text class="tiny" x="768" y="330">TYPE ⇥ SLOT ⇥ TEXT</text>
+  <rect class="llm" x="745" y="235" width="285" height="176" rx="12"/>
+  <text class="label" x="887.5" y="270">Direction LLM</text>
+  <text class="small" x="887.5" y="298">未固定slotだけを生成</text>
+  <text class="small" x="887.5" y="322">STYLE / ENVIRONMENT</text>
+  <text class="small" x="887.5" y="346">TIME_LIGHTING / MOTION</text>
+  <text class="small" x="887.5" y="370">CAMERA / OTHER</text>
+  <text class="tiny" x="887.5" y="394">TYPE ⇥ SLOT ⇥ TEXT</text>
 
-  <rect class="python" x="944" y="181" width="258" height="190" rx="12"/>
-  <text class="label" x="1073" y="214">Parser + 方針確定</text>
-  <text class="small" x="1073" y="242">行protocol検証</text>
-  <text class="small" x="1073" y="264">欠落slotのみ局所retry</text>
-  <text class="small" x="1073" y="286">locked Styleを機械適用</text>
-  <text class="small" x="1073" y="308">provenanceを固定enumで記録</text>
-  <text class="small" x="1073" y="330">preview EMDをrender</text>
-  <text class="tiny" x="1073" y="354">Scene EMDはPlannerへ、背景IMAGEは生成時H3へ入力</text>
+  <rect class="python" x="1105" y="215" width="290" height="216" rx="12"/>
+  <text class="label" x="1250" y="250">Parser + 局所回復</text>
+  <text class="small" x="1250" y="278">行protocolを厳密検証</text>
+  <text class="small" x="1250" y="302">欠落slotだけを再要求</text>
+  <text class="small" x="1250" y="326">locked profile本文を機械適用</text>
+  <text class="small" x="1250" y="350">provenanceとprofile IDを保存</text>
+  <text class="small" x="1250" y="374">preview EMDをrender</text>
+  <text class="tiny" x="1250" y="402">成功結果だけをcache</text>
 
-  <rect class="artifact" x="1260" y="205" width="270" height="142" rx="12"/>
-  <text class="label" x="1395" y="237">MVD_DIRECTION_V3</text>
-  <text class="small" x="1395" y="263">style / environment / time</text>
-  <text class="small" x="1395" y="285">motion / camera / other</text>
-  <text class="small" x="1395" y="307">profile ID + provenance</text>
-  <text class="tiny" x="1395" y="330">+ direction_emd_preview</text>
+  <rect class="artifact" x="1470" y="245" width="245" height="156" rx="12"/>
+  <text class="label" x="1592.5" y="280">MVD_DIRECTION_V3</text>
+  <text class="small" x="1592.5" y="308">六方向 + profile ID</text>
+  <text class="small" x="1592.5" y="332">retention + provenance</text>
+  <text class="small" x="1592.5" y="356">planner_policy選択根拠</text>
+  <text class="tiny" x="1592.5" y="382">+ direction_emd_preview</text>
 
-  <path class="edge" d="M302 209H352"/>
-  <path class="edge" d="M302 355C326 355 326 310 352 310"/>
-  <path class="edge" d="M592 276H646"/>
-  <path class="edge" d="M890 276H944"/>
-  <path class="edge" d="M1202 276H1260"/>
+  <path class="edge" d="M325 246H390"/>
+  <path class="edge" d="M325 406H390"/>
+  <path class="edge" d="M670 323H745"/>
+  <path class="edge" d="M1030 323H1105"/>
+  <path class="edge" d="M1395 323H1470"/>
 
-  <rect class="panel" x="28" y="500" width="1544" height="568" rx="16"/>
-  <text class="section" x="52" y="532">2. Timeline Planner — 確定時間枠へShot演出を展開</text>
+  <rect class="panel" x="30" y="555" width="1740" height="815" rx="18"/>
+  <text class="section" x="55" y="590">2. Timeline Planner v55 — 確定Scene時間枠へ歌詞固有のShot演出を展開</text>
 
-  <rect class="input" x="52" y="558" width="220" height="194" rx="12"/>
-  <text class="label" x="162" y="590">Planner入力</text>
-  <text class="small" x="162" y="618">Template EMD</text>
-  <text class="small" x="162" y="640">Concept EMD</text>
-  <text class="small" x="162" y="662">Direction artifact</text>
-  <text class="small" x="162" y="684">lip-sync mode / target</text>
-  <text class="small" x="162" y="706">GGUF runtime / seed</text>
-  <text class="tiny" x="162" y="733">Scene/Shot時間枠は既に確定</text>
+  <rect class="input" x="55" y="625" width="250" height="210" rx="12"/>
+  <text class="label" x="180" y="660">Planner入力</text>
+  <text class="small" x="180" y="690">Template EMD + lyrics</text>
+  <text class="small" x="180" y="714">Concept EMD = Subject roster</text>
+  <text class="small" x="180" y="738">Scene EMD = spatial support</text>
+  <text class="small" x="180" y="762">Direction artifact</text>
+  <text class="small" x="180" y="786">lip-sync / model / seed</text>
+  <text class="tiny" x="180" y="816">Scene絶対時間は上流で確定</text>
 
-  <rect class="python" x="318" y="578" width="210" height="154" rx="12"/>
-  <text class="label" x="423" y="610">保護と短縮context</text>
-  <text class="small" x="423" y="638">作者台詞をplaceholder化</text>
-  <text class="small" x="423" y="660">直近履歴だけを選択</text>
-  <text class="small" x="423" y="682">Subject instance policy</text>
-  <text class="tiny" x="423" y="710">全履歴を毎Sceneへ再投入しない</text>
+  <rect class="python" x="355" y="635" width="250" height="190" rx="12"/>
+  <text class="label" x="480" y="670">Context準備</text>
+  <text class="small" x="480" y="698">作者台詞をplaceholder保護</text>
+  <text class="small" x="480" y="722">人物詳細をrosterへ短縮</text>
+  <text class="small" x="480" y="746">Scene環境をspatial support化</text>
+  <text class="small" x="480" y="770">scenes_per_batchへ分割</text>
+  <text class="tiny" x="480" y="800">履歴窓とcall_seedを決定</text>
 
-  <rect class="llm" x="576" y="558" width="194" height="100" rx="12"/>
-  <text class="label" x="673" y="590">Visual Beats</text>
-  <text class="small" x="673" y="616">歌詞 → 具体物・接触・結果</text>
-  <text class="tiny" x="673" y="640">Scene単位 BEAT行</text>
+  <rect class="llm" x="665" y="625" width="250" height="112" rx="12"/>
+  <text class="label" x="790" y="660">Lyric Cue Discovery</text>
+  <text class="small" x="790" y="687">bounded + automatic時だけ</text>
+  <text class="small" x="790" y="711">原文から具体物・場所・effect</text>
 
-  <rect class="llm" x="576" y="682" width="194" height="100" rx="12"/>
-  <text class="label" x="673" y="714">Song Direction</text>
-  <text class="small" x="673" y="740">曲全体の短い演出弧</text>
-  <text class="tiny" x="673" y="764">一回だけ生成</text>
+  <rect class="llm" x="665" y="760" width="250" height="112" rx="12"/>
+  <text class="label" x="790" y="795">Visual Beats</text>
+  <text class="small" x="790" y="822">9-field Cue Card</text>
+  <text class="small" x="790" y="846">根拠・対象・配置・可視展開</text>
 
-  <rect class="llm" x="818" y="558" width="210" height="100" rx="12"/>
-  <text class="label" x="923" y="590">Shot Layout</text>
-  <text class="small" x="923" y="616">CUT / CONTINUE + 候補ID</text>
-  <text class="tiny" x="923" y="640">新規時刻は生成しない</text>
+  <rect class="llm" x="970" y="625" width="250" height="112" rx="12"/>
+  <text class="label" x="1095" y="660">Song Direction</text>
+  <text class="small" x="1095" y="687">曲全体で一回</text>
+  <text class="small" x="1095" y="711">感情曲線・energy・編集連続性</text>
 
-  <rect class="python" x="818" y="682" width="210" height="126" rx="12"/>
-  <text class="label" x="923" y="714">Layout適用</text>
-  <text class="small" x="923" y="740">候補repair・最大4 Shot</text>
-  <text class="small" x="923" y="762">H3格子へ再配分</text>
-  <text class="tiny" x="923" y="788">Scene/Shot絶対時刻を確定</text>
+  <rect class="llm" x="970" y="760" width="250" height="112" rx="12"/>
+  <text class="label" x="1095" y="795">Shot Layout</text>
+  <text class="small" x="1095" y="822">CUT / CONTINUE + 候補ID</text>
+  <text class="small" x="1095" y="846">新しい時刻は生成しない</text>
 
-  <rect class="llm" x="1076" y="558" width="205" height="100" rx="12"/>
-  <text class="label" x="1178.5" y="590">Actions</text>
-  <text class="small" x="1178.5" y="616">身体演技・接触・終端pose</text>
-  <text class="tiny" x="1178.5" y="640">ACTION ⇥ SLOT ⇥ TEXT</text>
+  <rect class="python" x="1275" y="760" width="250" height="112" rx="12"/>
+  <text class="label" x="1400" y="795">Layout適用</text>
+  <text class="small" x="1400" y="822">候補repair・最大4 Shot</text>
+  <text class="small" x="1400" y="846">H3格子へ時間再配分</text>
 
-  <rect class="llm" x="1076" y="682" width="205" height="126" rx="12"/>
-  <text class="label" x="1178.5" y="714">Cameras</text>
-  <text class="small" x="1178.5" y="740">確定Actionをread-only参照</text>
-  <text class="small" x="1178.5" y="762">履歴・arc priority・構図</text>
-  <text class="tiny" x="1178.5" y="788">CAMERA ⇥ SLOT ⇥ TEXT</text>
+  <path class="dash" d="M1593 401V540C1593 570 315 570 315 730H305"/>
+  <text class="edgeLabel" x="1240" y="548">typed Direction</text>
+  <path class="edge" d="M305 730H355"/>
+  <path class="edge" d="M605 680H665"/>
+  <path class="edge" d="M790 737V760"/>
+  <path class="edge" d="M915 816H970"/>
+  <path class="dash" d="M605 680C635 680 635 600 1095 600V625"/>
+  <path class="edge" d="M1095 737V760"/>
+  <path class="edge" d="M1220 816H1275"/>
 
-  <rect class="python" x="1325" y="578" width="205" height="230" rx="12"/>
-  <text class="label" x="1427.5" y="610">Filter + Renderer</text>
-  <text class="small" x="1427.5" y="638">生成台詞を削除</text>
-  <text class="small" x="1427.5" y="660">作者台詞を原位置へ復元</text>
-  <text class="small" x="1427.5" y="682">Action → Camera順に配置</text>
-  <text class="small" x="1427.5" y="704">lip-sync directiveを機械挿入</text>
-  <text class="small" x="1427.5" y="726">共通promptと保持分析を合成</text>
-  <text class="tiny" x="1427.5" y="756">採用TEXTは意味改変せずAS IS</text>
-  <text class="tiny" x="1427.5" y="782">EMD構造はPython所有</text>
+  <rect class="llm" x="355" y="930" width="275" height="130" rx="12"/>
+  <text class="label" x="492.5" y="967">Actions</text>
+  <text class="small" x="492.5" y="994">身体演技・表情・空間関係</text>
+  <text class="small" x="492.5" y="1018">Cue grounding・終端pose</text>
+  <text class="tiny" x="492.5" y="1043">ACTION ⇥ SLOT ⇥ TEXT</text>
 
-  <rect class="output" x="562" y="878" width="420" height="126" rx="14"/>
-  <text class="white" x="772" y="912">完成EMD — MVD_EMD_V1</text>
-  <text class="whiteSmall" x="772" y="940">Subject + Direction + Scene/Shot + 歌詞 + lip-sync</text>
-  <text class="whiteSmall" x="772" y="964">編集可能なEasy MarkDown</text>
-  <text class="whiteSmall" x="772" y="988">→ EMD Compiler (Ref2VA)</text>
+  <rect class="llm" x="690" y="930" width="275" height="130" rx="12"/>
+  <text class="label" x="827.5" y="967">Action Audit</text>
+  <text class="small" x="827.5" y="994">有限理由codeで分類</text>
+  <text class="small" x="827.5" y="1018">該当slotだけ一回修復</text>
+  <text class="tiny" x="827.5" y="1043">最大2 audit round・fail-open</text>
 
-  <path class="edge2" d="M1395 347V485C1395 520 278 520 278 654H272"/>
-  <text class="edgeLabel" x="1050" y="494">Direction artifact</text>
-  <path class="edge" d="M272 655H318"/>
-  <path class="edge" d="M528 620H576"/>
-  <path class="edge" d="M528 690C548 690 548 732 576 732"/>
-  <path class="edge" d="M770 608H818"/>
-  <path class="edge2" d="M770 732C790 732 790 632 818 632"/>
-  <path class="edge" d="M923 658V682"/>
-  <path class="edge" d="M1028 608H1076"/>
-  <path class="edge2" d="M1028 745C1050 745 1050 632 1076 632"/>
-  <path class="edge" d="M1179 658V682"/>
-  <path class="edge" d="M1281 745H1325"/>
-  <path class="edge2" d="M1028 780C1120 842 1270 842 1325 780"/>
-  <path class="edge" d="M1428 808V842C1428 858 982 858 982 920"/>
-  <text class="edgeLabel" x="1188" y="850">Pythonが同一Shotへ合成</text>
+  <rect class="llm" x="1025" y="930" width="275" height="130" rx="12"/>
+  <text class="label" x="1162.5" y="967">Cameras</text>
+  <text class="small" x="1162.5" y="994">確定Actionをread-only参照</text>
+  <text class="small" x="1162.5" y="1018">H3 Motion Type・Arc・顔Zoom</text>
+  <text class="tiny" x="1162.5" y="1043">CAMERA ⇥ SLOT ⇥ TEXT</text>
 
-  <rect class="python" x="52" y="862" width="400" height="148" rx="12"/>
-  <text class="label" x="252" y="894">責務境界</text>
-  <text class="small" x="252" y="920">LLM: 短い演出TEXTだけ</text>
-  <text class="small" x="252" y="944">Python: slot、時刻、構造、directive、provenance</text>
-  <text class="small" x="252" y="968">Compiler: 文法保持 + 自由文の英訳 + JSON直列化</text>
-  <text class="tiny" x="252" y="992">PlannerはJSONを生成しない</text>
+  <rect class="python" x="1360" y="910" width="355" height="170" rx="12"/>
+  <text class="label" x="1537.5" y="947">有限検証 + Renderer</text>
+  <text class="small" x="1537.5" y="975">台詞復元・生成台詞除去</text>
+  <text class="small" x="1537.5" y="999">Action → Camera → lyricsを配置</text>
+  <text class="small" x="1537.5" y="1023">lip-sync directiveを機械挿入</text>
+  <text class="small" x="1537.5" y="1047">単独末尾backslashだけを表示正規化</text>
+  <text class="tiny" x="1537.5" y="1070">採用自然文の意味は変更しない</text>
+
+  <path class="edge" d="M1400 872V895H492V930"/>
+  <path class="edge" d="M630 995H690"/>
+  <path class="edge" d="M965 995H1025"/>
+  <path class="edge" d="M1300 995H1360"/>
+
+  <rect class="python" x="55" y="1135" width="535" height="165" rx="12"/>
+  <text class="label" x="322.5" y="1170">AS IS境界</text>
+  <text class="small" x="322.5" y="1198">LLM：合格Action / Cameraの自然文</text>
+  <text class="small" x="322.5" y="1222">Python：slot・時刻・構造・CUT/CONTINUE・directive</text>
+  <text class="small" x="322.5" y="1246">監査予算枯渇：最小違反候補をAS ISで保持</text>
+  <text class="tiny" x="322.5" y="1275">必須slot / protocol回復不能時だけCompiler前で停止</text>
+
+  <rect class="python" x="645" y="1135" width="440" height="165" rx="12"/>
+  <text class="label" x="865" y="1170">Sourceの分離</text>
+  <text class="small" x="865" y="1198">歌詞：具体対象・場所・effectの発生源</text>
+  <text class="small" x="865" y="1222">Scene EMD：認可対象の空間配置だけ</text>
+  <text class="small" x="865" y="1246">Concept EMD：最終Subject定義だけ</text>
+  <text class="tiny" x="865" y="1275">背景物・衣装・履物をAction主題へ昇格させない</text>
+
+  <rect class="output" x="1150" y="1140" width="565" height="150" rx="14"/>
+  <text class="white" x="1432.5" y="1180">完成EMD — MVD_EMD_V1</text>
+  <text class="whiteSmall" x="1432.5" y="1208">Subject + Scene + Direction + Shot + lyrics + lip-sync</text>
+  <text class="whiteSmall" x="1432.5" y="1234">編集可能なEasy MarkDown</text>
+  <text class="whiteSmall" x="1432.5" y="1260">→ EMD Compiler (Ref2VA) → Plan JSON</text>
+  <path class="edge" d="M1538 1080V1140"/>
+
+  <text class="small" x="900" y="1345">長尺曲はscenes_per_batchで処理し、生成requestの履歴窓を制限しつつ、採用後の反復検査は全履歴を対象にする</text>
+  <text class="small" x="900" y="1380">背景IMAGE tensorはPlannerへ渡さず、同じ背景画像を動画生成時のH3 Picture 2 slotへ直接接続する</text>
 </svg>

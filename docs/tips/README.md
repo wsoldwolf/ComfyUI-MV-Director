@@ -5,4 +5,4 @@
 | TIPS | 内容 |
 |---|---|
 | [人物参照と背景参照を分ける](separate-subject-and-background-references.md) | 人物identityと環境条件の競合を避け、計画時と動画生成時に別Pictureとして扱う方法 |
-
+| [Plan / Videoを分離する理由](two-stage-workflow.md) | 計画を固定したseed比較、重い前段処理の再実行回避、再開範囲の判断 |
