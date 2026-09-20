@@ -42,6 +42,27 @@ Direction Enhancerの`style_profile`、`motion_profile`、`camera_profile`はPyt
 
 ## Motion metadata
 
+### 計画用本文と描画用本文の分離
+
+MotionとCameraは任意metadata `render_prompt` を持てます。`# 共通プロンプト`の本文は
+Direction→Plannerの計画用入力として従来どおり使い、EMDへ出す時だけ、選択profileの
+本文と**完全一致する項目**を`render_prompt`へ置き換えます。作者の追記・LLM生成文・
+編集された本文は変更しません。未指定なら従来どおり本文を出します。
+
+```markdown
+# プロファイル
+* `performance_mode` dance_phrase
+* `render_prompt` 動作は一つの意図ある経路を通り、明瞭なアクセントと余韻へ連続する。
+
+# 共通プロンプト
+## モーション
+* 歌詞に応じて準備・アクセント・解放をShotへ配分する。
+```
+
+配分率・slot・監査等のPlanner向け規則を動画モデルへ送らず、描画に必要な短い全体条件を
+別に記述するための機能です。UI追加はありません。`anime_emotional_mv`のMotionとCameraで
+使用しています。metadataもPlannerキャッシュに含むため、変更後は再起動してPlanを再生成します。
+
 ```markdown
 # プロファイル
 * `performance_mode` dance_phrase
@@ -68,6 +89,16 @@ Actionへ渡します。準備・アクセント・解放をScene内のShotへ�
 増加、音楽beat解析は行いません。実時間での拍同期やCameraの位相制御は別課題です。
 
 ## Camera metadata
+
+`dance_phrase`では、通常の内部Shot候補の最短間隔を4秒として演技が収まる時間を確保します。
+Sceneや音声の区切りは変えず、4秒未満のSceneも一Shotとして扱えます。Actionには
+`performance_phase`、Scene内の進行位置、継続時の前Cueの終了状態を渡します。終了状態は
+LLMが計画した状態であり、生成動画からの姿勢検出ではありません。
+
+emotionalの有限Camera契約では、同じ継続グループの前Camera終了画角・視点を開始値として
+接続します。背面・側面から正面顔へ単純Zoomする不可能な接続は、同じ旋回方向のArcとして
+解決し、INFOに接続を記録します。この幾何接続は有限値の構造処理で、Action本文はAS ISです。
+自由文Cameraや作者が書いた演技の意味を書き換える機能ではありません。実画像の連続性は別途検証が必要です。
 
 Cameraは任意の`planner_policy`、
 `lyric_cue_mode`、`lyric_interpretation`及び`priority_lyric_cues` metadataを持てます。

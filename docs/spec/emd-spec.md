@@ -16,6 +16,21 @@ Compilerは演出の追加、要約、意味修復、画像内容の確認、音
 
 ## 2. 文書構造
 
+### 生成経路と出典のスコープ
+
+Direction profileの任意`render_prompt`は、Motion/Cameraの詳細な計画規則と、EMDの短い
+描画条件を分けるためのmetadataであり、EMD文法の新項目ではない。Plannerはprofile本文を
+計画に使用し、レンダラはprofile所有本文に完全一致する項目だけを指定の描画文へ投影する。
+作者の追加文と採用ActionはAS ISで保持する。詳細は[profile仕様](../../profiles/README.md)を参照。
+
+Compilerは翻訳元をEMD fieldで区切り、共通文と局所Shotを同じ翻訳batchへ混在させない。
+field ID・原文hashをINFO、採用結果との対応を成功キャッシュの`translation_trace`へ記録する。
+これは出典分離であって、LLMの意味判断を機械的に訂正する処理ではない。
+
+`dance_phrase`かつ有限Camera契約の場合、Python所有の画角・視点は継続グループの終端から
+接続する。不可能な背面から正面顔への単純Zoomは同方向Arcで接続できる。自由文Actionの
+意味や本文は変更しない。有限構造と自然文の責任範囲を混同しない。
+
 Compiler-ready EMDの順序は次のとおり。
 
 1. 必須 `# サブジェクト`

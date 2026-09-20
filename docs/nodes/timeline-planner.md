@@ -1,6 +1,12 @@
 # Timeline Planner
 
-Planner v58は、v54で導入した`anime_emotional_mv`の歌詞Cue Discoveryを引き継ぎます。プロファイル内の
+v60ではMotionの`performance_mode=dance_phrase`に演技phase・前Cue終端の受け渡しと4秒以上の
+内部境界候補を追加しました。emotionalの有限Cameraでは前終端から画角・視点を接続します。
+有限値の構造処理は、下記の自由文Cameraに関するAS IS説明とは区別してください。
+Motion/Cameraの計画本文とEMD描画文は任意`render_prompt`で分離できます。
+[profile仕様](../../profiles/README.md)と[実装・検証結果](../research/planner-v60-scope-phrase-camera-validation-2026-09-20.md)を参照してください。
+
+Planner v60は、v54で導入した`anime_emotional_mv`の歌詞Cue Discoveryを引き継ぎます。プロファイル内の
 `lyric_interpretation=bounded`と`lyric_cue_mode=automatic`で歌詞行Discoveryを
 有効にします。同じ原文行は一回だけ、16行ずつ最大768出力tokenで具体対象候補を
 抽出します。Scene内の原文順で最後の非body候補を選び、対象・根拠をVisual Beatへ

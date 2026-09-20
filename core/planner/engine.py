@@ -45,7 +45,7 @@ from .template import (
 )
 
 
-PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v59"
+PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v60"
 _ACTION_AUDIT_REPAIR_ATTEMPTS = 1
 _LOGGER = logging.getLogger("mv_director.nodes")
 TASKS = (
@@ -600,6 +600,28 @@ def _render_camera_plan(plan: _CameraPlan) -> str:
 def _fallback_choice_index(entity: _Entity, ordinal: int, size: int) -> int:
     shot_number = int(entity.key[-1]) if entity.key else 0
     return (entity.scene_number * 2 + shot_number * 5 + ordinal) % size
+
+
+def _connect_camera_geometry(plan: _CameraPlan, previous: _CameraPlan | None,
+                             arc_path: str = "") -> _CameraPlan:
+    """Connect Python-owned finite geometry; never change generated Action prose."""
+    if previous is None:
+        return plan
+    plan = replace(plan, start_scale=previous.end_scale, start_view=previous.end_view)
+    motion = _camera_motion_type(plan.motion)
+    if motion in {"Zoom In", "Zoom Out", "Push In", "Pull Out", "Static Shot"}:
+        if plan.coverage == "face_eyes_mouth" and previous.end_view not in {
+            "front", "front_three_quarter", "high_front", "low_front_three_quarter"
+        }:
+            # A rear/side view cannot become a readable frontal face by zoom.
+            # The sustained camera contract permits an orbit into that framing.
+            return replace(plan, motion="Arc Shot with large amplitude at fast speed",
+                           end_view="front_three_quarter",
+                           path=arc_path or "arc_right_60_120_70_90")
+        plan = replace(plan, end_view=previous.end_view)
+        if motion == "Static Shot":
+            plan = replace(plan, end_scale=previous.end_scale)
+    return plan
 
 
 def _choose_fallback_camera_option(
@@ -3267,7 +3289,9 @@ def generate_planner_content(
     )
 
     candidate_map = {
-        scene.scene_number: build_layout_candidates(scene)
+        scene.scene_number: build_layout_candidates(
+            scene, min_duration_ms=4000 if performance_mode == "dance_phrase" else 1500
+        )
         for scene in template.scenes
     }
     layout_entities: list[_Entity] = []
@@ -3549,6 +3573,24 @@ def generate_planner_content(
                 lip_sync_active=lip_sync_mode != "off",
             )
             context["performance_mode"] = performance_mode
+            if performance_mode == "dance_phrase":
+                count = scene_shot_counts.get(key[0], 1)
+                phase = ("complete_phrase" if count == 1 else
+                         "prepare_and_accent" if key[-1] == 1 else
+                         "release_and_reaction" if key[-1] == count else "develop_accent")
+                context["performance_phase"] = phase
+                context["phrase_position"] = f"{key[-1]}/{count}"
+                scene_numbers = [scene.scene_number for scene in planned_template.scenes]
+                scene_position = scene_numbers.index(key[0])
+                previous_card = (cue_cards.get((scene_numbers[scene_position - 1],))
+                                 if scene_position else None)
+                context["entry_body_state"] = (
+                    previous_card.final_state
+                    if previous_card and context["scene_continuation"] and key[-1] == 1
+                    else ""
+                )
+                if context["performance_role"] != "face_and_upper_body_accent":
+                    context["performance_role"] = "continuous_upper_body_phrase"
             context["previous_shot"] = (
                 None
                 if prior_key is None
@@ -4036,6 +4078,7 @@ def generate_planner_content(
             continuity_group = scene.scene_number
         camera_continuity_groups[scene.scene_number] = continuity_group
     chosen_arc_paths: dict[int, str] = {}
+    chosen_camera_plans: dict[int, _CameraPlan] = {}
     all_shot_keys = list(planned_template.shot_keys)
     face_cut_keys = {
         key
@@ -4081,6 +4124,16 @@ def generate_planner_content(
                 "locked_action": action_values[key],
                 "camera_continuity_group": camera_continuity_groups[key[0]],
                 "previous_arc_path": chosen_arc_paths.get(camera_continuity_groups[key[0]], ""),
+                "previous_camera_state": (
+                    {"end_scale": chosen_camera_plans[camera_continuity_groups[key[0]]].end_scale,
+                     "end_view": chosen_camera_plans[camera_continuity_groups[key[0]]].end_view}
+                    if camera_continuity_groups[key[0]] in chosen_camera_plans else {}
+                ),
+                "previous_camera_in_batch": (
+                    {"scene_number": keys[keys.index(key) - 1][0], "shot_index": keys[keys.index(key) - 1][1]}
+                    if keys.index(key) and camera_continuity_groups[keys[keys.index(key)-1][0]] == camera_continuity_groups[key[0]]
+                    else {}
+                ),
                 "lip_sync_active": lip_sync_mode != "off",
                 "lip_sync_target": lip_sync_target,
                 "editorial_role": _camera_editorial_role(
@@ -4422,6 +4475,22 @@ def generate_planner_content(
                             + ",".join(selection_violations)
                         )
                     assert plan is not None
+                    if performance_mode == "dance_phrase":
+                        group = int(entity.value["camera_continuity_group"])
+                        index = all_shot_keys.index(entity.key)
+                        previous_key = all_shot_keys[index - 1] if index else None
+                        previous_plan = chosen_camera_plans.get(group)
+                        if previous_key in face_cut_keys and camera_continuity_groups[previous_key[0]] == group:
+                            previous_plan = _CameraPlan("Zoom In", "head_and_shoulders", "face_closeup",
+                                                       "front", "front", "zoom_in_35_55", "face_eyes_mouth")
+                        connected = _connect_camera_geometry(plan, previous_plan, chosen_arc_paths.get(group, ""))
+                        if connected != plan:
+                            _LOGGER.info("[MV Director - Timeline Planner] Camera continuity geometry connected; scene=%d; shot=%d; start=%s/%s",
+                                         entity.scene_number, entity.key[-1], connected.start_scale, connected.start_view)
+                        plan = connected
+                        if _camera_motion_type(plan.motion) == "Arc Shot":
+                            chosen_arc_paths[group] = plan.path
+                    chosen_camera_plans[int(entity.value["camera_continuity_group"])] = plan
                     rendered_plan = _render_camera_plan(plan)
                     values[entity.key] = rendered_plan
                     used_rendered_plans.add(rendered_plan)

@@ -18,12 +18,26 @@ CAMERA_PLANNER_POLICIES = _CATALOG.camera_planner_policy
 CAMERA_LYRIC_CUE_MODES = _CATALOG.camera_lyric_cue_mode
 CAMERA_LYRIC_INTERPRETATIONS = _CATALOG.camera_lyric_interpretation
 CAMERA_PRIORITY_LYRIC_CUES = _CATALOG.camera_priority_lyric_cues
+RENDER_PROMPTS = _CATALOG.render_prompts
+
+
+def render_profile_direction(kind: str, profile_id: str, values: tuple[str, ...]) -> tuple[str, ...]:
+    """Project only exact profile-owned prose; never rewrite authored/LLM text."""
+    source = {"motion": MOTION_PROFILES, "camera": CAMERA_PROFILES}[kind].get(profile_id)
+    target = RENDER_PROMPTS.get(kind, {}).get(profile_id)
+    if not source or not target:
+        return values
+    return tuple(target if value == source else value for value in values)
 
 
 def planner_profile_metadata(profile_id: str, motion_profile_id: str = "") -> dict[str, object]:
     """Cache identity includes metadata that is not part of Direction prose."""
     cues = CAMERA_PRIORITY_LYRIC_CUES.get(profile_id, ())
     return {
+        "render_prompts": {
+            "camera": RENDER_PROMPTS.get("camera", {}).get(profile_id, ""),
+            "motion": RENDER_PROMPTS.get("motion", {}).get(motion_profile_id, ""),
+        },
         "performance_mode": MOTION_PERFORMANCE_MODES.get(motion_profile_id, "event_based"),
         "planner_policy": CAMERA_PLANNER_POLICIES.get(profile_id, ""),
         "lyric_cue_mode": CAMERA_LYRIC_CUE_MODES.get(

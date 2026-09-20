@@ -29,6 +29,8 @@ bounded自動解釈では、Scene EMDを具体対象の発生源にせず、歌�
 
 LLMが返した合格ActionとCameraの自然文はAS ISで流します。Pythonはslot、時刻、CUT/CONTINUE、H3時間格子、台詞保護、lip-sync directive、有限protocol検証及び狭い表示上の正規化を所有します。Action Auditは品質改善器であり、有限予算を使い切った場合は最小違反のLLM候補をAS ISで保持します。必須slot又はprotocolそのものを復元できない場合だけ、不完全EMDをCompilerへ流さず停止します。
 
+LLMのcreative textは確率的であり、既定のQwen 8B級モデルはsystem prompt又はprofileの出力規約へ常に従うとは限りません。Pythonは一意に判断できる構造だけを決定論的に検証・復元できますが、欠落した意味内容をAS ISのまま合成することはできません。そのため、全てのprotocol違反を必ず成功へ変換する決定論的fallbackは設けず、有限回復後も不正な場合は停止します。運用上は`cache_mode=refresh`と別の言語生成seedを使い、別のLLM出力パターンを得ることで回避します。詳細は[トラブルシューティング](../troubleshooting.md#llmの行protocol不整合が発生する)を参照してください。
+
 長尺曲は`scenes_per_batch`単位で処理します。生成requestへ渡す履歴を限定しながら、採用後の反復検査は全履歴を対象にします。各LLM呼び出しは同じ実行seedからtask、call番号及びpayloadに応じた決定的な`call_seed`を派生するため、同じ入力の再現性とbatch間の乱数列分離を両立します。
 
 人物参照と背景参照は同じauthorityへ統合しません。人物画像から作るSubject EMDはidentity、顔、髪、衣装及び身体特徴を所有します。背景画像のscene-only Visionは検証済み観測から`# シーン設定`断片だけを決定的にrenderし、`emd_fragment`からDirection EnhancerとTimeline Plannerの`scene_emd`入力へ提供します。`observations_json`はdebug出力に留まり、Direction Enhancerの入力ではありません。詳しい理由と推奨配線は[人物参照と背景参照を分ける](../tips/separate-subject-and-background-references.md)を参照してください。

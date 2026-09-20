@@ -1,0 +1,801 @@
+{
+  "examined_commit": "22178e74348e20b87d3ce6da8efbbf2ca0da7637",
+  "video_path": "C:/Software/ComfyUI/output/h3_chains/mv_director_context_loop-2/final/t2v_normal_2026-09-20.mp4",
+  "embedded_plan_basename": "context_loop_plan_00002.txt",
+  "embedded_plan_sha256": "f1498751627f419c6cc890e705ee64aa2343e16560072ab7f9b81b8f3d7dfecb",
+  "compiler_cache_key": "4a6967090c81ed729bc6c64049a2df5e4dcdf69c6cf10c002d0efa11aca22a2d",
+  "candidate_planner_cache_key": "4f5d5551d5dc1e740ac19742c804e11bc3338c369e1b6deb881fce8d5683df5f",
+  "provenance_note": "Compiler cached JSON equals embedded input JSON. Planner cache is a matching candidate, not linked by stored input EMD hash. Camera matches apply renderer directive conversion only. Counts describe text, not measured movement.",
+  "counts": {
+    "shoulder_or_chest": 34,
+    "wrist": 11,
+    "explicit_repeat": 4,
+    "restore": 7,
+    "gentle": 34,
+    "knees_weight_step": 0,
+    "closed_eyes": 6,
+    "scene_count": 16,
+    "shot_count": 52,
+    "arc_count": 15,
+    "context_zero": [
+      1,
+      7,
+      10,
+      12
+    ],
+    "prefix_chars": 13344,
+    "prompt_chars": [
+      19316,
+      20811
+    ],
+    "exact_duplicate_actions": {
+      "Lower the hands and slightly lower the gaze.": 2,
+      "The person repeatedly gently touches and releases with the palms, looking slightly downward.": 2,
+      "tilt the right shoulder, push the chest to the left, and place the hands on top of each other in front of the chest": 2
+    },
+    "editorial_shot_mean_seconds": 2.699519230769231,
+    "editorial_shot_median_seconds": 2.479333333333333,
+    "editorial_shots_under_2_5_seconds": 27
+  },
+  "boundaries": [
+    {
+      "scene": 1,
+      "start_s": 0.0,
+      "end_s": 9.417,
+      "context_length": 0
+    },
+    {
+      "scene": 2,
+      "start_s": 9.417,
+      "end_s": 20.042,
+      "context_length": 22
+    },
+    {
+      "scene": 3,
+      "start_s": 20.042,
+      "end_s": 29.25,
+      "context_length": 22
+    },
+    {
+      "scene": 4,
+      "start_s": 29.25,
+      "end_s": 39.167,
+      "context_length": 22
+    },
+    {
+      "scene": 5,
+      "start_s": 39.167,
+      "end_s": 48.375,
+      "context_length": 22
+    },
+    {
+      "scene": 6,
+      "start_s": 48.375,
+      "end_s": 56.167,
+      "context_length": 22
+    },
+    {
+      "scene": 7,
+      "start_s": 56.167,
+      "end_s": 65.583,
+      "context_length": 0
+    },
+    {
+      "scene": 8,
+      "start_s": 65.583,
+      "end_s": 74.792,
+      "context_length": 22
+    },
+    {
+      "scene": 9,
+      "start_s": 74.792,
+      "end_s": 84.708,
+      "context_length": 22
+    },
+    {
+      "scene": 10,
+      "start_s": 84.708,
+      "end_s": 93.417,
+      "context_length": 0
+    },
+    {
+      "scene": 11,
+      "start_s": 93.417,
+      "end_s": 103.333,
+      "context_length": 22
+    },
+    {
+      "scene": 12,
+      "start_s": 103.333,
+      "end_s": 112.75,
+      "context_length": 0
+    },
+    {
+      "scene": 13,
+      "start_s": 112.75,
+      "end_s": 120.542,
+      "context_length": 22
+    },
+    {
+      "scene": 14,
+      "start_s": 120.542,
+      "end_s": 129.042,
+      "context_length": 22
+    },
+    {
+      "scene": 15,
+      "start_s": 129.042,
+      "end_s": 138.958,
+      "context_length": 22
+    },
+    {
+      "scene": 16,
+      "start_s": 138.958,
+      "end_s": 140.375,
+      "context_length": 22
+    }
+  ],
+  "camera_matches": [
+    {
+      "scene": 1,
+      "shot": 1,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 1,
+      "shot": 2,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 1,
+      "shot": 3,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 1,
+      "shot": 4,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 2,
+      "shot": 1,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 2,
+      "shot": 2,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 2,
+      "shot": 3,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 3,
+      "shot": 1,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 3,
+      "shot": 2,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 3,
+      "shot": 3,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 4,
+      "shot": 1,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 4,
+      "shot": 2,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 4,
+      "shot": 3,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 4,
+      "shot": 4,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 5,
+      "shot": 1,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 5,
+      "shot": 2,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 5,
+      "shot": 3,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 6,
+      "shot": 1,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 6,
+      "shot": 2,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 6,
+      "shot": 3,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 7,
+      "shot": 1,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 7,
+      "shot": 2,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 7,
+      "shot": 3,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 8,
+      "shot": 1,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 8,
+      "shot": 2,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 8,
+      "shot": 3,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 9,
+      "shot": 1,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 9,
+      "shot": 2,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 9,
+      "shot": 3,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 10,
+      "shot": 1,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 10,
+      "shot": 2,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 10,
+      "shot": 3,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 10,
+      "shot": 4,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 11,
+      "shot": 1,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 11,
+      "shot": 2,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 11,
+      "shot": 3,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 11,
+      "shot": 4,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 12,
+      "shot": 1,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 12,
+      "shot": 2,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 12,
+      "shot": 3,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 13,
+      "shot": 1,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 13,
+      "shot": 2,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 13,
+      "shot": 3,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 14,
+      "shot": 1,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 14,
+      "shot": 2,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 14,
+      "shot": 3,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 14,
+      "shot": 4,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 15,
+      "shot": 1,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 15,
+      "shot": 2,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 15,
+      "shot": 3,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 15,
+      "shot": 4,
+      "exact_camera_match": true
+    },
+    {
+      "scene": 16,
+      "shot": 1,
+      "exact_camera_match": true
+    }
+  ],
+  "prefix_tail": "ss is included in between, maintain the left-right direction of Arc, avoiding sudden stops, abrupt reversals, or quick turns in the opposite direction. Do not move around from front to back using only Zoom or linear Push/Pull. Do not select fixed equipment or decorative items within the scene as camera purposes, but prioritize the full-body emotion of the person, the unique one-time target inherent in the current lyrics, expression reactions, and different terminal silhouettes.Zoom In Begin with a light forward tilt of the shoulders and lift the chest. Extend the hand toward the upper part of the dawn and gently touch it with the palm. Have the person gently touch and then release with the palm. Lower the hands and slightly lower the gaze.Tracking Shot Shoulder lightly forward tilt, lift the chest. Extend the hand toward the upper part of the dawn and gently touch it with the palm. Have the person gently touch and then release with the palm. Lower the hands and slightly lower the gaze.",
+  "direction_cache_candidates": [
+    {
+      "cache_key": "0cc0cf5101b7f1b9111a4aef98bd495169e15ae442bc78ef0b4dc9d5cdabad19",
+      "camera_direction": [
+        "感情を伴うアニメMVとして、確定済みActionを変更又は言い換えず、その演技、現在Sceneだけに選ばれた対象との関係及び可視の結果を一つのcamera choreographyとして明瞭に収める。Camera文はMotion Type、画角、視点、経路、視差及び確定Actionに必要な可視範囲だけを記述し、新たな姿勢、手足の動作、接触、歩行、視線変化又は終端poseを追加しない。Camera motionはMiniMax H3の正式名称 Zoom In、Zoom Out、Push In、Pull Out、Pan Left、Pan Right、Truck Left、Truck Right、Tilt Up、Tilt Down、Pedestal Up、Pedestal Down、Arc Shot、Tracking Shot、Static Shot、Shake Slightly、Shake Strongly、POV、Roll Clockwise又はRoll Counterclockwiseのいずれかをそのまま明記し、必要に応じて with small amplitude、with large amplitude、at slow speed又はat fast speedを続ける。複数ShotではArc Shotを主要な展開手段として使うが、長尺Arcは2.5秒以上の適格な非顔Shotの概ね半数に限定し、残りはZoom、Push/Pull、Tracking、Pan/Tilt、Pedestal又はStaticによる対照を作る。選択された長尺Arcは60度から120度の経路をShot尺の70%から90%にわたり連続して進み、必ず `Arc Shot with large amplitude at fast speed` で開始して、開始視点、前景・中景・背景の強い視差及び明確に異なる終了視点を作る。固定正面又は固定背面の記録画を連続させず、低い斜め前方から側面、側面から後方三分の四、後方三分の四から正面若しくは斜め正面へ抜ける大きな角度変化を使う。連続Arcは同じ軌道の反復にせず、身体又は環境を示す構図から正面若しくは斜め正面の頭肩構図へ入る長尺Arcと、読み取れる顔構図から半径を広げて上半身、全身又は環境へ抜ける長尺Arcを選択的に使う。顔へのZoom In又は顔から全身へ抜けるArcとの接続は、歌詞の感情転換又はsection上の要点に限定し、各Sceneの定型句にしない。顔へのZoom Inは頭肩構図から始め、両目、両眉、鼻、口全体及び顔輪郭を全行程で同時に残し、目又は口だけへ切り詰めない。顔拡大への移行はShotの35%から55%で完了し、短い表情accentだけを読ませ、同じscaleを長時間保持しない。閉眼、半開き、伏し目又は再び目を開く演技も構図内で読めるようにし、常に全開の目を要求しない。上半身中心の演技では両目、歌唱口、肩、肘、手の軌道が読める上半身構図を優先する。全身表示は支持脚の動きそのものが確定Actionに必要な場合に限る。手の動作が収まる感情の要点で、人物は自転せずカメラが回り込み、両目と口を含む短い顔拡大へつなぐ。長尺ArcはShotの途中で減速して固定構図へ戻らず、終端近くまで勢いと視差を保つ。歩行又は明確な位置移動を追う場合だけTracking Shotを使い、単なる移動をcameraの主題として反復しない。低い斜め前方、側面、後方三分の四、over-shoulder、垂直方向及び奥行き方向を使い分け、画角と距離の変化で対照を作り、同じ旋回方向を維持することは反復と見なさない。CUTまでの一続きの区間では、間にZoomや静止が挟まってもArcの左右方向を維持し、急停止、急反転又は逆向きへの切り返しを加えない。Zoom又は直線的なPush/Pullだけで正面から背面へ回り込まない。固定設備又はシーン参照内の装飾物をcamera目的として選ばず、人物の全身感情、現在歌詞に固有の一回限りの対象、表情反応及び異なる終端silhouetteを優先する。"
+      ]
+    },
+    {
+      "cache_key": "17dbd6f095d7fb982f27a727464fd57c1ae5d46014e4b379adfe00369b5f4995",
+      "camera_direction": [
+        "感情を伴うアニメMVとして、確定済みActionを変更又は言い換えず、その演技、現在Sceneだけに選ばれた対象との関係及び可視の結果を一つのcamera choreographyとして明瞭に収める。Camera文はMotion Type、画角、視点、経路、視差及び確定Actionに必要な可視範囲だけを記述し、新たな姿勢、手足の動作、接触、歩行、視線変化又は終端poseを追加しない。Camera motionはMiniMax H3の正式名称 Zoom In、Zoom Out、Push In、Pull Out、Pan Left、Pan Right、Truck Left、Truck Right、Tilt Up、Tilt Down、Pedestal Up、Pedestal Down、Arc Shot、Tracking Shot、Static Shot、Shake Slightly、Shake Strongly、POV、Roll Clockwise又はRoll Counterclockwiseのいずれかをそのまま明記し、必要に応じて with small amplitude、with large amplitude、at slow speed又はat fast speedを続ける。複数ShotではArc Shotを主要な展開手段として使うが、長尺Arcは2.5秒以上の適格な非顔Shotの概ね半数に限定し、残りはZoom、Push/Pull、Tracking、Pan/Tilt、Pedestal又はStaticによる対照を作る。選択された長尺Arcは60度から120度の経路をShot尺の70%から90%にわたり連続して進み、必ず `Arc Shot with large amplitude at fast speed` で開始して、開始視点、前景・中景・背景の強い視差及び明確に異なる終了視点を作る。固定正面又は固定背面の記録画を連続させず、低い斜め前方から側面、側面から後方三分の四、後方三分の四から正面若しくは斜め正面へ抜ける大きな角度変化を使う。連続Arcは同じ軌道の反復にせず、身体又は環境を示す構図から正面若しくは斜め正面の頭肩構図へ入る長尺Arcと、読み取れる顔構図から半径を広げて上半身、全身又は環境へ抜ける長尺Arcを選択的に使う。顔へのZoom In又は顔から全身へ抜けるArcとの接続は、歌詞の感情転換又はsection上の要点に限定し、各Sceneの定型句にしない。顔へのZoom Inは頭肩構図から始め、両目、両眉、鼻、口全体及び顔輪郭を全行程で同時に残し、目又は口だけへ切り詰めない。顔拡大への移行はShotの35%から55%で完了し、短い表情accentだけを読ませ、同じscaleを長時間保持しない。閉眼、半開き、伏し目又は再び目を開く演技も構図内で読めるようにし、常に全開の目を要求しない。上半身中心の演技では両目、歌唱口、肩、肘、手の軌道が読める上半身構図を優先する。全身表示は支持脚の動きそのものが確定Actionに必要な場合に限る。手の動作が収まる感情の要点で、人物は自転せずカメラが回り込み、両目と口を含む短い顔拡大へつなぐ。長尺ArcはShotの途中で減速して固定構図へ戻らず、終端近くまで勢いと視差を保つ。歩行又は明確な位置移動を追う場合だけTracking Shotを使い、単なる移動をcameraの主題として反復しない。低い斜め前方、側面、後方三分の四、over-shoulder、垂直方向及び奥行き方向を使い分け、画角と距離の変化で対照を作り、同じ旋回方向を維持することは反復と見なさない。CUTまでの一続きの区間では、間にZoomや静止が挟まってもArcの左右方向を維持し、急停止、急反転又は逆向きへの切り返しを加えない。Zoom又は直線的なPush/Pullだけで正面から背面へ回り込まない。固定設備又はシーン参照内の装飾物をcamera目的として選ばず、人物の全身感情、現在歌詞に固有の一回限りの対象、表情反応及び異なる終端silhouetteを優先する。"
+      ]
+    }
+  ],
+  "action_pairs": [
+    {
+      "scene": 1,
+      "shot": 1,
+      "candidate_cache_action_ja": "肩を軽く前傾させ、胸郭を押し上げる",
+      "compiled_action_en": "Lower the hands and slightly lower the gaze."
+    },
+    {
+      "scene": 1,
+      "shot": 2,
+      "candidate_cache_action_ja": "暁の上部へ手を伸ばし、手のひらで優しく触れる",
+      "compiled_action_en": "Extend the hand toward the upper part of the dawn and gently touch it with the palm."
+    },
+    {
+      "scene": 1,
+      "shot": 3,
+      "candidate_cache_action_ja": "人物が手のひらで優しく触れて離す",
+      "compiled_action_en": "Have the person gently touch and then release with the palm."
+    },
+    {
+      "scene": 1,
+      "shot": 4,
+      "candidate_cache_action_ja": "手を下げ、目線をやや下げる",
+      "compiled_action_en": "Lower the hands and slightly lower the gaze."
+    },
+    {
+      "scene": 2,
+      "shot": 1,
+      "candidate_cache_action_ja": "鳥居の上部に手を添え、肩を軽く前傾させながら胸郭を押し上げる",
+      "compiled_action_en": "Places hands on the upper part of the torii gate, slightly leans forward with the shoulders, and lifts the chest cavity."
+    },
+    {
+      "scene": 2,
+      "shot": 2,
+      "candidate_cache_action_ja": "人物が手のひらで優しく触れて離す動作を繰り返し、目線はやや下げる",
+      "compiled_action_en": "The person repeatedly gently touches and releases with the palms, looking slightly downward."
+    },
+    {
+      "scene": 2,
+      "shot": 3,
+      "candidate_cache_action_ja": "手を下げた後、顔を少し上げて鳥居の上部を見据える",
+      "compiled_action_en": "After lowering the hands, slightly raises the face to look upward at the upper part of the torii gate."
+    },
+    {
+      "scene": 3,
+      "shot": 1,
+      "candidate_cache_action_ja": "苔の上部を手のひらで優しく触れて、指先を離す",
+      "compiled_action_en": "Gently touches the top of the moss with the palms and then separates the fingertips."
+    },
+    {
+      "scene": 3,
+      "shot": 2,
+      "candidate_cache_action_ja": "人物が手のひらで優しく触れて離す動作を繰り返し、目線はやや下げる",
+      "compiled_action_en": "The person repeatedly gently touches and releases with the palms, looking slightly downward."
+    },
+    {
+      "scene": 3,
+      "shot": 3,
+      "candidate_cache_action_ja": "手を下げ、胸を少し引き起こして目線をやや下げる姿勢へと戻る",
+      "compiled_action_en": "Lowers the hands, slightly lifts the chest, and returns to a posture with the gaze slightly lowered."
+    },
+    {
+      "scene": 4,
+      "shot": 1,
+      "candidate_cache_action_ja": "契りの場所で手を胸に当てながら目を閉じる",
+      "compiled_action_en": "Closes the eyes while placing the hands on the chest area of the contract."
+    },
+    {
+      "scene": 4,
+      "shot": 2,
+      "candidate_cache_action_ja": "人物が手を胸に当てながら目を閉じる姿勢を維持し、肩を落とす",
+      "compiled_action_en": "While maintaining the posture of closing their eyes with their hands on their chest, they lower their shoulders"
+    },
+    {
+      "scene": 4,
+      "shot": 3,
+      "candidate_cache_action_ja": "胸郭を押し下げながら手首を内側へ曲げ、目を閉じる",
+      "compiled_action_en": "They press down on their chest while bending their wrists inward and close their eyes"
+    },
+    {
+      "scene": 4,
+      "shot": 4,
+      "candidate_cache_action_ja": "手を下ろし、目を開ける",
+      "compiled_action_en": "They lower their hands and open their eyes"
+    },
+    {
+      "scene": 5,
+      "shot": 1,
+      "candidate_cache_action_ja": "増えてゆく場所へ向かって肩を上げ、胸郭を押し上げる。手首を外側へ曲げ、指先をゆっくり開く。",
+      "compiled_action_en": "They raise their shoulders toward the growing area, push up their chest, bend their wrists outward, and slowly spread their fingertips"
+    },
+    {
+      "scene": 5,
+      "shot": 2,
+      "candidate_cache_action_ja": "胸の古傷が光るのを確認しながら、手を元に戻し、目を開ける。少し前傾して不安な表情を作る。",
+      "compiled_action_en": "While confirming the glowing old wound on their chest, they return their hands to their original position and open their eyes, slightly leaning forward with an anxious expression"
+    },
+    {
+      "scene": 5,
+      "shot": 3,
+      "candidate_cache_action_ja": "胸の古傷が増えてゆくのを意識して、肩を下げ、手を腰に添える。視線をやや下げる。",
+      "compiled_action_en": "They lower their shoulders while being mindful of the increasing old wound on their chest, place their hands on their hips, and lower their gaze slightly"
+    },
+    {
+      "scene": 6,
+      "shot": 1,
+      "candidate_cache_action_ja": "御神木の下に立ったまま、肩を前傾させ、胸郭を押し下げ、手首を内側へ曲げて御神木に手を伸ばす",
+      "compiled_action_en": "Standing under the sacred tree, they tilt their shoulders forward, push down on their chest, bend their wrists inward, and reach out to the sacred tree with their hands"
+    },
+    {
+      "scene": 6,
+      "shot": 2,
+      "candidate_cache_action_ja": "人物が御神木に手を伸ばす動作を繰り返し、手首を内側へ曲げながら目を開けて敬意を表す",
+      "compiled_action_en": "The character repeatedly performs the action of reaching out toward the sacred tree, bending their wrist inward while keeping their eyes open to show respect"
+    },
+    {
+      "scene": 6,
+      "shot": 3,
+      "candidate_cache_action_ja": "肩を前傾させ、胸郭を押し下げ、手首を内側へ曲げ、御神木の根元に手を添える",
+      "compiled_action_en": "Leaning forward with their shoulders, pushing down their chest cavity, bending their wrist inward, and placing their hand at the base of the sacred tree"
+    },
+    {
+      "scene": 7,
+      "shot": 1,
+      "candidate_cache_action_ja": "千年鳥居の上部に手を置き、肩を軽く前傾させながら胸郭を押し下げ、肘を曲げて前腕を回し、手首を内側に捻る",
+      "compiled_action_en": "Placing their hands on the upper part of the thousand-year torii gate, slightly leaning forward with their shoulders while pushing down their chest cavity, bending their elbows to rotate their forearms, and twisting their wrists inward"
+    },
+    {
+      "scene": 7,
+      "shot": 2,
+      "candidate_cache_action_ja": "手のひらで優しく千年鳥居を触り、その表面をなぞるようにして指先を滑らせ、手をゆっくり離す",
+      "compiled_action_en": "Gently touching the thousand-year torii gate with their palms, tracing its surface with their fingertips, sliding them smoothly, and slowly withdrawing their hands"
+    },
+    {
+      "scene": 7,
+      "shot": 3,
+      "candidate_cache_action_ja": "人物が手のひらで優しく触れて離す動作を終えた後、肩を戻し、胸郭を元の位置へ戻しながら手を下げて自然な姿勢に戻る",
+      "compiled_action_en": "After completing the action of gently touching and withdrawing their hands, returning their shoulders to their original position, pushing their chest cavity back to its original place, and lowering their hands to return to a natural posture"
+    },
+    {
+      "scene": 8,
+      "shot": 1,
+      "candidate_cache_action_ja": "一瞬の場所で胸郭を軽く前傾させ、目線を下げる",
+      "compiled_action_en": "Temporarily tilting their chest cavity forward slightly and looking down"
+    },
+    {
+      "scene": 8,
+      "shot": 2,
+      "candidate_cache_action_ja": "一瞬が空に消えるように胸郭を戻し、目線を元に戻す",
+      "compiled_action_en": "Returning their chest cavity to its original position as if the moment is disappearing into the air, and restoring their gaze"
+    },
+    {
+      "scene": 8,
+      "shot": 3,
+      "candidate_cache_action_ja": "胸郭を軽く前傾させ、目線を下げる",
+      "compiled_action_en": "lightly tilt the chest forward and lower the line of sight"
+    },
+    {
+      "scene": 9,
+      "shot": 1,
+      "candidate_cache_action_ja": "狐火の上部に手を伸ばし、肩を軽く前傾させながら胸郭を押し下げ、肘を曲げて前腕を回し、手首を内側に捻る",
+      "compiled_action_en": "extend the hand toward the top of the fox fire, while slightly tilting the shoulders forward and pushing down the chest, bend the elbows and rotate the forearms, twisting the wrists inward"
+    },
+    {
+      "scene": 9,
+      "shot": 2,
+      "candidate_cache_action_ja": "人物が手のひらで優しく触れて離す動作を繰り返し、肩を戻しながら胸郭を元の位置へ戻す",
+      "compiled_action_en": "the figure repeatedly gently touches and releases the hand, returning the shoulders to their original position while bringing the chest back to its original position"
+    },
+    {
+      "scene": 9,
+      "shot": 3,
+      "candidate_cache_action_ja": "手を離した後、肩を戻し、胸郭を元の位置へ戻す",
+      "compiled_action_en": "after releasing the hand, return the shoulders to their original position and bring the chest back to its original position"
+    },
+    {
+      "scene": 10,
+      "shot": 1,
+      "candidate_cache_action_ja": "肩を右へ傾け、胸郭を左へ押し、胸の前で手を重ねる",
+      "compiled_action_en": "tilt the right shoulder, push the chest to the left, and place the hands on top of each other in front of the chest"
+    },
+    {
+      "scene": 10,
+      "shot": 2,
+      "candidate_cache_action_ja": "肩を右へ傾け、胸郭を左へ押し、胸の前で手を重ねる",
+      "compiled_action_en": "tilt the right shoulder, push the chest to the left, and place the hands on top of each other in front of the chest"
+    },
+    {
+      "scene": 10,
+      "shot": 3,
+      "candidate_cache_action_ja": "眉を上げ、目を細め、唇を軽く開き、右肩を戻す",
+      "compiled_action_en": "raising the eyebrows, narrowing the eyes, slightly opening the lips, and drawing back the right shoulder"
+    },
+    {
+      "scene": 10,
+      "shot": 4,
+      "candidate_cache_action_ja": "左手を腰に置き、右肩を戻しながら目を閉じる",
+      "compiled_action_en": "left hand placed on the waist, closing eyes while bringing the right shoulder back"
+    },
+    {
+      "scene": 11,
+      "shot": 1,
+      "candidate_cache_action_ja": "社の前で右手を上げ、指先で鳥居を軽く撫でる",
+      "compiled_action_en": "raise the right hand in front of the shrine, lightly tracing the torii with the fingertips"
+    },
+    {
+      "scene": 11,
+      "shot": 2,
+      "candidate_cache_action_ja": "人物が手のひらで社の鳥居を優しく触れて離す",
+      "compiled_action_en": "the figure gently touches and then removes the torii with the palm of the hand"
+    },
+    {
+      "scene": 11,
+      "shot": 3,
+      "candidate_cache_action_ja": "右手を下げながら胸を軽く叩き、左腕を前に伸ばしてバランスを取る",
+      "compiled_action_en": "lower the right hand while lightly tapping the chest, extending the left arm forward to balance"
+    },
+    {
+      "scene": 11,
+      "shot": 4,
+      "candidate_cache_action_ja": "左手を上げ、指先で鳥居を軽く撫でる",
+      "compiled_action_en": "raise the left hand, lightly tracing the torii with the fingertips"
+    },
+    {
+      "scene": 12,
+      "shot": 1,
+      "candidate_cache_action_ja": "左手を前に出し、指先で鳥居の木の表面をなぞる",
+      "compiled_action_en": "bring the left hand forward, tracing the surface of the torii wood with the fingertips"
+    },
+    {
+      "scene": 12,
+      "shot": 2,
+      "candidate_cache_action_ja": "千年鳥居の下へ移動し、左手を前に出して指先で木の表面をなぞる",
+      "compiled_action_en": "Proceed to the base of the thousand-year-old torii gate, extend your left hand forward, and trace the surface of the tree with your fingertips."
+    },
+    {
+      "scene": 12,
+      "shot": 3,
+      "candidate_cache_action_ja": "人物が鳥居の木の表面を指先でなぞる動作を終え、胸を軽く叩く",
+      "compiled_action_en": "The character completes the action of tracing the surface of the torii gate with their fingertips, then lightly taps their chest."
+    },
+    {
+      "scene": 13,
+      "shot": 1,
+      "candidate_cache_action_ja": "暮れゆく空の上部へ手を伸ばし、肩を前に出し、胸郭を押し上げる。肘を曲げ、前腕を外へ広げる。手首を回しながら視線を追う。",
+      "compiled_action_en": "Extends their hand toward the upper part of the setting sun, brings their shoulders forward, and lifts their chest. Bends their elbows, spreads their forearms outward, and turns their wrists while following the gaze."
+    },
+    {
+      "scene": 13,
+      "shot": 2,
+      "candidate_cache_action_ja": "人物が手を伸ばして空を指す姿勢を維持し、手首をさらに外へ広げ、視線をゆっくりと上げる。",
+      "compiled_action_en": "The character maintains the posture of reaching up toward the sky, further spreads their wrist outward, and slowly raises their gaze."
+    },
+    {
+      "scene": 13,
+      "shot": 3,
+      "candidate_cache_action_ja": "手をゆっくり下ろし、目を閉じる。同時に肩を戻し、胸郭を下げる。手首を元の位置に戻す。",
+      "compiled_action_en": "Gently lowers their hands and closes their eyes at the same time. Returns their shoulders to their original position and lowers their chest. Returns their wrist to its original position."
+    },
+    {
+      "scene": 14,
+      "shot": 1,
+      "candidate_cache_action_ja": "狐火の上部に手を伸ばし、胸郭を前へ押し出す。目線は狐火に追う。",
+      "compiled_action_en": "Extends their hand toward the top of the fox fire, pushes their chest forward, and follows the gaze toward the fox fire."
+    },
+    {
+      "scene": 14,
+      "shot": 2,
+      "candidate_cache_action_ja": "狐火が空に上がっていくのを追いかけて、胸郭を前へ押し出し、肩を軽く回す。目線を追う",
+      "compiled_action_en": "Follows the fox fire as it ascends into the sky, pushes their chest forward, lightly turns their shoulders, and follows the gaze."
+    },
+    {
+      "scene": 14,
+      "shot": 3,
+      "candidate_cache_action_ja": "狐火の動きに合わせて、胸郭を前へ押し出し、肩を軽く回す。目線を追う。",
+      "compiled_action_en": "Follow the movement of the fox fire, push the chest forward, and lightly rotate the shoulders. Follow the line of sight."
+    },
+    {
+      "scene": 14,
+      "shot": 4,
+      "candidate_cache_action_ja": "手を上げ、目を閉じる",
+      "compiled_action_en": "Raise your hands and close your eyes."
+    },
+    {
+      "scene": 15,
+      "shot": 1,
+      "candidate_cache_action_ja": "鳥居の上部に立ち、胸郭を前へ押し出し、肩を軽く回しながら目線を鳥居に追う",
+      "compiled_action_en": "Stand at the top of the torii, push your chest forward, gently rotate your shoulders while following the torii with your gaze."
+    },
+    {
+      "scene": 15,
+      "shot": 2,
+      "candidate_cache_action_ja": "人物が鳥居をくぐるため、胸郭を前へ押し出し、肩を軽く回しながら目線を追う",
+      "compiled_action_en": "As a person passes through the torii, push your chest forward, gently rotate your shoulders while following the torii with your gaze."
+    },
+    {
+      "scene": 15,
+      "shot": 3,
+      "candidate_cache_action_ja": "鳥居をくぐり終えた後、胸郭を前へ押し出し、肩を軽く回しながら目線を追う",
+      "compiled_action_en": "After passing through the torii, push your chest forward, gently rotate your shoulders while following the torii with your gaze."
+    },
+    {
+      "scene": 15,
+      "shot": 4,
+      "candidate_cache_action_ja": "胸郭を前へ押し出し、肩を軽く回して鳥居の上部を通過する。目線は鳥居の先へ向ける。",
+      "compiled_action_en": "Push your chest forward, gently rotate your shoulders as you pass through the top of the torii. Direct your gaze toward the front of the torii."
+    },
+    {
+      "scene": 16,
+      "shot": 1,
+      "candidate_cache_action_ja": "肩を右へ傾け、胸郭を左へ押し、胸郭の前で手首を下げながら目線を左へ向け、ためらいの表情を浮かべる",
+      "compiled_action_en": "Tilt your shoulders to the right, push your chest to the left, lower your wrists in front of your chest while looking to the left, and display a hesitant expression."
+    }
+  ],
+  "visual_beats": [
+    [
+      1,
+      "対象=暁｜根拠=暁を裂いて｜感情=解放｜接触=許可｜現象=身体操作｜配置=暁の上部｜可視展開=人物が手のひらで優しく触れて離す｜身体主導=肩を軽く前傾させ、胸郭を押し上げる｜終端=手を下げ、目線をやや下げる"
+    ],
+    [
+      2,
+      "対象=鳥居｜根拠=赤い鳥居を抜ける｜感情=通過｜接触=許可｜現象=身体操作｜配置=鳥居の上部｜可視展開=人物が手のひらで優しく触れて離す｜身体主導=肩を軽く前傾させ、胸郭を押し上げる｜終端=手を下げ、目線をやや下げる"
+    ],
+    [
+      3,
+      "対象=苔｜根拠=苔へと還る｜感情=帰属｜接触=許可｜現象=身体操作｜配置=苔の上部｜可視展開=人物が手のひらで優しく触れて離す｜身体主導=肩を軽く前傾させ、胸郭を押し上げる｜終端=手を下げ、目線をやや下げる"
+    ],
+    [
+      4,
+      "対象=契り｜根拠=色褪せた契り｜感情=懐かしさ｜接触=禁止｜現象=身体操作｜配置=契りの場所｜可視展開=人物が手を胸に当てながら目を閉じる｜身体主導=肩を落とし、胸郭を押し下げ、手首を内側へ曲げる｜終端=手を下ろし、目を開ける"
+    ],
+    [
+      5,
+      "対象=増えてゆく｜根拠=増えてゆく｜感情=不安｜接触=禁止｜現象=外部自律｜配置=増えてゆく場所｜可視展開=胸の古傷が光る｜身体主導=肩を上げ、胸郭を押し上げ、手首を外側へ曲げる｜終端=手を元に戻し、目を開ける"
+    ],
+    [
+      6,
+      "対象=御神木｜根拠=御神木は｜感情=敬意｜接触=許可｜現象=身体操作｜配置=御神木の下｜可視展開=人物が御神木に手を伸ばす｜身体主導=肩を前傾させ、胸郭を押し下げ、手首を内側へ曲げる｜終端=手を離し、目を開ける"
+    ],
+    [
+      7,
+      "対象=千年鳥居｜根拠=千年鳥居を｜感情=疑問｜接触=許可｜現象=身体操作｜配置=千年鳥居の上部｜可視展開=人物が手のひらで優しく触れて離す｜身体主導=肩を軽く前傾させ、胸郭を押し下げながら肘を曲げ、前腕を回し、手首を内側に捻る｜終端=手を離した後、肩を戻し、胸郭を元の位置へ戻す"
+    ],
+    [
+      8,
+      "対象=一瞬｜根拠=されど一瞬を｜感情=受け入れ｜接触=禁止｜現象=外部自律｜配置=一瞬の場所｜可視展開=一瞬が空に消える｜身体主導=胸郭を軽く前傾させ、目線を下げる｜終端=胸郭を戻し、目線を元に戻す"
+    ],
+    [
+      9,
+      "対象=狐火｜根拠=狐火へ問う｜感情=問いかけ｜接触=許可｜現象=身体操作｜配置=狐火の上部｜可視展開=人物が手のひらで優しく触れて離す｜身体主導=肩を軽く前傾させ、胸郭を押し下げながら肘を曲げ、前腕を回し、手首を内側に捻る｜終端=手を離した後、肩を戻し、胸郭を元の位置へ戻す"
+    ],
+    [
+      10,
+      "対象=なし｜根拠=なし｜感情=ためらい｜接触=禁止｜現象=なし｜配置=なし｜可視展開=なし｜身体主導=肩を右へ傾け、胸郭を左へ押し胸の前で手を重ねる｜終端=肩を戻し、手を腰に置く"
+    ],
+    [
+      11,
+      "対象=社｜根拠=またこの社へ続くなら｜感情=希望｜接触=許可｜現象=身体操作｜配置=社の前｜可視展開=人物が手のひらで社の鳥居を優しく触れて離す｜身体主導=右手を上げ、指先で鳥居を軽く撫でる｜終端=手を下げ、胸を軽く叩く"
+    ],
+    [
+      12,
+      "対象=千年鳥居｜根拠=千年鳥居を｜感情=敬意｜接触=許可｜現象=身体操作｜配置=千年鳥居の下｜可視展開=人物が鳥居の木の表面を指先でなぞる｜身体主導=左手を前に出し、指先で鳥居を軽く撫でる｜終端=手を下げ、胸を軽く叩く"
+    ],
+    [
+      13,
+      "対象=暮れゆく空｜根拠=暮れゆく空へ放つ｜感情=祈り｜接触=禁止｜現象=身体操作｜配置=暮れゆく空の上部｜可視展開=人物が手を伸ばして空を指す｜身体主導=肩を前に出し、胸郭を押し上げる。肘を曲げ、前腕を外へ広げる。手首を回し、視線を追う｜終端=手を下げ、目を閉じる"
+    ],
+    [
+      14,
+      "対象=狐火｜根拠=狐火は祈り｜感情=願い｜接触=許可｜現象=外部自律｜配置=狐火の上部｜可視展開=狐火が空に上がっていく｜身体主導=胸郭を前へ押し出し、肩を軽く回す。目線を追う｜終端=手を上げ、目を閉じる"
+    ],
+    [
+      15,
+      "対象=鳥居｜根拠=鳥居をくぐる｜感情=感謝｜接触=許可｜現象=外部自律｜配置=鳥居の上部｜可視展開=人物が鳥居をくぐる｜身体主導=胸郭を前へ押し出し、肩を軽く回す。目線を追う｜終端=手を上げ、目を閉じる"
+    ],
+    [
+      16,
+      "対象=なし｜根拠=なし｜感情=ためらい｜接触=禁止｜現象=なし｜配置=なし｜可視展開=なし｜身体主導=肩を右へ傾け、胸郭を左へ押し胸郭の前へ手首を下げながら目線を左へ向け｜終端=肩は右に傾き、胸郭は左へ押し胸郭の前で手首を下げる姿勢"
+    ]
+  ],
+  "candidate_cache_counters": {
+    "issue_count": 49,
+    "repetition_warning_count": 115,
+    "action_repetition_warning_count": 67,
+    "camera_repetition_warning_count": 48
+  }
+}

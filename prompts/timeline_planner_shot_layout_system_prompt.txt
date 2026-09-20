@@ -73,6 +73,12 @@ required phase. A readable face insert is reserved for a sparse emotional or
 section pivot and must not be repeated in every Scene. This internal Shot
 development does not require a Scene CUT.
 
+In dance_phrase performance mode, prefer one or two sustained
+Shots per Scene, normally 4-8 seconds each, so an arm trajectory and its accent
+can complete without restarting. A body phrase can develop within one Shot;
+preparation, accent and release do not each require a new boundary. Use the
+supplied candidates only; keep source Scene and audio boundaries unchanged.
+
 B0 is mandatory immediately after the boundary mode and must be the first
 boundary ID. Select only supplied candidate IDs, in timeline order, without
 duplicates. Select one to four Shots. Add an internal Shot boundary only when

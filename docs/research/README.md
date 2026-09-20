@@ -2,6 +2,9 @@
 
 | 文書 | 内容 |
 |---|---|
+| [Planner v60：P0〜P3実装と短区間検証](planner-v60-scope-phrase-camera-validation-2026-09-20.md) | 翻訳スコープと描画用profileの分離、演技phase・Camera接続、実8B二試行とH3一Scene三条件の比較。創作品質の未達も記録 |
+| [滝アセットへの鳥居・灯籠の混入](waterfall-shrine-prompt-leakage-2026-09-20.md) | 新しい人物／滝参照とScene 1を照合。Motionの鳥居禁止例と背景参照の固定文がH3へ実際に届くことを確認し、舞台に依存しない契約への修正を提案 |
+| [loop-2完成動画：身体演技の反復とプロトタイプとの差](loop2-performance-regression-review-2026-09-20.md) | 52 Shotと動画・キャッシュを照合。共通Camera文への局所Action混入、Cueでの接触テンプレート化、短い演技とCamera接続の不整合、H3モデル／scheduler差を分け、改善順位と局所検証を提案 |
 | [Planner v57：接触・上半身演技・Arc方向](planner-v57-loop10-contact-camera-review-2026-09-20.md) | loop-10動画と採用Planを照合。苔を踏む・鳥居上に立つ指示、旋回反転とCamera候補の矛盾を修正。402件回帰と実映像再検証の条件を記録 |
 | [Planner v56：P0・連動する身体演技](planner-p0-dance-phrase-2026-09-20.md) | Motionファイルでの切替、短縮Action prompt、実8Bの五試行と398件回帰。身体演技の部分回復と残存する反復を区別して記録 |
 | [完成動画：身体演技とCamera同期の評価](anime-emotional-mv-performance-camera-review-2026-09-20.md) | 9月20日動画・実採用Plan・51Shotを照合。手振り偏重、振付の不足、Cameraの位相表現と継続引継ぎの制限を分析し、既存段階で進める最小改修と局所A/Bを計画 |

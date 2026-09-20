@@ -1,5 +1,9 @@
 # ComfyUI-MV-Director
 
+[![【MV】千里の秋を駆ける - MiniMax H3+Context Loop+MV Director Demo](https://youtu.be/OLffZGlcZOs)](https://youtu.be/OLffZGlcZOs)
+
+※本作品は東方Projectの二次創作であり、公式作品ではありません。
+
 画像、歌詞、ボーカルステム、フルミックスから、MiniMax H3 / Context Loop用のMV計画を作るComfyUIカスタムノードです。VisionによるSubject EMD、演出方針、歌詞タイムライン、Shot計画を分離し、最後にRef2VA Plan JSONへコンパイルします。
 
 EMDは **Easy MarkDown** の略です。Extended Markdownではありません。
@@ -14,6 +18,14 @@ EMDは **Easy MarkDown** の略です。Extended Markdownではありません�
 4. EMDを直接編集する場合は[EMD仕様書](docs/spec/emd-spec.md)を参照します。
 
 基準環境はComfyUI v0.36.0 commit `ee71d5c4993f29086b27fde1629a945ae48425bf`、Context Loop 0.6.9 commit `9860a063784c8c23b58e00107f2180e0df3c43d9`です。
+
+## 重要: LLM出力と再実行
+
+本プロジェクトはプロンプト生成にLLMの確率的な出力を使用するため、行protocol、必須slot又は出力規約への違反が発生する可能性があります。特に既定のQwen 8B級モデルは性能とinstruction追従性に制約があり、system prompt及びprofileで規約を明示しても、未知record、欠落・重複slot、field数違反又は余分な自然文を返す場合があります。
+
+Python側は一意に判断できる構造だけを有限範囲で検証・復元します。欠落又は破損したcreative textの意味を決定論的に推測して合成することはできないため、AS IS原則を維持したまま全てのprotocol不整合を必ず成功へ変換する決定論的な仕組みを構築することは不可能です。復元不能な場合は、不完全なPlanを後段へ流さず停止します。
+
+protocol不整合が発生した場合は、32-bit Seedノードを`random`にするか別の言語生成`seed`へ変更し、対象ノードを`cache_mode=refresh`で再実行してください。これは別のLLM出力パターンから規約適合応答を得るための運用上の回避策であり、成功を保証する修復ではありません。原因調査では失敗したseedを記録し、繰り返し失敗する場合はinstruction追従性の高いGGUFへの変更又はPlannerのbatch縮小を検討してください。詳しくは[トラブルシューティング](docs/troubleshooting.md#llmの行protocol不整合が発生する)を参照してください。
 
 ## 文書索引
 

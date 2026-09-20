@@ -35,7 +35,7 @@ def _frame_snap(value_ms: int) -> int:
     return round(round(value_ms * _FPS / 1000) * 1000 / _FPS)
 
 
-def build_layout_candidates(scene: Scene) -> tuple[ShotBoundaryCandidate, ...]:
+def build_layout_candidates(scene: Scene, *, min_duration_ms: int = MIN_SHOT_DURATION_MS) -> tuple[ShotBoundaryCandidate, ...]:
     """Return mutually compatible boundary choices without asking the LLM for time."""
 
     duration = scene.end_ms - scene.start_ms
@@ -45,8 +45,8 @@ def build_layout_candidates(scene: Scene) -> tuple[ShotBoundaryCandidate, ...]:
     for numerator, denominator in ((1, 4), (1, 3), (1, 2), (2, 3), (3, 4)):
         start = _frame_snap(scene.start_ms + duration * numerator // denominator)
         if (
-            start - scene.start_ms >= MIN_SHOT_DURATION_MS
-            and scene.end_ms - start >= MIN_SHOT_DURATION_MS
+            start - scene.start_ms >= min_duration_ms
+            and scene.end_ms - start >= min_duration_ms
         ):
             proposed.setdefault(start, "balanced")
 
@@ -56,9 +56,9 @@ def build_layout_candidates(scene: Scene) -> tuple[ShotBoundaryCandidate, ...]:
         key=lambda item: (0 if item[1] == "existing_shot" else 1, item[0]),
     ):
         if (
-            scene.end_ms - start >= MIN_SHOT_DURATION_MS
+            scene.end_ms - start >= min_duration_ms
             and all(
-                abs(start - accepted_start) >= MIN_SHOT_DURATION_MS
+                abs(start - accepted_start) >= min_duration_ms
                 for accepted_start, _ in rows
             )
         ):

@@ -10,6 +10,7 @@ from ..artifacts import DirectionArtifact, EMDTextArtifact
 from ..direction.profiles import (
     STYLE_RETENTION_POLICIES,
     STYLE_SCENE_REINFORCEMENTS,
+    render_profile_direction,
 )
 from ..emd import parse_emd
 from ..h3_contract import DEFAULT_H3_TIMING_PROFILE, H3TimingProfile
@@ -77,8 +78,8 @@ def render_completed_emd(
         ("スタイル", direction.style_direction),
         ("環境", direction.environment_direction),
         ("時間・照明", direction.time_lighting_direction),
-        ("モーション", direction.motion_direction),
-        ("カメラ", direction.camera_direction),
+        ("モーション", render_profile_direction("motion", direction.motion_profile_id, direction.motion_direction)),
+        ("カメラ", render_profile_direction("camera", direction.camera_profile_id, direction.camera_direction)),
         ("その他", direction.other_direction),
     )
     if any(values for _, values in common):

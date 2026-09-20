@@ -18,9 +18,9 @@ _KIND_HEADINGS = {
     "camera": "カメラ",
 }
 _STYLE_META_KEYS = frozenset({"locked", "retention", "scene_reinforcement"})
-_MOTION_META_KEYS = frozenset({"performance_mode"})
+_MOTION_META_KEYS = frozenset({"performance_mode", "render_prompt"})
 _CAMERA_META_KEYS = frozenset(
-    {"planner_policy", "lyric_cue_mode", "priority_lyric_cues", "lyric_interpretation"}
+    {"planner_policy", "lyric_cue_mode", "priority_lyric_cues", "lyric_interpretation", "render_prompt"}
 )
 _META_KEYS = _STYLE_META_KEYS | _CAMERA_META_KEYS | _MOTION_META_KEYS
 _PERFORMANCE_MODES = frozenset({"event_based", "dance_phrase"})
@@ -49,6 +49,7 @@ class DirectionProfile:
     lyric_interpretation: str = "literal"
     priority_lyric_cues: tuple[tuple[str, str], ...] = ()
     performance_mode: str = "event_based"
+    render_prompt: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -64,6 +65,7 @@ class DirectionProfileCatalog:
     camera_lyric_interpretation: dict[str, str]
     camera_priority_lyric_cues: dict[str, tuple[tuple[str, str], ...]]
     motion_performance_mode: dict[str, str]
+    render_prompts: dict[str, dict[str, str]]
 
 
 def _fail(path: Path, message: str) -> DirectionProfileError:
@@ -221,6 +223,7 @@ def load_direction_profile(path: Path, kind: str) -> DirectionProfile:
         lyric_interpretation=lyric_interpretation,
         priority_lyric_cues=priority_lyric_cues,
         performance_mode=performance_mode,
+        render_prompt=metadata.get("render_prompt", ""),
     )
 
 
@@ -242,6 +245,9 @@ def load_direction_profiles(root: Path = PROFILE_ROOT) -> DirectionProfileCatalo
 
     styles = grouped["style"]
     return DirectionProfileCatalog(
+        render_prompts={kind: {key: value.render_prompt for key, value in definitions.items()
+                              if value.render_prompt}
+                        for kind, definitions in grouped.items()},
         style={key: value.text for key, value in styles.items()},
         motion={key: value.text for key, value in grouped["motion"].items()},
         motion_performance_mode={
