@@ -227,7 +227,7 @@ class DistributableWorkflowTests(unittest.TestCase):
                 self.assertEqual(vision["widgets_values"][22], "fixed")
                 self.assertEqual(vision["widgets_values"][16], 16384)
             self.assertEqual(planner["widgets_values"][1], "サブジェクト1")
-            self.assertEqual(planner["widgets_values"][5], 1536)
+            self.assertEqual(planner["widgets_values"][5], 4096)
             self.assertEqual(planner["widgets_values"][11], 16384)
             self.assertEqual(
                 direction["widgets_values"][2:5],

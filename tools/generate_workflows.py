@@ -663,7 +663,7 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
                 1,
                 TEXT_MODEL,
                 "auto",
-                1536,
+                4096,
                 0.1,
                 0.9,
                 1.05,

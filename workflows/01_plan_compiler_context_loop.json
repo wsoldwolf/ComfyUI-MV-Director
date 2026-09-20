@@ -970,7 +970,7 @@
         1,
         "Qwen3-8B-Abliterated/qwen3-8b-abliterated-Q4_K_M.gguf",
         "auto",
-        1536,
+        4096,
         0.1,
         0.9,
         1.05,
