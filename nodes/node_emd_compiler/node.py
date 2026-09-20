@@ -45,7 +45,7 @@ from ..common import gguf_model_choices, resolve_comfy_gguf_model
 TRANSLATION_MODES = ("ja_to_en", "already_english")
 CHAT_FORMATS = ("auto", "qwen", "gemma")
 CACHE_MODES = ("reuse", "refresh", "disabled")
-_COMPILER_CACHE_VERSION = "mvd-ref2va-compiler-cache-v15"
+_COMPILER_CACHE_VERSION = "mvd-ref2va-compiler-cache-v16"
 _SYSTEM_PROMPT_PATH = (
     Path(__file__).resolve().parents[2]
     / "prompts"
@@ -290,6 +290,7 @@ class MVDirectorEMDCompiler:
                         key,
                         {
                             "plan_json": plan_json,
+                            "translation_trace": translator.translation_trace,
                             "required_references": result.required_references.to_dict(),
                         },
                     )

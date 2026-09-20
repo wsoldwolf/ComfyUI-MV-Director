@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import json
+import hashlib
+import logging
 import re
 from typing import Any
 
@@ -27,6 +29,7 @@ from .translator import PromptTranslator, translate_exact
 _TRANSLATION_REQUIRED_RE = re.compile(
     r"[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]"
 )
+_LOGGER = logging.getLogger("mv_director.nodes")
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,22 +87,29 @@ class _TranslationTable:
                     add(f"scene.{scene_index}.shot.{shot_index}.body.{index}", text)
 
         protected = [protect_unit(text, self.document.subjects) for text in units]
-        fragment_locations: list[tuple[int, int]] = []
-        fragment_units: list[str] = []
-        for unit_index, item in enumerate(protected):
-            for fragment_index, fragment in enumerate(item.fragments):
-                if _TRANSLATION_REQUIRED_RE.search(fragment):
-                    fragment_locations.append((unit_index, fragment_index))
-                    fragment_units.append(fragment)
-        translated = translate_exact(
-            self.translator,
-            fragment_units,
-        )
         translated_fragments: dict[int, dict[int, str]] = {}
-        for (unit_index, fragment_index), text in zip(
-            fragment_locations, translated
-        ):
-            translated_fragments.setdefault(unit_index, {})[fragment_index] = text
+        for unit_index, item in enumerate(protected):
+            indices = [index for index, fragment in enumerate(item.fragments)
+                       if _TRANSLATION_REQUIRED_RE.search(fragment)]
+            if not indices:
+                continue
+            # Never batch a global direction with a local action, or unrelated
+            # EMD fields. IDs and protected spans remain Python-owned.
+            source = [item.fragments[index] for index in indices]
+            field_id = keys[unit_index]
+            digest = hashlib.sha256(units[unit_index].encode("utf-8")).hexdigest()
+            _LOGGER.info("[MV Director - EMD Compiler (Ref2VA)] translation field started; field=%s; source_sha256=%s; fragments=%d",
+                         field_id, digest, len(source))
+            translated = translate_exact(self.translator, source)
+            translated_fragments[unit_index] = dict(zip(indices, translated))
+            trace = getattr(self.translator, "record_field_translation", None)
+            if callable(trace):
+                trace(field_id=field_id, source_sha256=digest,
+                      source=units[unit_index], fragment_indices=indices,
+                      fragments=source, translated=translated,
+                      restored=item.restore(translated_fragments[unit_index]))
+            _LOGGER.info("[MV Director - EMD Compiler (Ref2VA)] translation field completed; field=%s; output_chars=%d",
+                         field_id, sum(map(len, translated)))
         self._values = {
             key: item.restore(translated_fragments.get(index))
             for index, (key, item) in enumerate(zip(keys, protected))

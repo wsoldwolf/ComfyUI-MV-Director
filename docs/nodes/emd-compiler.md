@@ -29,6 +29,16 @@
 
 ## 動作境界
 
+### 翻訳の出典分離とログ
+
+翻訳呼び出しはEMDの一つのフィールド内で完結させます。Subject、共通文、別ShotのActionを
+同じ翻訳バッチへ入れず、保護語の前後fragmentも別フィールドと混ぜません。各フィールドの開始・完了を
+INFOへ出し、`field`、原文SHA-256、fragment数と出力文字数を残します。例：`scene.0.shot.1.body.0`。
+
+成功時のCompilerキャッシュには`translation_trace`を保存します。原文・採用英訳・fragment番号・
+復元後の文を対応づけ、共通文へ局所Actionが混入していないか確認できます。キャッシュ無効時は保存されません。
+フィールド単位の分離は呼出回数を増やす場合があります。意味の正確さを保証する機械判定は追加していません。
+
 - Subjectは`# サブジェクト`直下のlist item順で`<Subject 1..4>`へ割り当てます。
 - `# シーン設定`の環境・時間照明を共通Directionより前のbaselineとして`prompt_prefix`へ置きます。後続の明示Directionが優先されます。
 - `# シーン設定`の背景PictureはSubjectにせず、環境専用definition、保持契約及び`environment_reference` required inputへ変換します。

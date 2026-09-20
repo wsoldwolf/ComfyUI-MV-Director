@@ -243,6 +243,26 @@ class LlamaPromptTranslator:
         self.protocol_recovered_count = 0
         self.segmented_recovered_count = 0
         self.cleanup_recovered_count = 0
+        self.translation_trace: list[dict[str, object]] = []
+
+    def record_field_translation(
+        self, *, field_id: str, source_sha256: str, source: str,
+        fragment_indices: Sequence[int], fragments: Sequence[str],
+        translated: Sequence[str], restored: str,
+    ) -> None:
+        """Source-to-output evidence, persisted with the successful compiler cache."""
+        # translate_exact returns a tuple. The strict artifact/cache contract
+        # accepts JSON arrays (lists), unlike the permissive json.dumps helper.
+        # Normalize only these schema-owned sequences; keep text/order intact.
+        self.translation_trace.append({
+            "field_id": field_id,
+            "source_sha256": source_sha256,
+            "source": source,
+            "fragment_indices": list(fragment_indices),
+            "fragments": list(fragments),
+            "translated": list(translated),
+            "restored": restored,
+        })
 
     @staticmethod
     def _payload(units: Sequence[str]) -> str:
