@@ -1,6 +1,6 @@
 # Timeline Planner
 
-Planner v56は、v54で導入した`anime_emotional_mv`の歌詞Cue Discoveryを引き継ぎます。プロファイル内の
+Planner v58は、v54で導入した`anime_emotional_mv`の歌詞Cue Discoveryを引き継ぎます。プロファイル内の
 `lyric_interpretation=bounded`と`lyric_cue_mode=automatic`で歌詞行Discoveryを
 有効にします。同じ原文行は一回だけ、16行ずつ最大768出力tokenで具体対象候補を
 抽出します。Scene内の原文順で最後の非body候補を選び、対象・根拠をVisual Beatへ
@@ -39,6 +39,24 @@ Lyric Segmentationが確定したScene/Shot枠へ、歌詞解釈、人物動作�
 | `save_debug_output` | `false` | 一時ディレクトリへLLM traceを保存 |
 
 既定の`max_tokens=4096`、`temperature=0.1`、`n_ctx=16384`等は[GGUF共通設定](gguf-settings.md)を参照してください。
+
+## コンテキスト超過時の自動調整
+
+初回生成、品質修復、欠落slot再要求及び単独slot再要求の全てで、推論前に予算を確認します。
+小さな超過では安全余白を維持して、その呼出しの`max_tokens`だけを調整します。
+例えば入力13563・要求出力1536・安全余白1311・context 16384なら、実出力上限は1510です。
+設定値自体は変更しません。調整結果は`context output fitted`としてINFOへ出ます。
+
+出力枠を十分に残せない場合は`context request split`を記録し、要求をslot順に二分します。
+元のslot番号を保持するため、欠番を含む再要求でも別Shotへ誤って割り当てません。
+単独slotでも収まらない場合は、任意の過去出力履歴から古い半分を順に除いて再計測し、
+`context history reduced`へ削減数を出します。Direction、現在歌詞、採用済みAction、
+違反理由、必須fragment及びArc方向の引継ぎは保持します。
+分割時は呼出し数が増える場合がありますが、完了済みのSceneや推論はやり直しません。
+
+必須内容だけでも収まらない場合は、task・retry種別・slot番号を含むエラーで停止します。
+この場合はprofileや入力文を短くするか、利用環境に合わせて`n_ctx`を増やしてください。
+v58適用にはComfyUIを再起動し、Planner以降を再生成します。
 
 ## 出力
 

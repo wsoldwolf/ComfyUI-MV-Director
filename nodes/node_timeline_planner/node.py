@@ -19,7 +19,7 @@ try:
         LlamaRuntimeConfig,
         SuccessCache,
         build_cache_key,
-        build_context_budget,
+        fit_context_budget,
     )
     from ...core.planner import (
         PLANNER_ALGORITHM_VERSION,
@@ -42,7 +42,7 @@ except ImportError:  # Standalone repository tests.
         LlamaRuntimeConfig,
         SuccessCache,
         build_cache_key,
-        build_context_budget,
+        fit_context_budget,
     )
     from core.planner import (
         PLANNER_ALGORITHM_VERSION,
@@ -180,6 +180,8 @@ class _LlamaPlannerBackend:
             retry_label = "semantic_audit"
         elif "audit_round" in value:
             retry_label = f"audit_{value['audit_round']}"
+        elif isinstance(value.get("retry"), str):
+            retry_label = value["retry"]
         else:
             retry_label = "no"
         return len(slots), scene_label, retry_label
@@ -227,19 +229,35 @@ class _LlamaPlannerBackend:
                     len(request["slots"]),
                 )
         count = self.lifecycle.count_serialized_prompt(system_prompt + "\n" + model_payload)
-        build_context_budget(
+        slot_count, scene_label, retry_label = self._request_summary(payload)
+        # Allow a small output-ceiling adjustment, not a near-empty response.
+        # Larger overflows go back to the shared request splitter before inference.
+        minimum_output = min(config.max_tokens, max(
+            256 * max(1, slot_count), (config.max_tokens * 3 + 3) // 4,
+        ))
+        budget = fit_context_budget(
             count.count,
             config.max_tokens,
             self.lifecycle.effective_n_ctx or config.n_ctx,
+            minimum_output_tokens=minimum_output,
             estimated=count.estimated,
         )
+        if budget.reserved_output_tokens != config.max_tokens:
+            _LOGGER.info(
+                "[MV Director - Timeline Planner] context output fitted; task=%s; "
+                "retry=%s; scenes=%s; slots=%d; input=%d; requested_output=%d; "
+                "max_tokens=%d; safety_margin=%d; effective_context=%d",
+                task, retry_label, scene_label, slot_count, count.count,
+                config.max_tokens, budget.reserved_output_tokens,
+                budget.safety_margin, budget.effective_context,
+            )
         call_number = self._task_calls.get(task, 0) + 1
         self._task_calls[task] = call_number
         call_config = replace(
             config,
+            max_tokens=budget.reserved_output_tokens,
             seed=self._call_seed(config.seed, task, call_number, payload),
         )
-        slot_count, scene_label, retry_label = self._request_summary(payload)
         if retry_label == "no":
             primary_number = self._primary_calls.get(task, 0) + 1
             self._primary_calls[task] = primary_number
@@ -264,7 +282,7 @@ class _LlamaPlannerBackend:
             slot_count,
             count.count,
             " (estimated)" if count.estimated else "",
-            config.max_tokens,
+            call_config.max_tokens,
             call_config.seed,
         )
         try:

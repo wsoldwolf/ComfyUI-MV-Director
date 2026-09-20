@@ -448,4 +448,29 @@ Static Shotはscaleも一致させる。上半身演技のArc fallbackは腕と�
 `mvd-timeline-planner-v57`へ更新する。これは指示の整合性を改善するものであり、
 H3映像の旋回速度、実際の視点連続性及び手足形状を保証するものではない。
 
+### Planner v58：全要求共通のコンテキスト回復
+
+backendのtoken事前検査では`fit_context_budget`を使い、安全余白を変更せずに
+呼出し単位の出力上限を調整する。出力下限は要求値の75%（切上げ）とslot数×256の
+大きい方とし、ユーザー指定上限を超えない。これは過度な出力削減を防ぐ保守的な
+目安であり、応答が必ず完結するという保証ではない。欠落時は既存のprotocol回復を使う。
+
+それでも`ContextBudgetError`となる要求は、全task共通のadapterでslot列を二分して
+逐次実行する。元のslot番号、順序、Scene対応、共有制約及び本文を保持し、返った行を
+元順に連結して既存parserへ渡す。初回、品質修復、欠落再要求、単独再要求の全てを対象にする。
+分割は事前検査で失敗した要求だけを対象とし、成功済みの推論を再実行しない。
+
+一slotでも過大な場合は`recent_camera_history`、`recent_action_history`、
+`recent_visual_beat_history`及び`forbidden_recent_outputs`のうち非空のlistだけを対象に、
+最も大きい履歴の古い半分（切上げ）を要求コピーから除いて再計測する。
+元の採用履歴は維持し、Direction、歌詞、採用Action、必須fragment、却下文・違反理由、
+`previous_arc_path`及びその他のslot/共有制約は削除・要約しない。
+必須内容だけでも入らない場合は、task・retry・slot付きの予算エラーで停止する。
+割込みと予算以外の例外はこの回復で再試行しない。
+
+形式回復では、明示番号が別slotを示す応答を位置順の無番号応答として転用しない。
+推論の`max_tokens`と進捗ログは調整後の値を使い、予算調整、分割、履歴削減をINFOへ残す。
+LLM task、EMD・行protocol及び監査の意味修復上限は変更せず、cache分離のため
+algorithm versionを`mvd-timeline-planner-v58`へ更新する。
+
 field追加、値域追加、時刻意味の変更又は未知key受理はversion変更である。V1 parserへ互換分岐を積み上げない。表示文、tooltip又はdebug出力だけの変更はprotocol versionを変更しない。

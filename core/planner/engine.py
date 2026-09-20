@@ -35,6 +35,7 @@ from .layout import (
     repair_scene_layout_selection,
 )
 from .renderer import render_completed_emd
+from .request_budget import complete_with_context_recovery
 from .text_normalization import strip_generated_line_continuation
 from .template import (
     PlannerTemplate,
@@ -44,7 +45,7 @@ from .template import (
 )
 
 
-PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v57"
+PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v58"
 _ACTION_AUDIT_REPAIR_ATTEMPTS = 1
 _LOGGER = logging.getLogger("mv_director.nodes")
 TASKS = (
@@ -1171,6 +1172,10 @@ def _recover_unframed_records(
             recovered[slot] = text
     if recovered:
         return recovered
+    # Numbered output for another slot is not an unlabelled positional answer.
+    # This matters when a split response omits slots but retains valid siblings.
+    if any(labelled.fullmatch(line) for line in lines):
+        return {}
 
     # Isolated retries have a unique side-table mapping.  Small models often
     # wrap that single record in JSON, a Markdown table, or slot/text labels
@@ -1313,7 +1318,8 @@ def _request_entities(
     payload = canonical_json(
         {"protocol": "MVD_LLM_RECORDS_V1", "task": task, **dict(shared), "slots": slots}
     )
-    response = backend.complete_planner(
+    response = complete_with_context_recovery(
+        backend,
         task=task,
         system_prompt=system_prompt,
         payload=payload,
@@ -1353,7 +1359,8 @@ def _request_entities(
                 "slots": [dict(slot_entities[slot].value, slot=slot) for slot in scene_slots],
             }
         )
-        retry_response = backend.complete_planner(
+        retry_response = complete_with_context_recovery(
+            backend,
             task=task,
             system_prompt=system_prompt,
             payload=retry_payload,
@@ -1395,7 +1402,8 @@ def _request_entities(
                 "slots": [dict(entity.value, slot=slot)],
             }
         )
-        isolated_response = backend.complete_planner(
+        isolated_response = complete_with_context_recovery(
+            backend,
             task=task,
             system_prompt=system_prompt,
             payload=isolated_payload,
