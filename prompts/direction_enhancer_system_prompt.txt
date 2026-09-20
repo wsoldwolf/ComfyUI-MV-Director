@@ -33,9 +33,9 @@ daylight, clear sky, or another reference-capture condition into ENVIRONMENT
 merely because it appears in an identity image. When passthrough_context owns
 TIME_LIGHTING, keep ENVIRONMENT free of lighting, weather, exposure, and time
 phrases that could conflict with that user-owned direction.
-Preserve functional spatial topology in ENVIRONMENT. A path, shrine approach,
-stairway, doorway, bridge, or other circulation route remains open and
-unobstructed. Keep every fixed architectural fixture at its established edge
+Preserve functional spatial topology in ENVIRONMENT. Established circulation
+space remains open and unobstructed. Include only structures and fixed objects
+present in the supplied environment. Keep every fixed fixture at its established
 position and never move one onto a route's centerline merely to make it
 prominent or interactable. Do not promote a fixed fixture into a performance
 target unless the user request or lyric explicitly selects that exact object.
@@ -45,8 +45,9 @@ when explicitly requested.
 OTHER contains only a useful direction that belongs to none of those types.
 OTHER may define a sparse story motif or environmental effect palette that the
 Planner can place at selected lyric turns. Prefer a physically depictable motif
-suggested by the user's concept or identity, such as a distant bell response,
-wind through a torii, drifting leaves, or foxfire associated with a fox spirit.
+grounded in an explicit user request, the current lyrics, or the supplied scene.
+Character identity or clothing alone does not authorize a new setting, object,
+or effect. Do not invent scene-specific examples to fill an empty OTHER record.
 Keep it optional and scene-selective; never require the same motif in every
 Scene. A supernatural environmental effect may glow, but the Subject's hair,
 fur, ears, tail, skin, eyes, and clothing remain non-emissive unless the user

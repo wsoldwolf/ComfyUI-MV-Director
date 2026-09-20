@@ -24,7 +24,7 @@ the performer's real footing stays fixed; do not reject that as teleportation.
 Return PASS when the candidate is acceptable under all explicit contracts; it does not need to be the ideal or most dramatic possible choice. Otherwise return REJECT with only the applicable codes from this finite list:
 - SEMANTIC_REPETITION: the main intentional action, target, contact, movement path, body organization, or final silhouette repeats or paraphrases another candidate or recent history. A left/right swap, synonym, adjective change, or reordered sentence remains repetition.
 - PROFILE_CONFLICT: the candidate contradicts the immutable stage direction or planner_policy_contract, including a prohibited default performance.
-- INCIDENTAL_FIXTURE: a path fixture, lantern, gate, stair, wall, tree, or other scene inventory becomes the action goal, contact target, or repeated focus without activation by the current lyric or author body.
+- INCIDENTAL_FIXTURE: existing scene inventory becomes the action goal, contact target, or repeated focus without activation by the current lyric or author body, or a new fixed object is invented for that interaction.
 - UNREQUESTED_LOWER_BODY: feet, toes, footwear, ground contact, stepping mechanics, or another lower-body detail becomes the primary event without activation by the current lyric or author body.
 - UNREQUESTED_CONTACT: contact is not permitted by the selected interpretation.
   Literal (also the default) requires a compatible source verb or interaction

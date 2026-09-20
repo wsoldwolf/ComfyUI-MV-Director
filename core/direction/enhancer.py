@@ -26,7 +26,7 @@ from .profiles import (
 from .passthrough import DirectionPassthrough, parse_direction_passthrough
 
 
-DIRECTION_PROMPT_VERSION = "mvd-direction-enhancer-v20"
+DIRECTION_PROMPT_VERSION = "mvd-direction-enhancer-v21"
 PASSTHROUGH_PROFILE = "passthrough"
 RETENTION_POLICIES = ("profile", "compiler_default", "passthrough")
 _ALLOWED = {

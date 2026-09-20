@@ -16,12 +16,13 @@ def build_environment_definition(picture: str, description: str = "") -> str:
         "The written Scene environment and time-lighting directions are authoritative "
         "and replace every conflicting season, weather, time of day, illumination, "
         "camera angle, and composition visible in this Picture. Preserve functional "
-        "spatial topology: keep paths, shrine approaches, stairs, doorways, and other "
-        "circulation routes open and unobstructed. Fixed fixtures such as stone "
-        "lanterns, lamps, posts, signs, and statues remain beside or outside the "
-        "circulation route where established; never relocate one onto the centerline "
+        "spatial topology: keep the established circulation space open and "
+        "unobstructed. Preserve only the structures and fixed objects actually "
+        "present in the supplied environment; do not invent additional fixtures. "
+        "Existing fixed objects remain at their established positions; never "
+        "relocate one into the circulation space "
         "or directly into the Subject's travel path. When a Shot calls for interaction "
-        "with a fixed fixture, move the Subject toward the fixture at the path edge "
+        "with an existing fixed object, move the Subject toward its established position "
         "instead of moving the fixture toward the Subject."
     )
 

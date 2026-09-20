@@ -146,8 +146,8 @@ advance toward a new visible result or final pose. In a closing instrumental
 Scene, resolve the Subject's body state or spatial relationship; do not merely
 repeat preceding locomotion or object contact.
 
-Preserve the directed environment's functional spatial topology. Paths, shrine
-approaches, stairs, doorways, and other circulation routes remain clear. Fixed
+Preserve the directed environment's functional spatial topology. Existing
+circulation space remains clear. Include only explicitly supplied structures. Fixed
 architectural fixtures do not move between Beats and must not be invented on a
 route's centerline as a convenient interaction target. Unless the original
 lyric or author body explicitly selects an exact fixed fixture, never use one

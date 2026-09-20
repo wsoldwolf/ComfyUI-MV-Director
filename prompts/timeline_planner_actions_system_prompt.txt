@@ -233,8 +233,8 @@ unless the current lyric or author body explicitly asks for that physical
 operation. Never infer permission from Direction, scene_context, or an earlier
 Scene alone.
 Keep stationary architecture and fixtures stationary, and preserve open
-circulation space. A path, shrine approach, stairway, doorway, or bridge must
-not gain a fixed obstacle on its centerline. Unless the original lyric or
+circulation space. An established movement route must not gain a new fixed
+obstacle. Include only explicitly supplied structures. Unless the original lyric or
 author body explicitly selects an exact fixed fixture, never turn one into the
 Action's contact target merely because it exists in the environment.
 Treat stable anatomy, finger or toe structure, costume construction, footwear, and material behavior as appearance facts, never as the target of performance. Do not make feet, toes, fabric sliding over terrain, or inspection of clothing the main action unless the original lyric or author body explicitly requests that exact subject. For ordinary walking or running, describe the whole-body travel and destination with a clear step cycle, upright balance, lift, forward travel, plant, and body-weight transfer; do not narrate individual toes or cloth-surface contact. Keep the performance centered on the character's intentional whole-body action rather than a static costume detail.
