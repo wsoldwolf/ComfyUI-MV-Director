@@ -1,9 +1,11 @@
 # 導入マニュアル
 
-Windows版ComfyUIへComfyUI-MV-Directorを導入し、Text/Vision GGUFとOpenAI Whisperをローカル実行する手順です。基準環境はPython 3.13、CUDA 13.0、`llama-cpp-python 0.3.34`です。
+Windows版ComfyUIへComfyUI-MV-Directorを導入し、Text/Vision GGUFとOpenAI Whisperをローカル実行する手順です。基準環境はPython 3.13、CUDA 13.0、`llama-cpp-python 0.3.34`です。本書のコマンドは、Visual Studio専用プロンプトを含めて`cmd.exe`の構文へ統一しています。
 
 ## 1. 前提
 
+- ComfyUIが`C:\Software\ComfyUI\`へ導入済みであること
+- `C:\Software\ComfyUI\venv\`にComfyUI用Python仮想環境が構築済みであること
 - ComfyUI v0.36.0 commit `ee71d5c4993f29086b27fde1629a945ae48425bf`
 - ComfyUI-MiniMaxH3-Contex-Loop 0.6.9 commit `9860a063784c8c23b58e00107f2180e0df3c43d9`
 - NVIDIA Driver、CUDA Toolkit 13.0
@@ -11,6 +13,8 @@ Windows版ComfyUIへComfyUI-MV-Directorを導入し、Text/Vision GGUFとOpenAI 
 - Git
 
 異なるComfyUI / Context Loop commitでも動作する可能性はありますが、互換試験の基準外です。
+本書はComfyUI本体及び`venv`の新規構築手順を扱いません。配置先が異なる場合は、以下の
+`C:\Software\ComfyUI\`を実際のComfyUIルートへ読み替えてください。
 
 ### 検証環境
 
@@ -28,8 +32,8 @@ RTX 5060、メインメモリ16 GBの環境では、Context Loop標準リップ�
 
 通常はComfyUIの`custom_nodes`へcloneします。
 
-```powershell
-Set-Location C:\Software\ComfyUI\custom_nodes
+```bat
+cd /d C:\Software\ComfyUI\custom_nodes
 git clone https://github.com/wsoldwolf/ComfyUI-MV-Director.git
 ```
 
@@ -153,7 +157,13 @@ C:\Software\ComfyUI\models\
 
 配置先のサブディレクトリ名を変更した場合は、ComfyUI再起動後に各ノードのcomboで実ファイルを選び直し、workflowを保存してください。
 
-ダウンロードの破損や同名の別quantを判別する場合は、PowerShellの`Get-FileHash -Algorithm SHA256 <ファイル>`で次の値と比較できます。
+ダウンロードの破損や同名の別quantを判別する場合は、`cmd.exe`で次のようにSHA-256を表示し、表の値と比較できます。
+
+```bat
+certutil -hashfile "C:\Software\ComfyUI\models\LLM\GGUF\Qwen3-VL-4B-Instruct\Qwen3-VL-4B-Instruct-Q4_K_M.gguf" SHA256
+```
+
+`certutil`はハッシュ値の前後に説明行を表示します。中央の64桁の16進数を比較してください。
 
 | ファイル | SHA-256 |
 | --- | --- |
