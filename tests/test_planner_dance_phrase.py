@@ -77,6 +77,8 @@ class DancePhraseTests(unittest.TestCase):
             for task, payload in backend.calls:
                 if task in {"visual-beats", "actions", "action-audit"}:
                     self.assertEqual(payload["planner_policy_contract"]["performance_mode"], expected)
+                    self.assertEqual(payload["planner_policy_contract"]["emotional_amplitude"],
+                        "exaggerated_readable_upper_body" if motion else "exaggerated_readable_full_body")
                 if task == "actions":
                     for slot in payload["slots"]:
                         self.assertEqual(slot["performance_mode"], expected)

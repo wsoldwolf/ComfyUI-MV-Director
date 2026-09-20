@@ -15,6 +15,12 @@ same support or target without replaying the completed movement.
 Do not demand a full phrase in each short slot or in a face accent. Do not
 reject only because the performance could be more dramatic. Keep the same
 finite verdicts and all grounding, contact, face and appearance constraints.
+Upper-body phrases are complete performances; do not demand a step, knee pulse,
+or full-body rotation. Use PROFILE_CONFLICT for trampling a lyric-selected plant,
+standing on top of a gate, an unrequested body spin, or an unexplained change of
+physical footing. Contact permission alone does not authorize those actions.
+A clearly specified subjective dissolve may introduce an imagined target while
+the performer's real footing stays fixed; do not reject that as teleportation.
 Return PASS when the candidate is acceptable under all explicit contracts; it does not need to be the ideal or most dramatic possible choice. Otherwise return REJECT with only the applicable codes from this finite list:
 - SEMANTIC_REPETITION: the main intentional action, target, contact, movement path, body organization, or final silhouette repeats or paraphrases another candidate or recent history. A left/right swap, synonym, adjective change, or reordered sentence remains repetition.
 - PROFILE_CONFLICT: the candidate contradicts the immutable stage direction or planner_policy_contract, including a prohibited default performance.

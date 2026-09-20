@@ -44,7 +44,7 @@ from .template import (
 )
 
 
-PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v56"
+PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v57"
 _ACTION_AUDIT_REPAIR_ATTEMPTS = 1
 _LOGGER = logging.getLogger("mv_director.nodes")
 TASKS = (
@@ -496,6 +496,11 @@ def _camera_plan_contract_violations(
     motion = _camera_motion_type(plan.motion)
     if motion not in _CAMERA_PATH_MOTIONS.get(plan.path, frozenset()):
         violations.append("camera_plan_motion_path_mismatch")
+    if motion in {"Zoom In", "Zoom Out", "Push In", "Pull Out", "Static Shot"}:
+        if plan.start_view != plan.end_view:
+            violations.append("camera_plan_unmotivated_view_change")
+    if motion == "Static Shot" and plan.start_scale != plan.end_scale:
+        violations.append("camera_plan_static_scale_change")
     if motion == "Arc Shot":
         if int(entity.value.get("shot_duration_ms", 0)) < 2500:
             violations.append("camera_plan_short_arc")
@@ -503,6 +508,9 @@ def _camera_plan_contract_violations(
             violations.append("unassigned_arc")
         if not _LARGE_FAST_ARC_RE.search(plan.motion):
             violations.append("required_long_arc_energy")
+        previous_path = entity.value.get("previous_arc_path")
+        if previous_path and plan.path != previous_path:
+            violations.append("camera_plan_arc_direction_reversal")
     if entity.value.get("arc_permission") == "required" and motion != "Arc Shot":
         violations.append("required_long_arc_emphasis")
     if entity.value.get("face_zoom_emphasis"):
@@ -590,7 +598,52 @@ def _render_camera_plan(plan: _CameraPlan) -> str:
 
 def _fallback_choice_index(entity: _Entity, ordinal: int, size: int) -> int:
     shot_number = int(entity.key[-1]) if entity.key else 0
-    return (entity.scene_number * 3 + shot_number * 5 + ordinal * 2) % size
+    return (entity.scene_number * 2 + shot_number * 5 + ordinal) % size
+
+
+def _choose_fallback_camera_option(
+    entity: _Entity, ordinal: int, options: tuple[_CameraPlan, ...]
+) -> _CameraPlan:
+    # Retain an already selected orbit through the entire CUT/CONTINUE group.
+    # Diversity cannot override optical geometry or change the direction.
+    allowed = tuple(
+        option for option in options
+        if not _camera_plan_contract_violations(entity, option)
+    )
+    if not allowed:
+        raise ValueError("no camera fallback satisfies the structural contract")
+    return allowed[_fallback_choice_index(entity, ordinal, len(allowed))]
+
+
+def _select_continuous_camera_plan(
+    entity: _Entity,
+    text: str,
+    ordinal: int,
+    used: set[str],
+    arc_paths: dict[int, str],
+    reasons: tuple[str, ...] = (),
+) -> tuple[_CameraPlan, tuple[str, ...]]:
+    """Select valid finite camera geometry; Action prose is never touched."""
+    group = int(entity.value.get("camera_continuity_group", entity.scene_number))
+    entity = _Entity(entity.scene_number, entity.key, {
+        **entity.value,
+        "previous_arc_path": arc_paths.get(group, entity.value.get("previous_arc_path", "")),
+    })
+    plan, errors = _parse_camera_plan(text)
+    violations = tuple(dict.fromkeys((
+        *errors, *reasons,
+        *(_camera_plan_contract_violations(entity, plan) if plan else ()),
+    )))
+    if plan is None or violations:
+        for variation in range(8):
+            candidate = _fallback_camera_plan(entity, ordinal + variation)
+            if _render_camera_plan(candidate) not in used or variation == 7:
+                plan = candidate
+                break
+    assert plan is not None
+    if _camera_motion_type(plan.motion) == "Arc Shot":
+        arc_paths[group] = plan.path
+    return plan, violations
 
 
 def _fallback_camera_plan(entity: _Entity, ordinal: int) -> _CameraPlan:
@@ -603,40 +656,48 @@ def _fallback_camera_plan(entity: _Entity, ordinal: int) -> _CameraPlan:
             _CameraPlan("Arc Shot with large amplitude at fast speed", "medium_wide", "face_closeup", "rear_three_quarter", "front", "arc_right_60_120_70_90", "face_eyes_mouth"),
             _CameraPlan("Arc Shot with large amplitude at fast speed", "full_body", "head_and_shoulders", "side", "front_three_quarter", "arc_right_60_120_70_90", "face_eyes_mouth"),
         )
-        return options[_fallback_choice_index(entity, ordinal, len(options))]
+        return _choose_fallback_camera_option(entity, ordinal, options)
     if relation == "arc_out_of_previous_face_cut":
         options = (
             _CameraPlan("Arc Shot with large amplitude at fast speed", "head_and_shoulders", "full_body", "front_three_quarter", "side", "arc_right_60_120_70_90", "whole_body_emotion"),
             _CameraPlan("Arc Shot with large amplitude at fast speed", "face_closeup", "medium_wide", "front", "rear_three_quarter", "arc_left_60_120_70_90", "whole_body_emotion"),
             _CameraPlan("Arc Shot with large amplitude at fast speed", "head_and_shoulders", "wide", "side", "front_three_quarter", "arc_left_60_120_70_90", "environment_relation"),
         )
-        return options[_fallback_choice_index(entity, ordinal, len(options))]
+        return _choose_fallback_camera_option(entity, ordinal, options)
     if entity.value.get("arc_permission") == "required":
+        if entity.value.get("editorial_role") == "upper_body_performance_coverage":
+            options = tuple(
+                _CameraPlan("Arc Shot with large amplitude at fast speed",
+                    "medium", "upper_body", "side", "front_three_quarter",
+                    path, "upper_body_hands")
+                for path in ("arc_left_60_120_70_90", "arc_right_60_120_70_90")
+            )
+            return _choose_fallback_camera_option(entity, ordinal, options)
         options = (
             _CameraPlan("Arc Shot with large amplitude at fast speed", "full_body", "medium", "low_front_three_quarter", "side", "arc_left_60_120_70_90", "whole_body_emotion"),
             _CameraPlan("Arc Shot with large amplitude at fast speed", "full_body", "upper_body", "rear_three_quarter", "front_three_quarter", "arc_right_60_120_70_90", "expressive_result"),
             _CameraPlan("Arc Shot with large amplitude at fast speed", "medium_wide", "full_body", "side", "rear_three_quarter", "arc_left_60_120_70_90", "whole_body_emotion"),
             _CameraPlan("Arc Shot with large amplitude at fast speed", "wide", "medium", "rear_three_quarter", "front_three_quarter", "arc_right_60_120_70_90", "environment_relation"),
         )
-        return options[_fallback_choice_index(entity, ordinal, len(options))]
+        return _choose_fallback_camera_option(entity, ordinal, options)
     if entity.value.get("face_zoom_emphasis"):
         options = (
-            _CameraPlan("Zoom In with large amplitude at fast speed", "head_and_shoulders", "face_closeup", "front_three_quarter", "front", "zoom_in_35_55", "face_eyes_mouth"),
-            _CameraPlan("Zoom In with large amplitude at fast speed", "head_and_shoulders", "face_closeup", "side", "front_three_quarter", "zoom_in_35_55", "face_eyes_mouth"),
-            _CameraPlan("Zoom In with large amplitude at fast speed", "upper_body", "face_closeup", "high_front", "front_three_quarter", "zoom_in_35_55", "face_eyes_mouth"),
+            _CameraPlan("Zoom In with large amplitude at fast speed", "head_and_shoulders", "face_closeup", "front_three_quarter", "front_three_quarter", "zoom_in_35_55", "face_eyes_mouth"),
+            _CameraPlan("Zoom In with large amplitude at fast speed", "head_and_shoulders", "face_closeup", "front", "front", "zoom_in_35_55", "face_eyes_mouth"),
+            _CameraPlan("Zoom In with large amplitude at fast speed", "upper_body", "face_closeup", "front_three_quarter", "front_three_quarter", "zoom_in_35_55", "face_eyes_mouth"),
         )
-        return options[_fallback_choice_index(entity, ordinal, len(options))]
+        return _choose_fallback_camera_option(entity, ordinal, options)
     options = (
         _CameraPlan("Push In at fast speed", "wide", "medium", "front_three_quarter", "front_three_quarter", "push_in", "environment_relation"),
         _CameraPlan("Truck Right at fast speed", "upper_body", "upper_body", "front_three_quarter", "side", "truck_right", "upper_body_hands"),
-        _CameraPlan("Pull Out at fast speed", "medium", "wide", "front_three_quarter", "rear_three_quarter", "pull_out", "expressive_result"),
+        _CameraPlan("Pull Out at fast speed", "medium", "wide", "front_three_quarter", "front_three_quarter", "pull_out", "expressive_result"),
         _CameraPlan("Pedestal Up at fast speed", "medium_wide", "medium", "low_front_three_quarter", "front_three_quarter", "pedestal_up", "whole_body_emotion"),
         _CameraPlan("Static Shot", "upper_body", "upper_body", "front_three_quarter", "front_three_quarter", "stationary", "upper_body_hands"),
-        _CameraPlan("Zoom Out at fast speed", "head_and_shoulders", "medium_wide", "front", "over_shoulder", "zoom_out", "environment_relation"),
+        _CameraPlan("Zoom Out at fast speed", "head_and_shoulders", "medium_wide", "front", "front", "zoom_out", "environment_relation"),
         _CameraPlan("Pan Right at fast speed", "medium_wide", "medium_wide", "over_shoulder", "rear_three_quarter", "pan_right", "environment_relation"),
         _CameraPlan("Truck Left at fast speed", "medium", "medium", "side", "front_three_quarter", "truck_left", "upper_body_hands"),
     )
-    return options[_fallback_choice_index(entity, ordinal, len(options))]
+    return _choose_fallback_camera_option(entity, ordinal, options)
 
 
 def _cue_source_texts(entity: _Entity) -> tuple[str, ...]:
@@ -1685,6 +1746,7 @@ def _camera_budget_violations(
 
     motion_counts: dict[str, int] = {}
     seen_finite_plans = set(recent_history)
+    arc_paths: dict[int, str] = {}
     slow_count = 0
     slow_maximum = max(1, len(entities) // 4)
     violations: dict[tuple[int, ...], list[str]] = {}
@@ -1700,7 +1762,14 @@ def _camera_budget_violations(
                 violations.setdefault(entity.key, []).extend(plan_violations)
                 continue
             assert plan is not None
-            contract_violations = _camera_plan_contract_violations(entity, plan)
+            group = int(entity.value.get("camera_continuity_group", entity.scene_number))
+            continuity_entity = _Entity(entity.scene_number, entity.key, {
+                **entity.value,
+                "previous_arc_path": arc_paths.get(group, entity.value.get("previous_arc_path", "")),
+            })
+            contract_violations = _camera_plan_contract_violations(continuity_entity, plan)
+            if _camera_motion_type(plan.motion) == "Arc Shot" and not contract_violations:
+                arc_paths[group] = plan.path
             if contract_violations:
                 violations.setdefault(entity.key, []).extend(contract_violations)
             rendered_plan = _render_camera_plan(plan)
@@ -2784,9 +2853,10 @@ def generate_planner_content(
         if "actions-dance-phrase" in system_prompts:
             system_prompts["actions"] = system_prompts["actions-dance-phrase"]
         planner_policy_contract.update(
-            whole_body_emotion_mode="one_connected_weight_torso_arm_expression_phrase",
+            whole_body_emotion_mode="one_connected_upper_body_arm_expression_phrase",
+            emotional_amplitude="exaggerated_readable_upper_body",
             pose_contrast="preparation_accent_release_across_scene_not_per_shot",
-            lower_body_role="whole_body_dance_steps_allowed_isolated_foot_detail_forbidden",
+            lower_body_role="optional_support_not_required_per_shot_no_body_spins",
         )
     _LOGGER.info(
         "[MV Director - Timeline Planner] performance_mode=%s; motion_profile=%s; "
@@ -3951,6 +4021,13 @@ def generate_planner_content(
 
     camera_values: dict[tuple[int, ...], str] = {}
     recent_camera_history: list[str] = []
+    camera_continuity_groups: dict[int, int] = {}
+    continuity_group = 0
+    for scene in planned_template.scenes:
+        if not scene.continuation or not continuity_group:
+            continuity_group = scene.scene_number
+        camera_continuity_groups[scene.scene_number] = continuity_group
+    chosen_arc_paths: dict[int, str] = {}
     all_shot_keys = list(planned_template.shot_keys)
     face_cut_keys = {
         key
@@ -3994,6 +4071,8 @@ def generate_planner_content(
                 ),
                 "visual_beat_grounding": cue_card.to_dict(),
                 "locked_action": action_values[key],
+                "camera_continuity_group": camera_continuity_groups[key[0]],
+                "previous_arc_path": chosen_arc_paths.get(camera_continuity_groups[key[0]], ""),
                 "lip_sync_active": lip_sync_mode != "off",
                 "lip_sync_target": lip_sync_target,
                 "editorial_role": _camera_editorial_role(
@@ -4324,25 +4403,15 @@ def generate_planner_content(
                 fallback_rows: list[str] = []
                 used_rendered_plans = set(recent_camera_history[-12:])
                 for ordinal, entity in enumerate(entities):
-                    plan, parse_violations = _parse_camera_plan(
-                        values.get(entity.key, "")
+                    plan, selection_violations = _select_continuous_camera_plan(
+                        entity, values.get(entity.key, ""), ordinal,
+                        used_rendered_plans, chosen_arc_paths,
+                        remaining_budget_violations.get(entity.key, ()),
                     )
-                    remaining = remaining_budget_violations.get(entity.key, ())
-                    if plan is None or remaining:
-                        for variation in range(8):
-                            candidate = _fallback_camera_plan(
-                                entity, ordinal + variation
-                            )
-                            if (
-                                _render_camera_plan(candidate)
-                                not in used_rendered_plans
-                                or variation == 7
-                            ):
-                                plan = candidate
-                                break
+                    if selection_violations:
                         fallback_rows.append(
                             f"scene{entity.scene_number}:slot{entity.key[-1]}="
-                            + ",".join((*parse_violations, *remaining))
+                            + ",".join(selection_violations)
                         )
                     assert plan is not None
                     rendered_plan = _render_camera_plan(plan)

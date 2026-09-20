@@ -2,6 +2,7 @@
 
 | 文書 | 内容 |
 |---|---|
+| [Planner v57：接触・上半身演技・Arc方向](planner-v57-loop10-contact-camera-review-2026-09-20.md) | loop-10動画と採用Planを照合。苔を踏む・鳥居上に立つ指示、旋回反転とCamera候補の矛盾を修正。402件回帰と実映像再検証の条件を記録 |
 | [Planner v56：P0・連動する身体演技](planner-p0-dance-phrase-2026-09-20.md) | Motionファイルでの切替、短縮Action prompt、実8Bの五試行と398件回帰。身体演技の部分回復と残存する反復を区別して記録 |
 | [完成動画：身体演技とCamera同期の評価](anime-emotional-mv-performance-camera-review-2026-09-20.md) | 9月20日動画・実採用Plan・51Shotを照合。手振り偏重、振付の不足、Cameraの位相表現と継続引継ぎの制限を分析し、既存段階で進める最小改修と局所A/Bを計画 |
 | [Planner v54：歌詞行Discoveryと対象保持](planner-v54-lyric-cue-discovery-2026-09-20.md) | 苔・花・狐火・御神木の局所抽出、原文に結び付く生成時制約、実8B比較と残った意味・配置の問題 |

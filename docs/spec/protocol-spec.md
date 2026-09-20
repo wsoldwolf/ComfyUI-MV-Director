@@ -426,4 +426,26 @@ metadataをPlannerのcache identityへ含め、algorithm versionは
 `mvd-timeline-planner-v56`とする。modeと追加演技段階数（0）をINFOへ記録する。
 これは演技生成方針であり、映像上のダンス成立や音楽・Cameraとの厳密な同期を保証しない。
 
+### Planner v57：上半身演技・接触解釈・Camera連続性
+
+`dance_phrase`は肩・胸郭から肘、前腕、手首及び表情へつながる上半身演技だけでも
+成立する。各Shotの踏み替えや全身回転を必須にしない。植物、記憶又は敬意を表す
+対象への接触は、安定した足場からの手・指先による穏やかな接触を優先する。
+対象の位置と人物の足場を区別し、接触許可を踏み付け・登攀の許可へ拡張しない。
+記憶内の対象を溶け込ませて出現させる場合は想像表現と明示し、現実の足場を保持する。
+これらは既存Visual Beat、Action、意味監査の指示で扱い、PythonでActionを置換しない。
+
+有限Camera protocolではCUTから次のCUTまでを`camera_continuity_group`として
+request contextへ渡す。最初に採用したArcのPATHを同group内の後続Arcへ引き継ぎ、
+途中にZoom等が入っても保持する。前batchの採用値は`previous_arc_path`として渡す。
+逆方向は構造違反として既存の有限retry対象とし、残存時のCamera fallbackも同方向へ
+限定する。七fieldの重複回避より方向維持を優先し、CUTでは新しい方向を選べる。
+Zoom In/Out、Push In/Pull Out及びStatic ShotはSTART_VIEWとEND_VIEWを一致させ、
+Static Shotはscaleも一致させる。上半身演技のArc fallbackは腕と表情を収める。
+自由文Cameraを使う他profileへ、この有限protocol制約は適用しない。
+
+出力protocolやLLM段階、監査回数は増やさず、algorithm versionを
+`mvd-timeline-planner-v57`へ更新する。これは指示の整合性を改善するものであり、
+H3映像の旋回速度、実際の視点連続性及び手足形状を保証するものではない。
+
 field追加、値域追加、時刻意味の変更又は未知key受理はversion変更である。V1 parserへ互換分岐を積み上げない。表示文、tooltip又はdebug出力だけの変更はprotocol versionを変更しない。
