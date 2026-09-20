@@ -12,6 +12,18 @@ Windows版ComfyUIへComfyUI-MV-Directorを導入し、Text/Vision GGUFとOpenAI 
 
 異なるComfyUI / Context Loop commitでも動作する可能性はありますが、互換試験の基準外です。
 
+### 検証環境
+
+本プロジェクトでは、次のWindows PCを開発・動作検証に使用しています。
+
+| GPU | CPU | メインメモリ | ストレージ | 備考 |
+| --- | --- | ---: | --- | --- |
+| NVIDIA GeForce RTX 5090 | AMD Ryzen 9 9950X | 256 GB | NVMe SSD 4 TB | 開発及び高負荷時の検証環境 |
+| NVIDIA GeForce RTX 4070 Ti | AMD Ryzen 9 5900XT | 64 GB | NVMe SSD 4 TB | 動作検証環境 |
+| NVIDIA GeForce RTX 5060 | AMD Ryzen 5 5500 | 16 GB | NVMe SSD 1 TB | Context Loop標準リップシンクは動作しません |
+
+RTX 5060、メインメモリ16 GBの環境では、Context Loop標準リップシンクworkflowが停止することを確認しています。この構成ではAudio Reference方式又は歌詞方式のworkflowを検討してください。各方式の検証状況は[配布workflowの説明](../workflows/README.md)を参照してください。
+
 ## 2. カスタムノード本体
 
 通常はComfyUIの`custom_nodes`へcloneします。
