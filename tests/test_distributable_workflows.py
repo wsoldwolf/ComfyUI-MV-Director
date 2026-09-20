@@ -73,15 +73,6 @@ class DistributableWorkflowTests(unittest.TestCase):
         self.assertEqual(list((WORKFLOWS / "development").glob("*.json")), [])
 
     def test_all_workflows_share_the_documented_palette_and_guidance(self) -> None:
-        source_types = {
-            "LoadImage",
-            "LoadAudio",
-            "MVDirectorLoadTextFile",
-            "MVDirectorSceneDebugSplitter",
-            "MVDirectorSeed32",
-            "RandomNoise",
-            "ResolutionSelector",
-        }
         for mode, (plan_name, video_name) in FILES.items():
             for name in (plan_name, video_name):
                 workflow = load(name)
@@ -105,14 +96,17 @@ class DistributableWorkflowTests(unittest.TestCase):
                 for node in workflow["nodes"]:
                     if node["type"] in {"MarkdownNote", "Label (rgthree)"}:
                         continue
-                    if node["type"] in source_types:
-                        self.assertEqual((node["color"], node["bgcolor"]), ("#232", "#353"), name)
-                    else:
-                        self.assertIn(
-                            (node["color"], node["bgcolor"]),
-                            {("#232", "#353"), ("#223", "#335")},
-                            name,
-                        )
+                    palette = (node["color"], node["bgcolor"])
+                    self.assertIn(
+                        palette,
+                        {
+                            ("#232", "#353"),  # user-facing source/input
+                            ("#233", "#355"),  # timing/alignment helper
+                            ("#223", "#335"),  # processing
+                            ("#323", "#535"),  # sampling emphasis
+                        },
+                        name,
+                    )
 
             plan_workflow = load(plan_name)
             seed = only_type(plan_workflow, "MVDirectorSeed32")
@@ -266,6 +260,37 @@ class DistributableWorkflowTests(unittest.TestCase):
             )
             link = input_link(workflow, plan_save, "text")
             self.assertEqual(link[1:3], [compiler["id"], 0])
+
+    def test_installation_documents_context_loop_plan_models(self) -> None:
+        workflow = load(FILES["context_loop"][0])
+        documented = (ROOT / "docs" / "installation.md").read_text(
+            encoding="utf-8"
+        )
+        character_vision = titled_node(
+            workflow, "Character Vision / Subject EMD"
+        )
+        lyrics = only_type(workflow, "MVDirectorLyricSegmentation")
+        direction = only_type(workflow, "MVDirectorDirectionEnhancer")
+        selected_models = {
+            character_vision["widgets_values"][0],
+            lyrics["widgets_values"][0],
+            direction["widgets_values"][5],
+        }
+        for selected_model in selected_models:
+            self.assertIn(selected_model, documented)
+        self.assertIn("mmproj-F16.gguf", documented)
+        self.assertIn(
+            "https://huggingface.co/unsloth/Qwen3-VL-4B-Instruct-GGUF",
+            documented,
+        )
+        self.assertIn(
+            "https://huggingface.co/richardyoung/Qwen3-8B-Abliterated-GGUF",
+            documented,
+        )
+        self.assertIn(
+            "https://github.com/openai/whisper",
+            documented,
+        )
 
     def test_development_workflows_are_not_distributed(self) -> None:
         development = WORKFLOWS / "development"

@@ -404,4 +404,26 @@ EMD rendererでも生成Action/Cameraにのみ適用して古い生成内容の�
 作者のEMD本文、Concept、Direction、歌詞は自動変更しない。適用時はINFOへ対象slot又は件数を出す。
 LLM promptでも末尾記号を禁止し、algorithm versionは`mvd-timeline-planner-v55`とする。
 
+### Planner v56：Motion選択による連動した全身演技（P0）
+
+Motion profileの任意metadata `performance_mode`は`event_based`（省略時）又は
+`dance_phrase`とする。後者は既存九fieldの`body_driver`（身体主導）と
+`final_state`（終端）を使い、支持・重心から体幹、腕、表情へつながる短い演技を
+Scene内のShotへ準備・アクセント・解放として分配する。新しい出力field、LLM task、
+時刻・拍の推定又はCamera protocolは追加しない。生成された本文は既存AS IS境界を維持する。
+
+選択Motionのmodeを共有policyとAction entityへ渡し、`bounded`による最小身体反応の
+指示より優先する。顔slotは全身移動を追加せず、連動する表情accentを扱う。
+組込みprompt群では`actions-dance-phrase`を同じAction段階の短い専用promptとして選ぶ。
+外部callerが専用promptを提供しない場合は従来のAction promptを使用する。
+Cueの対象、根拠、配置・可視展開転送、外部effectの自律性は維持する。
+足・足袋等の単語だけによる下半身主役判定は`dance_phrase`では適用しない。
+足先の細部主役化と全身演技の踏み替えの区別は既存意味監査が扱う。走行、
+必須fragment、内部protocol混入等の検査は変更しない。意味監査の品質警告を
+無条件の停止理由に変更せず、監査二回・間の修復一回の上限も維持する。
+
+metadataをPlannerのcache identityへ含め、algorithm versionは
+`mvd-timeline-planner-v56`とする。modeと追加演技段階数（0）をINFOへ記録する。
+これは演技生成方針であり、映像上のダンス成立や音楽・Cameraとの厳密な同期を保証しない。
+
 field追加、値域追加、時刻意味の変更又は未知key受理はversion変更である。V1 parserへ互換分岐を積み上げない。表示文、tooltip又はdebug出力だけの変更はprotocol versionを変更しない。

@@ -74,6 +74,7 @@ _PROMPT_FILES = {
     "song-direction": "timeline_planner_song_direction_system_prompt.txt",
     "shot-layout": "timeline_planner_shot_layout_system_prompt.txt",
     "actions": "timeline_planner_actions_system_prompt.txt",
+    "actions-dance-phrase": "timeline_planner_actions_dance_phrase_system_prompt.txt",
     "action-audit": "timeline_planner_action_audit_system_prompt.txt",
     "cameras": "timeline_planner_cameras_system_prompt.txt",
 }
@@ -435,7 +436,8 @@ class MVDirectorTimelinePlanner:
                     "scene_emd": scene,
                     "direction": selected_direction.to_dict(),
                     "planner_profile": planner_profile_metadata(
-                        selected_direction.camera_profile_id
+                        selected_direction.camera_profile_id,
+                        selected_direction.motion_profile_id,
                     ),
                     "lip_sync_active": lip_sync_mode != "off",
                     "lip_sync_target": lip_sync_target,

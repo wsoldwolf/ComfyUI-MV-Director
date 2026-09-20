@@ -595,7 +595,8 @@ class DirectionEnhancerTests(unittest.TestCase):
             "Arc Shot with large amplitude at fast speed",
             CAMERA_PROFILES["anime_emotional_mv"],
         )
-        self.assertIn("一段強く誇張", MOTION_PROFILES["anime_emotional_mv"])
+        from core.direction.profiles import MOTION_PERFORMANCE_MODES
+        self.assertEqual(MOTION_PERFORMANCE_MODES["anime_emotional_mv"], "dance_phrase")
         self.assertIn(
             "つま先は親指側と残り四趾側の二つの連続した布形状",
             STYLE_PROFILES["anime_emotional_mv"],
@@ -606,7 +607,6 @@ class DirectionEnhancerTests(unittest.TestCase):
         )
         self.assertIn("単なる歩行", MOTION_PROFILES["anime_emotional_mv"])
         self.assertIn("短い閉眼、半開き、伏し目", MOTION_PROFILES["anime_emotional_mv"])
-        self.assertIn("支持脚、遊脚、重心", MOTION_PROFILES["anime_emotional_mv"])
         self.assertIn("そのSceneの元歌詞", MOTION_PROFILES["anime_emotional_mv"])
         self.assertNotIn("苔", MOTION_PROFILES["anime_emotional_mv"])
         self.assertNotIn("狐火", MOTION_PROFILES["anime_emotional_mv"])

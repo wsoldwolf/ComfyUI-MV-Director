@@ -15,6 +15,7 @@ from ..direction.profiles import (
     CAMERA_LYRIC_INTERPRETATIONS,
     CAMERA_PLANNER_POLICIES,
     CAMERA_PRIORITY_LYRIC_CUES,
+    MOTION_PERFORMANCE_MODES,
 )
 from ..emd import parse_scene_emd_fragment
 from ..h3_contract import (
@@ -43,7 +44,7 @@ from .template import (
 )
 
 
-PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v55"
+PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v56"
 _ACTION_AUDIT_REPAIR_ATTEMPTS = 1
 _LOGGER = logging.getLogger("mv_director.nodes")
 TASKS = (
@@ -2071,6 +2072,10 @@ def _action_budget_violations(
         if (
             _LOWER_BODY_DETAIL_RE.search(text)
             and not _LOWER_BODY_DETAIL_RE.search(source_text)
+            # Body-side words also occur in legitimate dance support/steps.
+            # The existing semantic audit judges detail versus whole-body
+            # performance in this opt-in mode; do not infer it from words.
+            and entity.value.get("performance_mode") != "dance_phrase"
         ):
             violations.setdefault(entity.key, []).append(
                 "unrequested_lower_body_primary_action"
@@ -2661,7 +2666,9 @@ def generate_planner_content(
     prompt_keys = set(system_prompts)
     if (
         not set(TASKS).issubset(prompt_keys)
-        or prompt_keys - set(TASKS) - {"visual-beats-bounded", "actions-bounded", "lyric-cues"}
+        or prompt_keys - set(TASKS) - {
+            "visual-beats-bounded", "actions-bounded", "actions-dance-phrase", "lyric-cues"
+        }
         or any(not value.strip() for value in system_prompts.values())
     ):
         raise TimelinePlannerError("all six Planner system prompts are required")
@@ -2771,6 +2778,21 @@ def generate_planner_content(
             pose_contrast="event_or_expression_change_not_mandatory_body_turn",
             grounded_cue_development="anchor_then_event_then_optional_subject_response",
         )
+    performance_mode = MOTION_PERFORMANCE_MODES.get(direction.motion_profile_id, "event_based")
+    planner_policy_contract["performance_mode"] = performance_mode
+    if performance_mode == "dance_phrase":
+        if "actions-dance-phrase" in system_prompts:
+            system_prompts["actions"] = system_prompts["actions-dance-phrase"]
+        planner_policy_contract.update(
+            whole_body_emotion_mode="one_connected_weight_torso_arm_expression_phrase",
+            pose_contrast="preparation_accent_release_across_scene_not_per_shot",
+            lower_body_role="whole_body_dance_steps_allowed_isolated_foot_detail_forbidden",
+        )
+    _LOGGER.info(
+        "[MV Director - Timeline Planner] performance_mode=%s; motion_profile=%s; "
+        "phrase_fields=body_driver,final_state; additional_performance_stages=0",
+        performance_mode, direction.motion_profile_id or "none",
+    )
     _LOGGER.info(
         "[MV Director - Timeline Planner] lyric interpretation=%s; "
         "cue_schema=v2; additional_inference_stages=%d",
@@ -3448,6 +3470,7 @@ def generate_planner_content(
                 context,
                 lip_sync_active=lip_sync_mode != "off",
             )
+            context["performance_mode"] = performance_mode
             context["previous_shot"] = (
                 None
                 if prior_key is None

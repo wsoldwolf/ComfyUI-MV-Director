@@ -9,6 +9,7 @@ _CATALOG = load_direction_profiles(PROFILE_ROOT)
 
 STYLE_PROFILES = _CATALOG.style
 MOTION_PROFILES = _CATALOG.motion
+MOTION_PERFORMANCE_MODES = _CATALOG.motion_performance_mode
 CAMERA_PROFILES = _CATALOG.camera
 LOCKED_STYLE_PROFILES = _CATALOG.locked_style
 STYLE_RETENTION_POLICIES = _CATALOG.style_retention
@@ -19,10 +20,11 @@ CAMERA_LYRIC_INTERPRETATIONS = _CATALOG.camera_lyric_interpretation
 CAMERA_PRIORITY_LYRIC_CUES = _CATALOG.camera_priority_lyric_cues
 
 
-def planner_profile_metadata(profile_id: str) -> dict[str, object]:
+def planner_profile_metadata(profile_id: str, motion_profile_id: str = "") -> dict[str, object]:
     """Cache identity includes metadata that is not part of Direction prose."""
     cues = CAMERA_PRIORITY_LYRIC_CUES.get(profile_id, ())
     return {
+        "performance_mode": MOTION_PERFORMANCE_MODES.get(motion_profile_id, "event_based"),
         "planner_policy": CAMERA_PLANNER_POLICIES.get(profile_id, ""),
         "lyric_cue_mode": CAMERA_LYRIC_CUE_MODES.get(
             profile_id, "priority_only" if cues else "off"

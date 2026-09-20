@@ -18,10 +18,12 @@ _KIND_HEADINGS = {
     "camera": "カメラ",
 }
 _STYLE_META_KEYS = frozenset({"locked", "retention", "scene_reinforcement"})
+_MOTION_META_KEYS = frozenset({"performance_mode"})
 _CAMERA_META_KEYS = frozenset(
     {"planner_policy", "lyric_cue_mode", "priority_lyric_cues", "lyric_interpretation"}
 )
-_META_KEYS = _STYLE_META_KEYS | _CAMERA_META_KEYS
+_META_KEYS = _STYLE_META_KEYS | _CAMERA_META_KEYS | _MOTION_META_KEYS
+_PERFORMANCE_MODES = frozenset({"event_based", "dance_phrase"})
 _PRIORITY_CUE_KINDS = frozenset(
     {"object", "symbolic_motif", "external_effect"}
 )
@@ -46,6 +48,7 @@ class DirectionProfile:
     lyric_cue_mode: str = ""
     lyric_interpretation: str = "literal"
     priority_lyric_cues: tuple[tuple[str, str], ...] = ()
+    performance_mode: str = "event_based"
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,6 +63,7 @@ class DirectionProfileCatalog:
     camera_lyric_cue_mode: dict[str, str]
     camera_lyric_interpretation: dict[str, str]
     camera_priority_lyric_cues: dict[str, tuple[tuple[str, str], ...]]
+    motion_performance_mode: dict[str, str]
 
 
 def _fail(path: Path, message: str) -> DirectionProfileError:
@@ -167,7 +171,7 @@ def load_direction_profile(path: Path, kind: str) -> DirectionProfile:
         if kind == "style"
         else _CAMERA_META_KEYS
         if kind == "camera"
-        else frozenset()
+        else _MOTION_META_KEYS
     )
     unsupported_metadata = set(metadata) - allowed_metadata
     if unsupported_metadata:
@@ -196,6 +200,9 @@ def load_direction_profile(path: Path, kind: str) -> DirectionProfile:
     lyric_interpretation = metadata.get("lyric_interpretation", "literal")
     if lyric_interpretation not in _LYRIC_INTERPRETATIONS:
         raise _fail(path, "lyric_interpretation must be literal or bounded")
+    performance_mode = metadata.get("performance_mode", "event_based")
+    if performance_mode not in _PERFORMANCE_MODES:
+        raise _fail(path, "performance_mode must be event_based or dance_phrase")
     priority_lyric_cues = (
         _parse_priority_lyric_cues(path, metadata["priority_lyric_cues"])
         if "priority_lyric_cues" in metadata
@@ -213,6 +220,7 @@ def load_direction_profile(path: Path, kind: str) -> DirectionProfile:
         lyric_cue_mode=lyric_cue_mode,
         lyric_interpretation=lyric_interpretation,
         priority_lyric_cues=priority_lyric_cues,
+        performance_mode=performance_mode,
     )
 
 
@@ -236,6 +244,9 @@ def load_direction_profiles(root: Path = PROFILE_ROOT) -> DirectionProfileCatalo
     return DirectionProfileCatalog(
         style={key: value.text for key, value in styles.items()},
         motion={key: value.text for key, value in grouped["motion"].items()},
+        motion_performance_mode={
+            key: value.performance_mode for key, value in grouped["motion"].items()
+        },
         camera={key: value.text for key, value in grouped["camera"].items()},
         locked_style=frozenset(
             key for key, value in styles.items() if value.locked

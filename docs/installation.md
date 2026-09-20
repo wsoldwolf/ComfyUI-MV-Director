@@ -115,6 +115,41 @@ C:\Software\ComfyUI\models\LLM\GGUF\
 
 Text生成と英訳は8B級を推奨します。Visionだけは4B級でも比較的実用になります。
 
+### `01_plan_compiler_context_loop.json`の既定モデル
+
+配布workflowの`01_plan_compiler_context_loop.json`は、次のモデルを選択した状態で保存されています。Visionは本体GGUFだけでなく、同じディレクトリに対応する`mmproj-F16.gguf`も必要です。
+
+| 用途 / 使用ノード | workflowで選択されるファイル | 取得元 |
+| --- | --- | --- |
+| 人物・背景の画像認識 / Image to Subject EMD | `Qwen3-VL-4B-Instruct/Qwen3-VL-4B-Instruct-Q4_K_M.gguf`と`mmproj-F16.gguf` | [Unsloth配布ページ](https://huggingface.co/unsloth/Qwen3-VL-4B-Instruct-GGUF)、[本体GGUFを取得](https://huggingface.co/unsloth/Qwen3-VL-4B-Instruct-GGUF/resolve/main/Qwen3-VL-4B-Instruct-Q4_K_M.gguf?download=true)、[mmprojを取得](https://huggingface.co/unsloth/Qwen3-VL-4B-Instruct-GGUF/resolve/main/mmproj-F16.gguf?download=true) |
+| Direction生成・Timeline計画・EMD英訳 / Direction Enhancer、Timeline Planner、EMD Compiler (Ref2VA) | `Qwen3-8B-Abliterated/qwen3-8b-abliterated-Q4_K_M.gguf` | [richardyoung配布ページ](https://huggingface.co/richardyoung/Qwen3-8B-Abliterated-GGUF)、[GGUFを取得](https://huggingface.co/richardyoung/Qwen3-8B-Abliterated-GGUF/resolve/main/qwen3-8b-abliterated-Q4_K_M.gguf?download=true) |
+| 歌詞と音声の同期 / Lyric Segmentation | `medium.pt` | [OpenAI Whisper公式リポジトリ](https://github.com/openai/whisper)、[medium.ptを取得](https://openaipublic.azureedge.net/main/whisper/models/345ae4da62f9b3d59415adc60127b97c714f32e89e936602e85993674d08dcb1/medium.pt) |
+
+次の配置にすると、workflowに保存された選択値を変更せず使用できます。
+
+```text
+C:\Software\ComfyUI\models\
+├─ LLM\GGUF\
+│  ├─ Qwen3-VL-4B-Instruct\
+│  │  ├─ Qwen3-VL-4B-Instruct-Q4_K_M.gguf
+│  │  └─ mmproj-F16.gguf
+│  └─ Qwen3-8B-Abliterated\
+│     └─ qwen3-8b-abliterated-Q4_K_M.gguf
+└─ whisper\
+   └─ medium.pt
+```
+
+配置先のサブディレクトリ名を変更した場合は、ComfyUI再起動後に各ノードのcomboで実ファイルを選び直し、workflowを保存してください。
+
+ダウンロードの破損や同名の別quantを判別する場合は、PowerShellの`Get-FileHash -Algorithm SHA256 <ファイル>`で次の値と比較できます。
+
+| ファイル | SHA-256 |
+| --- | --- |
+| `Qwen3-VL-4B-Instruct-Q4_K_M.gguf` | `d4dcd426bfba75752a312b266b80fec8136fbaca13c62d93b7ac41fa67f0492b` |
+| `mmproj-F16.gguf` | `1b9f4e92f0fbda14d7d7b58baed86039b8a980fe503d9d6a9393f25c0028f1fc` |
+| `qwen3-8b-abliterated-Q4_K_M.gguf` | `8625e48da4c4be9bcba2414fd8cad4095ff3a538d5b0111c2b26b5f6209538b9` |
+| `medium.pt` | `345ae4da62f9b3d59415adc60127b97c714f32e89e936602e85993674d08dcb1` |
+
 ## 6. 起動確認
 
 ComfyUIを再起動し、ノード検索で`MV Director`を確認します。11ノードがCore、Input、Audio、Utilitiesに表示されます。

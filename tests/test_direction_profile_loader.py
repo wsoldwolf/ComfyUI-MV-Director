@@ -47,6 +47,7 @@ class DirectionProfileLoaderTests(unittest.TestCase):
                 catalog.style["custom_style"], "第一条件。 第二条件。"
             )
             self.assertEqual(catalog.motion["custom_motion"], "素早く動く。")
+            self.assertEqual(catalog.motion_performance_mode["custom_motion"], "event_based")
             self.assertEqual(catalog.camera["custom_camera"], "arcで回り込む。")
             self.assertEqual(catalog.locked_style, frozenset({"custom_style"}))
             self.assertIn("custom_style", catalog.style_retention)

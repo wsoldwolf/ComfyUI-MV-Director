@@ -29,7 +29,7 @@ Copyright © 2026 wsoldwolf
 
 ## 参照画像
 
-以下のファイルは`wsoldwolf`がWAI Illustrious及びAnimaを使用して生成したものです。画像認識、Subject EMD生成、参照バインディング及びRef2VA workflowの検証素材として提供します。現在の配布workflowでは人物と背景を別参照へ分離し、前者を`<Picture 1>`、後者を`<Picture 2>`として使用します。
+以下のファイルは`wsoldwolf`がAnima base v1.0を使用して生成したものです。画像認識、Subject EMD生成、参照バインディング及びRef2VA workflowの検証素材として提供します。現在の配布workflowでは人物と背景を別参照へ分離し、前者を`<Picture 1>`、後者を`<Picture 2>`として使用します。
 
 - `assets/image/image001_mikofox.jpg` — 人物参照、`<Picture 1>`
 - `assets/image/image002_keinai.jpg` — 背景・環境参照、`<Picture 2>`

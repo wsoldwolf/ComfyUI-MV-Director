@@ -1,6 +1,6 @@
 # Timeline Planner
 
-Planner v55は、v54で導入した`anime_emotional_mv`の歌詞Cue Discoveryを引き継ぎます。プロファイル内の
+Planner v56は、v54で導入した`anime_emotional_mv`の歌詞Cue Discoveryを引き継ぎます。プロファイル内の
 `lyric_interpretation=bounded`と`lyric_cue_mode=automatic`で歌詞行Discoveryを
 有効にします。同じ原文行は一回だけ、16行ずつ最大768出力tokenで具体対象候補を
 抽出します。Scene内の原文順で最後の非body候補を選び、対象・根拠をVisual Beatへ
@@ -10,7 +10,11 @@ Planner v55は、v54で導入した`anime_emotional_mv`の歌詞Cue Discoveryを
 
 boundedでは以前のBeat/Action自然文履歴を生成requestへ再掲せず、監査と反復検査に
 保持します。現在の修復候補・違反理由とDirectionの明示制約は残します。
-Actionは既存promptを使い、監査最大二回・修復一回の上限を増やしません。
+Motionの`performance_mode=dance_phrase`では既存Action段階のpromptを短い振付向け版へ
+切り替えます。Cue Cardの`身体主導`と`終端`から、支持・重心・体幹・腕・表情が
+つながるScene内の演技を作ります。Cameraだけのemotional選択では有効になりません。
+生成段階や出力項目は増やさず、監査最大二回・修復一回の上限も増やしません。
+他のMotionは通常Action promptのままです。適用modeはINFOで確認できます。
 以下の一般的な履歴説明は、このbounded例外を除く通常経路についての説明です。
 
 Lyric Segmentationが確定したScene/Shot枠へ、歌詞解釈、人物動作、カメラ、リップシンクdirectiveを展開して完成EMDを作ります。人物動作とカメラは別のLLMタスクで生成し、Pythonが同じShotへ合成します。

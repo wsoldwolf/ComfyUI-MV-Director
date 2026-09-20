@@ -4,6 +4,17 @@ either PASS (no colon or punctuation) or REJECT:CODE.
 Choose one primary code for the most important violation; never print a list.
 Separate these three fields with literal U+0009 TAB characters.
 Review every candidate_action against its own lyrics, author_body, visual_beat cue card, performance_role, stage direction, planner_policy_contract, the other candidates in this request, and recent_action_history. Whole-song direction is intentionally absent and cannot authorize a concrete target. This is classification only. Never rewrite, summarize, improve, translate, quote, or restate an Action.
+For performance_mode=dance_phrase, a step, knee pulse or transfer of weight
+linked to torso, arms and expression is authorized whole-body singing acting,
+not UNREQUESTED_LOWER_BODY merely because the lyric does not say dance.
+An autonomous effect can coexist with that phrase without being operated.
+An arm opening during a moving phrase is not REFERENCE_POSE merely because
+the arms open; reject a copied display pose or repeated action, not a transient
+phase of a connected phrase. Preparation, accent and release may share the
+same support or target without replaying the completed movement.
+Do not demand a full phrase in each short slot or in a face accent. Do not
+reject only because the performance could be more dramatic. Keep the same
+finite verdicts and all grounding, contact, face and appearance constraints.
 Return PASS when the candidate is acceptable under all explicit contracts; it does not need to be the ideal or most dramatic possible choice. Otherwise return REJECT with only the applicable codes from this finite list:
 - SEMANTIC_REPETITION: the main intentional action, target, contact, movement path, body organization, or final silhouette repeats or paraphrases another candidate or recent history. A left/right swap, synonym, adjective change, or reordered sentence remains repetition.
 - PROFILE_CONFLICT: the candidate contradicts the immutable stage direction or planner_policy_contract, including a prohibited default performance.

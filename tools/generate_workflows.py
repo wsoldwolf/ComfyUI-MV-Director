@@ -248,7 +248,7 @@ def _workflow_label(
 
 
 def _shared_seed_node(node_id: int, pos: tuple[int, int]) -> dict[str, Any]:
-    return _set_palette(
+    node = _set_palette(
         _node(
             node_id,
             "MVDirectorSeed32",
@@ -265,6 +265,8 @@ def _shared_seed_node(node_id: int, pos: tuple[int, int]) -> dict[str, Any]:
         SOURCE_COLOR,
         SOURCE_BGCOLOR,
     )
+    node.pop("title", None)
+    return node
 
 
 def _new_workflow() -> dict[str, Any]:
@@ -834,20 +836,20 @@ def _decorate_plan_workflow(
     spec = MODES[mode]
     _remove_nodes(workflow, {1})
     layout: dict[int, tuple[list[float], list[float], int]] = {
-        2: ([40, 340], [340, 360], 2),
-        14: ([40, 750], [340, 360], 3),
-        6: ([43, 1342], [330, 100], 4),
-        4: ([40, 1920], [330, 140], 5),
-        5: ([40, 1780], [330, 180], 6),
+        2: ([40, 340], [340, 360], 1),
+        14: ([40, 750], [340, 360], 2),
+        6: ([450, 180], [500, 100], 11),
+        4: ([40, 2010], [330, 140], 12),
+        5: ([40, 1780], [330, 180], 0),
         3: ([450, 330], [500, 800], 14),
         15: ([450, 1180], [500, 800], 15),
-        7: ([460, 2040], [480, 240], 16),
+        7: ([453.2777777777778, 2040], [490, 240], 16),
         8: ([1020, 330], [500, 720], 17),
-        9: ([1020, 1120], [500, 620], 18),
-        10: ([1591, 1118], [500, 510], 19),
-        11: ([2171, 1118], [350, 170], 20),
-        12: ([2171, 1338], [350, 170], 21),
-        13: ([2171, 1558], [350, 170], 22),
+        9: ([1020, 1120], [500, 620], 19),
+        10: ([1590.631977777778, 1118.0316289243062], [500, 510], 20),
+        11: ([2170.631977777781, 1118.0316289243062], [350, 170], 22),
+        12: ([2170.631977777781, 1338.0316289243062], [350, 170], 21),
+        13: ([2170.631977777781, 1558.0316289243062], [350, 170], 18),
     }
     source_ids = {2, 4, 5, 14}
     for node_id, (pos, size, order) in layout.items():
@@ -861,8 +863,9 @@ def _decorate_plan_workflow(
             SOURCE_BGCOLOR if node_id in source_ids else PROCESS_BGCOLOR,
         )
 
-    seed = _shared_seed_node(16, (40, 1590))
-    seed["order"] = 7
+    seed = _shared_seed_node(16, (40, 1410))
+    seed["size"] = [330, 318]
+    seed["order"] = 9
     workflow["nodes"].append(seed)
     for target_id in (3, 8, 9, 10, 15):
         target = _node_by_id(workflow, target_id)
@@ -907,10 +910,10 @@ def _decorate_plan_workflow(
     notes = [
         _workflow_label(
             17,
-            (-350, 54),
-            (1100, 48),
-            f"MV-Director {spec['label']} Lip-Sync ワークフロー",
-            order=8,
+            (-350.01750520278983, 53.858399792818155),
+            (1149.65625, 48),
+            f"MV-Director {spec['label']} Lip-Sync 言語ワークフロー",
+            order=6,
         ),
         _markdown_note(
             18,
@@ -923,7 +926,7 @@ def _decorate_plan_workflow(
                 "複数構図を一枚へ置く場合は、同一人物のreference sheetとして"
                 "判読できる余白と統一した衣装を保ってください。"
             ),
-            order=9,
+            order=7,
         ),
         _markdown_note(
             19,
@@ -936,33 +939,33 @@ def _decorate_plan_workflow(
                 "中央下部に人物が動ける空間のある構図は、H3が移動可能領域を"
                 "認識しやすくなります。"
             ),
-            order=10,
+            order=3,
         ),
         _markdown_note(
             20,
-            (-340, 1590),
+            (-320, 1420),
             (330, 110),
             "3. シードの設定",
             (
                 "共有seedをVision、Direction、Planner、Compilerへ渡します。"
                 "比較検証ではfixedにすると、設定変更による差を追跡しやすくなります。"
             ),
-            order=11,
+            order=10,
         ),
         _markdown_note(
             21,
-            (-340, 1770),
+            (-320, 1780),
             (330, 110),
             "4. 歌詞の設定",
             (
                 "歌詞をUTF-8テキストで指定します。歌詞とvocalからWhisper及び"
                 "整列アルゴリズムがScene時間枠とTemplate EMDを生成します。"
             ),
-            order=12,
+            order=4,
         ),
         _markdown_note(
             22,
-            (-340, 1930),
+            (-330, 2010),
             (330, 130),
             "5. ボーカルステムの設定",
             (
@@ -974,27 +977,27 @@ def _decorate_plan_workflow(
         _markdown_note(
             23,
             (2540, 1120),
-            (390, 610),
+            (370, 600),
             "6. 出力の確認",
             output_note,
-            order=23,
+            order=5,
         ),
         _markdown_note(
             24,
             (-350, 150),
-            (760, 150),
+            (730, 140),
             "README",
             readme,
             readme=True,
-            order=1,
+            order=8,
         ),
     ]
     workflow["nodes"].extend(notes)
     workflow["nodes"].sort(key=lambda item: (int(item.get("order", 0)), int(item["id"])))
     workflow["last_node_id"] = 24
     workflow["extra"]["ds"] = {
-        "scale": 0.54,
-        "offset": [617, 126],
+        "scale": 0.9583200000000043,
+        "offset": [916.7349516147216, -542.3761388593111],
     }
     return workflow
 
@@ -1002,29 +1005,67 @@ def _decorate_plan_workflow(
 def _decorate_video_workflow(
     workflow: dict[str, Any], mode: str
 ) -> dict[str, Any]:
-    """Apply workflow 01's palette and documentation language to video graphs."""
+    """Apply the compact layout and palette established by workflow 02."""
 
     spec = MODES[mode]
-    source_types = {
-        "LoadImage",
-        "LoadAudio",
-        "MVDirectorLoadTextFile",
-        "MVDirectorH3TimingProfile",
-        "MVDirectorSceneDebugSplitter",
-        "RandomNoise",
-        "ResolutionSelector",
+    _remove_nodes(workflow, {31, 50, 51, 52, 53, 54, 55, 56, 57, 58})
+    layout: dict[int, tuple[list[float], list[float], int, str, str]] = {
+        1: ([1910, 160], [580, 130], 3, "#223", "#335"),
+        2: ([1920, 350], [570, 150], 2, "#223", "#335"),
+        3: ([3790, 160], [360, 108], 4, "#223", "#335"),
+        4: ([1920, 560], [570, 100], 1, "#223", "#335"),
+        5: ([1925.5882185973674, 721.4706187338029], [560, 100], 0, "#223", "#335"),
+        7: ([1380, 500], [360, 256], 31, "#223", "#335"),
+        8: ([2600, 160], [460, 400], 32, "#223", "#335"),
+        10: ([3240, 1090], [360, 132], 33, "#223", "#335"),
+        11: ([2600, 1130], [530, 364], 35, "#223", "#335"),
+        12: ([3230, 160], [420, 260], 36, "#223", "#335"),
+        13: ([3240, 680], [360, 132], 25, "#223", "#335"),
+        14: ([3230, 520], [360, 104], 37, "#223", "#335"),
+        15: ([3240, 860], [360, 176], 34, "#223", "#335"),
+        16: ([3800, 330], [360, 326], 38, "#323", "#535"),
+        17: ([3790, 730], [360, 104], 39, "#223", "#335"),
+        18: ([3790, 880], [360, 104], 40, "#223", "#335"),
+        19: ([4260, 160], [420, 250], 41, "#223", "#335"),
+        20: ([4260, 510], [460, 220], 42, "#223", "#335"),
+        21: ([4963.076666985372, 1382.7972561496085], [440, 360], 45, "#223", "#335"),
+        22: ([1930, 1060], [360, 108], 23, "#232", "#353"),
+        23: ([4980.839160839156, 1103.6362782725091], [420, 220], 44, "#223", "#335"),
+        24: ([240, 190], [1000, 1090], 29, "#223", "#335"),
+        26: ([-780, 570], [350, 340], 5, "#232", "#353"),
+        28: ([4820, 160], [760, 880], 43, "#223", "#335"),
+        29: ([1380, 200], [360, 236], 30, "#223", "#335"),
+        30: ([-270, 180], [360, 152], 28, "#223", "#335"),
+        32: ([-780, 1590], [360, 136], 8, "#232", "#353"),
+        33: ([-780, 1400], [360, 136], 7, "#232", "#353"),
+        35: ([-210, 1260], [340, 100], 19, "#233", "#355"),
+        37: ([-240, 1430], [420, 300], 22, "#233", "#355"),
+        38: ([830, 1450], [380, 220], 27, "#223", "#335"),
+        39: ([-780, 100], [350, 180], 6, "#232", "#353"),
+        44: ([1930, 890], [560, 90], 21, "#223", "#335"),
+        45: ([-780, 960], [350, 360], 9, "#232", "#353"),
+        47: ([-780, 350], [360, 160], 13, "#232", "#353"),
+        48: ([291.09965407461857, 1448.9001519166202], [420, 250], 24, "#233", "#355"),
+        49: ([-235.7552796705333, 855.0127906997371], [400, 330], 18, "#232", "#353"),
     }
-    for node in workflow["nodes"]:
-        _set_palette(
-            node,
-            SOURCE_COLOR if node["type"] in source_types else PROCESS_COLOR,
-            SOURCE_BGCOLOR if node["type"] in source_types else PROCESS_BGCOLOR,
+    if mode == "context_loop":
+        layout[40] = ([-260, 430], [400, 260], 26, "#223", "#335")
+    elif mode == "audio_reference":
+        layout.update(
+            {
+                34: ([-780, 1810], [360, 180], 46, "#232", "#353"),
+                36: ([-240, 1810], [490, 240], 47, "#233", "#355"),
+                40: ([2600, 1530], [530, 210], 48, "#223", "#335"),
+            }
         )
-
-    resolution = _node_by_id(workflow, 47)
-    resolution["pos"] = [80, 500]
-    profile = _node_by_id(workflow, 30)
-    profile["pos"] = [420, 500]
+    for node_id, (pos, size, order, color, bgcolor) in layout.items():
+        if not any(int(node["id"]) == node_id for node in workflow["nodes"]):
+            continue
+        node = _node_by_id(workflow, node_id)
+        node["pos"] = pos
+        node["size"] = size
+        node["order"] = order
+        _set_palette(node, color, bgcolor)
 
     readme = (
         "このワークフローは保存済みContext Loop Plan JSONからMiniMax H3の"
@@ -1035,18 +1076,14 @@ def _decorate_video_workflow(
         f"方式: {spec['summary']}。"
     )
     readme_node = _markdown_note(
-        31,
-        (-350, 150),
-        (1350, 230),
+        50,
+        (-1150, -90),
+        (730, 140),
         "README",
         readme,
         readme=True,
-        order=30,
+        order=11,
     )
-    workflow["nodes"] = [
-        readme_node if int(node["id"]) == 31 else node
-        for node in workflow["nodes"]
-    ]
 
     plan_note = (
         f"対応する {int(spec['number']) * 2 - 1:02d}_plan_compiler_{mode}.json "
@@ -1070,88 +1107,95 @@ def _decorate_video_workflow(
     }[mode]
     notes = [
         _workflow_label(
-            49,
-            (-350, 54),
-            (1400, 48),
-            f"MV-Director {spec['label']} Video ワークフロー",
-            order=49,
-        ),
-        _markdown_note(
-            50,
-            (-350, 810),
-            (390, 410),
-            "1. Planと生成設定",
-            plan_note,
-            order=50,
-        ),
-        _markdown_note(
             51,
-            (-350, 2060),
-            (390, 410),
-            "2. 音声と参照素材",
-            (
-                audio_mode_note
-                + "\n\n人物は<Picture 1>、背景は<Picture 2>へ別々に指定します。"
-                "前段のSubject/Scene EMDと同じ参照を使ってください。"
-            ),
-            order=51,
+            (-1150, -190),
+            (1149.65625, 48),
+            f"MV-Director {spec['label']} Lip-Sync 動画ワークフロー",
+            order=10,
         ),
         _markdown_note(
             52,
-            (1110, 2250),
-            (340, 300),
-            "3. 部分生成と音声整列",
-            (
-                "Audio Pad PairはPlanの最終frame境界までPCM無音を追加します。"
-                "Scene Debug Splitterは既定で無効です。問題Sceneだけを確認する時は"
-                "enableを有効にし、1ベースのscene_startとscene_lengthを指定します。"
-            ),
-            order=52,
-        ),
-        _markdown_note(
-            53,
-            (2420, 20),
-            (720, 115),
-            "4. H3モデルとSampling",
-            (
-                "H3 diffusion、text encoder、Video/Audio VAE、TurboLoRA、"
-                "Attention Backend及びVideo/Audio Shiftを確認します。"
-                f"既定denoising stepsは{VIDEO_DENOISING_STEPS}です。"
-            ),
-            order=53,
+            (-1150, 100),
+            (350, 180),
+            "1. プランJSONを指定",
+            plan_note,
+            order=12,
         ),
         _markdown_note(
             54,
-            (5330, 20),
-            (760, 115),
-            "5. Reviewと継続",
+            (-1150, 350),
+            (350, 160),
+            "2. 出力解像度の指定",
             (
-                "Review Gateは既定で無効です。有効時は候補を確認してからLoopを"
-                "継続します。checkpointからの復旧時はRECOVERYノードを使用します。"
+                "調整・ドラフト段階では0.4MPを推奨します。本番時も幅と高さは"
+                "32の倍数を維持してください。\n\n"
+                "|メガピクセル|アスペクト比|目安|\n|----|----|----|\n"
+                "|0.4|4:3|VGA|\n|0.9|16:9|HD|\n|2.0|16:9|FHD|"
             ),
-            order=54,
+            order=20,
         ),
         _markdown_note(
             55,
-            (6240, 620),
-            (440, 310),
-            "6. 出力",
+            (-1150, 570),
+            (350, 160),
+            "3. キャラクター画像の指定",
             (
-                "各Sceneはsegmentとcheckpointを保存し、全Scene完了後に"
-                "Assemble Final Videoが連結します。\n\n"
-                "別の映像候補が必要な場合はPlanを変えず、Video段階だけを"
-                "再Queueします。演出又は歌詞対応を変える場合は"
-                "Plan / Compiler段階から再生成します。"
+                "前段で指定した人物素材と同じ画像を指定します。"
+                "<Picture 1>として人物の視覚同一性に使用されます。"
             ),
-            order=55,
+            order=14,
+        ),
+        _markdown_note(
+            56,
+            (-1150, 960),
+            (350, 160),
+            "4. 背景画像の指定",
+            (
+                "前段で指定した背景素材と同じ画像を指定します。"
+                "<Picture 2>として建築、植生、地形及び空間同一性に使用されます。"
+            ),
+            order=15,
+        ),
+        _markdown_note(
+            57,
+            (-1150, 1400),
+            (350, 130),
+            "5. ボーカルステムの指定",
+            (
+                audio_mode_note
+                + "\n\nAudio Pad PairはPlanの最終frame境界までPCM無音を追加します。"
+            ),
+            order=16,
+        ),
+        _markdown_note(
+            58,
+            (-1150, 1590),
+            (350, 130),
+            "6. フルミックスの指定",
+            (
+                "ボーカルと伴奏を含む完成音源を指定します。"
+                "Scene生成後、最終的にこの音源をsoundtrackとして使用します。"
+            ),
+            order=17,
         ),
     ]
+    workflow["nodes"].append(readme_node)
     workflow["nodes"].extend(notes)
     workflow["nodes"].sort(key=lambda item: (int(item.get("order", 0)), int(item["id"])))
-    workflow["last_node_id"] = 55
+    workflow["last_node_id"] = max(int(node["id"]) for node in workflow["nodes"])
+    group_height = 2320 if mode == "audio_reference" else 1712
+    workflow["groups"] = [
+        {"id": 1, "title": "01 • PROJECT & SCENES", "bounding": [-350, 70, 2200, group_height], "color": "#315566", "flags": {}},
+        {"id": 2, "title": "02 • MODELS & INPUTS", "bounding": [1870, 70, 670, 1710], "color": "#393f58", "flags": {}},
+        {"id": 3, "title": "03 • PREPARE SCENE", "bounding": [2560, 70, 610, 1710], "color": "#394c49", "flags": {}},
+        {"id": 4, "title": "04 • PREPARE SCENE", "bounding": [3190, 70, 530, 1710], "color": "#393f58", "flags": {}},
+        {"id": 5, "title": "05 • SAMPLE & DECODE", "bounding": [3740, 70, 460, 1710], "color": "#394c49", "flags": {}},
+        {"id": 6, "title": "06 • SAVE & REVIEW", "bounding": [4220, 70, 540, 1710], "color": "#393f58", "flags": {}},
+        {"id": 7, "title": "07 • REVIEW & CONTINUE", "bounding": [4780, 70, 840, 1700], "color": "#394c49", "flags": {}},
+    ]
     workflow["extra"]["ds"] = {
-        "scale": 0.42,
-        "offset": [260, 95],
+        "scale": 0.32287908799076204,
+        "offset": [-402.2806842890321, 876.0599049625927],
     }
     return workflow
 
@@ -1229,10 +1273,14 @@ def _scene_debug_splitter_node(
 def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
     spec = MODES[mode]
     workflow = json.loads(base_path.read_text(encoding="utf-8"))
-    _remove_nodes(workflow, {27})
+    # The compact workflow uses the modern Plan directly.  The legacy prompt
+    # editor, recovery manifest loader, recovery assembler, and detached text
+    # encoder are intentionally absent from the distributable graph.
+    _remove_nodes(workflow, {6, 9, 25, 27})
     _disconnect_input(workflow, 22, "model")
     workflow["last_node_id"] = max(int(node["id"]) for node in workflow["nodes"])
     workflow["last_link_id"] = max(int(link[0]) for link in workflow["links"])
+    _connect(workflow, 24, 0, 29, "plan", "H3_CHAIN_PLAN")
 
     _node_by_id(workflow, 1)["widgets_values"] = [H3_DIFFUSION_MODEL, "default"]
     _node_by_id(workflow, 2)["widgets_values"] = [
@@ -1333,6 +1381,7 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
         _audio_pad_node(37, spec["alignment"]),
         _audio_tracks_node(38),
         _scene_debug_splitter_node(48),
+        _shared_seed_node(49, (-235.7552796705333, 855.0127906997371)),
         _load_text_node(
             39,
             (76.77573693416907, 2427.2389436196327),
@@ -1398,7 +1447,7 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
             ]
         )
     workflow["nodes"].extend(additions)
-    workflow["last_node_id"] = 48
+    workflow["last_node_id"] = 49
 
     _connect(workflow, 32, 0, 37, "audio_a", "AUDIO")
     _connect(workflow, 33, 0, 37, "audio_b", "AUDIO")
@@ -1438,6 +1487,7 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
     _connect(workflow, 44, 0, 22, "model", "MODEL")
     _connect(workflow, 47, 0, 24, "width", "INT")
     _connect(workflow, 47, 1, 24, "height", "INT")
+    _connect(workflow, 49, 0, 24, "base_seed", "INT")
 
     if mode == "context_loop":
         lip = _node(

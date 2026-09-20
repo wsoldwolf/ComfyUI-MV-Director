@@ -2,6 +2,8 @@
 
 | 文書 | 内容 |
 |---|---|
+| [Planner v56：P0・連動する身体演技](planner-p0-dance-phrase-2026-09-20.md) | Motionファイルでの切替、短縮Action prompt、実8Bの五試行と398件回帰。身体演技の部分回復と残存する反復を区別して記録 |
+| [完成動画：身体演技とCamera同期の評価](anime-emotional-mv-performance-camera-review-2026-09-20.md) | 9月20日動画・実採用Plan・51Shotを照合。手振り偏重、振付の不足、Cameraの位相表現と継続引継ぎの制限を分析し、既存段階で進める最小改修と局所A/Bを計画 |
 | [Planner v54：歌詞行Discoveryと対象保持](planner-v54-lyric-cue-discovery-2026-09-20.md) | 苔・花・狐火・御神木の局所抽出、原文に結び付く生成時制約、実8B比較と残った意味・配置の問題 |
 | [EMD 00014：歌詞対象・演技主体・述語の評価](planner-emd-00014-event-role-review-2026-09-20.md) | 花・狐火・御神木の復帰と苔欠落、風に偏る52Shot、人物演技の消失、顔／ArcとActionの不整合を比較評価 |
 | [Planner v53 必須文・監査の生成時制約](planner-v53-action-audit-constraints-2026-09-20.md) | scene12の再停止、有限監査文法、Actionの必須fragment制約、候補選択の優先度及び実8B試験 |
