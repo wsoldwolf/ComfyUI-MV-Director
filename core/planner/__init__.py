@@ -1,5 +1,8 @@
 """Timeline Planner core."""
 
+from .action_constraints import build_action_grammar, build_action_audit_grammar
+from .cue_constraints import build_grounded_cue_grammar, build_discovery_grammar
+
 from .dialogue import (
     DialogueFilter,
     DialogueFilterResult,
@@ -9,6 +12,7 @@ from .dialogue import (
 )
 from .engine import (
     PLANNER_ALGORITHM_VERSION,
+    build_cue_card_grammar,
     PlannerContent,
     TimelinePlannerBackend,
     TimelinePlannerResult,
@@ -34,6 +38,11 @@ __all__ = [
     "PlannerTemplate",
     "PlannerContent",
     "PLANNER_ALGORITHM_VERSION",
+    "build_cue_card_grammar",
+    "build_action_grammar",
+    "build_action_audit_grammar",
+    "build_grounded_cue_grammar",
+    "build_discovery_grammar",
     "ProtectedDialogue",
     "TimelinePlannerError",
     "TimelinePlannerBackend",

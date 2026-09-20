@@ -2,14 +2,20 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from difflib import SequenceMatcher
 import json
+import logging
 import re
 from typing import Any, Mapping, Protocol
 
 from ..artifacts import DirectionArtifact, EMDTextArtifact, canonical_json, normalize_newlines
-from ..direction.profiles import CAMERA_PLANNER_POLICIES
+from ..direction.profiles import (
+    CAMERA_LYRIC_CUE_MODES,
+    CAMERA_LYRIC_INTERPRETATIONS,
+    CAMERA_PLANNER_POLICIES,
+    CAMERA_PRIORITY_LYRIC_CUES,
+)
 from ..emd import parse_scene_emd_fragment
 from ..h3_contract import (
     ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA,
@@ -28,6 +34,7 @@ from .layout import (
     repair_scene_layout_selection,
 )
 from .renderer import render_completed_emd
+from .text_normalization import strip_generated_line_continuation
 from .template import (
     PlannerTemplate,
     normalize_concept_emd,
@@ -36,8 +43,17 @@ from .template import (
 )
 
 
-PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v37"
-TASKS = ("visual-beats", "song-direction", "shot-layout", "actions", "cameras")
+PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v55"
+_ACTION_AUDIT_REPAIR_ATTEMPTS = 1
+_LOGGER = logging.getLogger("mv_director.nodes")
+TASKS = (
+    "visual-beats",
+    "song-direction",
+    "shot-layout",
+    "actions",
+    "action-audit",
+    "cameras",
+)
 _CAMERA_MOTION_TYPES = (
     "Roll Counterclockwise",
     "Roll Clockwise",
@@ -74,9 +90,15 @@ _SLOW_ACTION_RE = re.compile(
     re.IGNORECASE,
 )
 _GENERIC_HAND_ACTION_RE = re.compile(
-    r"(?:両手|片手|手|腕)(?:を|が)?"
-    r"(?:(?:ゆっくり|そっと|静かに)\s*)?"
-    r"(?:上げ(?:る|た|ている)?|下げ(?:る|た|ている)?|上下(?:させる|する)?)。?$",
+    r"(?:右|左|両|片)?(?:手|腕)(?:を|が)?"
+    r"[^。！？\n]{0,32}?"
+    r"(?:上げ(?:る|た|て|ている)?|下げ(?:る|た|て|ている)?|"
+    r"上下(?:させる|する|している)?)",
+    re.IGNORECASE,
+)
+_FACE_PERFORMANCE_RE = re.compile(
+    r"目|眼|まぶた|瞼|瞬き|閉眼|開眼|伏し目|見開|細め|"
+    r"視線|眼差し|眉|口|唇|表情|顔",
     re.IGNORECASE,
 )
 _RUNNING_ACTION_RE = re.compile(
@@ -84,7 +106,29 @@ _RUNNING_ACTION_RE = re.compile(
     r"\brun(?:ning|s)?\b|\bsprint(?:ing|s)?\b",
     re.IGNORECASE,
 )
-
+_INTERNAL_ACTION_LABEL_RE = re.compile(
+    r"\b(?:ACTION|BEAT|CAMERA|AUDIT)\s+[0-9]+\b",
+    re.IGNORECASE,
+)
+_ACTION_PROTOCOL_PREFIX_RE = re.compile(
+    r"^\s*(?:(?:ACTION|BEAT|CAMERA|AUDIT)(?:\s+[0-9]+)+|"
+    r"[0-9]+\s+|(?:TAB|タブ|<TAB>|\\t)[\s　]+)",
+    re.IGNORECASE,
+)
+_ACTION_AUDIT_REASONS = frozenset(
+    {
+        "SEMANTIC_REPETITION",
+        "PROFILE_CONFLICT",
+        "INCIDENTAL_FIXTURE",
+        "UNREQUESTED_LOWER_BODY",
+        "UNREQUESTED_CONTACT",
+        "REFERENCE_POSE",
+        "MISSING_GROUNDED_CUE",
+        "FACE_PERFORMANCE_MISSING",
+        "BODY_TEMPLATE_REPETITION",
+        "INTERNAL_PROTOCOL_LABEL",
+    }
+)
 
 class TimelinePlannerBackend(Protocol):
     def complete_planner(
@@ -213,9 +257,746 @@ class _Entity:
     value: dict[str, object]
 
 
+_CUE_CARD_FIELDS = (
+    "感情",
+    "根拠",
+    "対象",
+    "接触",
+    "現象",
+    "配置",
+    "可視展開",
+    "身体主導",
+    "終端",
+)
+_CUE_NONE_VALUES = frozenset({"", "なし", "無し", "none", "NONE"})
+
+
+def build_cue_card_grammar(slots: list[int]) -> str:
+    """Constrain the existing transport/field schema, never creative text."""
+    if not slots or any(type(slot) is not int or slot < 1 for slot in slots):
+        raise ValueError("Cue grammar requires positive integer slots")
+    if len(set(slots)) != len(slots):
+        raise ValueError("Cue grammar slots must be unique")
+    quote = lambda value: json.dumps(value, ensure_ascii=False)
+    rows: list[str] = []
+    for slot in slots:
+        fields = [quote(f"BEAT\t{slot}\t")]
+        for index, name in enumerate(_CUE_CARD_FIELDS):
+            fields.append(quote(("" if index == 0 else "｜") + name + "="))
+            if name == "接触":
+                fields.append('("禁止" | "許可")')
+            elif name == "現象":
+                fields.append('("なし" | "外部自律" | "身体操作")')
+            else:
+                fields.append("cell")
+        rows.append(" ".join(fields))
+    return (
+        "root ::= " + ' "\\n" '.join(rows) + ' "\\n"?\n'
+        + r"cell ::= [^\x00-\x1f｜]+" + "\n"
+    )
+
+
+_CAMERA_PLAN_FIELDS = (
+    "MOTION",
+    "START_SCALE",
+    "END_SCALE",
+    "START_VIEW",
+    "END_VIEW",
+    "PATH",
+    "COVERAGE",
+)
+_CAMERA_PLAN_SCALES = frozenset(
+    {
+        "wide",
+        "full_body",
+        "medium_wide",
+        "medium",
+        "upper_body",
+        "head_and_shoulders",
+        "face_closeup",
+    }
+)
+_CAMERA_PLAN_VIEWS = frozenset(
+    {
+        "front",
+        "front_three_quarter",
+        "side",
+        "rear_three_quarter",
+        "over_shoulder",
+        "high_front",
+        "low_front_three_quarter",
+    }
+)
+_CAMERA_PLAN_PATHS = frozenset(
+    {
+        "stationary",
+        "zoom_in_35_55",
+        "zoom_out",
+        "push_in",
+        "pull_out",
+        "pan_left",
+        "pan_right",
+        "truck_left",
+        "truck_right",
+        "tilt_up",
+        "tilt_down",
+        "pedestal_up",
+        "pedestal_down",
+        "arc_left_60_120_70_90",
+        "arc_right_60_120_70_90",
+        "tracking_forward",
+        "tracking_lateral",
+        "shake",
+        "roll_clockwise",
+        "roll_counterclockwise",
+    }
+)
+_CAMERA_PLAN_COVERAGE = frozenset(
+    {
+        "environment_relation",
+        "whole_body_emotion",
+        "upper_body_hands",
+        "face_eyes_mouth",
+        "expressive_result",
+    }
+)
+
+
+@dataclass(frozen=True, slots=True)
+class _CueCard:
+    emotion: str = ""
+    evidence: str = ""
+    target: str = ""
+    contact: str = "禁止"
+    phenomenon: str = "なし"
+    spatial_anchor: str = "なし"
+    visible_development: str = "なし"
+    body_driver: str = ""
+    final_state: str = ""
+    valid: bool = False
+    violations: tuple[str, ...] = ()
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "valid": self.valid,
+            "emotion": self.emotion,
+            "evidence": self.evidence,
+            "target": self.target,
+            "contact": self.contact,
+            "phenomenon": self.phenomenon,
+            "spatial_anchor": self.spatial_anchor,
+            "visible_development": self.visible_development,
+            "body_driver": self.body_driver,
+            "final_state": self.final_state,
+            "violations": list(self.violations),
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class _CameraPlan:
+    motion: str
+    start_scale: str
+    end_scale: str
+    start_view: str
+    end_view: str
+    path: str
+    coverage: str
+
+
+def _parse_camera_plan(text: str) -> tuple[_CameraPlan | None, tuple[str, ...]]:
+    """Parse the finite Camera choice protocol without inferring missing fields."""
+
+    parts = [part.strip() for part in text.split("｜")]
+    parsed: dict[str, str] = {}
+    violations: list[str] = []
+    if len(parts) != len(_CAMERA_PLAN_FIELDS):
+        violations.append("camera_plan_field_count")
+    for index, part in enumerate(parts):
+        if "=" not in part:
+            violations.append("camera_plan_field_syntax")
+            continue
+        name, value = (item.strip() for item in part.split("=", 1))
+        if index >= len(_CAMERA_PLAN_FIELDS) or name != _CAMERA_PLAN_FIELDS[index]:
+            violations.append("camera_plan_field_order")
+        if name in parsed:
+            violations.append("camera_plan_duplicate_field")
+        parsed[name] = value
+    if set(parsed) != set(_CAMERA_PLAN_FIELDS):
+        violations.append("camera_plan_field_set")
+
+    motion = parsed.get("MOTION", "")
+    base_motion = _camera_motion_type(motion)
+    if not base_motion or len(_camera_motion_occurrences(motion)) != 1:
+        violations.append("camera_plan_motion")
+    elif not re.fullmatch(
+        rf"{re.escape(base_motion)}(?: with (?:small|large) amplitude)?"
+        r"(?: at (?:slow|fast) speed)?",
+        motion,
+    ):
+        violations.append("camera_plan_motion_modifier")
+    if parsed.get("START_SCALE") not in _CAMERA_PLAN_SCALES:
+        violations.append("camera_plan_start_scale")
+    if parsed.get("END_SCALE") not in _CAMERA_PLAN_SCALES:
+        violations.append("camera_plan_end_scale")
+    if parsed.get("START_VIEW") not in _CAMERA_PLAN_VIEWS:
+        violations.append("camera_plan_start_view")
+    if parsed.get("END_VIEW") not in _CAMERA_PLAN_VIEWS:
+        violations.append("camera_plan_end_view")
+    if parsed.get("PATH") not in _CAMERA_PLAN_PATHS:
+        violations.append("camera_plan_path")
+    if parsed.get("COVERAGE") not in _CAMERA_PLAN_COVERAGE:
+        violations.append("camera_plan_coverage")
+    unique = tuple(dict.fromkeys(violations))
+    if unique:
+        return None, unique
+    return (
+        _CameraPlan(
+            motion=motion,
+            start_scale=parsed["START_SCALE"],
+            end_scale=parsed["END_SCALE"],
+            start_view=parsed["START_VIEW"],
+            end_view=parsed["END_VIEW"],
+            path=parsed["PATH"],
+            coverage=parsed["COVERAGE"],
+        ),
+        (),
+    )
+
+
+_CAMERA_PATH_MOTIONS = {
+    "stationary": frozenset({"Static Shot"}),
+    "zoom_in_35_55": frozenset({"Zoom In"}),
+    "zoom_out": frozenset({"Zoom Out"}),
+    "push_in": frozenset({"Push In"}),
+    "pull_out": frozenset({"Pull Out"}),
+    "pan_left": frozenset({"Pan Left"}),
+    "pan_right": frozenset({"Pan Right"}),
+    "truck_left": frozenset({"Truck Left"}),
+    "truck_right": frozenset({"Truck Right"}),
+    "tilt_up": frozenset({"Tilt Up"}),
+    "tilt_down": frozenset({"Tilt Down"}),
+    "pedestal_up": frozenset({"Pedestal Up"}),
+    "pedestal_down": frozenset({"Pedestal Down"}),
+    "arc_left_60_120_70_90": frozenset({"Arc Shot"}),
+    "arc_right_60_120_70_90": frozenset({"Arc Shot"}),
+    "tracking_forward": frozenset({"Tracking Shot"}),
+    "tracking_lateral": frozenset({"Tracking Shot"}),
+    "shake": frozenset({"Shake Slightly", "Shake Strongly"}),
+    "roll_clockwise": frozenset({"Roll Clockwise"}),
+    "roll_counterclockwise": frozenset({"Roll Counterclockwise"}),
+}
+
+
+def _camera_plan_contract_violations(
+    entity: _Entity,
+    plan: _CameraPlan,
+) -> tuple[str, ...]:
+    violations: list[str] = []
+    motion = _camera_motion_type(plan.motion)
+    if motion not in _CAMERA_PATH_MOTIONS.get(plan.path, frozenset()):
+        violations.append("camera_plan_motion_path_mismatch")
+    if motion == "Arc Shot":
+        if int(entity.value.get("shot_duration_ms", 0)) < 2500:
+            violations.append("camera_plan_short_arc")
+        if entity.value.get("arc_permission") == "forbidden":
+            violations.append("unassigned_arc")
+        if not _LARGE_FAST_ARC_RE.search(plan.motion):
+            violations.append("required_long_arc_energy")
+    if entity.value.get("arc_permission") == "required" and motion != "Arc Shot":
+        violations.append("required_long_arc_emphasis")
+    if entity.value.get("face_zoom_emphasis"):
+        if motion != "Zoom In" or plan.path != "zoom_in_35_55":
+            violations.append("required_face_zoom_emphasis")
+        if plan.end_scale != "face_closeup" or plan.coverage != "face_eyes_mouth":
+            violations.append("required_face_visibility")
+    if entity.value.get("face_arc_transition"):
+        if motion != "Arc Shot":
+            violations.append("required_face_arc_transition")
+        relation = str(entity.value.get("face_arc_transition"))
+        if relation == "arc_into_next_face_cut" and plan.end_scale not in {
+            "head_and_shoulders",
+            "face_closeup",
+        }:
+            violations.append("required_face_handoff_scale")
+        if relation == "arc_out_of_previous_face_cut" and plan.start_scale not in {
+            "head_and_shoulders",
+            "face_closeup",
+        }:
+            violations.append("required_face_handoff_scale")
+    return tuple(dict.fromkeys(violations))
+
+
+_CAMERA_SCALE_TEXT = {
+    "wide": "a wide shot",
+    "full_body": "a full-body shot",
+    "medium_wide": "a medium-wide shot",
+    "medium": "a medium shot",
+    "upper_body": "an upper-body shot",
+    "head_and_shoulders": "a head-and-shoulders shot",
+    "face_closeup": "a readable face close-up",
+}
+_CAMERA_VIEW_TEXT = {
+    "front": "a frontal viewpoint",
+    "front_three_quarter": "a front three-quarter viewpoint",
+    "side": "a side viewpoint",
+    "rear_three_quarter": "a rear three-quarter viewpoint",
+    "over_shoulder": "an over-shoulder viewpoint",
+    "high_front": "a high frontal viewpoint",
+    "low_front_three_quarter": "a low front three-quarter viewpoint",
+}
+_CAMERA_PATH_TEXT = {
+    "stationary": "Keep camera position, orientation, and focal length fixed",
+    "zoom_in_35_55": "Complete the focal-length approach in 35-to-55 percent of the shot",
+    "zoom_out": "Widen the focal length continuously through the shot",
+    "push_in": "Move the camera physically forward on a direct path",
+    "pull_out": "Move the camera physically backward on a direct path",
+    "pan_left": "Rotate the lens left from a fixed camera position",
+    "pan_right": "Rotate the lens right from a fixed camera position",
+    "truck_left": "Translate the entire camera laterally to the left",
+    "truck_right": "Translate the entire camera laterally to the right",
+    "tilt_up": "Rotate the lens upward from a fixed camera position",
+    "tilt_down": "Rotate the lens downward from a fixed camera position",
+    "pedestal_up": "Move the entire camera vertically upward",
+    "pedestal_down": "Move the entire camera vertically downward",
+    "arc_left_60_120_70_90": "Travel on a 60-to-120-degree left arc for 70-to-90 percent of the shot with strong parallax",
+    "arc_right_60_120_70_90": "Travel on a 60-to-120-degree right arc for 70-to-90 percent of the shot with strong parallax",
+    "tracking_forward": "Follow the existing subject displacement forward through depth",
+    "tracking_lateral": "Follow the existing subject displacement laterally",
+    "shake": "Apply the named camera shake without changing the framing purpose",
+    "roll_clockwise": "Roll clockwise around the lens axis",
+    "roll_counterclockwise": "Roll counterclockwise around the lens axis",
+}
+_CAMERA_COVERAGE_TEXT = {
+    "environment_relation": "Keep the subject-to-environment spatial relationship readable",
+    "whole_body_emotion": "Keep the complete whole-body emotional silhouette readable without isolating the feet",
+    "upper_body_hands": "Keep the face, shoulders, arms, and hands readable together",
+    "face_eyes_mouth": "Keep both eyes, both eyebrows, the nose, the complete singing mouth, and the facial contour visible",
+    "expressive_result": "Keep the changed expression and final silhouette readable",
+}
+
+
+def _render_camera_plan(plan: _CameraPlan) -> str:
+    """Serialize finite LLM selections; never add a target or character action."""
+
+    return (
+        f"{plan.motion}. Start with {_CAMERA_SCALE_TEXT[plan.start_scale]} from "
+        f"{_CAMERA_VIEW_TEXT[plan.start_view]}; end with "
+        f"{_CAMERA_SCALE_TEXT[plan.end_scale]} from "
+        f"{_CAMERA_VIEW_TEXT[plan.end_view]}. {_CAMERA_PATH_TEXT[plan.path]}. "
+        f"{_CAMERA_COVERAGE_TEXT[plan.coverage]}."
+    )
+
+
+def _fallback_choice_index(entity: _Entity, ordinal: int, size: int) -> int:
+    shot_number = int(entity.key[-1]) if entity.key else 0
+    return (entity.scene_number * 3 + shot_number * 5 + ordinal * 2) % size
+
+
+def _fallback_camera_plan(entity: _Entity, ordinal: int) -> _CameraPlan:
+    """Choose a varied finite structural fallback for an invalid 8B response."""
+
+    relation = str(entity.value.get("face_arc_transition", ""))
+    if relation == "arc_into_next_face_cut":
+        options = (
+            _CameraPlan("Arc Shot with large amplitude at fast speed", "full_body", "head_and_shoulders", "low_front_three_quarter", "front_three_quarter", "arc_left_60_120_70_90", "face_eyes_mouth"),
+            _CameraPlan("Arc Shot with large amplitude at fast speed", "medium_wide", "face_closeup", "rear_three_quarter", "front", "arc_right_60_120_70_90", "face_eyes_mouth"),
+            _CameraPlan("Arc Shot with large amplitude at fast speed", "full_body", "head_and_shoulders", "side", "front_three_quarter", "arc_right_60_120_70_90", "face_eyes_mouth"),
+        )
+        return options[_fallback_choice_index(entity, ordinal, len(options))]
+    if relation == "arc_out_of_previous_face_cut":
+        options = (
+            _CameraPlan("Arc Shot with large amplitude at fast speed", "head_and_shoulders", "full_body", "front_three_quarter", "side", "arc_right_60_120_70_90", "whole_body_emotion"),
+            _CameraPlan("Arc Shot with large amplitude at fast speed", "face_closeup", "medium_wide", "front", "rear_three_quarter", "arc_left_60_120_70_90", "whole_body_emotion"),
+            _CameraPlan("Arc Shot with large amplitude at fast speed", "head_and_shoulders", "wide", "side", "front_three_quarter", "arc_left_60_120_70_90", "environment_relation"),
+        )
+        return options[_fallback_choice_index(entity, ordinal, len(options))]
+    if entity.value.get("arc_permission") == "required":
+        options = (
+            _CameraPlan("Arc Shot with large amplitude at fast speed", "full_body", "medium", "low_front_three_quarter", "side", "arc_left_60_120_70_90", "whole_body_emotion"),
+            _CameraPlan("Arc Shot with large amplitude at fast speed", "full_body", "upper_body", "rear_three_quarter", "front_three_quarter", "arc_right_60_120_70_90", "expressive_result"),
+            _CameraPlan("Arc Shot with large amplitude at fast speed", "medium_wide", "full_body", "side", "rear_three_quarter", "arc_left_60_120_70_90", "whole_body_emotion"),
+            _CameraPlan("Arc Shot with large amplitude at fast speed", "wide", "medium", "rear_three_quarter", "front_three_quarter", "arc_right_60_120_70_90", "environment_relation"),
+        )
+        return options[_fallback_choice_index(entity, ordinal, len(options))]
+    if entity.value.get("face_zoom_emphasis"):
+        options = (
+            _CameraPlan("Zoom In with large amplitude at fast speed", "head_and_shoulders", "face_closeup", "front_three_quarter", "front", "zoom_in_35_55", "face_eyes_mouth"),
+            _CameraPlan("Zoom In with large amplitude at fast speed", "head_and_shoulders", "face_closeup", "side", "front_three_quarter", "zoom_in_35_55", "face_eyes_mouth"),
+            _CameraPlan("Zoom In with large amplitude at fast speed", "upper_body", "face_closeup", "high_front", "front_three_quarter", "zoom_in_35_55", "face_eyes_mouth"),
+        )
+        return options[_fallback_choice_index(entity, ordinal, len(options))]
+    options = (
+        _CameraPlan("Push In at fast speed", "wide", "medium", "front_three_quarter", "front_three_quarter", "push_in", "environment_relation"),
+        _CameraPlan("Truck Right at fast speed", "upper_body", "upper_body", "front_three_quarter", "side", "truck_right", "upper_body_hands"),
+        _CameraPlan("Pull Out at fast speed", "medium", "wide", "front_three_quarter", "rear_three_quarter", "pull_out", "expressive_result"),
+        _CameraPlan("Pedestal Up at fast speed", "medium_wide", "medium", "low_front_three_quarter", "front_three_quarter", "pedestal_up", "whole_body_emotion"),
+        _CameraPlan("Static Shot", "upper_body", "upper_body", "front_three_quarter", "front_three_quarter", "stationary", "upper_body_hands"),
+        _CameraPlan("Zoom Out at fast speed", "head_and_shoulders", "medium_wide", "front", "over_shoulder", "zoom_out", "environment_relation"),
+        _CameraPlan("Pan Right at fast speed", "medium_wide", "medium_wide", "over_shoulder", "rear_three_quarter", "pan_right", "environment_relation"),
+        _CameraPlan("Truck Left at fast speed", "medium", "medium", "side", "front_three_quarter", "truck_left", "upper_body_hands"),
+    )
+    return options[_fallback_choice_index(entity, ordinal, len(options))]
+
+
+def _cue_source_texts(entity: _Entity) -> tuple[str, ...]:
+    lyrics = entity.value.get("lyrics", [])
+    lyric_texts = [
+        str(item.get("text", "")).strip()
+        for item in lyrics
+        if isinstance(item, Mapping) and str(item.get("text", "")).strip()
+    ]
+    author_body = [
+        str(item).strip()
+        for item in entity.value.get("author_body", [])
+        if str(item).strip()
+    ]
+    return tuple(lyric_texts + author_body)
+
+
+def _lyric_reading_contexts(
+    scene_numbers: list[int],
+    lyrics_by_scene: Mapping[int, list[object]],
+) -> dict[int, dict[str, list[str]]]:
+    """Bounded adjacent text for reading, never a source of cue authority.
+
+    Do not cross an empty/instrumental Scene. Limit each side to two lines
+    and 256 characters in total; no extra inference or inferred lyrics.
+    """
+
+    def adjacent(number: int, *, before: bool) -> list[str]:
+        texts = [
+            str(item.get("text", "")).strip()
+            for item in lyrics_by_scene.get(number, [])
+            if isinstance(item, Mapping) and str(item.get("text", "")).strip()
+        ]
+        selected = texts[-2:] if before else texts[:2]
+        if before:
+            selected.reverse()
+        result: list[str] = []
+        remaining = 256
+        for text in selected:
+            if not remaining:
+                break
+            fragment = text[-remaining:] if before else text[:remaining]
+            result.append(fragment)
+            remaining -= len(fragment)
+        return list(reversed(result)) if before else result
+
+    return {
+        number: {
+            "before": adjacent(scene_numbers[index - 1], before=True) if index else [],
+            "after": adjacent(scene_numbers[index + 1], before=False)
+            if index + 1 < len(scene_numbers) else [],
+        }
+        for index, number in enumerate(scene_numbers)
+    }
+
+
+def _priority_lyric_cues_from_sources(
+    lyrics: list[object],
+    author_body: list[object],
+    configured_cues: tuple[tuple[str, str], ...],
+) -> tuple[dict[str, str], ...]:
+    """Select configured profile cues only when the current Scene names them."""
+
+    source_texts = [
+        str(item.get("text", "")).strip()
+        for item in lyrics
+        if isinstance(item, Mapping) and str(item.get("text", "")).strip()
+    ]
+    source_texts.extend(
+        str(item).strip() for item in author_body if str(item).strip()
+    )
+    configured = dict(configured_cues)
+    selected: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for source in source_texts:
+        matches = sorted(
+            (
+                (source.find(token), token, configured[token])
+                for token in configured
+                if token in source and token not in seen
+            ),
+            key=lambda item: (item[0], item[1]),
+        )
+        for _position, token, kind in matches:
+            seen.add(token)
+            selected.append(
+                {"token": token, "kind": kind, "evidence": source}
+            )
+    return tuple(selected)
+
+
+def _priority_cue_phase(shot_index: int, shot_count: int) -> str:
+    """Assign a finite Scene-development phase without composing Action prose."""
+
+    if shot_count <= 1:
+        return "establish_relation_reaction_release"
+    if shot_count == 2:
+        return (
+            "establish_and_relation"
+            if shot_index == 1
+            else "reaction_and_release"
+        )
+    if shot_count == 3:
+        return (
+            "establish_and_relation"
+            if shot_index == 1
+            else "event_and_reaction"
+            if shot_index == 2
+            else "release"
+        )
+    return (
+        "establish"
+        if shot_index == 1
+        else "relation"
+        if shot_index == 2
+        else "reaction"
+        if shot_index == 3
+        else "release"
+    )
+
+
+def _with_grounding_transfer_requirements(
+    entities: list[_Entity],
+    *,
+    automatic: bool = False,
+) -> list[_Entity]:
+    """Assign exact Cue Card fragments to eligible Action slots.
+
+    The fragments remain LLM-authored Visual Beat text. Python selects which
+    slot must preserve each fragment, but never composes or edits Action prose.
+    """
+
+    by_scene: dict[int, list[_Entity]] = {}
+    for entity in entities:
+        by_scene.setdefault(entity.scene_number, []).append(entity)
+
+    rewritten: dict[tuple[int, ...], _Entity] = {}
+    for scene_entities in by_scene.values():
+        ordered = sorted(scene_entities, key=lambda entity: entity.key)
+        if (
+            not automatic
+            and not ordered[0].value.get("priority_lyric_cues")
+        ):
+            continue
+        grounding = ordered[0].value.get("visual_beat_grounding")
+        if not isinstance(grounding, Mapping) or not grounding.get("valid"):
+            continue
+        target = str(grounding.get("target", "")).strip()
+        spatial_anchor = str(grounding.get("spatial_anchor", "")).strip()
+        visible_development = str(
+            grounding.get("visible_development", "")
+        ).strip()
+        if target in _CUE_NONE_VALUES:
+            continue
+        if (
+            spatial_anchor in _CUE_NONE_VALUES
+            or visible_development in _CUE_NONE_VALUES
+        ):
+            continue
+
+        # Emotional face Actions are LLM-generated too. Do not give their
+        # close-up slots the spatial/event obligations of the Scene coverage.
+        coverage = [
+            entity for entity in ordered
+            if entity.value.get("performance_role") != "face_and_upper_body_accent"
+        ]
+        if coverage and len(coverage) != len(ordered):
+            phases = {
+                entity.key: _priority_cue_phase(index, len(coverage))
+                for index, entity in enumerate(coverage, 1)
+            }
+            for entity in ordered:
+                phase = phases.get(entity.key, "")
+                rewritten[entity.key] = _Entity(
+                    entity.scene_number,
+                    entity.key,
+                    {
+                        **entity.value,
+                        "grounded_cue_phase": phase,
+                        "priority_cue_phase": (
+                            phase if entity.value.get("priority_lyric_cues") else ""
+                        ),
+                    },
+                )
+        # A face-only layout has no alternative coverage. Preserve the hard
+        # grounding contract rather than silently discarding the selected event.
+        eligible = coverage or ordered
+        anchor_entity = eligible[0]
+        development_entity = eligible[0] if len(eligible) == 1 else eligible[1]
+        for entity, field, value in (
+            (anchor_entity, "required_spatial_anchor", spatial_anchor),
+            (
+                development_entity,
+                "required_visible_development",
+                visible_development,
+            ),
+        ):
+            current = rewritten.get(entity.key, entity)
+            rewritten[entity.key] = _Entity(
+                current.scene_number,
+                current.key,
+                {**current.value, field: value},
+            )
+
+    return [rewritten.get(entity.key, entity) for entity in entities]
+
+
+def _strip_cue_quote(value: str) -> str:
+    return value.strip().strip(" \t\"'「」『』【】[]")
+
+
+def _parse_cue_card(entity: _Entity, text: str) -> _CueCard:
+    """Validate lyric grounding without rewriting the LLM's Cue Card text."""
+
+    parts = [part.strip() for part in text.split("｜")]
+    # Explicit target-first wire order; do not change any field value.
+    target_first_order = ("対象", "根拠", "感情", *_CUE_CARD_FIELDS[3:])
+    if tuple(part.split("=", 1)[0] for part in parts) == target_first_order:
+        parts = [parts[2], parts[1], parts[0], *parts[3:]]
+    parsed: dict[str, str] = {}
+    violations: list[str] = []
+    if len(parts) != len(_CUE_CARD_FIELDS):
+        violations.append("field_count")
+    for index, part in enumerate(parts):
+        if "=" not in part:
+            violations.append("field_syntax")
+            continue
+        name, value = (item.strip() for item in part.split("=", 1))
+        if index >= len(_CUE_CARD_FIELDS) or name != _CUE_CARD_FIELDS[index]:
+            violations.append("field_order")
+        if name in parsed:
+            violations.append("duplicate_field")
+        parsed[name] = value
+    if set(parsed) != set(_CUE_CARD_FIELDS):
+        violations.append("field_set")
+
+    evidence = _strip_cue_quote(parsed.get("根拠", ""))
+    target = _strip_cue_quote(parsed.get("対象", ""))
+    contact = parsed.get("接触", "").strip()
+    phenomenon = parsed.get("現象", "").strip()
+    spatial_anchor = _strip_cue_quote(parsed.get("配置", ""))
+    visible_development = _strip_cue_quote(parsed.get("可視展開", ""))
+    spatial_anchor_is_none = spatial_anchor in _CUE_NONE_VALUES
+    visible_development_is_none = visible_development in _CUE_NONE_VALUES
+    sources = _cue_source_texts(entity)
+    evidence_is_none = evidence in _CUE_NONE_VALUES
+    target_is_none = target in _CUE_NONE_VALUES
+    if evidence_is_none:
+        if sources and (not target_is_none or contact != "禁止" or phenomenon != "なし"):
+            violations.append("missing_evidence")
+    elif not any(evidence in source for source in sources):
+        violations.append("evidence_not_in_scene_source")
+    if contact not in {"禁止", "許可"}:
+        violations.append("contact_enum")
+    if phenomenon not in {"なし", "外部自律", "身体操作"}:
+        violations.append("phenomenon_enum")
+    if target_is_none:
+        if contact == "許可":
+            violations.append("contact_without_target")
+        if phenomenon != "なし":
+            violations.append("phenomenon_without_target")
+        if not spatial_anchor_is_none:
+            violations.append("spatial_anchor_without_target")
+        if not visible_development_is_none:
+            violations.append("visible_development_without_target")
+    elif evidence_is_none or target not in evidence:
+        violations.append("target_not_in_evidence")
+    else:
+        if spatial_anchor_is_none:
+            violations.append("missing_spatial_anchor")
+        if visible_development_is_none:
+            violations.append("missing_visible_development")
+
+    unique_violations = tuple(dict.fromkeys(violations))
+    return _CueCard(
+        emotion=parsed.get("感情", "").strip(),
+        evidence=evidence,
+        target="なし" if target_is_none else target,
+        contact=contact or "禁止",
+        phenomenon=phenomenon or "なし",
+        spatial_anchor="なし" if spatial_anchor_is_none else spatial_anchor,
+        visible_development="なし" if visible_development_is_none else visible_development,
+        body_driver=parsed.get("身体主導", "").strip(),
+        final_state=parsed.get("終端", "").strip(),
+        valid=not unique_violations,
+        violations=unique_violations,
+    )
+
+
+def _priority_cue_card_violations(
+    card: _CueCard,
+    cue: Mapping[str, str],
+) -> tuple[str, ...]:
+    """Validate one profile-priority cue without interpreting free prose."""
+
+    violations: list[str] = []
+    token = str(cue.get("token", "")).strip()
+    kind = str(cue.get("kind", "")).strip()
+    if not card.valid:
+        violations.append("invalid_cue_card")
+        violations.extend(card.violations)
+    if not token or card.target != token:
+        violations.append("priority_target_not_selected")
+    if kind == "external_effect":
+        if card.phenomenon != "外部自律":
+            violations.append("priority_effect_not_autonomous")
+        if card.contact != "禁止":
+            violations.append("priority_effect_contact_not_forbidden")
+    return tuple(dict.fromkeys(violations))
+
+
 def _chunks(values: list[Any], size: int):
     for index in range(0, len(values), size):
         yield values[index : index + size]
+
+
+def _scene_batches_with_isolated_priority_cues(
+    scenes: list[Any],
+    scene_priority_cues: Mapping[int, tuple[dict[str, str], ...]],
+    batch_size: int,
+):
+    """Keep cue-bearing Scenes out of multi-Scene LLM requests.
+
+    Small models can copy a token from a neighbouring slot even when every
+    entity carries a correct local scope. Isolation is therefore an input
+    routing rule, not a rewrite of accepted LLM text.
+    """
+
+    pending: list[Any] = []
+    for scene in scenes:
+        if scene_priority_cues.get(scene.scene_number):
+            if pending:
+                yield pending
+                pending = []
+            yield [scene]
+            continue
+        pending.append(scene)
+        if len(pending) == batch_size:
+            yield pending
+            pending = []
+    if pending:
+        yield pending
+
+
+def _unexpected_priority_cues(
+    text: str,
+    allowed_cues: tuple[dict[str, str], ...] | list[dict[str, str]],
+    configured_cues: tuple[tuple[str, str], ...],
+) -> tuple[str, ...]:
+    """Return configured Cue tokens that escaped their current Scene scope."""
+
+    allowed_tokens = {
+        str(cue.get("token", "")).strip()
+        for cue in allowed_cues
+        if isinstance(cue, Mapping)
+    }
+    return tuple(
+        token
+        for token, _kind in configured_cues
+        if token and token in text and token not in allowed_tokens
+    )
 
 
 def _normalize_small_model_response(response: str, record_type: str) -> str:
@@ -256,6 +1037,40 @@ def _normalize_small_model_response(response: str, record_type: str) -> str:
         normalized,
     )
     return normalized
+
+
+def _strip_redundant_record_envelope(
+    text: str,
+    record_type: str,
+    slot: int,
+) -> tuple[str, bool]:
+    """Remove only a duplicated transport wrapper from parsed TEXT.
+
+    The outer TSV record already proves the record type and slot. Small models
+    sometimes repeat that wrapper inside the third field. Removing this
+    transport-only prefix preserves the semantic text AS IS.
+    """
+
+    value = text.strip()
+    changed = False
+    wrappers = (
+        re.compile(
+            rf"^{re.escape(record_type)}(?:\s+[0-9]+){{1,3}}(?:\s+|[:：]\s*)",
+            flags=re.IGNORECASE,
+        ),
+        re.compile(rf"^{slot}(?:\s+|[:：.)-]\s*)"),
+        re.compile(r"^(?:TAB|タブ|<TAB>|\\t)(?:\s+|[:：]\s*)", re.IGNORECASE),
+    )
+    for _ in range(3):
+        for wrapper in wrappers:
+            match = wrapper.match(value)
+            if match and match.end() < len(value):
+                value = value[match.end() :].lstrip()
+                changed = True
+                break
+        else:
+            break
+    return value, changed
 
 
 def _recover_unframed_records(
@@ -423,6 +1238,14 @@ def _request_entities(
     tuple[tuple[str, int, int], ...],
     int,
 ]:
+    # Generation must not imitate earlier prose. Audit and repetition checks
+    # retain the original history; explicit Direction and retry reasons remain.
+    if task in {"visual-beats", "actions"} and shared.get("planner_policy_contract", {}).get("lyric_interpretation") == "bounded":
+        shared = {key: value for key, value in shared.items()
+                  if key not in {"recent_visual_beat_history", "recent_action_history", "forbidden_recent_outputs"}}
+        entities = [replace(entity, value={key: value for key, value in entity.value.items()
+                    if key not in {"previous_batch_beat", "previous_batch_action", "must_differ_from"}})
+                    for entity in entities]
     slot_entities = {index: entity for index, entity in enumerate(entities, 1)}
     slots = [dict(entity.value, slot=slot) for slot, entity in slot_entities.items()]
     payload = canonical_json(
@@ -539,6 +1362,38 @@ def _request_entities(
             records.update(recovered)
             recovered_count += len(recovered)
         retried_scenes.append(entity.scene_number)
+
+    normalized_slots: list[int] = []
+    for slot, text in tuple(records.items()):
+        normalized_text, changed = _strip_redundant_record_envelope(
+            text,
+            record_type,
+            slot,
+        )
+        if changed and normalized_text:
+            records[slot] = normalized_text
+            normalized_slots.append(slot)
+    if normalized_slots:
+        recovered_count += len(normalized_slots)
+        _LOGGER.info(
+            "[MV Director - Timeline Planner] normalized duplicated transport "
+            "wrapper; task=%s; slots=%s",
+            task,
+            ",".join(str(slot) for slot in normalized_slots),
+        )
+
+    if record_type in {"ACTION", "CAMERA"}:
+        cleaned_slots = []
+        for slot, text in tuple(records.items()):
+            cleaned = strip_generated_line_continuation(text)
+            if cleaned != text:
+                records[slot] = cleaned
+                cleaned_slots.append(slot)
+        if cleaned_slots:
+            _LOGGER.info(
+                "[MV Director - Timeline Planner] removed standalone trailing backslash; task=%s; slots=%s",
+                task, ",".join(str(slot) for slot in cleaned_slots),
+            )
 
     unresolved = tuple(
         (record_type, slot_entities[slot].scene_number, slot)
@@ -798,8 +1653,23 @@ def _request_distinct_entities(
 
 def _camera_motion_type(text: str) -> str:
     return next(
-        (motion for motion in _CAMERA_MOTION_TYPES if text.startswith(motion)),
+        (
+            motion
+            for motion in _CAMERA_MOTION_TYPES
+            if re.match(rf"^{re.escape(motion)}(?:\s|$)", text)
+        ),
         "",
+    )
+
+
+def _camera_motion_occurrences(text: str) -> tuple[str, ...]:
+    return tuple(
+        motion
+        for motion in _CAMERA_MOTION_TYPES
+        if re.search(
+            rf"(?<![A-Za-z]){re.escape(motion)}(?![A-Za-z])",
+            text,
+        )
     )
 
 
@@ -808,10 +1678,12 @@ def _camera_budget_violations(
     values: Mapping[tuple[int, ...], str],
     *,
     arc_maximum: int,
+    recent_history: tuple[str, ...] | list[str] = (),
 ) -> dict[tuple[int, ...], tuple[str, ...]]:
     """Select Camera slots that need an LLM quality retry without rewriting TEXT."""
 
     motion_counts: dict[str, int] = {}
+    seen_finite_plans = set(recent_history)
     slow_count = 0
     slow_maximum = max(1, len(entities) // 4)
     violations: dict[tuple[int, ...], list[str]] = {}
@@ -819,7 +1691,28 @@ def _camera_budget_violations(
         text = values.get(entity.key, "").strip()
         if not text:
             continue
-        motion = _camera_motion_type(text)
+        finite_protocol = entity.value.get("camera_protocol") == "finite_v1"
+        plan: _CameraPlan | None = None
+        if finite_protocol:
+            plan, plan_violations = _parse_camera_plan(text)
+            if plan_violations:
+                violations.setdefault(entity.key, []).extend(plan_violations)
+                continue
+            assert plan is not None
+            contract_violations = _camera_plan_contract_violations(entity, plan)
+            if contract_violations:
+                violations.setdefault(entity.key, []).extend(contract_violations)
+            rendered_plan = _render_camera_plan(plan)
+            if rendered_plan in seen_finite_plans:
+                violations.setdefault(entity.key, []).append(
+                    "camera_plan_repetition"
+                )
+            else:
+                seen_finite_plans.add(rendered_plan)
+            camera_text = plan.motion
+        else:
+            camera_text = text
+        motion = _camera_motion_type(camera_text)
         if not motion:
             violations.setdefault(entity.key, []).append(
                 "required_h3_motion_type"
@@ -837,6 +1730,10 @@ def _camera_budget_violations(
                 violations.setdefault(entity.key, []).append(
                     f"motion_budget:{motion}"
                 )
+        if len(_camera_motion_occurrences(camera_text)) != 1:
+            violations.setdefault(entity.key, []).append(
+                "exactly_one_h3_motion_type"
+            )
         if (
             entity.value.get("face_arc_transition")
             and motion != "Arc Shot"
@@ -849,7 +1746,7 @@ def _camera_budget_violations(
                 violations.setdefault(entity.key, []).append(
                     "required_long_arc_emphasis"
                 )
-            elif not _LARGE_FAST_ARC_RE.search(text):
+            elif not _LARGE_FAST_ARC_RE.search(camera_text):
                 violations.setdefault(entity.key, []).append(
                     "required_long_arc_energy"
                 )
@@ -857,12 +1754,14 @@ def _camera_budget_violations(
             violations.setdefault(entity.key, []).append(
                 "required_face_zoom_emphasis"
             )
-        if _SLOW_CAMERA_RE.search(text):
+        if entity.value.get("arc_permission") == "forbidden" and motion == "Arc Shot":
+            violations.setdefault(entity.key, []).append("unassigned_arc")
+        if _SLOW_CAMERA_RE.search(camera_text):
             slow_count += 1
             if slow_count > slow_maximum:
                 violations.setdefault(entity.key, []).append("slow_speed_budget")
-        if "at fast speed" in text and re.search(
-            r"ゆっくり|緩やか|at slow speed", text, re.IGNORECASE
+        if "at fast speed" in camera_text and re.search(
+            r"ゆっくり|緩やか|at slow speed", camera_text, re.IGNORECASE
         ):
             violations.setdefault(entity.key, []).append(
                 "conflicting_camera_speed"
@@ -874,13 +1773,18 @@ def _camera_budget_violations(
             }
         )
         if (
-            _LOWER_BODY_DETAIL_RE.search(text)
+            not finite_protocol
+            and _LOWER_BODY_DETAIL_RE.search(text)
             and not _LOWER_BODY_DETAIL_RE.search(source_text)
         ):
             violations.setdefault(entity.key, []).append(
                 "unrequested_lower_body_detail"
             )
-    return {key: tuple(value) for key, value in violations.items()}
+    return {
+        key: tuple(dict.fromkeys(value))
+        for key, value in violations.items()
+        if value
+    }
 
 
 def _anime_story_mv_long_arc_keys(entities: list[_Entity]) -> set[tuple[int, ...]]:
@@ -1020,19 +1924,31 @@ def _anime_emotional_mv_camera_emphasis(
                 continue
             if entities[candidate].scene_number != entities[face_index].scene_number:
                 continue
+            if int(entities[candidate].value.get("shot_duration_ms", 0)) < 2500:
+                continue
             if candidate in face_indices or candidate in arc_indices:
                 continue
             arc_indices.add(candidate)
             transitions[entities[candidate].key] = relation
             break
 
-    arc_target = max(len(arc_indices), (len(entities) * 2 + 2) // 3)
-    arc_target = min(arc_target, len(entities) - len(face_indices))
+    # Dense Arc coverage remains a defining trait of this profile, but it must
+    # leave enough non-Arc coverage for a readable rhythm. Only Shots long
+    # enough to carry a 70-90% path are eligible for an optional long Arc.
+    eligible_arc_indices = {
+        index
+        for index, entity in enumerate(entities)
+        if index not in face_indices
+        and int(entity.value.get("shot_duration_ms", 0)) >= 2500
+    }
+    arc_target = max(
+        len(arc_indices),
+        (len(eligible_arc_indices) + 1) // 2,
+    )
+    arc_target = min(arc_target, len(eligible_arc_indices))
     candidates = sorted(
         (
-            index
-            for index in range(len(entities))
-            if index not in face_indices and index not in arc_indices
+            index for index in eligible_arc_indices if index not in arc_indices
         ),
         key=lambda index: (
             -int(entities[index].value.get("shot_duration_ms", 0)),
@@ -1045,7 +1961,17 @@ def _anime_emotional_mv_camera_emphasis(
     for index in candidates:
         if len(arc_indices) >= arc_target:
             break
+        if any(abs(index - selected) == 1 for selected in arc_indices):
+            continue
         arc_indices.add(index)
+
+    # Fill the target only after the spaced pass. This keeps the target stable
+    # for short batches without making adjacent Arcs the default cadence.
+    if len(arc_indices) < arc_target:
+        for index in candidates:
+            if len(arc_indices) >= arc_target:
+                break
+            arc_indices.add(index)
 
     return (
         {entities[index].key for index in arc_indices},
@@ -1054,9 +1980,33 @@ def _anime_emotional_mv_camera_emphasis(
     )
 
 
+def _grounded_cue_targets(entity: _Entity) -> tuple[str, ...]:
+    """Return exact current-Scene tokens that Action must preserve."""
+
+    if not entity.value.get("grounded_cue_required"):
+        return ()
+    targets: list[str] = []
+    grounding = entity.value.get("visual_beat_grounding")
+    if isinstance(grounding, Mapping) and grounding.get("valid"):
+        target = str(grounding.get("target", "")).strip()
+        if target not in _CUE_NONE_VALUES:
+            targets.append(target)
+    priority_cues = entity.value.get("priority_lyric_cues", [])
+    if isinstance(priority_cues, list):
+        for cue in priority_cues:
+            if not isinstance(cue, Mapping):
+                continue
+            token = str(cue.get("token", "")).strip()
+            if token and token not in targets:
+                targets.append(token)
+    return tuple(targets)
+
+
 def _action_budget_violations(
     entities: list[_Entity],
     values: Mapping[tuple[int, ...], str],
+    *,
+    configured_priority_cues: tuple[tuple[str, str], ...] = (),
 ) -> dict[tuple[int, ...], tuple[str, ...]]:
     """Select Action slots for one semantic retry without rewriting their TEXT."""
 
@@ -1067,12 +2017,51 @@ def _action_budget_violations(
         text = values.get(entity.key, "").strip()
         if not text:
             continue
+        if (
+            _INTERNAL_ACTION_LABEL_RE.search(text)
+            or _ACTION_PROTOCOL_PREFIX_RE.search(text)
+        ):
+            violations.setdefault(entity.key, []).append(
+                "internal_protocol_label"
+            )
+        required_anchor = str(
+            entity.value.get("required_spatial_anchor", "")
+        ).strip()
+        if required_anchor and required_anchor not in text:
+            violations.setdefault(entity.key, []).append(
+                "missing_spatial_anchor"
+            )
+        required_development = str(
+            entity.value.get("required_visible_development", "")
+        ).strip()
+        if required_development and required_development not in text:
+            violations.setdefault(entity.key, []).append(
+                "missing_visible_development"
+            )
         if _SLOW_ACTION_RE.search(text):
             slow_count += 1
             if slow_count > slow_maximum:
                 violations.setdefault(entity.key, []).append("slow_action_budget")
         if _GENERIC_HAND_ACTION_RE.search(text):
             violations.setdefault(entity.key, []).append("generic_hand_raise_or_lower")
+
+        escaped_cues = _unexpected_priority_cues(
+            text,
+            entity.value.get("priority_lyric_cues", []),
+            configured_priority_cues,
+        )
+        if escaped_cues:
+            violations.setdefault(entity.key, []).append(
+                "unexpected_priority_cue"
+            )
+
+        if (
+            entity.value.get("performance_role") == "face_and_upper_body_accent"
+            and not _FACE_PERFORMANCE_RE.search(text)
+        ):
+            violations.setdefault(entity.key, []).append(
+                "face_performance_missing"
+            )
         source_text = canonical_json(
             {
                 "lyrics": entity.value.get("lyrics", []),
@@ -1093,7 +2082,128 @@ def _action_budget_violations(
             violations.setdefault(entity.key, []).append(
                 "unrequested_running"
             )
-    return {key: tuple(value) for key, value in violations.items()}
+    grounded_scenes: dict[int, tuple[list[str], list[_Entity]]] = {}
+    for entity in entities:
+        targets = _grounded_cue_targets(entity)
+        if not targets:
+            continue
+        if entity.scene_number not in grounded_scenes:
+            grounded_scenes[entity.scene_number] = ([], [])
+        for target in targets:
+            if target not in grounded_scenes[entity.scene_number][0]:
+                grounded_scenes[entity.scene_number][0].append(target)
+        grounded_scenes[entity.scene_number][1].append(entity)
+    preferred_roles = {
+        "environment_interaction_or_body_turn": 0,
+        "expressive_hand_arm_performance": 1,
+        "new_scene_physical_hook": 2,
+        "lyric_driven_full_body_performance": 3,
+    }
+    for targets, scene_entities in grounded_scenes.values():
+        ranked_entities = sorted(
+            scene_entities,
+            key=lambda entity: (
+                preferred_roles.get(
+                    str(entity.value.get("performance_role", "")), 9
+                ),
+                entity.key,
+            ),
+        )
+        for target_index, target in enumerate(targets):
+            if any(
+                target in values.get(entity.key, "")
+                for entity in scene_entities
+            ):
+                continue
+            selected = ranked_entities[target_index % len(ranked_entities)]
+            violations.setdefault(selected.key, []).append(
+                "missing_grounded_cue_target"
+            )
+    return {
+        key: tuple(dict.fromkeys(value))
+        for key, value in violations.items()
+    }
+
+
+def _action_audit_failures(
+    entities: list[_Entity],
+    verdicts: Mapping[tuple[int, ...], str],
+) -> dict[tuple[int, ...], tuple[str, ...]]:
+    """Parse finite audit verdicts without changing candidate Action text."""
+
+    failures: dict[tuple[int, ...], tuple[str, ...]] = {}
+    for entity in entities:
+        verdict = verdicts.get(entity.key, "").strip()
+        if verdict == "PASS":
+            continue
+        match = re.fullmatch(
+            r"REJECT:([A-Z_]+(?:,[A-Z_]+)*)",
+            verdict,
+        )
+        if match:
+            reasons = tuple(dict.fromkeys(match.group(1).split(",")))
+            if reasons and all(reason in _ACTION_AUDIT_REASONS for reason in reasons):
+                failures[entity.key] = reasons
+                continue
+        failures[entity.key] = ("INVALID_AUDIT_VERDICT",)
+    return failures
+
+
+def _request_action_audit(
+    backend: TimelinePlannerBackend,
+    *,
+    entities: list[_Entity],
+    values: Mapping[tuple[int, ...], str],
+    shared: Mapping[str, object],
+    system_prompt: str,
+    runtime_config: LlamaRuntimeConfig,
+    interrupt_callback: Any,
+) -> tuple[
+    dict[tuple[int, ...], tuple[str, ...]],
+    list[LLMRecordIssue],
+    tuple[int, ...],
+    tuple[tuple[str, int, int], ...],
+    int,
+]:
+    """Ask the same LLM to judge bounded Action contracts, never to rewrite."""
+
+    audit_entities = [
+        _Entity(
+            entity.scene_number,
+            entity.key,
+            {
+                **entity.value,
+                "candidate_action": values.get(entity.key, ""),
+            },
+        )
+        for entity in entities
+    ]
+    audit_config = replace(
+        runtime_config,
+        max_tokens=min(
+            runtime_config.max_tokens,
+            max(256, min(1024, len(audit_entities) * 24)),
+        ),
+    )
+    verdicts, issues, retries, missing, recovered = _request_entities(
+        backend,
+        task="action-audit",
+        record_type="AUDIT",
+        entities=audit_entities,
+        shared=shared,
+        system_prompt=system_prompt,
+        runtime_config=audit_config,
+        interrupt_callback=interrupt_callback,
+    )
+    if missing:
+        return {}, issues, retries, missing, recovered
+    return (
+        _action_audit_failures(audit_entities, verdicts),
+        issues,
+        retries,
+        (),
+        recovered,
+    )
 
 
 def _shot_context(
@@ -1207,6 +2317,7 @@ def _camera_editorial_role(
 def _face_arc_transitions(
     shot_keys: list[tuple[int, int]],
     face_cut_keys: set[tuple[int, int]],
+    shot_durations: Mapping[tuple[int, int], int] | None = None,
 ) -> dict[tuple[int, int], str]:
     """Pair each structural face insert with one same-Scene Arc coverage Shot."""
 
@@ -1226,6 +2337,11 @@ def _face_arc_transitions(
         if face_key[1] > 1:
             candidates.reverse()
         for candidate, relation in candidates:
+            if (
+                shot_durations is not None
+                and int(shot_durations.get(candidate, 0)) < 2500
+            ):
+                continue
             if candidate not in transitions:
                 transitions[candidate] = relation
                 break
@@ -1542,8 +2658,13 @@ def generate_planner_content(
         raise TimelinePlannerError("scenes_per_batch must be in 1..6")
     if lip_sync_mode not in {"off", "context_loop", "audio_reference", "lyrics"}:
         raise TimelinePlannerError("unknown lip_sync_mode")
-    if set(system_prompts) != set(TASKS) or any(not value.strip() for value in system_prompts.values()):
-        raise TimelinePlannerError("all five Planner system prompts are required")
+    prompt_keys = set(system_prompts)
+    if (
+        not set(TASKS).issubset(prompt_keys)
+        or prompt_keys - set(TASKS) - {"visual-beats-bounded", "actions-bounded", "lyric-cues"}
+        or any(not value.strip() for value in system_prompts.values())
+    ):
+        raise TimelinePlannerError("all six Planner system prompts are required")
     direction.validate()
     runtime_config.validate()
     protector, _protected_concept, scene_context, shot_context, directions = _protected_context(
@@ -1572,12 +2693,38 @@ def generate_planner_content(
     beat_repetition_warning_count = 0
     action_repetition_warning_count = 0
     camera_repetition_warning_count = 0
+    # Environment inventory belongs to the final EMD renderer.  It must not be
+    # offered as a menu of possible action targets or camera subjects.
     performance_directions = {
-        key: value for key, value in directions.items() if key != "camera"
+        key: value
+        for key, value in directions.items()
+        if key not in {"camera", "environment"}
+    }
+    camera_directions = {
+        key: value
+        for key, value in directions.items()
+        if key not in {"motion", "environment"}
     }
     planner_policy = CAMERA_PLANNER_POLICIES.get(
         direction.camera_profile_id, ""
     )
+    configured_priority_cues = CAMERA_PRIORITY_LYRIC_CUES.get(
+        direction.camera_profile_id, ()
+    )
+    lyric_cue_mode = CAMERA_LYRIC_CUE_MODES.get(
+        direction.camera_profile_id,
+        "priority_only" if configured_priority_cues else "off",
+    )
+    lyric_interpretation = CAMERA_LYRIC_INTERPRETATIONS.get(
+        direction.camera_profile_id, "literal"
+    )
+    # Same tasks and output schema. Optional compact variants keep bounded
+    # interpretation out of legacy/custom caller prompts unless supplied.
+    system_prompts = dict(system_prompts)
+    if lyric_interpretation == "bounded":
+        for task in ("visual-beats", "actions"):
+            if f"{task}-bounded" in system_prompts:
+                system_prompts[task] = system_prompts[f"{task}-bounded"]
     planner_policy_contract = (
         {
             "policy_id": "anime_emotional_mv",
@@ -1585,6 +2732,7 @@ def generate_planner_content(
             "generic_locomotion_is_support_only": True,
             "incidental_fixed_fixture_interaction": "forbidden",
             "lyric_trigger_scope": "current_scene_original_lyrics_only",
+            "lyric_cue_mode": lyric_cue_mode,
             "noun_only_lyric_visualization": "same_scene_autonomous_visual_predicate",
             "environment_inventory_is_not_action_source": True,
             "lyric_target_consumption": "one_scene_then_requires_new_trigger",
@@ -1593,12 +2741,22 @@ def generate_planner_content(
             "whole_body_emotion_mode": "coordinated_head_torso_pelvis_limbs_weight",
             "emotional_amplitude": "exaggerated_readable_full_body",
             "pose_contrast": "large_asymmetric_silhouette_change",
-            "camera_phrase": "dense_energetic_long_arc_short_face_pivot",
-            "arc_density": "two_thirds_of_eligible_non_face_slots",
+            "camera_phrase": "balanced_energetic_long_arc_short_face_pivot",
+            "arc_density": "approximately_half_of_eligible_non_face_slots",
             "arc_energy": "large_amplitude_fast_70_90_percent",
             "face_zoom_frequency": "sparse_section_or_emotional_pivot",
             "later_scene_continue_minimum_ratio": "3/4",
             "all_later_continue_allowed": True,
+            # Exact tokens are deliberately entity-local. Broadcasting them in
+            # this shared contract lets a small model copy a later Scene's Cue
+            # into every slot in the same request.
+            "priority_lyric_cues": "entity_local_only",
+            "priority_cue_scope": "exact_current_scene_source_only",
+            "cue_card_schema": "v2_spatial_anchor_visible_development",
+            "grounded_cue_development": "anchor_then_target_event_then_subject_response",
+            "priority_cue_scene_arc": (
+                "establish_relation_reaction_release_without_later_leakage"
+            ),
         }
         if planner_policy == "anime_emotional_mv"
         else {"policy_id": planner_policy}
@@ -1606,18 +2764,114 @@ def generate_planner_content(
         else {}
     )
 
+    planner_policy_contract["lyric_interpretation"] = lyric_interpretation
+    if lyric_interpretation == "bounded":
+        planner_policy_contract.update(
+            whole_body_emotion_mode="only_parts_needed_for_the_event",
+            pose_contrast="event_or_expression_change_not_mandatory_body_turn",
+            grounded_cue_development="anchor_then_event_then_optional_subject_response",
+        )
+    _LOGGER.info(
+        "[MV Director - Timeline Planner] lyric interpretation=%s; "
+        "cue_schema=v2; additional_inference_stages=%d",
+        lyric_interpretation,
+        int(lyric_interpretation == "bounded" and lyric_cue_mode == "automatic" and "lyric-cues" in system_prompts),
+    )
+
     beat_values: dict[tuple[int, ...], str] = {}
     previous_beat = ""
     recent_beat_history: list[str] = []
-    total_scenes = len(template.scenes)
-    for scene_batch in _chunks(list(template.scenes), scenes_per_batch):
-        entities = []
-        for scene in scene_batch:
-            scene_lyrics = [
+    scene_lyrics_by_number: dict[int, list[object]] = {}
+    scene_author_body_by_number: dict[int, list[object]] = {}
+    scene_priority_cues: dict[int, tuple[dict[str, str], ...]] = {}
+    for scene in template.scenes:
+        scene_lyrics = [
+            value
+            for (scene_number, _), context in shot_context.items()
+            if scene_number == scene.scene_number
+            for value in context["lyrics"]
+        ]
+        scene_author_body = list(
+            dict.fromkeys(
                 value
                 for (scene_number, _), context in shot_context.items()
                 if scene_number == scene.scene_number
-                for value in context["lyrics"]
+                for value in context["author_body"]
+            )
+        )
+        scene_lyrics_by_number[scene.scene_number] = scene_lyrics
+        scene_author_body_by_number[scene.scene_number] = scene_author_body
+        scene_priority_cues[scene.scene_number] = (
+            _priority_lyric_cues_from_sources(
+                scene_lyrics,
+                scene_author_body,
+                configured_priority_cues,
+            )
+        )
+    reading_contexts = (
+        _lyric_reading_contexts(
+            [scene.scene_number for scene in template.scenes],
+            scene_lyrics_by_number,
+        )
+        if lyric_interpretation == "bounded"
+        else {}
+    )
+    discovered_by_scene: dict[int, list[dict[str, str]]] = {}
+    if lyric_interpretation == "bounded" and lyric_cue_mode == "automatic" and "lyric-cues" in system_prompts:
+        from .cue_constraints import parse_discovery, select_scene_cue
+
+        sources_by_scene = {
+            n: list(dict.fromkeys([str(item["text"]).strip() for item in lyrics]
+                                  + scene_author_body_by_number[n]))
+            for n, lyrics in scene_lyrics_by_number.items()
+        }
+        unique_sources = list(dict.fromkeys(s for group in sources_by_scene.values() for s in group if s))
+        discoveries: dict[str, dict[str, str] | None] = {}
+        _LOGGER.info("[MV Director - Timeline Planner] lyric Cue discovery; unique_lines=%d; batch_lines=16", len(unique_sources))
+        discovery_config = replace(runtime_config, max_tokens=min(runtime_config.max_tokens, 768))
+        for batch_index, group in enumerate(_chunks(unique_sources, 16)):
+            discovery_entities = [_Entity(0, (batch_index, i), {"text": source}) for i, source in enumerate(group)]
+            found, issues, retries, missing, recovered = _request_entities(
+                backend, task="lyric-cues", record_type="DISCOVERY", entities=discovery_entities,
+                shared={}, system_prompt=system_prompts["lyric-cues"], runtime_config=discovery_config,
+                interrupt_callback=interrupt_callback,
+            )
+            all_issues.extend(issues)
+            protocol_recovered_count += recovered
+            if missing:
+                return None, missing
+            for entity in discovery_entities:
+                source = entity.value["text"]
+                try:
+                    discoveries[source] = parse_discovery(found[entity.key], source)
+                except ValueError as error:
+                    raise TimelinePlannerError(f"Invalid lyric discovery for {source!r}: {error}") from error
+        for n, sources in sources_by_scene.items():
+            if scene_priority_cues.get(n):
+                continue
+            discovered_by_scene[n] = select_scene_cue(sources, discoveries)
+            _LOGGER.info("[MV Director - Timeline Planner] lyric Cue selected; scene=%d; candidates=%s; selected=%s",
+                         n, [discoveries[s] for s in sources if discoveries.get(s)], discovered_by_scene[n])
+    isolated_cue_scenes = [
+        scene.scene_number
+        for scene in template.scenes
+        if scene_priority_cues.get(scene.scene_number)
+    ]
+    if isolated_cue_scenes:
+        _LOGGER.info(
+            "[MV Director - Timeline Planner] priority Cue scope isolation; "
+            "scenes=%s; mode=scene_local_requests",
+            ",".join(str(value) for value in isolated_cue_scenes),
+        )
+    total_scenes = len(template.scenes)
+    for scene_batch in _scene_batches_with_isolated_priority_cues(
+        list(template.scenes), scene_priority_cues, scenes_per_batch
+    ):
+        entities = []
+        for scene in scene_batch:
+            scene_lyrics = scene_lyrics_by_number[scene.scene_number]
+            scene_author_body = scene_author_body_by_number[
+                scene.scene_number
             ]
             entities.append(
                 _Entity(
@@ -1635,7 +2889,17 @@ def generate_planner_content(
                         ),
                         "has_resolved_lyrics": bool(scene_lyrics),
                         "lyrics": scene_lyrics,
+                        "author_body": scene_author_body,
+                        "priority_lyric_cues": list(
+                            scene_priority_cues[scene.scene_number]
+                        ),
                         "previous_batch_beat": previous_beat,
+                        **({"discovered_cues": discovered_by_scene[scene.scene_number]}
+                           if scene.scene_number in discovered_by_scene else {}),
+                        **(
+                            {"lyric_reading_context": reading_contexts[scene.scene_number]}
+                            if scene.scene_number in reading_contexts else {}
+                        ),
                     },
                 )
             )
@@ -1656,6 +2920,9 @@ def generate_planner_content(
                 "subject_roster": subject_roster,
                 "direction": performance_directions,
                 "planner_policy_contract": planner_policy_contract,
+                "scene_context_usage": (
+                    "spatial_support_only_never_activates_an_action_target"
+                ),
                 "recent_visual_beat_history": recent_beat_history[-12:],
             },
             history=recent_beat_history,
@@ -1673,12 +2940,208 @@ def generate_planner_content(
             {key: dialogue_filter.filter(text) for key, text in values.items()}
         )
         recent_beat_history.extend(
-            beat_values[(scene.scene_number,)] for scene in scene_batch
+            beat_values[(scene.scene_number,)]
+            for scene in scene_batch
+            if not scene_priority_cues.get(scene.scene_number)
         )
         if scene_batch:
-            previous_beat = beat_values.get(
-                (scene_batch[-1].scene_number,), previous_beat
+            last_scene_number = scene_batch[-1].scene_number
+            previous_beat = (
+                ""
+                if scene_priority_cues.get(last_scene_number)
+                else beat_values.get((last_scene_number,), previous_beat)
             )
+
+    beat_entities = {
+        entity.key: entity
+        for scene in template.scenes
+        for entity in (
+            _Entity(
+                scene.scene_number,
+                (scene.scene_number,),
+                {
+                    "lyrics": [
+                        value
+                        for (scene_number, _), context in shot_context.items()
+                        if scene_number == scene.scene_number
+                        for value in context["lyrics"]
+                    ],
+                    "author_body": list(
+                        dict.fromkeys(
+                            value
+                            for (scene_number, _), context in shot_context.items()
+                            if scene_number == scene.scene_number
+                            for value in context["author_body"]
+                        )
+                    ),
+                    "priority_lyric_cues": list(
+                        scene_priority_cues.get(scene.scene_number, ())
+                    ),
+                    **({"discovered_cues": discovered_by_scene[scene.scene_number]}
+                       if scene.scene_number in discovered_by_scene else {}),
+                    **(
+                        {"lyric_reading_context": reading_contexts[scene.scene_number]}
+                        if scene.scene_number in reading_contexts else {}
+                    ),
+                },
+            ),
+        )
+    }
+    cue_cards = {
+        key: _parse_cue_card(beat_entities[key], text)
+        for key, text in beat_values.items()
+    }
+    priority_cue_retry_entities: list[_Entity] = []
+    for key, card in cue_cards.items():
+        priority_cues = scene_priority_cues.get(key[0], ())
+        if not priority_cues:
+            continue
+        primary_cue = priority_cues[0]
+        cue_violations = _priority_cue_card_violations(card, primary_cue)
+        if not cue_violations:
+            continue
+        priority_cue_retry_entities.append(
+            _Entity(
+                key[0],
+                key,
+                {
+                    **beat_entities[key].value,
+                    "rejected_output": beat_values[key],
+                    "required_priority_lyric_cue": dict(primary_cue),
+                    "priority_cue_violations": list(cue_violations),
+                    "retry": "priority_lyric_cue",
+                },
+            )
+        )
+    if priority_cue_retry_entities and planner_policy == "anime_emotional_mv":
+        _LOGGER.info(
+            "[MV Director - Timeline Planner] priority Cue Card retry; "
+            "scenes=%s",
+            ",".join(
+                f"scene{entity.scene_number}:"
+                f"{entity.value['required_priority_lyric_cue']['token']}"
+                for entity in priority_cue_retry_entities
+            ),
+        )
+        (
+            priority_retry_values,
+            priority_retry_issues,
+            priority_retry_scenes,
+            priority_retry_missing,
+            priority_retry_recovered,
+        ) = _request_entities(
+            backend,
+            task="visual-beats",
+            record_type="BEAT",
+            entities=priority_cue_retry_entities,
+            shared={
+                "subject_roster": subject_roster,
+                "direction": performance_directions,
+                "planner_policy_contract": planner_policy_contract,
+                "recent_visual_beat_history": recent_beat_history[-12:],
+                "priority_cue_retry": (
+                    "Replace the rejected Cue Card. Select the exact configured "
+                    "current-Scene lyric token and give it a visible same-Scene "
+                    "relation, reaction, and release without carrying it later."
+                ),
+            },
+            system_prompt=system_prompts["visual-beats"],
+            runtime_config=runtime_config,
+            interrupt_callback=interrupt_callback,
+        )
+        all_issues.extend(priority_retry_issues)
+        all_retries.update(priority_retry_scenes)
+        protocol_recovered_count += priority_retry_recovered
+        for entity in priority_cue_retry_entities:
+            text = priority_retry_values.get(entity.key)
+            if not text:
+                continue
+            filtered_text = dialogue_filter.filter(text)
+            retry_card = _parse_cue_card(
+                beat_entities[entity.key], filtered_text
+            )
+            primary_cue = entity.value["required_priority_lyric_cue"]
+            if not _priority_cue_card_violations(retry_card, primary_cue):
+                beat_values[entity.key] = filtered_text
+                cue_cards[entity.key] = retry_card
+        unresolved_priority_cues = []
+        for entity in priority_cue_retry_entities:
+            primary_cue = entity.value["required_priority_lyric_cue"]
+            violations = _priority_cue_card_violations(
+                cue_cards[entity.key], primary_cue
+            )
+            if violations:
+                cue_cards[entity.key] = replace(
+                    cue_cards[entity.key],
+                    valid=False,
+                    violations=tuple(
+                        dict.fromkeys(
+                            (
+                                *cue_cards[entity.key].violations,
+                                *violations,
+                            )
+                        )
+                    ),
+                )
+                unresolved_priority_cues.append(
+                    f"scene{entity.scene_number}:"
+                    f"{primary_cue['token']}="
+                    f"{','.join(violations)}"
+                )
+        if priority_retry_missing or unresolved_priority_cues:
+            _LOGGER.warning(
+                "[MV Director - Timeline Planner] priority Cue Card retry "
+                "remained incomplete; exact source tokens will still be "
+                "enforced at Action stage; missing=%s; unresolved=%s",
+                len(priority_retry_missing),
+                ";".join(unresolved_priority_cues) or "none",
+            )
+    invalid_cues = {
+        key: card for key, card in cue_cards.items() if not card.valid
+    }
+    grounded_cues = [
+        f"scene{key[0]}:{card.target}"
+        for key, card in sorted(cue_cards.items())
+        if card.valid and card.target not in _CUE_NONE_VALUES
+    ]
+    priority_cue_labels = [
+        f"scene{scene_number}:"
+        + ",".join(
+            f"{cue['token']}/{cue['kind']}" for cue in cues
+        )
+        for scene_number, cues in sorted(scene_priority_cues.items())
+        if cues
+    ]
+    _LOGGER.info(
+        "[MV Director - Timeline Planner] Cue Card validation; "
+        "valid=%d; invalid=%d; grounded=%s; priority=%s",
+        len(cue_cards) - len(invalid_cues),
+        len(invalid_cues),
+        ",".join(grounded_cues) or "none",
+        ";".join(priority_cue_labels) or "none",
+    )
+    if invalid_cues and planner_policy == "anime_emotional_mv":
+        _LOGGER.warning(
+            "[MV Director - Timeline Planner] rejected ungrounded Cue Card fields "
+            "from downstream Action/Camera context; scenes=%s; reasons=%s",
+            ",".join(str(key[0]) for key in sorted(invalid_cues)),
+            ";".join(
+                f"scene{key[0]}:{','.join(card.violations)}"
+                for key, card in sorted(invalid_cues.items())
+            ),
+        )
+
+    action_cue_scopes = dict(scene_priority_cues)
+    if lyric_cue_mode == "automatic":
+        for key, card in cue_cards.items():
+            if card.valid and card.target not in _CUE_NONE_VALUES:
+                action_cue_scopes[key[0]] = (
+                    {
+                        "token": card.target,
+                        "kind": "automatic",
+                        "evidence": card.evidence,
+                    },
+                )
 
     direction_entity = _Entity(0, (1,), {"visual_beats": [
         {"scene_number": key[0], "text": value} for key, value in sorted(beat_values.items())
@@ -1930,7 +3393,13 @@ def generate_planner_content(
     action_values: dict[tuple[int, ...], str] = {}
     previous_action = ""
     recent_action_history: list[str] = []
-    for scene_batch in _chunks(list(planned_template.scenes), scenes_per_batch):
+    scene_shot_counts = {
+        scene.scene_number: len(scene.shots)
+        for scene in planned_template.scenes
+    }
+    for scene_batch in _scene_batches_with_isolated_priority_cues(
+        list(planned_template.scenes), action_cue_scopes, scenes_per_batch
+    ):
         keys = [
             key for key in planned_template.shot_keys
             if key[0] in {scene.scene_number for scene in scene_batch}
@@ -1939,7 +3408,42 @@ def generate_planner_content(
         prior_key: tuple[int, int] | None = None
         for key in keys:
             context = dict(shot_context[key])
-            context["visual_beat"] = beat_values[(key[0],)]
+            cue_card = cue_cards[(key[0],)]
+            context["visual_beat"] = (
+                beat_values[(key[0],)]
+                if planner_policy != "anime_emotional_mv" or cue_card.valid
+                else ""
+            )
+            context["visual_beat_grounding"] = cue_card.to_dict()
+            priority_cues = scene_priority_cues.get(key[0], ())
+            context["priority_lyric_cues"] = list(priority_cues)
+            has_automatic_cue = (
+                lyric_cue_mode == "automatic"
+                and cue_card.valid
+                and cue_card.target not in _CUE_NONE_VALUES
+            )
+            grounded_cue_phase = (
+                _priority_cue_phase(
+                    key[-1], scene_shot_counts.get(key[0], 1)
+                )
+                if priority_cues or has_automatic_cue
+                else ""
+            )
+            context["grounded_cue_phase"] = grounded_cue_phase
+            context["priority_cue_phase"] = (
+                grounded_cue_phase if priority_cues else ""
+            )
+            context["grounded_cue_required"] = (
+                planner_policy == "anime_emotional_mv"
+                and (
+                    bool(priority_cues)
+                    or (
+                        lyric_cue_mode == "automatic"
+                        and cue_card.valid
+                        and cue_card.target not in _CUE_NONE_VALUES
+                    )
+                )
+            )
             context["performance_role"] = _performance_role(
                 context,
                 lip_sync_active=lip_sync_mode != "off",
@@ -1959,6 +3463,30 @@ def generate_planner_content(
             else:
                 entities.append(_Entity(key[0], key, context))
             prior_key = key
+        if planner_policy == "anime_emotional_mv":
+            entities = _with_grounding_transfer_requirements(
+                entities,
+                automatic=lyric_cue_mode == "automatic",
+            )
+            transfer_labels = [
+                (
+                    f"scene{entity.scene_number}:slot{entity.key[-1]}:"
+                    f"role={entity.value.get('performance_role', 'none')}:"
+                    f"phase={entity.value.get('grounded_cue_phase', 'none')}:"
+                    f"anchor={entity.value.get('required_spatial_anchor', 'none')}:"
+                    f"development="
+                    f"{entity.value.get('required_visible_development', 'none')}"
+                )
+                for entity in entities
+                if entity.value.get("required_spatial_anchor")
+                or entity.value.get("required_visible_development")
+            ]
+            if transfer_labels:
+                _LOGGER.info(
+                    "[MV Director - Timeline Planner] Action grounding transfer; "
+                    "requirements=%s",
+                    ";".join(transfer_labels),
+                )
         if entities:
             (
                 values,
@@ -1973,11 +3501,9 @@ def generate_planner_content(
                 record_type="ACTION",
                 entities=entities,
                 shared={
-                    **scene_shared,
                     "subject_roster": subject_roster,
                     "direction": performance_directions,
                     "planner_policy_contract": planner_policy_contract,
-                    "song_direction": song_direction,
                     "primary_action_concept": lip_sync_target,
                     "subject_instance_policy": subject_instance_policy,
                     "action_batch_contract": {
@@ -1996,15 +3522,49 @@ def generate_planner_content(
                 interrupt_callback=interrupt_callback,
             )
             if not missing:
-                budget_violations = _action_budget_violations(entities, values)
+                budget_violations = _action_budget_violations(
+                    entities,
+                    values,
+                    configured_priority_cues=configured_priority_cues,
+                )
                 if budget_violations:
+                    _LOGGER.info(
+                        "[MV Director - Timeline Planner] Action quality retry; "
+                        "slots=%s",
+                        ";".join(
+                            f"scene{entity.scene_number}:slot{entity.key[-1]}="
+                            f"{','.join(budget_violations[entity.key])}"
+                            for entity in entities
+                            if entity.key in budget_violations
+                        ),
+                    )
                     retry_entities = [
                         _Entity(
                             entity.scene_number,
                             entity.key,
                             {
                                 **entity.value,
-                                "rejected_output": values[entity.key],
+                                **(
+                                    {
+                                        "rejected_output_withheld": (
+                                            "invalid_transport_wrapper"
+                                            if "internal_protocol_label"
+                                            in budget_violations[entity.key]
+                                            else "unexpected_priority_cue"
+                                        )
+                                    }
+                                    if any(
+                                        reason
+                                        in {
+                                            "unexpected_priority_cue",
+                                            "internal_protocol_label",
+                                        }
+                                        for reason in budget_violations[entity.key]
+                                    )
+                                    else {
+                                        "rejected_output": values[entity.key]
+                                    }
+                                ),
                                 "action_quality_violations": list(
                                     budget_violations[entity.key]
                                 ),
@@ -2025,11 +3585,9 @@ def generate_planner_content(
                         record_type="ACTION",
                         entities=retry_entities,
                         shared={
-                            **scene_shared,
                             "subject_roster": subject_roster,
                             "direction": performance_directions,
                             "planner_policy_contract": planner_policy_contract,
-                            "song_direction": song_direction,
                             "primary_action_concept": lip_sync_target,
                             "subject_instance_policy": subject_instance_policy,
                             "action_batch_contract": {
@@ -2058,9 +3616,292 @@ def generate_planner_content(
                     missing = tuple(retry_missing)
                     values.update(retry_values)
                     remaining_budget_violations = _action_budget_violations(
-                        entities, values
+                        entities,
+                        values,
+                        configured_priority_cues=configured_priority_cues,
                     )
                     repetition_warnings += len(remaining_budget_violations)
+            if not missing and planner_policy == "anime_emotional_mv":
+                audit_shared = {
+                    "direction": performance_directions,
+                    "planner_policy_contract": planner_policy_contract,
+                    "recent_action_history": recent_action_history[-18:],
+                    "audit_contract": {
+                        "verdicts": [
+                            "PASS",
+                            "REJECT:SEMANTIC_REPETITION",
+                            "REJECT:PROFILE_CONFLICT",
+                            "REJECT:INCIDENTAL_FIXTURE",
+                            "REJECT:UNREQUESTED_LOWER_BODY",
+                            "REJECT:UNREQUESTED_CONTACT",
+                            "REJECT:REFERENCE_POSE",
+                            "REJECT:MISSING_GROUNDED_CUE",
+                            "REJECT:FACE_PERFORMANCE_MISSING",
+                            "REJECT:BODY_TEMPLATE_REPETITION",
+                            "REJECT:INTERNAL_PROTOCOL_LABEL",
+                        ],
+                        "repair_attempts": _ACTION_AUDIT_REPAIR_ATTEMPTS,
+                        "fail_closed": False,
+                        "exhaustion_policy": "retain_best_candidate_as_is_with_warning",
+                    },
+                }
+                audit_failures: dict[tuple[int, ...], tuple[str, ...]] = {}
+                best_values: dict[tuple[int, ...], str] = dict(values)
+                best_scores: dict[tuple[int, ...], tuple[int, int, int, int]] = {}
+                best_diagnostics: dict[tuple[int, ...], tuple[str, ...]] = {}
+                for audit_round in range(_ACTION_AUDIT_REPAIR_ATTEMPTS + 1):
+                    (
+                        audit_failures,
+                        audit_issues,
+                        audit_retries,
+                        audit_missing,
+                        audit_recovered,
+                    ) = _request_action_audit(
+                        backend,
+                        entities=entities,
+                        values=values,
+                        shared={**audit_shared, "audit_round": audit_round + 1},
+                        system_prompt=system_prompts["action-audit"],
+                        runtime_config=runtime_config,
+                        interrupt_callback=interrupt_callback,
+                    )
+                    issues.extend(audit_issues)
+                    all_retries.update(audit_retries)
+                    recovered += audit_recovered
+                    if audit_missing:
+                        repetition_warnings += len(audit_missing)
+                        _LOGGER.warning(
+                            "[MV Director - Timeline Planner] Action audit protocol "
+                            "remained incomplete; retained the current LLM-generated "
+                            "Action text AS IS; round=%d; missing=%s",
+                            audit_round + 1,
+                            ",".join(
+                                f"scene{scene}:slot{slot}"
+                                for _kind, scene, slot in audit_missing
+                            ),
+                        )
+                        break
+                    quality_failures = _action_budget_violations(
+                        entities,
+                        values,
+                        configured_priority_cues=configured_priority_cues,
+                    )
+                    repeated_entities, _ = _repeated_entities(
+                        entities, values, recent_action_history
+                    )
+                    repeated_keys = {
+                        entity.key for entity in repeated_entities
+                    }
+                    rejected_keys = (
+                        set(audit_failures)
+                        | set(quality_failures)
+                        | repeated_keys
+                    )
+                    diagnostic_labels: dict[tuple[int, ...], tuple[str, ...]] = {}
+                    for entity in entities:
+                        key = entity.key
+                        labels = tuple(
+                            [
+                                *(
+                                    f"audit:{reason}"
+                                    for reason in audit_failures.get(key, ())
+                                ),
+                                *(
+                                    f"quality:{reason}"
+                                    for reason in quality_failures.get(key, ())
+                                ),
+                                *(
+                                    ("repetition:surface_similarity",)
+                                    if key in repeated_keys
+                                    else ()
+                                ),
+                            ]
+                        )
+                        score = (
+                            sum(reason in {
+                                "internal_protocol_label", "missing_spatial_anchor",
+                                "missing_visible_development",
+                            } for reason in quality_failures.get(key, ())),
+                            len(quality_failures.get(key, ())),
+                            int(key in repeated_keys),
+                            len(audit_failures.get(key, ())),
+                        )
+                        if key not in best_scores or score < best_scores[key]:
+                            best_scores[key] = score
+                            best_values[key] = values[key]
+                            best_diagnostics[key] = labels
+                        if labels:
+                            diagnostic_labels[key] = labels
+                    reason_summary = "; ".join(
+                        f"scene{entity.scene_number}:slot{entity.key[-1]}="
+                        f"{','.join(diagnostic_labels[entity.key])}"
+                        for entity in entities
+                        if entity.key in diagnostic_labels
+                    )
+                    _LOGGER.info(
+                        "[MV Director - Timeline Planner] Action audit round "
+                        "%d/%d; audit_rejects=%d; quality=%d; repetition=%d; "
+                        "reasons=%s",
+                        audit_round + 1,
+                        _ACTION_AUDIT_REPAIR_ATTEMPTS + 1,
+                        len(audit_failures),
+                        len(quality_failures),
+                        len(repeated_keys),
+                        reason_summary or "none",
+                    )
+                    if not rejected_keys:
+                        break
+                    if audit_round == _ACTION_AUDIT_REPAIR_ATTEMPTS:
+                        unresolved = [
+                            entity
+                            for entity in entities
+                            if entity.key in rejected_keys
+                        ]
+                        for entity in unresolved:
+                            values[entity.key] = best_values[entity.key]
+                        repetition_warnings += len(unresolved)
+                        best_summary = "; ".join(
+                            f"scene{entity.scene_number}:slot{entity.key[-1]}="
+                            f"{','.join(best_diagnostics.get(entity.key, ())) or 'audit_reject'}"
+                            for entity in unresolved
+                        )
+                        _LOGGER.warning(
+                            "[MV Director - Timeline Planner] Action audit repair "
+                            "budget exhausted; retained the lowest-violation "
+                            "LLM-generated candidate AS IS; attempts=%d; slots=%s",
+                            _ACTION_AUDIT_REPAIR_ATTEMPTS,
+                            best_summary,
+                        )
+                        break
+                    retry_entities = [
+                        _Entity(
+                            entity.scene_number,
+                            entity.key,
+                            {
+                                **entity.value,
+                                **(
+                                    {
+                                        "rejected_output_withheld": (
+                                            "invalid_transport_wrapper"
+                                            if "internal_protocol_label"
+                                            in quality_failures.get(
+                                                entity.key, ()
+                                            )
+                                            else "unexpected_priority_cue"
+                                        )
+                                    }
+                                    if any(
+                                        reason
+                                        in {
+                                            "unexpected_priority_cue",
+                                            "internal_protocol_label",
+                                        }
+                                        for reason in quality_failures.get(
+                                            entity.key, ()
+                                        )
+                                    )
+                                    else {
+                                        "rejected_output": values[entity.key]
+                                    }
+                                ),
+                                "semantic_audit_reasons": list(
+                                    audit_failures.get(entity.key, ())
+                                ),
+                                "action_quality_violations": list(
+                                    quality_failures.get(entity.key, ())
+                                ),
+                                "action_repetition_detected": (
+                                    entity.key in repeated_keys
+                                ),
+                            },
+                        )
+                        for entity in entities
+                        if entity.key in rejected_keys
+                    ]
+                    (
+                        retry_values,
+                        retry_issues,
+                        retry_scenes,
+                        retry_missing,
+                        retry_recovered,
+                    ) = _request_entities(
+                        backend,
+                        task="actions",
+                        record_type="ACTION",
+                        entities=retry_entities,
+                        shared={
+                            "subject_roster": subject_roster,
+                            "direction": performance_directions,
+                            "planner_policy_contract": planner_policy_contract,
+                            "primary_action_concept": lip_sync_target,
+                            "subject_instance_policy": subject_instance_policy,
+                            "recent_action_history": recent_action_history[-18:],
+                            "retry": "semantic_audit_rejected_slots",
+                            "semantic_audit_retry": (
+                                "Replace the rejected Action. Resolve every listed "
+                                "semantic_audit_reasons and action_quality_violations "
+                                "item, and replace any action_repetition_detected "
+                                "candidate without paraphrasing the same action, "
+                                "target, contact, or final pose."
+                            ),
+                        },
+                        system_prompt=system_prompts["actions"],
+                        runtime_config=runtime_config,
+                        interrupt_callback=interrupt_callback,
+                    )
+                    issues.extend(retry_issues)
+                    all_retries.update(retry_scenes)
+                    recovered += retry_recovered
+                    if retry_missing:
+                        values.update(retry_values)
+                        repetition_warnings += len(retry_missing)
+                        _LOGGER.warning(
+                            "[MV Director - Timeline Planner] Action audit repair "
+                            "response remained incomplete; retained available "
+                            "LLM-generated Action text AS IS; missing=%s",
+                            ",".join(
+                                f"scene{scene}:slot{slot}"
+                                for _kind, scene, slot in retry_missing
+                            ),
+                        )
+                        break
+                    values.update(retry_values)
+            if not missing:
+                final_contract_violations = _action_budget_violations(
+                    entities,
+                    values,
+                    configured_priority_cues=configured_priority_cues,
+                )
+                hard_missing: list[tuple[str, int, int]] = []
+                hard_labels: list[str] = []
+                for entity in entities:
+                    reasons = final_contract_violations.get(entity.key, ())
+                    if "internal_protocol_label" in reasons:
+                        kind = "ACTION_PROTOCOL"
+                    elif (
+                        planner_policy == "anime_emotional_mv"
+                        and (
+                            "missing_spatial_anchor" in reasons
+                            or "missing_visible_development" in reasons
+                        )
+                    ):
+                        kind = "ACTION_GROUNDING"
+                    else:
+                        continue
+                    hard_missing.append(
+                        (kind, entity.scene_number, entity.key[-1])
+                    )
+                    hard_labels.append(
+                        f"scene{entity.scene_number}:slot{entity.key[-1]}="
+                        f"{','.join(reasons)}"
+                    )
+                if hard_missing:
+                    _LOGGER.error(
+                        "[MV Director - Timeline Planner] Action structural "
+                        "contract remained invalid after bounded retries; slots=%s",
+                        ";".join(hard_labels),
+                    )
+                    missing = tuple(dict.fromkeys(hard_missing))
         else:
             values, issues, retries, missing = {}, [], (), ()
             recovered = repetition_warnings = 0
@@ -2073,10 +3914,17 @@ def generate_planner_content(
         for key, text in values.items():
             action_values[key] = dialogue_filter.filter(text)
         recent_action_history.extend(
-            action_values[key] for key in keys if key in action_values
+            action_values[key]
+            for key in keys
+            if key in action_values
+            and not action_cue_scopes.get(key[0])
         )
         if keys:
-            previous_action = action_values.get(keys[-1], previous_action)
+            previous_action = (
+                ""
+                if action_cue_scopes.get(keys[-1][0])
+                else action_values.get(keys[-1], previous_action)
+            )
 
     camera_values: dict[tuple[int, ...], str] = {}
     recent_camera_history: list[str] = []
@@ -2090,7 +3938,12 @@ def generate_planner_content(
         == "face_performance_cut"
     }
     face_arc_transitions = _face_arc_transitions(
-        all_shot_keys, face_cut_keys
+        all_shot_keys,
+        face_cut_keys,
+        {
+            key: int(shot_context[key].get("shot_duration_ms", 0))
+            for key in all_shot_keys
+        },
     )
     emotional_face_zoom_remaining = (
         max(
@@ -2108,9 +3961,15 @@ def generate_planner_content(
         ]
         entities = []
         for key in keys:
+            cue_card = cue_cards[(key[0],)]
             context = {
                 **shot_context[key],
-                "visual_beat": beat_values[(key[0],)],
+                "visual_beat": (
+                    beat_values[(key[0],)]
+                    if planner_policy != "anime_emotional_mv" or cue_card.valid
+                    else ""
+                ),
+                "visual_beat_grounding": cue_card.to_dict(),
                 "locked_action": action_values[key],
                 "lip_sync_active": lip_sync_mode != "off",
                 "lip_sync_target": lip_sync_target,
@@ -2165,7 +4024,7 @@ def generate_planner_content(
             )
             if face_zoom_key is not None:
                 face_zoom_keys.add(face_zoom_key)
-            if long_arc_keys or face_zoom_keys:
+            if long_arc_keys or face_zoom_keys or anime_emotional_mv:
                 entities = [
                     _Entity(
                         entity.scene_number,
@@ -2179,10 +4038,26 @@ def generate_planner_content(
                             "long_arc_emphasis": entity.key in long_arc_keys,
                             "long_arc_duration_fraction": "70-90%",
                             "face_zoom_emphasis": entity.key in face_zoom_keys,
+                            "arc_permission": (
+                                "required"
+                                if entity.key in long_arc_keys
+                                or bool(
+                                    emotional_transitions.get(entity.key)
+                                    or entity.value.get("face_arc_transition", "")
+                                )
+                                else "forbidden"
+                                if anime_emotional_mv
+                                else "available"
+                            ),
                             "face_zoom_duration_fraction": (
                                 "35-55%"
                                 if anime_emotional_mv
                                 else "70-90%"
+                            ),
+                            "camera_protocol": (
+                                "finite_v1"
+                                if anime_emotional_mv
+                                else "free_text_v1"
                             ),
                         },
                     )
@@ -2214,9 +4089,43 @@ def generate_planner_content(
                 "face_zoom_emphasis_count": len(face_zoom_keys),
                 "tracking_shot_maximum": 1,
                 "same_other_motion_type_maximum": 2,
+                "same_exact_camera_plan_maximum": 1,
                 "slow_speed_maximum": max(1, len(entities) // 4),
                 "unrequested_lower_body_detail_maximum": 0,
             }
+            camera_protocol_contract = (
+                {
+                    "id": "finite_v1",
+                    "fields": list(_CAMERA_PLAN_FIELDS),
+                    "start_scale_values": sorted(_CAMERA_PLAN_SCALES),
+                    "end_scale_values": sorted(_CAMERA_PLAN_SCALES),
+                    "start_view_values": sorted(_CAMERA_PLAN_VIEWS),
+                    "end_view_values": sorted(_CAMERA_PLAN_VIEWS),
+                    "path_values": sorted(_CAMERA_PLAN_PATHS),
+                    "coverage_values": sorted(_CAMERA_PLAN_COVERAGE),
+                    "serialization": "python_owned_fixed_h3_camera_sentence",
+                    "free_prose": False,
+                }
+                if anime_emotional_mv
+                else {"id": "free_text_v1", "free_prose": True}
+            )
+            if anime_emotional_mv:
+                _LOGGER.info(
+                    "[MV Director - Timeline Planner] Camera role assignment; "
+                    "scenes=%s; long_arcs=%d; face_zooms=%d; "
+                    "arc_forbidden=%d; short_arc_ineligible=%d",
+                    ",".join(str(scene.scene_number) for scene in scene_batch),
+                    len(long_arc_keys),
+                    len(face_zoom_keys),
+                    sum(
+                        entity.value.get("arc_permission") == "forbidden"
+                        for entity in entities
+                    ),
+                    sum(
+                        int(entity.value.get("shot_duration_ms", 0)) < 2500
+                        for entity in entities
+                    ),
+                )
             (
                 values,
                 issues,
@@ -2230,13 +4139,12 @@ def generate_planner_content(
                 record_type="CAMERA",
                 entities=entities,
                 shared={
-                    **scene_shared,
-                    "direction": directions,
+                    "direction": camera_directions,
                     "planner_policy_contract": planner_policy_contract,
-                    "song_direction": song_direction,
                     "subject_instance_policy": subject_instance_policy,
                     "arc_required": arc_required,
                     "camera_batch_contract": camera_batch_contract,
+                    "camera_protocol_contract": camera_protocol_contract,
                     "recent_camera_history": recent_camera_history[-12:],
                 },
                 history=recent_camera_history,
@@ -2249,8 +4157,11 @@ def generate_planner_content(
                     entities,
                     values,
                     arc_maximum=arc_maximum,
+                    recent_history=recent_camera_history[-12:],
                 )
                 if budget_violations:
+                    original_camera_values = dict(values)
+                    original_camera_violations = dict(budget_violations)
                     retry_entities = [
                         _Entity(
                             entity.scene_number,
@@ -2285,13 +4196,12 @@ def generate_planner_content(
                         record_type="CAMERA",
                         entities=retry_entities,
                         shared={
-                            **scene_shared,
-                            "direction": directions,
+                            "direction": camera_directions,
                             "planner_policy_contract": planner_policy_contract,
-                            "song_direction": song_direction,
                             "subject_instance_policy": subject_instance_policy,
                             "arc_required": False,
                             "camera_batch_contract": camera_batch_contract,
+                            "camera_protocol_contract": camera_protocol_contract,
                             "recent_camera_history": recent_camera_history[-12:],
                             "retry": "camera_quality_budget",
                             "camera_quality_retry": (
@@ -2307,14 +4217,130 @@ def generate_planner_content(
                     issues.extend(retry_issues)
                     all_retries.update(retry_scenes)
                     recovered += retry_recovered
-                    missing = tuple(retry_missing)
                     values.update(retry_values)
                     remaining_budget_violations = _camera_budget_violations(
                         entities,
                         values,
                         arc_maximum=arc_maximum,
+                        recent_history=recent_camera_history[-12:],
                     )
-                    repetition_warnings += len(remaining_budget_violations)
+                    hard_camera_reasons = {
+                        "required_h3_motion_type",
+                        "exactly_one_h3_motion_type",
+                        "unassigned_arc",
+                    }
+                    affected_keys = (
+                        set(original_camera_violations)
+                        | set(remaining_budget_violations)
+                    )
+                    for key in affected_keys:
+                        original_reasons = original_camera_violations.get(key, ())
+                        retry_reasons = remaining_budget_violations.get(key, ())
+                        original_score = (
+                            sum(
+                                reason in hard_camera_reasons
+                                for reason in original_reasons
+                            ),
+                            len(original_reasons),
+                        )
+                        retry_score = (
+                            sum(
+                                reason in hard_camera_reasons
+                                for reason in retry_reasons
+                            ),
+                            len(retry_reasons),
+                        )
+                        if original_score <= retry_score:
+                            values[key] = original_camera_values[key]
+                    selected_camera_violations = _camera_budget_violations(
+                        entities,
+                        values,
+                        arc_maximum=arc_maximum,
+                        recent_history=recent_camera_history[-12:],
+                    )
+                    repetition_warnings += len(selected_camera_violations)
+                    if selected_camera_violations:
+                        reason_summary = "; ".join(
+                            f"scene{entity.scene_number}:slot{entity.key[-1]}="
+                            f"{','.join(selected_camera_violations[entity.key])}"
+                            for entity in entities
+                            if entity.key in selected_camera_violations
+                        )
+                        _LOGGER.info(
+                            "[MV Director - Timeline Planner] Camera quality "
+                            "retry left profile-quality violations; retained the "
+                            "lowest-violation LLM-generated candidate AS IS; "
+                            "slots=%s",
+                            reason_summary,
+                        )
+                    if retry_missing:
+                        repetition_warnings += len(retry_missing)
+                        _LOGGER.warning(
+                            "[MV Director - Timeline Planner] Camera quality "
+                            "retry response remained incomplete; retained the "
+                            "existing LLM-generated Camera text AS IS; missing=%s",
+                            ",".join(
+                                f"scene{scene}:slot{slot}"
+                                for _kind, scene, slot in retry_missing
+                            ),
+                        )
+            if not missing and anime_emotional_mv:
+                remaining_budget_violations = _camera_budget_violations(
+                    entities,
+                    values,
+                    arc_maximum=arc_maximum,
+                    recent_history=recent_camera_history[-12:],
+                )
+                if remaining_budget_violations:
+                    _LOGGER.info(
+                        "[MV Director - Timeline Planner] Camera quality "
+                        "violations remained after one bounded retry; finite "
+                        "structural fallback will replace those slots; count=%d",
+                        len(remaining_budget_violations),
+                    )
+                fallback_rows: list[str] = []
+                used_rendered_plans = set(recent_camera_history[-12:])
+                for ordinal, entity in enumerate(entities):
+                    plan, parse_violations = _parse_camera_plan(
+                        values.get(entity.key, "")
+                    )
+                    remaining = remaining_budget_violations.get(entity.key, ())
+                    if plan is None or remaining:
+                        for variation in range(8):
+                            candidate = _fallback_camera_plan(
+                                entity, ordinal + variation
+                            )
+                            if (
+                                _render_camera_plan(candidate)
+                                not in used_rendered_plans
+                                or variation == 7
+                            ):
+                                plan = candidate
+                                break
+                        fallback_rows.append(
+                            f"scene{entity.scene_number}:slot{entity.key[-1]}="
+                            + ",".join((*parse_violations, *remaining))
+                        )
+                    assert plan is not None
+                    rendered_plan = _render_camera_plan(plan)
+                    values[entity.key] = rendered_plan
+                    used_rendered_plans.add(rendered_plan)
+                if fallback_rows:
+                    _LOGGER.info(
+                        "[MV Director - Timeline Planner] Camera finite protocol "
+                        "fallback applied; slots=%s",
+                        ";".join(fallback_rows),
+                    )
+                repeated_entities, _ = _repeated_entities(
+                    entities, values, recent_camera_history
+                )
+                if repeated_entities:
+                    _LOGGER.info(
+                        "[MV Director - Timeline Planner] Camera repetition "
+                        "remained after bounded diversity retries; retained "
+                        "LLM-generated text AS IS; count=%d",
+                        len(repeated_entities),
+                    )
         else:
             values, issues, retries, missing = {}, [], (), ()
             recovered = repetition_warnings = 0

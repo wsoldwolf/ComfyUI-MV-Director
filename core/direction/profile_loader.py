@@ -18,8 +18,15 @@ _KIND_HEADINGS = {
     "camera": "カメラ",
 }
 _STYLE_META_KEYS = frozenset({"locked", "retention", "scene_reinforcement"})
-_CAMERA_META_KEYS = frozenset({"planner_policy"})
+_CAMERA_META_KEYS = frozenset(
+    {"planner_policy", "lyric_cue_mode", "priority_lyric_cues", "lyric_interpretation"}
+)
 _META_KEYS = _STYLE_META_KEYS | _CAMERA_META_KEYS
+_PRIORITY_CUE_KINDS = frozenset(
+    {"object", "symbolic_motif", "external_effect"}
+)
+_LYRIC_CUE_MODES = frozenset({"automatic", "priority_only", "off"})
+_LYRIC_INTERPRETATIONS = frozenset({"literal", "bounded"})
 
 
 class DirectionProfileError(ValueError):
@@ -36,6 +43,9 @@ class DirectionProfile:
     retention: str = ""
     scene_reinforcement: str = ""
     planner_policy: str = ""
+    lyric_cue_mode: str = ""
+    lyric_interpretation: str = "literal"
+    priority_lyric_cues: tuple[tuple[str, str], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,10 +57,48 @@ class DirectionProfileCatalog:
     style_retention: dict[str, str]
     style_scene_reinforcement: dict[str, str]
     camera_planner_policy: dict[str, str]
+    camera_lyric_cue_mode: dict[str, str]
+    camera_lyric_interpretation: dict[str, str]
+    camera_priority_lyric_cues: dict[str, tuple[tuple[str, str], ...]]
 
 
 def _fail(path: Path, message: str) -> DirectionProfileError:
     return DirectionProfileError(f"{path}: {message}")
+
+
+def _parse_priority_lyric_cues(
+    path: Path, value: str
+) -> tuple[tuple[str, str], ...]:
+    cues: list[tuple[str, str]] = []
+    seen: set[str] = set()
+    for raw_entry in value.split(","):
+        entry = raw_entry.strip()
+        if not entry or ":" not in entry:
+            raise _fail(
+                path,
+                "priority_lyric_cues entries must use TOKEN:KIND",
+            )
+        token, kind = (part.strip() for part in entry.split(":", 1))
+        if (
+            not token
+            or len(token) > 32
+            or any(character.isspace() or ord(character) < 0x20 for character in token)
+            or any(character in "=|,`" for character in token)
+        ):
+            raise _fail(path, "priority_lyric_cues contains an invalid token")
+        if kind not in _PRIORITY_CUE_KINDS:
+            raise _fail(
+                path,
+                "priority_lyric_cues kind must be object, symbolic_motif, "
+                "or external_effect",
+            )
+        if token in seen:
+            raise _fail(path, f"duplicate priority lyric cue {token!r}")
+        seen.add(token)
+        cues.append((token, kind))
+    if not cues:
+        raise _fail(path, "priority_lyric_cues must not be empty")
+    return tuple(cues)
 
 
 def _parse_metadata(path: Path, lines: list[str], position: int) -> tuple[dict[str, str], int]:
@@ -139,6 +187,20 @@ def load_direction_profile(path: Path, kind: str) -> DirectionProfile:
     planner_policy = metadata.get("planner_policy", "")
     if planner_policy and not _PROFILE_ID_RE.fullmatch(planner_policy):
         raise _fail(path, "planner_policy must be a lowercase policy id")
+    lyric_cue_mode = metadata.get("lyric_cue_mode", "")
+    if lyric_cue_mode and lyric_cue_mode not in _LYRIC_CUE_MODES:
+        raise _fail(
+            path,
+            "lyric_cue_mode must be automatic, priority_only, or off",
+        )
+    lyric_interpretation = metadata.get("lyric_interpretation", "literal")
+    if lyric_interpretation not in _LYRIC_INTERPRETATIONS:
+        raise _fail(path, "lyric_interpretation must be literal or bounded")
+    priority_lyric_cues = (
+        _parse_priority_lyric_cues(path, metadata["priority_lyric_cues"])
+        if "priority_lyric_cues" in metadata
+        else ()
+    )
     return DirectionProfile(
         profile_id=profile_id,
         kind=kind,
@@ -148,6 +210,9 @@ def load_direction_profile(path: Path, kind: str) -> DirectionProfile:
         retention=retention,
         scene_reinforcement=metadata.get("scene_reinforcement", ""),
         planner_policy=planner_policy,
+        lyric_cue_mode=lyric_cue_mode,
+        lyric_interpretation=lyric_interpretation,
+        priority_lyric_cues=priority_lyric_cues,
     )
 
 
@@ -187,5 +252,19 @@ def load_direction_profiles(root: Path = PROFILE_ROOT) -> DirectionProfileCatalo
             key: value.planner_policy
             for key, value in grouped["camera"].items()
             if value.planner_policy
+        },
+        camera_lyric_cue_mode={
+            key: value.lyric_cue_mode
+            for key, value in grouped["camera"].items()
+            if value.lyric_cue_mode
+        },
+        camera_lyric_interpretation={
+            key: value.lyric_interpretation
+            for key, value in grouped["camera"].items()
+        },
+        camera_priority_lyric_cues={
+            key: value.priority_lyric_cues
+            for key, value in grouped["camera"].items()
+            if value.priority_lyric_cues
         },
     )

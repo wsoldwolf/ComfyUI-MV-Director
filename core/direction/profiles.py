@@ -14,6 +14,24 @@ LOCKED_STYLE_PROFILES = _CATALOG.locked_style
 STYLE_RETENTION_POLICIES = _CATALOG.style_retention
 STYLE_SCENE_REINFORCEMENTS = _CATALOG.style_scene_reinforcement
 CAMERA_PLANNER_POLICIES = _CATALOG.camera_planner_policy
+CAMERA_LYRIC_CUE_MODES = _CATALOG.camera_lyric_cue_mode
+CAMERA_LYRIC_INTERPRETATIONS = _CATALOG.camera_lyric_interpretation
+CAMERA_PRIORITY_LYRIC_CUES = _CATALOG.camera_priority_lyric_cues
+
+
+def planner_profile_metadata(profile_id: str) -> dict[str, object]:
+    """Cache identity includes metadata that is not part of Direction prose."""
+    cues = CAMERA_PRIORITY_LYRIC_CUES.get(profile_id, ())
+    return {
+        "planner_policy": CAMERA_PLANNER_POLICIES.get(profile_id, ""),
+        "lyric_cue_mode": CAMERA_LYRIC_CUE_MODES.get(
+            profile_id, "priority_only" if cues else "off"
+        ),
+        "lyric_interpretation": CAMERA_LYRIC_INTERPRETATIONS.get(profile_id, "literal"),
+        "priority_lyric_cues": [
+            {"token": token, "kind": kind} for token, kind in cues
+        ],
+    }
 
 
 # Presets only group three independently selectable external profiles. They are

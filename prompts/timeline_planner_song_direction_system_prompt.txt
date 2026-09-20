@@ -3,5 +3,14 @@ The first field is the fixed ASCII word DIRECTION. The second field is the fixed
 Use the supplied visual beats and scene_context. scene_context is read-only
 environment baseline; explicit direction overrides conflicting time, lighting,
 weather, season, and staging. Its background_picture is not a performer, action
-source, initial frame, or composition template. Write a concise Japanese whole-song visual arc with an opening state, a developing physical relationship to the established place or objects, and a visibly changed closing state. State what may recur only as a motif and what must change. Do not endorse identical walking, swaying, or camera motion as the main event of consecutive Scenes. Do not output JSON, Markdown, headings, timestamps, dialogue, quoted speech, or extra commentary.
+source, initial frame, or composition template. Write a concise Japanese
+whole-song arc limited to emotional progression, section energy, stillness and
+acceleration, editorial continuity, and a visibly changed closing state. Do not
+select, activate, repeat, or authorize a concrete object, fixture, body mark,
+contact target, supernatural effect, or character action. Those decisions belong
+only to each current Scene's original lyrics and visual-beat cue card. State what
+emotional or editorial quality may recur and what must change. Do not endorse
+identical walking, swaying, or camera motion as the main event of consecutive
+Scenes. Do not output JSON, Markdown, headings, timestamps, dialogue, quoted
+speech, or extra commentary.
 Never print the five characters <TAB>.

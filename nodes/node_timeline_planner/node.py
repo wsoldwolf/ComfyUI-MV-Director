@@ -12,6 +12,7 @@ from time import perf_counter
 from typing import Any
 
 try:
+    from ...core.direction.profiles import planner_profile_metadata
     from ...core.artifacts import DirectionArtifact, EMDTextArtifact, normalize_newlines, sha256_text
     from ...core.inference import (
         LlamaCppLifecycle,
@@ -22,6 +23,10 @@ try:
     )
     from ...core.planner import (
         PLANNER_ALGORITHM_VERSION,
+        build_grounded_cue_grammar,
+        build_discovery_grammar,
+        build_action_grammar,
+        build_action_audit_grammar,
         PlannerContent,
         generate_planner_content,
         normalize_concept_emd,
@@ -30,6 +35,7 @@ try:
         render_planner_content,
     )
 except ImportError:  # Standalone repository tests.
+    from core.direction.profiles import planner_profile_metadata
     from core.artifacts import DirectionArtifact, EMDTextArtifact, normalize_newlines, sha256_text
     from core.inference import (
         LlamaCppLifecycle,
@@ -40,6 +46,10 @@ except ImportError:  # Standalone repository tests.
     )
     from core.planner import (
         PLANNER_ALGORITHM_VERSION,
+        build_grounded_cue_grammar,
+        build_discovery_grammar,
+        build_action_grammar,
+        build_action_audit_grammar,
         PlannerContent,
         generate_planner_content,
         normalize_concept_emd,
@@ -58,10 +68,13 @@ CACHE_MODES = ("reuse", "refresh", "disabled")
 CHAT_FORMATS = ("auto", "qwen", "gemma")
 LIP_SYNC_MODES = ("off", "context_loop", "audio_reference", "lyrics")
 _PROMPT_FILES = {
+    "lyric-cues": "timeline_planner_lyric_cues_system_prompt.txt",
     "visual-beats": "timeline_planner_visual_beats_system_prompt.txt",
+    "visual-beats-bounded": "timeline_planner_visual_beats_bounded_system_prompt.txt",
     "song-direction": "timeline_planner_song_direction_system_prompt.txt",
     "shot-layout": "timeline_planner_shot_layout_system_prompt.txt",
     "actions": "timeline_planner_actions_system_prompt.txt",
+    "action-audit": "timeline_planner_action_audit_system_prompt.txt",
     "cameras": "timeline_planner_cameras_system_prompt.txt",
 }
 
@@ -127,6 +140,7 @@ class _LlamaPlannerBackend:
             "song-direction": 1,
             "shot-layout": scene_batches,
             "actions": scene_batches,
+            "action-audit": scene_batches,
             "cameras": scene_batches,
         }
 
@@ -161,6 +175,10 @@ class _LlamaPlannerBackend:
             retry_label = "boundary_mix"
         elif value.get("retry") == "repeated_slots_only":
             retry_label = "diversity"
+        elif value.get("retry") == "semantic_audit_rejected_slots":
+            retry_label = "semantic_audit"
+        elif "audit_round" in value:
+            retry_label = f"audit_{value['audit_round']}"
         else:
             retry_label = "no"
         return len(slots), scene_label, retry_label
@@ -175,6 +193,38 @@ class _LlamaPlannerBackend:
         interrupt_callback: Any = None,
     ) -> str:
         model_payload = f"/no_think\n{payload}"
+        grammar_kwargs: dict[str, str] = {}
+        if task == "lyric-cues":
+            request = json.loads(payload)
+            grammar_kwargs["grammar"] = build_discovery_grammar(request["slots"])
+            _LOGGER.info("[MV Director - Timeline Planner] output constraint=lyric_cue_v1; lines=%d", len(request["slots"]))
+        if task in {"actions", "action-audit"}:
+            request = json.loads(payload)
+            if task == "action-audit":
+                grammar_kwargs["grammar"] = build_action_audit_grammar(
+                    [slot["slot"] for slot in request["slots"]],
+                    [v.removeprefix("REJECT:") for v in request["audit_contract"]["verdicts"]
+                     if v.startswith("REJECT:")],
+                )
+            elif request.get("planner_policy_contract", {}).get("policy_id") == "anime_emotional_mv":
+                grammar_kwargs["grammar"] = build_action_grammar(request["slots"])
+            if grammar_kwargs:
+                _LOGGER.info(
+                    "[MV Director - Timeline Planner] output constraint=%s; slots=%d; "
+                    "required_fragments=%d",
+                    "audit_verdict_v1" if task == "action-audit" else "action_grounding_v1",
+                    len(request["slots"]),
+                    sum(bool(s.get(f)) for s in request["slots"] for f in (
+                        "required_spatial_anchor", "required_visible_development")),
+                )
+        if task == "visual-beats":
+            request = json.loads(payload)
+            if request.get("planner_policy_contract", {}).get("lyric_interpretation") == "bounded":
+                grammar_kwargs["grammar"] = build_grounded_cue_grammar(request["slots"])
+                _LOGGER.info(
+                    "[MV Director - Timeline Planner] output constraint=cue_source_v1; slots=%d",
+                    len(request["slots"]),
+                )
         count = self.lifecycle.count_serialized_prompt(system_prompt + "\n" + model_payload)
         build_context_budget(
             count.count,
@@ -224,6 +274,7 @@ class _LlamaPlannerBackend:
                 ],
                 call_config,
                 interrupt_callback=interrupt_callback,
+                **grammar_kwargs,
             )
         except BaseException:
             _LOGGER.error(
@@ -383,6 +434,9 @@ class MVDirectorTimelinePlanner:
                     "concept_emd": concept,
                     "scene_emd": scene,
                     "direction": selected_direction.to_dict(),
+                    "planner_profile": planner_profile_metadata(
+                        selected_direction.camera_profile_id
+                    ),
                     "lip_sync_active": lip_sync_mode != "off",
                     "lip_sync_target": lip_sync_target,
                     "scenes_per_batch": scenes_per_batch,

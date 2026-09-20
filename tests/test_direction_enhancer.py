@@ -589,18 +589,19 @@ class DirectionEnhancerTests(unittest.TestCase):
         self.assertIn("古傷", STYLE_PROFILES["anime_story_mv"])
         self.assertIn("皮膚と衣装を清潔で損傷のない状態", STYLE_PROFILES["anime_story_mv"])
         self.assertIn("cinema_mv", DIRECTION_PRESETS)
-        self.assertIn("概ね3分の2", CAMERA_PROFILES["anime_emotional_mv"])
+        self.assertIn("概ね半数", CAMERA_PROFILES["anime_emotional_mv"])
+        self.assertIn("2.5秒以上", CAMERA_PROFILES["anime_emotional_mv"])
         self.assertIn(
             "Arc Shot with large amplitude at fast speed",
             CAMERA_PROFILES["anime_emotional_mv"],
         )
         self.assertIn("一段強く誇張", MOTION_PROFILES["anime_emotional_mv"])
         self.assertIn(
-            "つま先の割れは親指と残り四趾の間の一か所",
+            "つま先は親指側と残り四趾側の二つの連続した布形状",
             STYLE_PROFILES["anime_emotional_mv"],
         )
         self.assertIn(
-            "指、爪又は素足を露出させず",
+            "滑らかで不透明な白いsplit-toe足袋",
             STYLE_PROFILES["anime_emotional_mv"],
         )
         self.assertIn("単なる歩行", MOTION_PROFILES["anime_emotional_mv"])

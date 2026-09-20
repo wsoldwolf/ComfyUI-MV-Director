@@ -385,6 +385,46 @@ class Ref2VACompilerTests(unittest.TestCase):
         self.assertNotIn("widely", prompt)
         self.assertNotIn("quickly", prompt)
 
+    def test_camera_directive_is_separated_from_translated_prose(self) -> None:
+        source = """# サブジェクト
+* 人物。
+> `シーン` 1
+# シーン 00:00.000 --> 00:01.000
+* `H3長` 22
+## ショット 00:00.000
+* Arc Shot with large amplitude at fast speed人物の側面を通る。
+"""
+        result = compile_ref2va(source, EchoTranslator())
+        prompt = "\n".join(result.plan["shots"][0]["prompt"])
+        self.assertIn(
+            "Arc Shot with large amplitude at fast speed EN:人物の側面を通る。",
+            prompt,
+        )
+
+    def test_japanese_footwear_terms_are_mechanically_distinct(self) -> None:
+        class FootwearTranslator:
+            def translate(self, units):
+                self.units = tuple(units)
+                return tuple(f"EN:{unit}" for unit in units)
+
+        translator = FootwearTranslator()
+        source = """# サブジェクト
+* 白い足袋と、赤い鼻緒の黒い木下駄を着用する人物。
+> `シーン` 1
+# シーン 00:00.000 --> 00:01.000
+* `H3長` 22
+## ショット 00:00.000
+* 人物は立つ。
+"""
+        result = compile_ref2va(source, translator)
+        prompt = "\n".join(result.plan["shots"][0]["prompt"])
+        self.assertTrue(all("足袋" not in unit for unit in translator.units))
+        self.assertTrue(all("下駄" not in unit for unit in translator.units))
+        self.assertTrue(all("鼻緒" not in unit for unit in translator.units))
+        self.assertIn("tabi", prompt)
+        self.assertIn("geta", prompt)
+        self.assertIn("hanao strap", prompt)
+
     def test_face_performance_cut_prompts_are_opaque_translation_spans(self) -> None:
         source = f"""# サブジェクト
 * 人物。

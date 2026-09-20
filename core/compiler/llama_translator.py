@@ -19,7 +19,7 @@ from ..protocols import parse_llm_records
 from .errors import CompilerError
 
 
-TRANSLATION_PROMPT_VERSION = "mvd-prompt-translation-ja-en-v13"
+TRANSLATION_PROMPT_VERSION = "mvd-prompt-translation-ja-en-v14"
 TRANSLATION_RECORD_TYPE = "TRANSLATION"
 TRANSLATION_MAX_BATCH_UNITS = 7
 TRANSLATION_RECOVERY_CHUNK_CHARS = 120
@@ -256,7 +256,9 @@ class LlamaPromptTranslator:
                     "or the Japanese source. Preserve concrete local visual "
                     "geometry, including shape, count, placement, scale, color, "
                     "material, and exclusions; never generalize an unusual "
-                    "identity feature into a conventional default."
+                    "identity feature into a conventional default. Treat tabi, "
+                    "geta, and hanao as distinct protected Japanese footwear "
+                    "terms and never translate tabi as geta."
                 ),
                 "slots": [
                     {"slot": index, "japanese_text": text}

@@ -104,6 +104,30 @@ class LlamaCppLifecycleTests(unittest.TestCase):
             )
             self.assertIs(model.completion_kwargs["reasoning"], False)
 
+    def test_optional_grammar_is_forwarded_and_missing_support_is_explicit(self):
+        from core.inference import InferenceBackendError
+        with TemporaryDirectory() as temporary:
+            path = Path(temporary) / "model.gguf"
+            path.write_bytes(b"model")
+            parsed = []
+            class Grammar:
+                @staticmethod
+                def from_string(text, *, verbose):
+                    parsed.append((text, verbose))
+                    return "compiled grammar"
+            module = SimpleNamespace(**vars(FAKE_MODULE), LlamaGrammar=Grammar)
+            lifecycle = LlamaCppLifecycle(llama_module=module, llama_class=FakeLlama)
+            model = lifecycle.ensure_loaded(path, LlamaRuntimeConfig())
+            lifecycle.complete_chat([], LlamaRuntimeConfig(), grammar='root ::= "x"')
+            self.assertEqual(parsed, [('root ::= "x"', False)])
+            self.assertEqual(model.completion_kwargs["grammar"], "compiled grammar")
+            lifecycle.complete_chat([], LlamaRuntimeConfig())
+            self.assertNotIn("grammar", model.completion_kwargs)
+            del module.LlamaGrammar
+            with self.assertRaisesRegex(InferenceBackendError, "LlamaGrammar"):
+                lifecycle.complete_chat([], LlamaRuntimeConfig(), grammar='root ::= "x"')
+            lifecycle.clear()
+
     def test_interrupt_exception_propagates_before_inference(self) -> None:
         class Cancelled(BaseException):
             pass

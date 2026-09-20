@@ -174,6 +174,7 @@ class LlamaPromptTranslatorTests(unittest.TestCase):
         payload = json.loads(LlamaPromptTranslator._payload(("丸い眉毛",)))
         self.assertIn("Preserve concrete local visual geometry", payload["instruction"])
         self.assertIn("conventional default", payload["instruction"])
+        self.assertIn("never translate tabi as geta", payload["instruction"])
 
     def test_isolated_translation_wrapper_recovery_is_unambiguous(self) -> None:
         cases = (

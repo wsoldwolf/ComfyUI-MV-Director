@@ -32,7 +32,11 @@ class DirectionProfileLoaderTests(unittest.TestCase):
             )
             (root / "camera" / "custom_camera.md").write_text(
                 "# プロファイル\n"
-                "* `planner_policy` emotional_test\n\n"
+                "* `planner_policy` emotional_test\n"
+                "* `lyric_cue_mode` automatic\n"
+                "* `lyric_interpretation` bounded\n"
+                "* `priority_lyric_cues` 苔:object,花:symbolic_motif,"
+                "狐火:external_effect\n\n"
                 "# 共通プロンプト\n## カメラ\n* arcで回り込む。\n",
                 encoding="utf-8",
             )
@@ -54,6 +58,75 @@ class DirectionProfileLoaderTests(unittest.TestCase):
                 catalog.camera_planner_policy["custom_camera"],
                 "emotional_test",
             )
+            self.assertEqual(
+                catalog.camera_lyric_cue_mode["custom_camera"],
+                "automatic",
+            )
+            self.assertEqual(
+                catalog.camera_lyric_interpretation["custom_camera"], "bounded"
+            )
+            self.assertEqual(
+                catalog.camera_priority_lyric_cues["custom_camera"],
+                (
+                    ("苔", "object"),
+                    ("花", "symbolic_motif"),
+                    ("狐火", "external_effect"),
+                ),
+            )
+
+    def test_rejects_invalid_priority_lyric_cue_kind(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "bad_camera.md"
+            path.write_text(
+                "# プロファイル\n"
+                "* `planner_policy` emotional_test\n"
+                "* `priority_lyric_cues` 狐火:handheld_effect\n"
+                "# 共通プロンプト\n## カメラ\n* arc。\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(
+                DirectionProfileError, "priority_lyric_cues kind"
+            ):
+                load_direction_profile(path, "camera")
+
+    def test_rejects_invalid_lyric_cue_mode(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "bad_camera.md"
+            path.write_text(
+                "# プロファイル\n"
+                "* `planner_policy` emotional_test\n"
+                "* `lyric_cue_mode` dictionary\n"
+                "# 共通プロンプト\n## カメラ\n* arc。\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(
+                DirectionProfileError, "lyric_cue_mode"
+            ):
+                load_direction_profile(path, "camera")
+
+    def test_interpretation_is_strict_and_defaults_to_literal(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "camera.md"
+            body = "# 共通プロンプト\n## カメラ\n* arc。\n"
+            path.write_text(body, encoding="utf-8")
+            self.assertEqual(
+                load_direction_profile(path, "camera").lyric_interpretation, "literal"
+            )
+            for value in ("unlimited", "Bounded", "bounded extra"):
+                path.write_text(
+                    "# プロファイル\n"
+                    f"* `lyric_interpretation` {value}\n" + body,
+                    encoding="utf-8",
+                )
+                with self.assertRaisesRegex(DirectionProfileError, "lyric_interpretation"):
+                    load_direction_profile(path, "camera")
+            path.write_text(
+                "# プロファイル\n* `lyric_interpretation` bounded\n"
+                "# 共通プロンプト\n## スタイル\n* anime。\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(DirectionProfileError, "not supported by style"):
+                load_direction_profile(path, "style")
 
     def test_filename_is_the_profile_id(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

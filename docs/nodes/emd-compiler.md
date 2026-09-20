@@ -34,6 +34,8 @@
 - `# シーン設定`の背景PictureはSubjectにせず、環境専用definition、保持契約及び`environment_reference` required inputへ変換します。
 - ``画像1``、``動画1``、``音声1``等を`<Picture 1>`、`<Video 1>`、`<Audio 1>`へ変換します。
 - `<d>...</d>`、参照ID及びMiniMax H3正式Camera Motion Typeは自由文から分離し、翻訳LLMへ渡しません。前後の日本語fragmentだけを翻訳して原位置へ再結合するため、`Arc Shot`、`Tracking Shot`、`with large amplitude`、`at fast speed`等はLLMのplaceholder出力に依存せず完全一致でPlanへ残ります。
+- Camera Motion Typeと翻訳本文の境界では、両側が英数字で密着する場合に一個の空白を機械挿入します。これにより`at fast speedThe...`のような連結を防ぎ、Motion Type自体と翻訳本文は変更しません。
+- 履物語彙`足袋`、`下駄`及び`鼻緒`は翻訳fragmentから機械的に分離し、それぞれ`tabi`、`geta`及び`hanao strap`として原位置へ戻します。小型翻訳LLMが`足袋`を`white geta`へ一般化し、二種類の下駄を同時指定することを防ぎます。
 - 英語だけの行は完全pass-throughします。
 - `already_english`ではmodelの選択が古くてもGGUFをresolve/loadしません。
 - 必須Ref2VA六セクションは固定templateで組み立てます。

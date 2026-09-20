@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import logging
 from typing import Mapping
 
 from ..artifacts import DirectionArtifact, EMDTextArtifact
@@ -15,9 +16,11 @@ from ..h3_contract import DEFAULT_H3_TIMING_PROFILE, H3TimingProfile
 from ..lyrics import format_emd_time
 from .errors import TimelinePlannerError
 from .template import PlannerTemplate
+from .text_normalization import strip_generated_line_continuation
 
 
 _TARGET_RE = re.compile(r"サブジェクト[1-4]\Z")
+_LOGGER = logging.getLogger("mv_director.nodes")
 
 
 def _concept_subject_count(concept_emd: str) -> int:
@@ -85,6 +88,7 @@ def render_completed_emd(
                 lines.append(f"## {heading}")
                 lines.extend(f"* {value}" for value in values)
 
+    cleaned_generated_lines = 0
     for scene in template.scenes:
         continuation = " 継続" if scene.continuation else ""
         lines.extend(
@@ -114,6 +118,10 @@ def render_completed_emd(
             body = [*author_body]
             action = actions.get((scene.scene_number, shot_index), "").strip()
             camera = cameras.get((scene.scene_number, shot_index), "").strip()
+            cleaned_action = strip_generated_line_continuation(action)
+            cleaned_camera = strip_generated_line_continuation(camera)
+            cleaned_generated_lines += int(cleaned_action != action) + int(cleaned_camera != camera)
+            action, camera = cleaned_action, cleaned_camera
             if action:
                 body.append(action)
             if camera:
@@ -138,6 +146,11 @@ def render_completed_emd(
                 lines.append(
                     f"* `リップシンク` `Audio参照` `{lip_sync_target}` `音声{lip_sync_audio_slot}`"
                 )
+    if cleaned_generated_lines:
+        _LOGGER.info(
+            "[MV Director - Timeline Planner] removed standalone trailing backslash at EMD render; lines=%d",
+            cleaned_generated_lines,
+        )
     text = "\n".join(lines) + "\n"
     try:
         parse_emd(text, timing_profile=timing_profile)

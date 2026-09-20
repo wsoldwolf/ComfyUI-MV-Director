@@ -33,15 +33,30 @@ from core.planner.layout import (
     repair_scene_layout_selection,
 )
 from core.planner.engine import (
+    _Entity,
     _anime_emotional_mv_camera_emphasis,
     _anime_story_mv_face_zoom_key,
     _anime_story_mv_long_arc_keys,
+    _action_audit_failures,
+    _action_budget_violations,
     _camera_budget_violations,
     _camera_editorial_role,
+    _camera_plan_contract_violations,
     _face_arc_transitions,
+    _fallback_camera_plan,
     _performance_role,
+    _priority_cue_card_violations,
+    _priority_cue_phase,
+    _priority_lyric_cues_from_sources,
+    _scene_batches_with_isolated_priority_cues,
+    _strip_redundant_record_envelope,
+    _unexpected_priority_cues,
+    _with_grounding_transfer_requirements,
+    _parse_cue_card,
+    _parse_camera_plan,
     _recover_unframed_records,
     _repair_boundary_contract,
+    _render_camera_plan,
     _satisfies_boundary_contract,
 )
 from core.planner.template import PlannerTemplate
@@ -96,11 +111,14 @@ class FakePlannerBackend:
     def complete_planner(self, *, task, system_prompt, payload, config, interrupt_callback=None):
         value = json.loads(payload)
         self.calls.append((task, value))
+        if task == "lyric-cues":
+            return "\n".join(f"DISCOVERY\t{item['slot']}\tnone|なし" for item in value["slots"])
         record_type = {
             "visual-beats": "BEAT",
             "song-direction": "DIRECTION",
             "shot-layout": "LAYOUT",
             "actions": "ACTION",
+            "action-audit": "AUDIT",
             "cameras": "CAMERA",
         }[task]
         rows = []
@@ -126,14 +144,27 @@ class FakePlannerBackend:
                 )
                 text = {
                     "visual-beats": (
-                        "鳥居へ歩み寄り、触れて振り返る視覚動作 "
-                        f"{item.get('scene_number', 0)}"
+                        (
+                            "感情=決意｜根拠=千年鳥居｜対象=千年鳥居｜"
+                            "接触=禁止｜現象=なし｜配置=参道奥の鳥居｜"
+                            "可視展開=鳥居の輪郭が夜空に浮かぶ｜身体主導=胸郭と肩の反転｜"
+                            "終端=鳥居へ正対して静止"
+                        )
+                        if item.get("lyrics")
+                        else (
+                            "感情=余韻｜根拠=なし｜対象=なし｜接触=禁止｜"
+                            "現象=なし｜配置=なし｜可視展開=なし｜身体主導=呼吸と重心移動｜終端=静止"
+                        )
                     ),
                     "song-direction": "夜から朝へ進み、鳥居を反復する。",
                     "actions": (
-                        "サブジェクト1が重心を移しながら歩く。"
-                        f"{identity} 「生成台詞」"
+                        _grounded_fixture_action(
+                            item,
+                            "サブジェクト1が重心を移しながら歩く。"
+                            f"{identity} 「生成台詞」",
+                        )
                     ),
+                    "action-audit": "PASS",
                     "cameras": (
                         (
                             "Arc Shot with large amplitude at fast speed "
@@ -150,16 +181,61 @@ class FakePlannerBackend:
                         + identity
                     ),
                 }[task]
+                if task == "cameras" and item.get("camera_protocol") == "finite_v1":
+                    relation = item.get("face_arc_transition")
+                    if item.get("long_arc_emphasis") or relation:
+                        text = (
+                            "MOTION=Arc Shot with large amplitude at fast speed｜"
+                            + (
+                                "START_SCALE=head_and_shoulders｜END_SCALE=full_body｜"
+                                "START_VIEW=front_three_quarter｜END_VIEW=side｜"
+                                "PATH=arc_right_60_120_70_90｜COVERAGE=whole_body_emotion"
+                                if relation == "arc_out_of_previous_face_cut"
+                                else "START_SCALE=full_body｜END_SCALE=head_and_shoulders｜"
+                                "START_VIEW=low_front_three_quarter｜END_VIEW=front_three_quarter｜"
+                                "PATH=arc_left_60_120_70_90｜COVERAGE=face_eyes_mouth"
+                            )
+                        )
+                    elif item.get("face_zoom_emphasis"):
+                        text = (
+                            "MOTION=Zoom In with large amplitude at fast speed｜"
+                            "START_SCALE=head_and_shoulders｜END_SCALE=face_closeup｜"
+                            "START_VIEW=front_three_quarter｜END_VIEW=front_three_quarter｜"
+                            "PATH=zoom_in_35_55｜COVERAGE=face_eyes_mouth"
+                        )
+                    else:
+                        text = (
+                            "MOTION=Push In at fast speed｜START_SCALE=wide｜"
+                            "END_SCALE=medium｜START_VIEW=front_three_quarter｜"
+                            "END_VIEW=front_three_quarter｜PATH=push_in｜"
+                            "COVERAGE=environment_relation"
+                        )
                 if task == "cameras" and (
                     value.get("diversity_retry")
                     or value.get("camera_quality_retry")
-                ):
+                ) and item.get("camera_protocol") != "finite_v1":
                     text = (
                         "Truck Right at fast speed で人物の肩越しに鳥居を横切る。"
                         + identity
                     )
             rows.append(f"{record_type}\t{slot}\t{text}")
         return "\n".join(rows)
+
+
+def _grounded_fixture_action(
+    item: dict[str, object], body: str
+) -> str:
+    fragments = [
+        str(item.get("required_spatial_anchor", "")).strip(),
+        str(item.get("required_visible_development", "")).strip(),
+    ]
+    grounding = item.get("visual_beat_grounding")
+    if isinstance(grounding, dict) and grounding.get("valid"):
+        target = str(grounding.get("target", "")).strip()
+        if target and target not in {"なし", "無し", "none", "NONE"}:
+            fragments.append(f"{target}へ注意を向ける")
+    fragments.append(body)
+    return "。".join(fragment.rstrip("。") for fragment in fragments if fragment)
 
 
 class DialogueOnlyPlannerBackend(FakePlannerBackend):
@@ -171,6 +247,7 @@ class DialogueOnlyPlannerBackend(FakePlannerBackend):
             "song-direction": "DIRECTION",
             "shot-layout": "LAYOUT",
             "actions": "ACTION",
+            "action-audit": "AUDIT",
             "cameras": "CAMERA",
         }[task]
         if task == "shot-layout":
@@ -184,10 +261,14 @@ class DialogueOnlyPlannerBackend(FakePlannerBackend):
                 )
                 for item in value["slots"]
             )
-        if task not in {"actions", "cameras"}:
+        if task not in {"actions", "cameras", "action-audit"}:
             text = "有効な視覚計画"
             return "\n".join(
                 f"{record_type}\t{item['slot']}\t{text}" for item in value["slots"]
+            )
+        if task == "action-audit":
+            return "\n".join(
+                f"AUDIT\t{item['slot']}\tPASS" for item in value["slots"]
             )
         return "\n".join(
             f"{record_type}\t{item['slot']}\t「生成台詞だけ」" for item in value["slots"]
@@ -232,6 +313,7 @@ class SmallModelFormattingBackend(FakePlannerBackend):
             "song-direction": "DIRECTION",
             "shot-layout": "LAYOUT",
             "actions": "ACTION",
+            "action-audit": "AUDIT",
             "cameras": "CAMERA",
         }[task]
         if task == "visual-beats":
@@ -263,11 +345,85 @@ def prompts() -> dict[str, str]:
         "song-direction": "direction",
         "shot-layout": "layout",
         "actions": "actions",
+        "action-audit": "action-audit",
         "cameras": "cameras",
     }
 
 
 class TimelinePlannerCoreTests(unittest.TestCase):
+    def test_duplicate_record_envelope_is_removed_without_rewriting_text(self) -> None:
+        cases = (
+            ("ACTION 1 胸郭を起こす。", "ACTION", 1, "胸郭を起こす。"),
+            ("ACTION 14 1 視線を上げる。", "ACTION", 1, "視線を上げる。"),
+            ("1 タブ　肩を引く。", "ACTION", 1, "肩を引く。"),
+            ("AUDIT 2 PASS", "AUDIT", 2, "PASS"),
+        )
+        for text, record_type, slot, expected in cases:
+            with self.subTest(text=text):
+                self.assertEqual(
+                    _strip_redundant_record_envelope(text, record_type, slot),
+                    (expected, True),
+                )
+        self.assertEqual(
+            _strip_redundant_record_envelope(
+                "御神木を見上げ、胸郭を起こす。",
+                "ACTION",
+                1,
+            ),
+            ("御神木を見上げ、胸郭を起こす。", False),
+        )
+
+    def test_duplicate_action_and_audit_wrappers_are_recovered_in_plan(self) -> None:
+        class DuplicateEnvelopeBackend(FakePlannerBackend):
+            def complete_planner(
+                self,
+                *,
+                task,
+                system_prompt,
+                payload,
+                config,
+                interrupt_callback=None,
+            ):
+                response = super().complete_planner(
+                    task=task,
+                    system_prompt=system_prompt,
+                    payload=payload,
+                    config=config,
+                    interrupt_callback=interrupt_callback,
+                )
+                if task not in {"actions", "action-audit"}:
+                    return response
+                rows = []
+                for line in response.splitlines():
+                    record_type, slot, text = line.split("\t", 2)
+                    rows.append(
+                        f"{record_type}\t{slot}\t"
+                        f"{record_type} {slot} {text}"
+                    )
+                return "\n".join(rows)
+
+        result = plan_timeline(
+            DuplicateEnvelopeBackend(),
+            template_emd=TEMPLATE,
+            concept_emd=CONCEPT,
+            direction=DirectionArtifact(camera_profile_id="anime_emotional_mv"),
+            lip_sync_mode="off",
+            lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1,
+            scenes_per_batch=3,
+            system_prompts=prompts(),
+            runtime_config=runtime(),
+        )
+        self.assertTrue(result.complete)
+        self.assertFalse(result.missing)
+        self.assertGreaterEqual(result.content.protocol_recovered_count, 4)
+        self.assertTrue(
+            all(
+                not text.startswith(("ACTION ", "AUDIT "))
+                for _scene, _shot, text in result.content.actions
+            )
+        )
+
     def test_unframed_camera_lines_are_recovered_without_rewriting_text(self) -> None:
         response = (
             "Arc Shot with large amplitude at fast speed で側面を通る。\n"
@@ -636,12 +792,12 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertIn("never turn one into the\nAction's contact target", prompt)
         self.assertIn("planner_policy_contract.policy_id is anime_emotional_mv", prompt)
         self.assertIn("half-lidded hold", prompt)
-        self.assertIn("support leg, free leg", prompt)
+        self.assertIn("Use only the eyes or body parts needed", prompt)
         self.assertIn("keep the effect autonomous", prompt)
         self.assertIn("current Scene's original lyric", prompt)
         self.assertIn("named without an explicit verb", prompt)
         self.assertIn("autonomous state, motion, transformation", prompt)
-        self.assertIn("final pose must differ strongly", prompt)
+        self.assertIn("not another complete replay", prompt)
 
     def test_visual_beat_prompt_treats_complete_direction_as_immutable(self) -> None:
         prompt = (
@@ -649,7 +805,7 @@ class TimelinePlannerCoreTests(unittest.TestCase):
             / "prompts"
             / "timeline_planner_visual_beats_system_prompt.txt"
         ).read_text(encoding="utf-8")
-        self.assertIn("complete direction", prompt)
+        self.assertIn("performance-scoped direction", prompt)
         self.assertIn("immutable common constraint set", prompt)
         self.assertIn("must not shine, glow, radiate, bloom", prompt)
         self.assertIn("subject_roster", prompt)
@@ -668,12 +824,16 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         )
         self.assertIn("current Scene's original lyric", prompt)
         self.assertIn("lyric-selected target is consumed", prompt)
-        self.assertIn("support leg", prompt)
+        self.assertIn("not a checklist of compulsory body mechanics", prompt)
         self.assertIn("moves independently through", prompt)
-        self.assertIn("Do not\nplace it in the Subject's hand", prompt)
+        self.assertIn("place it in the Subject's hand", prompt)
         self.assertIn("Read every lyric line", prompt)
         self.assertIn("Do not ignore a lyric noun", prompt)
-        self.assertIn("larger than naturalistic acting", prompt)
+        self.assertIn("a lyric-selected effect with a", prompt)
+        self.assertIn("現象=...｜配置=...｜可視展開=...｜身体主導=...", prompt)
+        self.assertIn("exact contiguous excerpt", prompt)
+        self.assertIn("bounded may select one compatible non-destructive contact", prompt)
+        self.assertIn("literal requires a", prompt)
 
     def test_camera_prompt_keeps_arc_and_closeup_shot_local(self) -> None:
         prompt = (
@@ -1054,7 +1214,7 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertEqual(document.scenes[0].h3_length, 243)
         self.assertEqual(document.scenes[0].shots[0].lyric_annotations[0].text, "千年鳥居をくぐるそなたよ")
         song_payload = backend.calls[1][1]
-        self.assertNotIn("千年鳥居", json.dumps(song_payload, ensure_ascii=False))
+        self.assertNotIn('"lyrics"', json.dumps(song_payload, ensure_ascii=False))
         layout_payload = backend.calls[2][1]
         self.assertEqual(layout_payload["slots"][0]["candidates"][0]["id"], "B0")
         self.assertEqual(
@@ -1159,6 +1319,11 @@ class TimelinePlannerCoreTests(unittest.TestCase):
             result.content.cameras[0][2],
             ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA,
         )
+        self.assertTrue(
+            result.content.cameras[1][2].startswith(
+                "Arc Shot with large amplitude at fast speed."
+            )
+        )
         payloads = {task: payload for task, payload in backend.calls}
         for task in ("visual-beats", "shot-layout", "actions", "cameras"):
             self.assertEqual(
@@ -1166,8 +1331,26 @@ class TimelinePlannerCoreTests(unittest.TestCase):
                 "anime_emotional_mv",
             )
         camera_contract = payloads["cameras"]["camera_batch_contract"]
+        self.assertEqual(
+            payloads["cameras"]["camera_protocol_contract"]["id"],
+            "finite_v1",
+        )
+        self.assertEqual(
+            payloads["cameras"]["slots"][0]["camera_protocol"],
+            "finite_v1",
+        )
         self.assertLessEqual(camera_contract["face_zoom_emphasis_count"], 1)
         self.assertGreaterEqual(camera_contract["arc_shot_maximum"], 0)
+        self.assertNotIn("song_direction", payloads["actions"])
+        self.assertNotIn("song_direction", payloads["cameras"])
+        self.assertIn("motion", payloads["actions"]["direction"])
+        self.assertNotIn("camera", payloads["actions"]["direction"])
+        self.assertIn("camera", payloads["cameras"]["direction"])
+        self.assertNotIn("motion", payloads["cameras"]["direction"])
+        self.assertIn(
+            payloads["cameras"]["slots"][0]["arc_permission"],
+            {"required", "forbidden"},
+        )
         policy = payloads["cameras"]["planner_policy_contract"]
         self.assertEqual(
             policy["lyric_trigger_scope"],
@@ -1184,7 +1367,7 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         )
         self.assertEqual(
             policy["arc_density"],
-            "two_thirds_of_eligible_non_face_slots",
+            "approximately_half_of_eligible_non_face_slots",
         )
         self.assertEqual(
             policy["noun_only_lyric_visualization"],
@@ -1460,7 +1643,7 @@ class TimelinePlannerCoreTests(unittest.TestCase):
             (1, 2),
         )
 
-    def test_anime_emotional_mv_selects_dense_arc_and_requested_face_phrases(self) -> None:
+    def test_anime_emotional_mv_selects_balanced_arc_and_requested_face_phrases(self) -> None:
         entities = [
             type("Entity", (), {
                 "scene_number": 1 + index // 3,
@@ -1479,7 +1662,7 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         arc_keys, face_keys, transitions = (
             _anime_emotional_mv_camera_emphasis(entities, face_target=2)
         )
-        self.assertEqual(len(arc_keys), 8)
+        self.assertEqual(len(arc_keys), 5)
         self.assertEqual(len(face_keys), 2)
         self.assertTrue(transitions)
         self.assertTrue(set(transitions).issubset(arc_keys))
@@ -1487,6 +1670,26 @@ class TimelinePlannerCoreTests(unittest.TestCase):
 
         _, sparse_face_keys, _ = _anime_emotional_mv_camera_emphasis(entities)
         self.assertEqual(len(sparse_face_keys), 1)
+
+    def test_anime_emotional_mv_does_not_assign_long_arc_to_short_shot(self) -> None:
+        entities = [
+            type("Entity", (), {
+                "scene_number": 1,
+                "key": (1, index + 1),
+                "value": {
+                    "editorial_role": "upper_body_performance_coverage",
+                    "shot_duration_ms": duration,
+                },
+            })()
+            for index, duration in enumerate((1400, 2600, 3200, 1800))
+        ]
+        arc_keys, _, _ = _anime_emotional_mv_camera_emphasis(
+            entities,
+            face_target=0,
+        )
+        self.assertNotIn((1, 1), arc_keys)
+        self.assertNotIn((1, 4), arc_keys)
+        self.assertTrue(arc_keys.issubset({(1, 2), (1, 3)}))
 
     def test_long_arc_emphasis_requires_large_fast_h3_phrase(self) -> None:
         entity = type("Entity", (), {
@@ -1528,6 +1731,82 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         )
         self.assertIn("required_h3_motion_type", violations[(1, 1)])
         self.assertIn("conflicting_camera_speed", violations[(1, 2)])
+
+    def test_camera_quality_rejects_arc_on_profile_forbidden_slot(self) -> None:
+        entity = type("Entity", (), {
+            "key": (1, 1),
+            "value": {
+                "arc_permission": "forbidden",
+                "lyrics": [],
+                "author_body": [],
+            },
+        })()
+        violations = _camera_budget_violations(
+            [entity],
+            {(1, 1): "Arc Shot at fast speed で人物の側面へ回る。"},
+            arc_maximum=1,
+        )
+        self.assertIn("unassigned_arc", violations[(1, 1)])
+
+    def test_camera_quality_requires_exactly_one_boundary_safe_h3_type(self) -> None:
+        entities = [
+            type("Entity", (), {
+                "key": (1, 1),
+                "value": {"lyrics": [], "author_body": []},
+            })()
+        ]
+        malformed = _camera_budget_violations(
+            entities,
+            {(1, 1): "Arc ShotTracking Shot at fast speed で人物を追う。"},
+            arc_maximum=1,
+        )
+        self.assertIn("required_h3_motion_type", malformed[(1, 1)])
+        multiple = _camera_budget_violations(
+            entities,
+            {(1, 1): "Arc Shot at fast speed で回り、Tracking Shotへ移る。"},
+            arc_maximum=1,
+        )
+        self.assertIn("exactly_one_h3_motion_type", multiple[(1, 1)])
+
+    def test_finite_camera_plan_parses_and_serializes_without_action_prose(self) -> None:
+        text = (
+            "MOTION=Arc Shot with large amplitude at fast speed｜"
+            "START_SCALE=full_body｜END_SCALE=head_and_shoulders｜"
+            "START_VIEW=low_front_three_quarter｜"
+            "END_VIEW=front_three_quarter｜"
+            "PATH=arc_left_60_120_70_90｜COVERAGE=face_eyes_mouth"
+        )
+        plan, violations = _parse_camera_plan(text)
+        self.assertEqual(violations, ())
+        self.assertIsNotNone(plan)
+        rendered = _render_camera_plan(plan)
+        self.assertTrue(
+            rendered.startswith("Arc Shot with large amplitude at fast speed.")
+        )
+        self.assertIn("60-to-120-degree left arc", rendered)
+        self.assertIn("complete singing mouth", rendered)
+        self.assertNotIn("石灯籠", rendered)
+
+    def test_finite_camera_plan_rejects_short_arc_and_path_mismatch(self) -> None:
+        plan, violations = _parse_camera_plan(
+            "MOTION=Arc Shot with large amplitude at fast speed｜"
+            "START_SCALE=full_body｜END_SCALE=medium｜"
+            "START_VIEW=front｜END_VIEW=side｜PATH=push_in｜"
+            "COVERAGE=whole_body_emotion"
+        )
+        self.assertEqual(violations, ())
+        entity = _Entity(
+            1,
+            (1, 1),
+            {
+                "shot_duration_ms": 1800,
+                "arc_permission": "forbidden",
+            },
+        )
+        contract = _camera_plan_contract_violations(entity, plan)
+        self.assertIn("camera_plan_motion_path_mismatch", contract)
+        self.assertIn("camera_plan_short_arc", contract)
+        self.assertIn("unassigned_arc", contract)
 
     def test_anime_emotional_mv_boundary_contract_allows_long_continue_run(self) -> None:
         scenes = tuple(
@@ -1700,6 +1979,342 @@ class TimelinePlannerCoreTests(unittest.TestCase):
             "主人公は鳥居へ身体を返し、肩越しに見据えて袖を払う。",
             [text for _scene, _shot, text in result.content.actions],
         )
+
+    def test_anime_emotional_camera_quality_exhaustion_is_advisory(self) -> None:
+        class PersistentCameraQualityBackend(FakePlannerBackend):
+            def complete_planner(
+                self,
+                *,
+                task,
+                system_prompt,
+                payload,
+                config,
+                interrupt_callback=None,
+            ):
+                value = json.loads(payload)
+                if task == "cameras":
+                    self.calls.append((task, value))
+                    return "\n".join(
+                        f"CAMERA\t{item['slot']}\t"
+                        f"Static Shot 正面の構図を保持する。{item['slot']}"
+                        for item in value["slots"]
+                    )
+                return super().complete_planner(
+                    task=task,
+                    system_prompt=system_prompt,
+                    payload=payload,
+                    config=config,
+                    interrupt_callback=interrupt_callback,
+                )
+
+        backend = PersistentCameraQualityBackend()
+        result = plan_timeline(
+            backend,
+            template_emd=TEMPLATE,
+            concept_emd=CONCEPT,
+            direction=DirectionArtifact(camera_profile_id="anime_emotional_mv"),
+            lip_sync_mode="off",
+            lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1,
+            scenes_per_batch=3,
+            system_prompts=prompts(),
+            runtime_config=runtime(),
+        )
+        self.assertTrue(result.complete)
+        self.assertEqual(result.missing, ())
+        self.assertIsNotNone(result.content)
+        self.assertGreater(result.content.camera_repetition_warning_count, 0)
+        camera_calls = [
+            payload for task, payload in backend.calls if task == "cameras"
+        ]
+        self.assertTrue(
+            any(
+                payload.get("retry") == "camera_quality_budget"
+                for payload in camera_calls
+            )
+        )
+        camera_texts = [
+            text for _scene, _shot, text in result.content.cameras
+        ]
+        self.assertTrue(all("Start with " in text for text in camera_texts))
+        self.assertTrue(all("正面の構図" not in text for text in camera_texts))
+
+    def test_anime_emotional_action_audit_retries_only_rejected_slots(self) -> None:
+        class SemanticAuditBackend(FakePlannerBackend):
+            def complete_planner(
+                self,
+                *,
+                task,
+                system_prompt,
+                payload,
+                config,
+                interrupt_callback=None,
+            ):
+                value = json.loads(payload)
+                if task == "action-audit":
+                    self.calls.append((task, value))
+                    return "\n".join(
+                        f"AUDIT\t{item['slot']}\t"
+                        + (
+                            "PASS"
+                            if "肩越し" in item["candidate_action"]
+                            or item["shot_index"] != 1
+                            else "REJECT:REFERENCE_POSE,SEMANTIC_REPETITION"
+                        )
+                        for item in value["slots"]
+                    )
+                if (
+                    task == "actions"
+                    and value.get("retry") == "action_quality_budget"
+                ):
+                    self.calls.append((task, value))
+                    return "\n".join(
+                        f"ACTION\t{item['slot']}\t"
+                        + _grounded_fixture_action(
+                            item,
+                            "主人公は千年鳥居を見据え、身体を引いて静止する。",
+                        )
+                        for item in value["slots"]
+                    )
+                if (
+                    task == "actions"
+                    and value.get("retry") == "semantic_audit_rejected_slots"
+                ):
+                    self.calls.append((task, value))
+                    return "\n".join(
+                        f"ACTION\t{item['slot']}\t"
+                        + _grounded_fixture_action(
+                            item,
+                            "主人公は肩越しに振り返り、袖を引いて鋭く静止する。",
+                        )
+                        for item in value["slots"]
+                    )
+                return super().complete_planner(
+                    task=task,
+                    system_prompt=system_prompt,
+                    payload=payload,
+                    config=config,
+                    interrupt_callback=interrupt_callback,
+                )
+
+        backend = SemanticAuditBackend()
+        result = plan_timeline(
+            backend,
+            template_emd=TEMPLATE,
+            concept_emd=CONCEPT,
+            direction=DirectionArtifact(camera_profile_id="anime_emotional_mv"),
+            lip_sync_mode="off",
+            lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1,
+            scenes_per_batch=3,
+            system_prompts=prompts(),
+            runtime_config=runtime(),
+        )
+        self.assertTrue(result.complete)
+        audit_calls = [payload for task, payload in backend.calls if task == "action-audit"]
+        self.assertEqual(len(audit_calls), 2)
+        self.assertIn(
+            "REJECT:MISSING_GROUNDED_CUE",
+            audit_calls[0]["audit_contract"]["verdicts"],
+        )
+        self.assertIn(
+            "REJECT:FACE_PERFORMANCE_MISSING",
+            audit_calls[0]["audit_contract"]["verdicts"],
+        )
+        repair_calls = [
+            payload
+            for task, payload in backend.calls
+            if task == "actions"
+            and payload.get("retry") == "semantic_audit_rejected_slots"
+        ]
+        self.assertEqual(len(repair_calls), 1)
+        self.assertEqual(len(repair_calls[0]["slots"]), 1)
+        self.assertEqual(
+            repair_calls[0]["slots"][0]["semantic_audit_reasons"],
+            ["REFERENCE_POSE", "SEMANTIC_REPETITION"],
+        )
+
+    def test_anime_emotional_action_audit_exhaustion_retains_best_candidate(self) -> None:
+        class RejectingAuditBackend(FakePlannerBackend):
+            def complete_planner(
+                self,
+                *,
+                task,
+                system_prompt,
+                payload,
+                config,
+                interrupt_callback=None,
+            ):
+                value = json.loads(payload)
+                if task == "action-audit":
+                    self.calls.append((task, value))
+                    return "\n".join(
+                        f"AUDIT\t{item['slot']}\tREJECT:PROFILE_CONFLICT"
+                        for item in value["slots"]
+                    )
+                if (
+                    task == "actions"
+                    and value.get("retry") == "semantic_audit_rejected_slots"
+                ):
+                    self.calls.append((task, value))
+                    return "\n".join(
+                        f"ACTION\t{item['slot']}\t"
+                        + _grounded_fixture_action(
+                            item,
+                            f"人物は両腕を広げて前傾する。{item['slot']}",
+                        )
+                        for item in value["slots"]
+                    )
+                return super().complete_planner(
+                    task=task,
+                    system_prompt=system_prompt,
+                    payload=payload,
+                    config=config,
+                    interrupt_callback=interrupt_callback,
+                )
+
+        backend = RejectingAuditBackend()
+        result = plan_timeline(
+            backend,
+            template_emd=TEMPLATE,
+            concept_emd=CONCEPT,
+            direction=DirectionArtifact(camera_profile_id="anime_emotional_mv"),
+            lip_sync_mode="off",
+            lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1,
+            scenes_per_batch=3,
+            system_prompts=prompts(),
+            runtime_config=runtime(),
+        )
+        self.assertTrue(result.complete)
+        self.assertEqual(result.missing, ())
+        self.assertIsNotNone(result.content)
+        self.assertGreater(result.content.action_repetition_warning_count, 0)
+        self.assertEqual(
+            len([payload for task, payload in backend.calls if task == "action-audit"]),
+            2,
+        )
+        self.assertEqual(
+            len(
+                [
+                    payload
+                    for task, payload in backend.calls
+                    if task == "actions"
+                    and payload.get("retry") == "semantic_audit_rejected_slots"
+                ]
+            ),
+            1,
+        )
+        self.assertIn("cameras", [task for task, _payload in backend.calls])
+
+    def test_anime_emotional_quality_failure_reaches_audit_repair(self) -> None:
+        class PersistentQualityBackend(FakePlannerBackend):
+            def complete_planner(
+                self,
+                *,
+                task,
+                system_prompt,
+                payload,
+                config,
+                interrupt_callback=None,
+            ):
+                value = json.loads(payload)
+                if task == "action-audit":
+                    self.calls.append((task, value))
+                    return "\n".join(
+                        f"AUDIT\t{item['slot']}\tPASS"
+                        for item in value["slots"]
+                    )
+                if task == "actions":
+                    self.calls.append((task, value))
+                    if value.get("retry") == "semantic_audit_rejected_slots":
+                        return "\n".join(
+                            f"ACTION\t{item['slot']}\t"
+                            + _grounded_fixture_action(
+                                item,
+                                "主人公は肩越しに振り返り、袖を鋭く払って静止する。",
+                            )
+                            for item in value["slots"]
+                        )
+                    if value.get("retry") == "action_quality_budget":
+                        return "\n".join(
+                            f"ACTION\t{item['slot']}\t"
+                            + _grounded_fixture_action(
+                                item, "主人公は両手を上げる。"
+                            )
+                            for item in value["slots"]
+                        )
+                    return "\n".join(
+                        (
+                            f"ACTION\t{item['slot']}\t"
+                            + _grounded_fixture_action(
+                                item, "主人公は両手を上げる。"
+                            )
+                            if index == 0
+                            else f"ACTION\t{item['slot']}\t"
+                            + _grounded_fixture_action(
+                                item,
+                                f"主人公は肩を返して視線を切り替える。{index}",
+                            )
+                        )
+                        for index, item in enumerate(value["slots"])
+                    )
+                return super().complete_planner(
+                    task=task,
+                    system_prompt=system_prompt,
+                    payload=payload,
+                    config=config,
+                    interrupt_callback=interrupt_callback,
+                )
+
+        backend = PersistentQualityBackend()
+        result = plan_timeline(
+            backend,
+            template_emd=TEMPLATE,
+            concept_emd=CONCEPT,
+            direction=DirectionArtifact(camera_profile_id="anime_emotional_mv"),
+            lip_sync_mode="off",
+            lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1,
+            scenes_per_batch=3,
+            system_prompts=prompts(),
+            runtime_config=runtime(),
+        )
+        self.assertTrue(result.complete)
+        self.assertGreaterEqual(
+            len([payload for task, payload in backend.calls if task == "action-audit"]),
+            2,
+        )
+        repair_calls = [
+            payload
+            for task, payload in backend.calls
+            if task == "actions"
+            and payload.get("retry") == "semantic_audit_rejected_slots"
+        ]
+        self.assertEqual(len(repair_calls), 1)
+        self.assertEqual(
+            repair_calls[0]["slots"][0]["action_quality_violations"],
+            ["generic_hand_raise_or_lower"],
+        )
+        self.assertEqual(
+            repair_calls[0]["slots"][0]["semantic_audit_reasons"],
+            [],
+        )
+
+    def test_action_audit_prompt_is_finite_and_does_not_rewrite(self) -> None:
+        prompt = (
+            Path(__file__).parents[1]
+            / "prompts"
+            / "timeline_planner_action_audit_system_prompt.txt"
+        ).read_text(encoding="utf-8")
+        self.assertIn("classification only", prompt)
+        self.assertIn("Never rewrite", prompt)
+        self.assertIn("SEMANTIC_REPETITION", prompt)
+        self.assertIn("INCIDENTAL_FIXTURE", prompt)
+        self.assertIn("UNREQUESTED_LOWER_BODY", prompt)
+        self.assertIn("REFERENCE_POSE", prompt)
+        self.assertIn("MISSING_GROUNDED_CUE", prompt)
+        self.assertIn("FACE_PERFORMANCE_MISSING", prompt)
 
     def test_unrequested_running_is_retried_without_rewriting(self) -> None:
         class RunningBackend(FakePlannerBackend):
@@ -1899,7 +2514,9 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertTrue(result.complete)
 
         visual_calls = [
-            payload for task, payload in backend.calls if task == "visual-beats"
+            payload
+            for task, payload in backend.calls
+            if task == "visual-beats" and "retry" not in payload
         ]
         self.assertEqual(len(visual_calls), 2)
         self.assertEqual(
@@ -1918,7 +2535,11 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         )
         self.assertEqual(
             visual_calls[1]["recent_visual_beat_history"],
-            ["鳥居へ歩み寄り、触れて振り返る視覚動作 1"],
+            [
+                "感情=決意｜根拠=千年鳥居｜対象=千年鳥居｜接触=禁止｜"
+                "現象=なし｜配置=参道奥の鳥居｜"
+                "可視展開=鳥居の輪郭が夜空に浮かぶ｜身体主導=胸郭と肩の反転｜終端=鳥居へ正対して静止"
+            ],
         )
 
         action_calls = [
@@ -1953,6 +2574,10 @@ class TimelinePlannerCoreTests(unittest.TestCase):
             backend,
             template_emd=TEMPLATE,
             concept_emd=CONCEPT,
+            scene_emd=(
+                "# シーン設定\n## 環境\n* 石灯籠の並ぶ参道\n"
+                "## 時間・照明\n* 夜間\n## 背景参照\n* `画像2`\n"
+            ),
             direction=direction,
             lip_sync_mode="off",
             lip_sync_target="サブジェクト1",
@@ -1972,6 +2597,7 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         }
         performance_expected = dict(expected)
         performance_expected.pop("camera")
+        performance_expected.pop("environment")
         for task in ("visual-beats", "actions"):
             payloads = [
                 payload for called_task, payload in backend.calls
@@ -1980,13 +2606,796 @@ class TimelinePlannerCoreTests(unittest.TestCase):
             self.assertTrue(payloads)
             for payload in payloads:
                 self.assertEqual(payload["direction"], performance_expected)
+                if task == "visual-beats":
+                    self.assertIn("scene_context", payload)
+                    self.assertEqual(
+                        payload["scene_context_usage"],
+                        "spatial_support_only_never_activates_an_action_target",
+                    )
+                else:
+                    self.assertNotIn("scene_context", payload)
         camera_payloads = [
             payload for called_task, payload in backend.calls
             if called_task == "cameras"
         ]
         self.assertTrue(camera_payloads)
+        camera_expected = dict(expected)
+        camera_expected.pop("motion")
+        camera_expected.pop("environment")
         for payload in camera_payloads:
-            self.assertEqual(payload["direction"], expected)
+            self.assertEqual(payload["direction"], camera_expected)
+            self.assertNotIn("scene_context", payload)
+        self.assertIn("石灯籠の並ぶ参道", result.emd.text)
+        self.assertIn("`画像2`", result.emd.text)
+
+    def test_action_audit_accepts_grounding_and_face_reason_codes(self) -> None:
+        entities = [
+            _Entity(1, (1, 1), {}),
+            _Entity(1, (1, 2), {}),
+        ]
+        failures = _action_audit_failures(
+            entities,
+            {
+                (1, 1): "REJECT:MISSING_GROUNDED_CUE",
+                (1, 2): "REJECT:FACE_PERFORMANCE_MISSING",
+            },
+        )
+        self.assertEqual(failures[(1, 1)], ("MISSING_GROUNDED_CUE",))
+        self.assertEqual(failures[(1, 2)], ("FACE_PERFORMANCE_MISSING",))
+    def test_action_audit_accepts_v48_reason_codes(self) -> None:
+        entities = [
+            _Entity(1, (1, 1), {}),
+            _Entity(1, (1, 2), {}),
+        ]
+        failures = _action_audit_failures(
+            entities,
+            {
+                (1, 1): "REJECT:BODY_TEMPLATE_REPETITION",
+                (1, 2): "REJECT:INTERNAL_PROTOCOL_LABEL",
+            },
+        )
+        self.assertEqual(failures[(1, 1)], ("BODY_TEMPLATE_REPETITION",))
+        self.assertEqual(failures[(1, 2)], ("INTERNAL_PROTOCOL_LABEL",))
+
+    def test_action_quality_rejects_composite_generic_hand_motion(self) -> None:
+        entity = _Entity(
+            1,
+            (1, 1),
+            {
+                "lyrics": [],
+                "author_body": [],
+                "performance_role": "expressive_hand_arm_performance",
+            },
+        )
+        violations = _action_budget_violations(
+            [entity],
+            {
+                (1, 1): (
+                    "右手を胸の前で急いで上げ、その動きに合わせて頭部を"
+                    "右へ向け、胸郭を大きく傾ける。"
+                )
+            },
+        )
+        self.assertIn("generic_hand_raise_or_lower", violations[(1, 1)])
+    def test_action_quality_rejects_internal_protocol_label(self) -> None:
+        entity = _Entity(
+            12,
+            (12, 3),
+            {
+                "lyrics": [],
+                "author_body": [],
+                "performance_role": "expressive_resolution",
+            },
+        )
+        violations = _action_budget_violations(
+            [entity],
+            {(12, 3): "胸郭を左へ向け、ACTION 14 視線を上げる。"},
+        )
+        self.assertIn(
+            "internal_protocol_label", violations[(12, 3)]
+        )
+        for malformed in (
+            "1 胸郭を左へ向け、視線を上げる。",
+            "タブ　胸郭を左へ向け、視線を上げる。",
+            "TAB 胸郭を左へ向け、視線を上げる。",
+            "ACTION 14 1 胸郭を左へ向け、視線を上げる。",
+        ):
+            with self.subTest(malformed=malformed):
+                prefixed = _action_budget_violations(
+                    [entity], {(12, 3): malformed}
+                )
+                self.assertIn(
+                    "internal_protocol_label", prefixed[(12, 3)]
+                )
+
+    def test_grounding_transfer_requires_exact_anchor_then_development(self) -> None:
+        grounding = {
+            "valid": True,
+            "target": "苔",
+            "spatial_anchor": "大樹の根元",
+            "visible_development": "苔が湿った樹皮を覆う",
+        }
+        entities = _with_grounding_transfer_requirements(
+            [
+                _Entity(
+                    3,
+                    (3, 1),
+                    {
+                        "visual_beat_grounding": grounding,
+                        "priority_lyric_cues": [
+                            {"token": "苔", "kind": "object"}
+                        ],
+                    },
+                ),
+                _Entity(
+                    3,
+                    (3, 2),
+                    {
+                        "visual_beat_grounding": grounding,
+                        "priority_lyric_cues": [
+                            {"token": "苔", "kind": "object"}
+                        ],
+                    },
+                ),
+                _Entity(
+                    3,
+                    (3, 3),
+                    {
+                        "visual_beat_grounding": grounding,
+                        "priority_lyric_cues": [
+                            {"token": "苔", "kind": "object"}
+                        ],
+                    },
+                ),
+            ]
+        )
+        self.assertEqual(
+            entities[0].value["required_spatial_anchor"], "大樹の根元"
+        )
+        self.assertNotIn("required_visible_development", entities[0].value)
+        self.assertEqual(
+            entities[1].value["required_visible_development"],
+            "苔が湿った樹皮を覆う",
+        )
+        self.assertNotIn("required_spatial_anchor", entities[2].value)
+
+        violations = _action_budget_violations(
+            entities,
+            {
+                (3, 1): "苔へ視線を落とし、身体を向ける。",
+                (3, 2): "苔を見つめ、肩を引く。",
+                (3, 3): "視線を上げて静止する。",
+            },
+        )
+        self.assertIn("missing_spatial_anchor", violations[(3, 1)])
+        self.assertIn("missing_visible_development", violations[(3, 2)])
+        transferred = _action_budget_violations(
+            entities,
+            {
+                (3, 1): "大樹の根元へ視線を落とし、身体を向ける。",
+                (3, 2): "苔が湿った樹皮を覆う様子に肩を引く。",
+                (3, 3): "視線を上げて静止する。",
+            },
+        )
+        self.assertNotIn("missing_spatial_anchor", transferred.get((3, 1), ()))
+        self.assertNotIn(
+            "missing_visible_development", transferred.get((3, 2), ())
+        )
+
+    def test_action_quality_requires_valid_grounded_target(self) -> None:
+        entity = _Entity(
+            3,
+            (3, 1),
+            {
+                "lyrics": [{"section": "VERSE", "text": "苔へと還る"}],
+                "author_body": [],
+                "performance_role": "environment_interaction_or_body_turn",
+                "grounded_cue_required": True,
+                "visual_beat_grounding": {
+                    "valid": True,
+                    "target": "苔",
+                    "contact": "禁止",
+                    "phenomenon": "なし",
+                },
+            },
+        )
+        missing = _action_budget_violations(
+            [entity],
+            {(3, 1): "肩越しに振り返り、胸郭をひねって静止する。"},
+        )
+        self.assertIn("missing_grounded_cue_target", missing[(3, 1)])
+        grounded = _action_budget_violations(
+            [entity],
+            {(3, 1): "苔へ視線を落とし、触れずに身体を引いて静止する。"},
+        )
+        self.assertNotIn((3, 1), grounded)
+
+    def test_priority_lyric_cues_are_exact_current_scene_matches(self) -> None:
+        selected = _priority_lyric_cues_from_sources(
+            [
+                {"section": "VERSE", "text": "苔へと還る"},
+                {"section": "VERSE", "text": "狐火へ問う"},
+            ],
+            [],
+            (
+                ("苔", "object"),
+                ("花", "symbolic_motif"),
+                ("狐火", "external_effect"),
+            ),
+        )
+        self.assertEqual(
+            selected,
+            (
+                {"token": "苔", "kind": "object", "evidence": "苔へと還る"},
+                {
+                    "token": "狐火",
+                    "kind": "external_effect",
+                    "evidence": "狐火へ問う",
+                },
+            ),
+        )
+        self.assertNotIn("花", {item["token"] for item in selected})
+
+    def test_priority_scene_batches_isolate_only_cue_scenes(self) -> None:
+        template = parse_template_emd(TEMPLATE + INSTRUMENTAL_TAIL)
+        batches = list(
+            _scene_batches_with_isolated_priority_cues(
+                list(template.scenes),
+                {
+                    1: (),
+                    2: (
+                        {
+                            "token": "苔",
+                            "kind": "object",
+                            "evidence": "苔へと還る",
+                        },
+                    ),
+                },
+                3,
+            )
+        )
+        self.assertEqual(
+            [[scene.scene_number for scene in batch] for batch in batches],
+            [[1], [2]],
+        )
+
+    def test_priority_scope_detects_only_disallowed_profile_tokens(self) -> None:
+        configured = (
+            ("苔", "object"),
+            ("花", "symbolic_motif"),
+            ("狐火", "external_effect"),
+        )
+        allowed = [
+            {"token": "花", "kind": "symbolic_motif", "evidence": "人は花より"}
+        ]
+        self.assertEqual(
+            _unexpected_priority_cues(
+                "苔へ視線を落とし、花が散る様子を見送る。",
+                allowed,
+                configured,
+            ),
+            ("苔",),
+        )
+
+    def test_action_quality_rejects_priority_cue_outside_scene(self) -> None:
+        entity = _Entity(
+            1,
+            (1, 1),
+            {
+                "lyrics": [{"section": "INTRO", "text": "遠い鈴の音"}],
+                "author_body": [],
+                "priority_lyric_cues": [],
+                "performance_role": "lyric_driven_full_body_performance",
+            },
+        )
+        violations = _action_budget_violations(
+            [entity],
+            {(1, 1): "苔へ視線を落とし、身体を引いて静止する。"},
+            configured_priority_cues=(("苔", "object"),),
+        )
+        self.assertIn("unexpected_priority_cue", violations[(1, 1)])
+
+    def test_priority_external_effect_requires_autonomous_cue_card(self) -> None:
+        entity = _Entity(
+            9,
+            (9,),
+            {
+                "lyrics": [{"section": "CHORUS", "text": "狐火へ問う"}],
+                "author_body": [],
+            },
+        )
+        autonomous = _parse_cue_card(
+            entity,
+            "感情=畏れ｜根拠=狐火へ問う｜対象=狐火｜接触=禁止｜"
+            "現象=外部自律｜配置=人物前方から頭上を経て参道奥｜"
+            "可視展開=狐火が宙を弧状に舞い石畳へ光を落とす｜"
+            "身体主導=視線と後退｜終端=火を見送る",
+        )
+        self.assertEqual(
+            _priority_cue_card_violations(
+                autonomous,
+                {"token": "狐火", "kind": "external_effect"},
+            ),
+            (),
+        )
+        handheld = _parse_cue_card(
+            entity,
+            "感情=畏れ｜根拠=狐火へ問う｜対象=狐火｜接触=許可｜"
+            "現象=身体操作｜配置=手の中｜"
+            "可視展開=狐火を掲げる｜身体主導=手で持つ｜"
+            "終端=火を掲げる",
+        )
+        violations = _priority_cue_card_violations(
+            handheld,
+            {"token": "狐火", "kind": "external_effect"},
+        )
+        self.assertIn("priority_effect_not_autonomous", violations)
+        self.assertIn("priority_effect_contact_not_forbidden", violations)
+
+    def test_priority_target_is_required_even_when_cue_card_is_invalid(self) -> None:
+        entities = [
+            _Entity(
+                4,
+                (4, slot),
+                {
+                    "lyrics": [
+                        {"section": "VERSE", "text": "人は花より短く咲いて"}
+                    ],
+                    "author_body": [],
+                    "performance_role": (
+                        "environment_interaction_or_body_turn"
+                        if slot == 1
+                        else "expressive_resolution"
+                    ),
+                    "grounded_cue_required": True,
+                    "visual_beat_grounding": {"valid": False, "target": "なし"},
+                    "priority_lyric_cues": [
+                        {
+                            "token": "花",
+                            "kind": "symbolic_motif",
+                            "evidence": "人は花より短く咲いて",
+                        }
+                    ],
+                },
+            )
+            for slot in (1, 2)
+        ]
+        missing = _action_budget_violations(
+            entities,
+            {
+                (4, 1): "肩を引いて横を向く。",
+                (4, 2): "視線を落として身体を沈める。",
+            },
+        )
+        self.assertIn("missing_grounded_cue_target", missing[(4, 1)])
+        present = _action_budget_violations(
+            entities,
+            {
+                (4, 1): "散る花へ向き直り、視線で行方を追う。",
+                (4, 2): "視線を落として身体を沈める。",
+            },
+        )
+        self.assertNotIn((4, 1), present)
+
+    def test_priority_cue_phase_distributes_scene_arc(self) -> None:
+        self.assertEqual(_priority_cue_phase(1, 1), "establish_relation_reaction_release")
+        self.assertEqual(_priority_cue_phase(1, 3), "establish_and_relation")
+        self.assertEqual(_priority_cue_phase(2, 3), "event_and_reaction")
+        self.assertEqual(_priority_cue_phase(3, 3), "release")
+        self.assertEqual(_priority_cue_phase(4, 4), "release")
+
+    def test_automatic_cue_reaches_actions_without_profile_dictionary(self) -> None:
+        class AutomaticCueBackend(FakePlannerBackend):
+            def complete_planner(
+                self,
+                *,
+                task,
+                system_prompt,
+                payload,
+                config,
+                interrupt_callback=None,
+            ):
+                value = json.loads(payload)
+                if task == "visual-beats":
+                    self.calls.append((task, value))
+                    rows = []
+                    for item in value["slots"]:
+                        source = json.dumps(
+                            item.get("lyrics", []), ensure_ascii=False
+                        )
+                        if "御神木" in source:
+                            text = (
+                                "感情=畏敬｜根拠=御神木の影に立つ｜対象=御神木｜"
+                                "接触=禁止｜現象=なし｜配置=参道奥の御神木｜"
+                                "可視展開=御神木の枝葉が月明かりを受けて揺れる｜"
+                                "身体主導=視線と胸郭｜終端=御神木を仰ぐ"
+                            )
+                        else:
+                            text = (
+                                "感情=懐旧｜根拠=なし｜対象=なし｜接触=禁止｜"
+                                "現象=なし｜配置=なし｜可視展開=なし｜身体主導=肩と胸郭｜終端=静止"
+                            )
+                        rows.append(f"BEAT\t{item['slot']}\t{text}")
+                    return "\n".join(rows)
+                if task == "actions":
+                    self.calls.append((task, value))
+                    return "\n".join(
+                        f"ACTION\t{item['slot']}\t"
+                        + (
+                            "参道奥の御神木へ視線を上げ、身体を向ける。"
+                            if item["shot_index"] == 1
+                            else (
+                                "御神木の枝葉が月明かりを受けて揺れる"
+                                "様子を見届け、胸郭を開いて立ち止まる。"
+                            )
+                        )
+                        for item in value["slots"]
+                    )
+                return super().complete_planner(
+                    task=task,
+                    system_prompt=system_prompt,
+                    payload=payload,
+                    config=config,
+                    interrupt_callback=interrupt_callback,
+                )
+
+        backend = AutomaticCueBackend()
+        result = plan_timeline(
+            backend,
+            template_emd=TEMPLATE.replace(
+                "千年鳥居をくぐるそなたよ", "御神木の影に立つ"
+            ),
+            concept_emd=CONCEPT,
+            direction=DirectionArtifact(camera_profile_id="anime_emotional_mv"),
+            lip_sync_mode="off",
+            lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1,
+            scenes_per_batch=3,
+            system_prompts=prompts(),
+            runtime_config=runtime(),
+        )
+        self.assertTrue(result.complete)
+        beat_calls = [
+            payload for task, payload in backend.calls if task == "visual-beats"
+        ]
+        self.assertEqual(len(beat_calls), 1)
+        action_call = next(
+            payload for task, payload in backend.calls if task == "actions"
+        )
+        self.assertEqual(action_call["slots"][0]["priority_lyric_cues"], [])
+        self.assertEqual(
+            action_call["planner_policy_contract"]["lyric_cue_mode"],
+            "automatic",
+        )
+        self.assertEqual(
+            [item["grounded_cue_phase"] for item in action_call["slots"]],
+            ["establish_and_relation", "reaction_and_release"],
+        )
+        self.assertEqual(
+            [item["priority_cue_phase"] for item in action_call["slots"]],
+            ["", ""],
+        )
+        self.assertEqual(
+            action_call["slots"][0]["required_spatial_anchor"],
+            "参道奥の御神木",
+        )
+        self.assertEqual(
+            action_call["slots"][1]["required_visible_development"],
+            "御神木の枝葉が月明かりを受けて揺れる",
+        )
+        self.assertIn(
+            "御神木",
+            " ".join(text for _scene, _shot, text in result.content.actions),
+        )
+
+    def test_priority_cue_bare_token_stops_as_action_grounding(self) -> None:
+        class BarePriorityCueBackend(FakePlannerBackend):
+            def complete_planner(
+                self,
+                *,
+                task,
+                system_prompt,
+                payload,
+                config,
+                interrupt_callback=None,
+            ):
+                value = json.loads(payload)
+                if task == "visual-beats":
+                    self.calls.append((task, value))
+                    return "\n".join(
+                        f"BEAT\t{item['slot']}\t"
+                        "感情=懐旧｜根拠=苔へと還る｜対象=苔｜"
+                        "接触=禁止｜現象=なし｜配置=大樹の根元｜"
+                        "可視展開=苔が湿った樹皮を覆う｜"
+                        "身体主導=視線と胸郭｜終端=視線を上げる"
+                        for item in value["slots"]
+                    )
+                if task == "actions":
+                    self.calls.append((task, value))
+                    return "\n".join(
+                        f"ACTION\t{item['slot']}\t"
+                        "苔 手を胸の前で広げ、体を左右に振る。"
+                        for item in value["slots"]
+                    )
+                return super().complete_planner(
+                    task=task,
+                    system_prompt=system_prompt,
+                    payload=payload,
+                    config=config,
+                    interrupt_callback=interrupt_callback,
+                )
+
+        result = plan_timeline(
+            BarePriorityCueBackend(),
+            template_emd=TEMPLATE.replace(
+                "千年鳥居をくぐるそなたよ", "苔へと還る"
+            ),
+            concept_emd=CONCEPT,
+            direction=DirectionArtifact(camera_profile_id="anime_emotional_mv"),
+            lip_sync_mode="off",
+            lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1,
+            scenes_per_batch=3,
+            system_prompts=prompts(),
+            runtime_config=runtime(),
+        )
+        self.assertFalse(result.complete)
+        self.assertTrue(result.missing)
+        self.assertTrue(
+            all(kind == "ACTION_GROUNDING" for kind, _scene, _slot in result.missing)
+        )
+
+    def test_priority_cue_scene_isolation_prevents_batch_and_history_leakage(self) -> None:
+        template = """> `シーン` 1
+# シーン 00:00.000 --> 00:03.000
+* `H3長` 73
+> `歌詞` 遠い鈴の音
+## ショット 00:00.000
+* 未計画
+> `シーン` 2
+# シーン 00:03.000 --> 00:06.000 継続
+* `H3長` 73
+> `歌詞` 苔へと還る
+## ショット 00:03.000
+* 未計画
+> `シーン` 3
+# シーン 00:06.000 --> 00:09.000 継続
+* `H3長` 73
+> `歌詞` 暁を裂いて
+## ショット 00:06.000
+* 未計画
+"""
+
+        class CueCopyBackend(FakePlannerBackend):
+            def complete_planner(
+                self,
+                *,
+                task,
+                system_prompt,
+                payload,
+                config,
+                interrupt_callback=None,
+            ):
+                value = json.loads(payload)
+                if task == "visual-beats":
+                    self.calls.append((task, value))
+                    rows = []
+                    for item in value["slots"]:
+                        source = json.dumps(
+                            item.get("lyrics", []), ensure_ascii=False
+                        )
+                        if "苔" in source:
+                            text = (
+                                "感情=懐旧｜根拠=苔へと還る｜対象=苔｜"
+                                "接触=禁止｜現象=なし｜配置=大樹の根元｜"
+                                "可視展開=苔が湿った樹皮を覆う｜身体主導=視線と重心｜"
+                                "終端=苔から視線を上げる"
+                            )
+                        else:
+                            text = (
+                                "感情=決意｜根拠=なし｜対象=なし｜接触=禁止｜"
+                                "現象=なし｜配置=なし｜可視展開=なし｜身体主導=視線と重心｜終端=正面へ向く"
+                            )
+                        rows.append(f"BEAT\t{item['slot']}\t{text}")
+                    return "\n".join(rows)
+                if task == "actions":
+                    self.calls.append((task, value))
+                    batch_has_cue = any(
+                        item.get("required_spatial_anchor")
+                        or item.get("required_visible_development")
+                        for item in value["slots"]
+                    )
+                    return "\n".join(
+                        f"ACTION\t{item['slot']}\t"
+                        + (
+                            "大樹の根元で苔が湿った樹皮を覆う様子へ"
+                            "視線を落とし、身体を引いて静止する。"
+                            if batch_has_cue
+                            else (
+                                f"歌詞{item['scene_number']}へ視線を向け、"
+                                "重心を移して異なる姿勢で静止する。"
+                            )
+                        )
+                        for item in value["slots"]
+                    )
+                return super().complete_planner(
+                    task=task,
+                    system_prompt=system_prompt,
+                    payload=payload,
+                    config=config,
+                    interrupt_callback=interrupt_callback,
+                )
+
+        backend = CueCopyBackend()
+        result = plan_timeline(
+            backend,
+            template_emd=template,
+            concept_emd=CONCEPT,
+            scene_emd=(
+                "# シーン設定\n## 環境\n* 夜の森と大樹\n"
+                "## 時間・照明\n* 夜間\n"
+            ),
+            direction=DirectionArtifact(camera_profile_id="anime_emotional_mv"),
+            lip_sync_mode="off",
+            lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1,
+            scenes_per_batch=3,
+            system_prompts=prompts(),
+            runtime_config=runtime(),
+        )
+        self.assertTrue(result.complete)
+        visual_calls = [
+            payload
+            for task, payload in backend.calls
+            if task == "visual-beats" and "retry" not in payload
+        ]
+        action_calls = [
+            payload
+            for task, payload in backend.calls
+            if task == "actions" and "retry" not in payload
+        ]
+        self.assertEqual(
+            [[item["scene_number"] for item in call["slots"]] for call in visual_calls],
+            [[1, 2, 3]],
+        )
+        self.assertEqual(
+            [[item["scene_number"] for item in call["slots"]] for call in action_calls],
+            [[1], [2], [3]],
+        )
+        for payload in [*visual_calls, *action_calls]:
+            self.assertEqual(
+                payload["planner_policy_contract"]["priority_lyric_cues"],
+                "entity_local_only",
+            )
+            self.assertEqual(
+                payload["planner_policy_contract"]["lyric_cue_mode"],
+                "automatic",
+            )
+        scene_actions = {
+            scene: text for scene, _shot, text in result.content.actions
+        }
+        self.assertNotIn("苔", scene_actions[1])
+        self.assertIn("苔", scene_actions[2])
+        self.assertNotIn("苔", scene_actions[3])
+        scene_three_call = next(
+            call for call in action_calls if call["slots"][0]["scene_number"] == 3
+        )
+        self.assertNotIn("苔", json.dumps(scene_three_call, ensure_ascii=False))
+
+    def test_action_quality_requires_face_performance_for_face_role(self) -> None:
+        entity = _Entity(
+            7,
+            (7, 2),
+            {
+                "lyrics": [],
+                "author_body": [],
+                "performance_role": "face_and_upper_body_accent",
+            },
+        )
+        missing = _action_budget_violations(
+            [entity],
+            {(7, 2): "肩を引き、胸郭を大きくひねって静止する。"},
+        )
+        self.assertIn("face_performance_missing", missing[(7, 2)])
+        expressive = _action_budget_violations(
+            [entity],
+            {(7, 2): "伏し目から視線を上げ、眉を寄せて肩を引く。"},
+        )
+        self.assertNotIn((7, 2), expressive)
+
+    def test_finite_camera_rejects_repeated_exact_plan(self) -> None:
+        entities = [
+            _Entity(
+                1,
+                (1, slot),
+                {
+                    "camera_protocol": "finite_v1",
+                    "shot_duration_ms": 3200,
+                    "arc_permission": "required",
+                    "long_arc_emphasis": True,
+                },
+            )
+            for slot in (1, 2)
+        ]
+        plan = (
+            "MOTION=Arc Shot with large amplitude at fast speed｜"
+            "START_SCALE=full_body｜END_SCALE=medium｜"
+            "START_VIEW=low_front_three_quarter｜END_VIEW=side｜"
+            "PATH=arc_left_60_120_70_90｜COVERAGE=whole_body_emotion"
+        )
+        violations = _camera_budget_violations(
+            entities,
+            {(1, 1): plan, (1, 2): plan},
+            arc_maximum=2,
+        )
+        self.assertNotIn((1, 1), violations)
+        self.assertIn("camera_plan_repetition", violations[(1, 2)])
+
+    def test_finite_arc_fallback_varies_geometry_across_slots(self) -> None:
+        plans = []
+        for ordinal, scene in enumerate(range(1, 7)):
+            entity = _Entity(
+                scene,
+                (scene, 1),
+                {
+                    "shot_duration_ms": 3200,
+                    "arc_permission": "required",
+                    "long_arc_emphasis": True,
+                },
+            )
+            plan = _fallback_camera_plan(entity, ordinal)
+            self.assertEqual(_camera_plan_contract_violations(entity, plan), ())
+            plans.append(_render_camera_plan(plan))
+        self.assertGreaterEqual(len(set(plans)), 3)
+
+    def test_cue_card_requires_exact_scene_evidence_and_target(self) -> None:
+        entity = _Entity(
+            1,
+            (1,),
+            {
+                "lyrics": [{"section": "VERSE", "text": "大樹の根元の苔"}],
+                "author_body": [],
+            },
+        )
+        valid = _parse_cue_card(
+            entity,
+            "感情=懐旧｜根拠=大樹の根元の苔｜対象=苔｜接触=禁止｜"
+            "現象=なし｜配置=大樹の根元｜可視展開=湿った苔が樹皮を覆う｜"
+            "身体主導=胸郭と視線｜終端=大樹へ向き直る",
+        )
+        self.assertTrue(valid.valid)
+        self.assertEqual(valid.target, "苔")
+        self.assertEqual(valid.spatial_anchor, "大樹の根元")
+        self.assertIn("湿った苔", valid.visible_development)
+
+        invalid = _parse_cue_card(
+            entity,
+            "感情=懐旧｜根拠=遠い鐘｜対象=石灯籠｜接触=許可｜"
+            "現象=なし｜配置=参道脇｜可視展開=灯籠の輪郭が見える｜"
+            "身体主導=腕｜終端=灯籠へ触れる",
+        )
+        self.assertFalse(invalid.valid)
+        self.assertIn("evidence_not_in_scene_source", invalid.violations)
+        self.assertIn("target_not_in_evidence", invalid.violations)
+
+    def test_cue_card_rejects_bare_target_without_development(self) -> None:
+        entity = _Entity(
+            3,
+            (3,),
+            {
+                "lyrics": [{"section": "VERSE", "text": "苔へと還る"}],
+                "author_body": [],
+            },
+        )
+        bare = _parse_cue_card(
+            entity,
+            "感情=懐旧｜根拠=苔へと還る｜対象=苔｜接触=禁止｜"
+            "現象=なし｜配置=なし｜可視展開=なし｜"
+            "身体主導=視線｜終端=静止",
+        )
+        self.assertFalse(bare.valid)
+        self.assertIn("missing_spatial_anchor", bare.violations)
+        self.assertIn("missing_visible_development", bare.violations)
 
     def test_missing_after_retry_returns_template_artifact(self) -> None:
         backend = FakePlannerBackend(miss_action_slot_two=3)

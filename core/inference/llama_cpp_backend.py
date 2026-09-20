@@ -166,6 +166,7 @@ class LlamaCppLifecycle:
         config: LlamaRuntimeConfig,
         *,
         interrupt_callback: Callable[[], Any] | None = None,
+        grammar: str | None = None,
     ) -> str:
         if self._model is None:
             raise InferenceBackendError("no GGUF model is loaded")
@@ -185,8 +186,17 @@ class LlamaCppLifecycle:
             "chat_template_kwargs": {"enable_thinking": False},
             "reasoning": False,
         }
+        if grammar is not None:
+            module, _ = self._dependencies()
+            grammar_class = getattr(module, "LlamaGrammar", None)
+            if grammar_class is None:
+                raise InferenceBackendError("llama-cpp-python does not expose LlamaGrammar")
+            values["grammar"] = grammar_class.from_string(grammar, verbose=False)
+        supported = self._supported_kwargs(completion, values)
+        if grammar is not None and "grammar" not in supported:
+            raise InferenceBackendError("chat completion does not support grammar")
         try:
-            stream = completion(**self._supported_kwargs(completion, values))
+            stream = completion(**supported)
             return self._collect_chat_stream(stream, interrupt_callback)
         except InferenceBackendError:
             raise
@@ -223,4 +233,3 @@ class LlamaCppLifecycle:
         if not result.strip():
             raise InferenceBackendError("llama.cpp returned an empty response")
         return result
-

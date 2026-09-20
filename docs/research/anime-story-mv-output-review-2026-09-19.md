@@ -86,7 +86,7 @@
 ### Camera
 
 - `anime_story_mv`は適格な通常Shotのおよそ3分の1を長尺Arcへする。
-- `anime_emotional_mv`は適格な非顔Shotのおよそ3分の2を長尺Arcへする。
+- 評価時点の`anime_emotional_mv`は適格な非顔Shotのおよそ3分の2を長尺Arcへしていた。後続のEMD 00006評価を受け、現行仕様は2.5秒以上の適格Shotのおよそ半数へ改訂した。
 - 長尺Arcは`Arc Shot with large amplitude at fast speed`で始め、60～120度、Shot尺70～90%、強い前景・中景・背景視差を要求する。
 - 正式Motion Type欠落、長尺Arcの振幅・速度不足及び速度語競合を検出し、本文を書き換えず該当slotだけをLLMへ再要求する。
 

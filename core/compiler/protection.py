@@ -66,6 +66,19 @@ _H3_CAMERA_DIRECTIVES = (
 _H3_CAMERA_DIRECTIVE_RE = re.compile(
     "(?:" + "|".join(re.escape(value) for value in _H3_CAMERA_DIRECTIVES) + ")"
 )
+_TRANSLATION_TERM_MAP = {
+    "足袋": "tabi",
+    "下駄": "geta",
+    "鼻緒": "hanao strap",
+}
+_TRANSLATION_TERM_RE = re.compile(
+    "(?:"
+    + "|".join(
+        re.escape(value)
+        for value in sorted(_TRANSLATION_TERM_MAP, key=len, reverse=True)
+    )
+    + ")"
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -107,6 +120,10 @@ class ProtectedUnit:
                         piece[0] == "<"
                         and re.match(r"[A-Za-z0-9>]", output[-1][-1])
                     )
+                    or (
+                        re.match(r"[A-Za-z0-9]", output[-1][-1])
+                        and re.match(r"[A-Za-z0-9]", piece[0])
+                    )
                 )
             ):
                 output.append(" ")
@@ -144,14 +161,16 @@ def protect_unit(text: str, subjects: tuple[Subject, ...]) -> ProtectedUnit:
 
     combined = re.compile(
         f"(?:{_D_SPAN_RE.pattern}|{_REFERENCE_RE.pattern}|"
-        f"{_H3_CAMERA_DIRECTIVE_RE.pattern})"
+        f"{_H3_CAMERA_DIRECTIVE_RE.pattern}|{_TRANSLATION_TERM_RE.pattern})"
     )
     fragments: list[str] = []
     values: list[str] = []
     cursor = 0
     for match in combined.finditer(text):
         fragments.append(text[cursor : match.start()])
-        values.append(match.group(0))
+        values.append(
+            _TRANSLATION_TERM_MAP.get(match.group(0), match.group(0))
+        )
         cursor = match.end()
     fragments.append(text[cursor:])
     return ProtectedUnit(tuple(fragments), tuple(values))
