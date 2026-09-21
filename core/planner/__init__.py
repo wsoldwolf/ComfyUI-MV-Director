@@ -23,6 +23,7 @@ from .engine import (
 )
 from .errors import TimelinePlannerError
 from .renderer import render_completed_emd
+from .scene_spine import build_scene_spine_grammar
 from .template import (
     DEFAULT_CONCEPT_EMD,
     PlannerTemplate,
@@ -41,6 +42,7 @@ __all__ = [
     "PLANNER_ALGORITHM_VERSION",
     "build_cue_card_grammar",
     "build_camera_plan_grammar",
+    "build_scene_spine_grammar",
     "build_action_grammar",
     "build_action_audit_grammar",
     "build_grounded_cue_grammar",

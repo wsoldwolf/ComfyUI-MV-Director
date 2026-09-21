@@ -101,7 +101,11 @@ When planner_policy_contract.lyric_cue_mode is automatic, perform the same
 selection without a configured token list. Inspect every original lyric and
 author-body line in the current Scene and choose the most specific exact
 contiguous noun or noun phrase that is physically visible or can act as an
-independent visible effect. Prefer a complete named entity or compound noun
+independent visible effect. When discovered_cues supplies kind=effect, retain
+that LLM-discovered type: use `接触=禁止｜現象=外部自律` and make `可視展開`
+describe the effect's own appearance, path through space, and visible
+environmental result before any Subject gesture. The Subject's hands or feet
+are not the effect's location. Prefer a complete named entity or compound noun
 such as `御神木` over a generic component such as `木`, and preserve that exact
 source spelling in both `根拠` and `対象`. A physical tree, sacred tree, flower,
 moss, stone, water, leaf, gate, moon, flame, supernatural fire, mist, or other

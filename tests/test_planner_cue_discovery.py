@@ -10,7 +10,10 @@ from core.planner.cue_constraints import (
     build_discovery_grammar, build_grounded_cue_grammar,
     parse_discovery, select_scene_cue,
 )
-from core.planner.engine import _Entity, _parse_cue_card, _request_entities
+from core.planner.engine import (
+    _Entity, _parse_cue_card, _request_entities,
+    _with_grounding_transfer_requirements,
+)
 from nodes.node_timeline_planner.node import _system_prompts
 from test_timeline_planner import CONCEPT, TEMPLATE, FakePlannerBackend, runtime
 
@@ -57,6 +60,35 @@ class CueDiscoveryTests(unittest.TestCase):
         slot["discovered_cues"] = [parse_discovery("motif|月", "月へ還る")]
         with self.assertRaises(ValueError):
             build_grounded_cue_grammar([slot])
+
+    def test_discovered_effect_keeps_autonomous_noncontact_cue_type(self):
+        source = "狐火へ問う"
+        grammar = build_grounded_cue_grammar([{
+            "slot": 1, "lyrics": [{"text": source}],
+            "discovered_cues": [parse_discovery("effect|狐火", source)],
+        }])
+        self.assertIn('"｜接触=禁止"', grammar)
+        self.assertIn('"｜現象=外部自律"', grammar)
+        self.assertNotIn('"許可"', grammar)
+        self.assertNotIn('"身体操作"', grammar)
+
+    def test_scene_spine_keeps_autonomous_effect_development_in_event(self):
+        cue = {
+            "valid": True, "target": "狐火", "phenomenon": "外部自律",
+            "spatial_anchor": "狐火が前景から奥へ漂う",
+            "visible_development": "狐火が宙を舞い石畳へ光を落とす",
+        }
+        entities = [
+            _Entity(1, (1, index), {
+                "visual_beat_grounding": cue,
+                "scene_spine_step": {"phase": phase},
+                "performance_role": "expressive_hand_arm_performance",
+            })
+            for index, phase in ((1, "setup"), (2, "event"))
+        ]
+        transferred = _with_grounding_transfer_requirements(entities, automatic=True)
+        self.assertEqual(transferred[0].value["required_spatial_anchor"], cue["spatial_anchor"])
+        self.assertEqual(transferred[1].value["required_visible_development"], cue["visible_development"])
 
     def test_explicit_empty_discovery_does_not_reopen_arbitrary_source_targets(self):
         slot = {"slot": 1, "lyrics": [{"text": "思い出"}], "discovered_cues": []}
@@ -116,6 +148,48 @@ class CueDiscoveryTests(unittest.TestCase):
         self.assertLessEqual(backend.discovery_max_tokens, 768)
         beat = next(p for task, p in backend.calls if task == "visual-beats")
         self.assertEqual(beat["slots"][0]["discovered_cues"][0]["target"], "千年鳥居")
+
+    def test_discovered_effect_type_retries_invalid_cue_and_reaches_action(self):
+        class Capture(FakePlannerBackend):
+            beat_calls = 0
+
+            def complete_planner(self, *, task, payload, config, **kwargs):
+                value = json.loads(payload)
+                if task == "lyric-cues":
+                    self.calls.append((task, value))
+                    return "\n".join(
+                        f"DISCOVERY\t{item['slot']}\teffect|千年鳥居"
+                        for item in value["slots"]
+                    )
+                if task == "visual-beats":
+                    self.calls.append((task, value))
+                    self.beat_calls += 1
+                    contact, phenomenon = (
+                        ("許可", "身体操作") if self.beat_calls == 1
+                        else ("禁止", "外部自律")
+                    )
+                    return "\n".join(
+                        f"BEAT\t{item['slot']}\t感情=驚き｜根拠=千年鳥居｜対象=千年鳥居｜"
+                        f"接触={contact}｜現象={phenomenon}｜配置=千年鳥居が奥に見える｜"
+                        "可視展開=千年鳥居の周囲の光が奥へ進む｜身体主導=視線｜終端=見送る"
+                        for item in value["slots"]
+                    )
+                return super().complete_planner(task=task, payload=payload, config=config, **kwargs)
+
+        backend = Capture()
+        plan_timeline(
+            backend, template_emd=TEMPLATE, concept_emd=CONCEPT,
+            direction=DirectionArtifact(camera_profile_id="anime_emotional_mv"),
+            lip_sync_mode="off", lip_sync_target="サブジェクト1", lip_sync_audio_slot=1,
+            scenes_per_batch=3, system_prompts=_system_prompts(), runtime_config=runtime(),
+        )
+        self.assertEqual(backend.beat_calls, 2)
+        action = next(payload for task, payload in backend.calls if task == "actions")
+        self.assertTrue(all(slot["discovered_cue_kind"] == "effect" for slot in action["slots"]))
+        self.assertTrue(all(
+            slot["priority_lyric_cues"][0]["kind"] == "external_effect"
+            for slot in action["slots"]
+        ))
 
 
 if __name__ == "__main__":

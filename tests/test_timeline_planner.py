@@ -1363,7 +1363,7 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         )
         self.assertEqual(
             policy["emotional_amplitude"],
-            "exaggerated_readable_upper_body",
+            "exaggerated_readable_full_body",
         )
         self.assertEqual(
             policy["arc_density"],

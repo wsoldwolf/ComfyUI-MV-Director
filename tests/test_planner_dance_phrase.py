@@ -15,6 +15,15 @@ from test_timeline_planner import CONCEPT, TEMPLATE, FakePlannerBackend, prompts
 
 
 class DancePhraseTests(unittest.TestCase):
+    def test_emotional_motion_profile_and_action_prompt_allow_scene_level_full_body_phrase(self):
+        root = Path(__file__).resolve().parents[1]
+        profile = load_direction_profile(root / "profiles/motion/anime_emotional_mv.md", "motion")
+        action_prompt = (root / "prompts/timeline_planner_actions_dance_phrase_system_prompt.txt").read_text(encoding="utf-8")
+        self.assertEqual(profile.performance_mode, "dance_phrase")
+        self.assertIn("連続した全身フレーズ", profile.render_prompt)
+        self.assertIn("少なくとも一つの通常Shotに踏み替え", action_prompt)
+        self.assertNotIn("上半身だけで完結する演技を積極的に選び", action_prompt)
+
     def test_song_direction_has_bounded_concise_output_budget(self):
         seen = []
         class Capture(FakePlannerBackend):
@@ -32,6 +41,9 @@ class DancePhraseTests(unittest.TestCase):
     def test_compact_action_prompt_is_selected_only_by_motion_opt_in(self):
         from nodes.node_timeline_planner.node import _system_prompts
         loaded = _system_prompts()
+        # This test isolates Motion prompt routing; Scene-spine integration has
+        # a dedicated test with a backend that implements the new task.
+        loaded.pop("scene-spine")
         self.assertLess(len(loaded["actions-dance-phrase"]), len(loaded["actions"]))
         for motion in ("", "anime_story_mv", "anime_emotional_mv"):
             seen = []
@@ -92,7 +104,10 @@ class DancePhraseTests(unittest.TestCase):
                 if task in {"visual-beats", "actions", "action-audit"}:
                     self.assertEqual(payload["planner_policy_contract"]["performance_mode"], expected)
                     self.assertEqual(payload["planner_policy_contract"]["emotional_amplitude"],
-                        "exaggerated_readable_upper_body" if motion else "exaggerated_readable_full_body")
+                        "exaggerated_readable_full_body")
+                    if motion:
+                        self.assertEqual(payload["planner_policy_contract"]["whole_body_emotion_mode"],
+                            "one_connected_full_body_expression_phrase")
                 if task == "actions":
                     for slot in payload["slots"]:
                         self.assertEqual(slot["performance_mode"], expected)

@@ -28,6 +28,7 @@ try:
         build_action_grammar,
         build_action_audit_grammar,
         build_camera_plan_grammar,
+        build_scene_spine_grammar,
         PlannerContent,
         generate_planner_content,
         normalize_concept_emd,
@@ -52,6 +53,7 @@ except ImportError:  # Standalone repository tests.
         build_action_grammar,
         build_action_audit_grammar,
         build_camera_plan_grammar,
+        build_scene_spine_grammar,
         PlannerContent,
         generate_planner_content,
         normalize_concept_emd,
@@ -75,6 +77,7 @@ _PROMPT_FILES = {
     "visual-beats-bounded": "timeline_planner_visual_beats_bounded_system_prompt.txt",
     "song-direction": "timeline_planner_song_direction_system_prompt.txt",
     "shot-layout": "timeline_planner_shot_layout_system_prompt.txt",
+    "scene-spine": "timeline_planner_scene_spine_system_prompt.txt",
     "actions": "timeline_planner_actions_system_prompt.txt",
     "actions-dance-phrase": "timeline_planner_actions_dance_phrase_system_prompt.txt",
     "action-audit": "timeline_planner_action_audit_system_prompt.txt",
@@ -142,6 +145,7 @@ class _LlamaPlannerBackend:
             "visual-beats": scene_batches,
             "song-direction": 1,
             "shot-layout": scene_batches,
+            "scene-spine": scene_count,
             "actions": scene_batches,
             "action-audit": scene_batches,
             "cameras": scene_batches,
@@ -203,6 +207,19 @@ class _LlamaPlannerBackend:
             request = json.loads(payload)
             grammar_kwargs["grammar"] = build_discovery_grammar(request["slots"])
             _LOGGER.info("[MV Director - Timeline Planner] output constraint=lyric_cue_v1; lines=%d", len(request["slots"]))
+        if task == "scene-spine":
+            request = json.loads(payload)
+            grammar_kwargs["grammar"] = build_scene_spine_grammar(
+                request["slots"],
+                allow_target_hands=(
+                    request.get("visual_beat_grounding", {}).get("contact") == "許可"
+                ),
+            )
+            _LOGGER.info(
+                "[MV Director - Timeline Planner] output constraint=scene_spine_v1; "
+                "scene=%s; shots=%d",
+                request.get("scene_number"), len(request["slots"]),
+            )
         if task in {"actions", "action-audit"}:
             request = json.loads(payload)
             if task == "action-audit":
@@ -594,6 +611,8 @@ class MVDirectorTimelinePlanner:
                     f"layout_fallback_scenes={fallback_label}; "
                     f"layout_mix_retry={'yes' if content.layout_mix_retry else 'no'}; "
                     f"protocol_recovered={content.protocol_recovered_count}; "
+                    f"scene_spine_shots={len(content.scene_spine_steps)}; "
+                    f"scene_spine_skipped={len(content.scene_spine_skipped_scenes)}; "
                     "song_direction_fallback="
                     f"{'yes' if content.song_direction_fallback else 'no'}; "
                     "repetition_warnings="

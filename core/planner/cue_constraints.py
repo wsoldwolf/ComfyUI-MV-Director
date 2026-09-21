@@ -78,6 +78,16 @@ def build_grounded_cue_grammar(slots: Sequence[Mapping[str, object]]) -> str:
                         # Keep the identity in the transferable spatial clause;
                         # the LLM still supplies the location and event verb.
                         anchored_tail = tail.replace('"｜配置=" cell', quote("｜配置=" + target) + ' cell')
+                        if candidate["kind"] == "effect":
+                            # The discovery model, not a noun dictionary, chose
+                            # an autonomous effect. Keep that typed decision
+                            # through the Cue Card without rewriting its prose.
+                            anchored_tail = anchored_tail.replace(
+                                '"｜接触=" ("禁止" | "許可")', quote("｜接触=禁止")
+                            ).replace(
+                                '"｜現象=" ("なし" | "外部自律" | "身体操作")',
+                                quote("｜現象=外部自律"),
+                            )
                         alternatives.append(quote(target + "｜根拠=" + source + "｜感情=") + " cell " + anchored_tail)
                 continue
             for offset, char in enumerate(source):

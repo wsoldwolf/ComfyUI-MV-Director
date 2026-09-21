@@ -2,6 +2,9 @@
 
 | 文書 | 内容 |
 |---|---|
+| [Scene内進行・全身演技・外部effectの統合改修](planner-scene-spine-motion-effect-integration-2026-09-22.md) | P0〜P2、上半身偏重の是正、狐火欠落のPlanner→Compiler追跡、v64の型保持・可視展開転送と未検証事項を整理 |
+| [Scene内進行：P0〜P2実装と8B評価](scene-event-spine-p0-p2-2026-09-21.md) | Scene一括の進行とCamera coverageを実装。二seedの8B評価、残る意味上の接触反復、P3用PlanとScene 9の選定 |
+| [Scene内進行の検証計画](scene-event-spine-validation-plan-2026-09-21.md) | Sceneの出来事、演技、Camera coverageを短区間で検証する計画 |
 | [cl-japanese2json のプロンプト生成と現行版の比較](japanese2json-prompt-generation-comparison-2026-09-21.md) | 指定された旧8B／27B完成動画の埋め込みPlan・時系列フレーム・9月12日実装を照合し、人物演技とCamera連動の差をShot密度、Scene一体計画、Cue分割、H3条件に分けて結論と検証方法を記録 |
 | [Planner v60：P0〜P3実装と短区間検証](planner-v60-scope-phrase-camera-validation-2026-09-20.md) | 翻訳スコープと描画用profileの分離、演技phase・Camera接続、実8B二試行とH3一Scene三条件の比較。創作品質の未達も記録 |
 | [滝アセットへの鳥居・灯籠の混入](waterfall-shrine-prompt-leakage-2026-09-20.md) | 新しい人物／滝参照とScene 1を照合。Motionの鳥居禁止例と背景参照の固定文がH3へ実際に届くことを確認し、舞台に依存しない契約への修正を提案 |

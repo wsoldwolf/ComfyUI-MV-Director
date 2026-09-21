@@ -30,6 +30,8 @@ def main() -> int:
     parser.add_argument("--model", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--seed", type=int, default=1)
+    parser.add_argument("--without-scene-spine", action="store_true",
+                        help="Freeze the pre-P1 Planner path for an A/B comparison")
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
     logging.basicConfig(level=logging.INFO)
@@ -56,10 +58,13 @@ def main() -> int:
     started = time.perf_counter()
     record = {"fixture": "three-scene synthetic diagnostic, not the full original song",
               "model": str(args.model), "runtime": config.to_dict(),
-              "template": template, "concept": concept, "complete": False}
+              "template": template, "concept": concept, "complete": False,
+              "scene_spine_enabled": not args.without_scene_spine}
     try:
         lifecycle.ensure_loaded(args.model, config)
         prompts = _system_prompts()
+        if args.without_scene_spine:
+            prompts.pop("scene-spine")
         record["prompt_sha256"] = {key: hashlib.sha256(value.encode()).hexdigest()
                                    for key, value in prompts.items()}
         result = plan_timeline(backend, template_emd=template, concept_emd=concept,

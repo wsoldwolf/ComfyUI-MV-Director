@@ -36,6 +36,10 @@ from .layout import (
 )
 from .renderer import render_completed_emd
 from .request_budget import complete_with_context_recovery
+from .scene_spine import (
+    SceneSpineStep, parse_scene_spine_step, validate_contact_coverage,
+    validate_scene_spine,
+)
 from .text_normalization import strip_generated_line_continuation
 from .template import (
     PlannerTemplate,
@@ -45,7 +49,7 @@ from .template import (
 )
 
 
-PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v61"
+PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v64"
 _ACTION_AUDIT_REPAIR_ATTEMPTS = 1
 _LOGGER = logging.getLogger("mv_director.nodes")
 TASKS = (
@@ -166,6 +170,8 @@ class PlannerContent:
     action_repetition_warning_count: int = 0
     camera_repetition_warning_count: int = 0
     song_direction_fallback: bool = False
+    scene_spine_steps: tuple[tuple[int, int, str], ...] = ()
+    scene_spine_skipped_scenes: tuple[int, ...] = ()
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -193,6 +199,8 @@ class PlannerContent:
             "action_repetition_warning_count": self.action_repetition_warning_count,
             "camera_repetition_warning_count": self.camera_repetition_warning_count,
             "song_direction_fallback": self.song_direction_fallback,
+            "scene_spine_steps": [list(value) for value in self.scene_spine_steps],
+            "scene_spine_skipped_scenes": list(self.scene_spine_skipped_scenes),
         }
 
     @classmethod
@@ -240,6 +248,13 @@ class PlannerContent:
             ),
             song_direction_fallback=bool(
                 value.get("song_direction_fallback", False)
+            ),
+            scene_spine_steps=tuple(
+                (int(row[0]), int(row[1]), str(row[2]))
+                for row in value.get("scene_spine_steps", ())
+            ),
+            scene_spine_skipped_scenes=tuple(
+                int(scene) for scene in value.get("scene_spine_skipped_scenes", ())
             ),
         )
 
@@ -356,6 +371,8 @@ _CAMERA_PLAN_PATHS = frozenset(
 _CAMERA_PLAN_COVERAGE = frozenset(
     {
         "environment_relation",
+        "lyric_target",
+        "lyric_target_and_hands",
         "whole_body_emotion",
         "upper_body_hands",
         "face_eyes_mouth",
@@ -380,7 +397,6 @@ def build_camera_plan_grammar(slots: list[Mapping[str, object]]) -> str:
     rules = [
         "camera-scale ::= " + " | ".join(map(quote, sorted(_CAMERA_PLAN_SCALES))),
         "camera-view ::= " + " | ".join(map(quote, sorted(_CAMERA_PLAN_VIEWS))),
-        "camera-coverage ::= " + " | ".join(map(quote, sorted(_CAMERA_PLAN_COVERAGE))),
     ]
     for slot in slots:
         number = slot["slot"]
@@ -418,6 +434,15 @@ def build_camera_plan_grammar(slots: list[Mapping[str, object]]) -> str:
             f"camera-path-{number} ::= "
             + " | ".join(map(quote, sorted(paths)))
         )
+        required_coverage = slot.get("required_spine_coverage")
+        coverages = (
+            {str(required_coverage)} if required_coverage in _CAMERA_PLAN_COVERAGE
+            else _CAMERA_PLAN_COVERAGE
+        )
+        rules.append(
+            f"camera-coverage-{number} ::= "
+            + " | ".join(map(quote, sorted(coverages)))
+        )
         rows.append(
             quote(f"CAMERA\t{number}\tMOTION=")
             + f" camera-motion-{number} "
@@ -426,7 +451,7 @@ def build_camera_plan_grammar(slots: list[Mapping[str, object]]) -> str:
             + quote("｜START_VIEW=") + " camera-view "
             + quote("｜END_VIEW=") + " camera-view "
             + quote("｜PATH=") + f" camera-path-{number} "
-            + quote("｜COVERAGE=") + " camera-coverage"
+            + quote("｜COVERAGE=") + f" camera-coverage-{number}"
         )
     return "root ::= " + ' "\\n" '.join(rows) + ' "\\n"?\n' + "\n".join(rules) + "\n"
 
@@ -591,6 +616,20 @@ def _camera_plan_contract_violations(
         }
     ):
         violations.append("camera_plan_coverage_scale_conflict")
+    required_spine_coverage = entity.value.get("required_spine_coverage")
+    if required_spine_coverage and plan.coverage != required_spine_coverage:
+        violations.append("required_spine_coverage")
+    if required_spine_coverage in {"lyric_target", "lyric_target_and_hands"}:
+        if {plan.start_scale, plan.end_scale} & {"face_closeup", "head_and_shoulders"}:
+            violations.append("spine_target_occluded")
+    if required_spine_coverage == "face_eyes_mouth" and plan.end_view not in {
+        "front", "front_three_quarter", "high_front", "low_front_three_quarter"
+    }:
+        violations.append("spine_face_not_readable")
+    if required_spine_coverage == "face_eyes_mouth" and plan.end_scale in {
+        "wide", "medium_wide", "full_body"
+    }:
+        violations.append("spine_face_too_distant")
     if entity.value.get("arc_permission") == "required" and motion != "Arc Shot":
         violations.append("required_long_arc_emphasis")
     if entity.value.get("face_zoom_emphasis"):
@@ -657,6 +696,8 @@ _CAMERA_PATH_TEXT = {
 }
 _CAMERA_COVERAGE_TEXT = {
     "environment_relation": "Keep the subject-to-environment spatial relationship readable",
+    "lyric_target": "Keep the lyric-selected target or external phenomenon visible in its spatial setting",
+    "lyric_target_and_hands": "Keep the lyric-selected target and the interacting hands visible together",
     "whole_body_emotion": "Keep the complete whole-body emotional silhouette readable without isolating the feet",
     "upper_body_hands": "Keep the face, shoulders, arms, and hands readable together",
     "face_eyes_mouth": "Keep both eyes, both eyebrows, the nose, the complete singing mouth, and the facial contour visible",
@@ -708,6 +749,9 @@ def _choose_fallback_camera_option(
 ) -> _CameraPlan:
     # Retain an already selected orbit through the entire CUT/CONTINUE group.
     # Diversity cannot override optical geometry or change the direction.
+    required_coverage = entity.value.get("required_spine_coverage")
+    if required_coverage:
+        options = tuple(replace(option, coverage=str(required_coverage)) for option in options)
     allowed = tuple(
         option for option in options
         if not _camera_plan_contract_violations(entity, option)
@@ -750,6 +794,43 @@ def _select_continuous_camera_plan(
 
 def _fallback_camera_plan(entity: _Entity, ordinal: int) -> _CameraPlan:
     """Choose a varied finite structural fallback for an invalid 8B response."""
+
+    required_coverage = entity.value.get("required_spine_coverage")
+    if required_coverage in {"lyric_target", "lyric_target_and_hands"}:
+        if entity.value.get("arc_permission") == "required":
+            options = tuple(
+                _CameraPlan(
+                    "Arc Shot with large amplitude at fast speed",
+                    "medium_wide", "medium", "low_front_three_quarter", "side",
+                    path, str(required_coverage),
+                )
+                for path in ("arc_left_60_120_70_90", "arc_right_60_120_70_90")
+            )
+        else:
+            options = (
+                _CameraPlan("Push In at fast speed", "wide", "medium", "front_three_quarter", "front_three_quarter", "push_in", str(required_coverage)),
+                _CameraPlan("Truck Right at fast speed", "medium_wide", "medium", "front_three_quarter", "side", "truck_right", str(required_coverage)),
+            )
+        return _choose_fallback_camera_option(entity, ordinal, options)
+    if required_coverage == "face_eyes_mouth":
+        if entity.value.get("arc_permission") == "required":
+            options = tuple(
+                _CameraPlan(
+                    "Arc Shot with large amplitude at fast speed",
+                    "medium", "head_and_shoulders", "side", "front_three_quarter",
+                    path, "face_eyes_mouth",
+                )
+                for path in ("arc_left_60_120_70_90", "arc_right_60_120_70_90")
+            )
+        elif entity.value.get("face_zoom_emphasis"):
+            options = (
+                _CameraPlan("Zoom In with large amplitude at fast speed", "head_and_shoulders", "face_closeup", "front_three_quarter", "front_three_quarter", "zoom_in_35_55", "face_eyes_mouth"),
+            )
+        else:
+            options = (
+                _CameraPlan("Push In at fast speed", "upper_body", "head_and_shoulders", "front_three_quarter", "front_three_quarter", "push_in", "face_eyes_mouth"),
+            )
+        return _choose_fallback_camera_option(entity, ordinal, options)
 
     relation = str(entity.value.get("face_arc_transition", ""))
     if relation == "arc_into_next_face_cut":
@@ -968,7 +1049,11 @@ def _with_grounding_transfer_requirements(
         ]
         if coverage and len(coverage) != len(ordered):
             phases = {
-                entity.key: _priority_cue_phase(index, len(coverage))
+                entity.key: (
+                    str(entity.value.get("grounded_cue_phase"))
+                    if entity.value.get("scene_spine_step")
+                    else _priority_cue_phase(index, len(coverage))
+                )
                 for index, entity in enumerate(coverage, 1)
             }
             for entity in ordered:
@@ -987,16 +1072,26 @@ def _with_grounding_transfer_requirements(
         # A face-only layout has no alternative coverage. Preserve the hard
         # grounding contract rather than silently discarding the selected event.
         eligible = coverage or ordered
-        anchor_entity = eligible[0]
-        development_entity = eligible[0] if len(eligible) == 1 else eligible[1]
-        for entity, field, value in (
-            (anchor_entity, "required_spatial_anchor", spatial_anchor),
+        development_entity = next(
             (
-                development_entity,
-                "required_visible_development",
-                visible_development,
+                entity for entity in eligible
+                if isinstance(entity.value.get("scene_spine_step"), Mapping)
+                and entity.value["scene_spine_step"].get("phase") == "event"
             ),
-        ):
+            eligible[0] if len(eligible) == 1 else eligible[1],
+        )
+        autonomous_effect = grounding.get("phenomenon") == "外部自律"
+        anchor_entity = eligible[0]
+        requirements = [(anchor_entity, "required_spatial_anchor", spatial_anchor)]
+        # The LLM-authored Scene step already names the one-time change. The
+        # older exact Cue development otherwise duplicates contact in a Shot.
+        # An external effect has no contact to duplicate: preserve its actual
+        # visible path so H3 receives more than the Subject's reaction.
+        if autonomous_effect or not development_entity.value.get("scene_spine_step"):
+            requirements.append((
+                development_entity, "required_visible_development", visible_development,
+            ))
+        for entity, field, value in requirements:
             current = rewritten.get(entity.key, entity)
             rewritten[entity.key] = _Entity(
                 current.scene_number,
@@ -2062,11 +2157,16 @@ def _anime_emotional_mv_camera_emphasis(
     }
     if face_target is None:
         face_target = max(1, (len(entities) + 11) // 12)
-    face_target = max(0, min(face_target, len(entities)))
+    face_eligible = {
+        index for index, entity in enumerate(entities)
+        if entity.value.get("required_spine_coverage")
+        not in {"lyric_target", "lyric_target_and_hands"}
+    }
+    face_target = max(0, min(face_target, len(face_eligible)))
     face_indices: list[int] = []
     face_scenes: set[int] = set()
     ordered_face_candidates = sorted(
-        range(len(entities)),
+        face_eligible,
         key=lambda value: (
             0 if (
                 (
@@ -2099,7 +2199,7 @@ def _anime_emotional_mv_camera_emphasis(
         if len(face_indices) >= face_target:
             break
     if 0 < len(face_indices) < face_target:
-        for index in range(len(entities)):
+        for index in sorted(face_eligible):
             if index not in face_indices:
                 face_indices.append(index)
                 if len(face_indices) >= face_target:
@@ -2120,6 +2220,10 @@ def _anime_emotional_mv_camera_emphasis(
             if int(entities[candidate].value.get("shot_duration_ms", 0)) < 2500:
                 continue
             if candidate in face_indices or candidate in arc_indices:
+                continue
+            if entities[candidate].value.get("required_spine_coverage") in {
+                "lyric_target", "lyric_target_and_hands"
+            }:
                 continue
             arc_indices.add(candidate)
             transitions[entities[candidate].key] = relation
@@ -2859,7 +2963,7 @@ def generate_planner_content(
     if (
         not set(TASKS).issubset(prompt_keys)
         or prompt_keys - set(TASKS) - {
-            "visual-beats-bounded", "actions-bounded", "actions-dance-phrase", "lyric-cues"
+            "visual-beats-bounded", "actions-bounded", "actions-dance-phrase", "lyric-cues", "scene-spine"
         }
         or any(not value.strip() for value in system_prompts.values())
     ):
@@ -2976,10 +3080,10 @@ def generate_planner_content(
         if "actions-dance-phrase" in system_prompts:
             system_prompts["actions"] = system_prompts["actions-dance-phrase"]
         planner_policy_contract.update(
-            whole_body_emotion_mode="one_connected_upper_body_arm_expression_phrase",
-            emotional_amplitude="exaggerated_readable_upper_body",
+            whole_body_emotion_mode="one_connected_full_body_expression_phrase",
+            emotional_amplitude="exaggerated_readable_full_body",
             pose_contrast="preparation_accent_release_across_scene_not_per_shot",
-            lower_body_role="optional_support_not_required_per_shot_no_body_spins",
+            lower_body_role="scene_level_weight_transfer_not_required_per_shot_no_body_spins",
         )
     _LOGGER.info(
         "[MV Director - Timeline Planner] performance_mode=%s; motion_profile=%s; "
@@ -3206,9 +3310,16 @@ def generate_planner_content(
         key: _parse_cue_card(beat_entities[key], text)
         for key, text in beat_values.items()
     }
+    required_cue_scopes = dict(scene_priority_cues)
+    for scene_number, discovered in discovered_by_scene.items():
+        if discovered and discovered[0]["kind"] == "effect":
+            required_cue_scopes[scene_number] = ({
+                "token": discovered[0]["target"],
+                "kind": "external_effect",
+            },)
     priority_cue_retry_entities: list[_Entity] = []
     for key, card in cue_cards.items():
-        priority_cues = scene_priority_cues.get(key[0], ())
+        priority_cues = required_cue_scopes.get(key[0], ())
         if not priority_cues:
             continue
         primary_cue = priority_cues[0]
@@ -3255,7 +3366,7 @@ def generate_planner_content(
                 "planner_policy_contract": planner_policy_contract,
                 "recent_visual_beat_history": recent_beat_history[-12:],
                 "priority_cue_retry": (
-                    "Replace the rejected Cue Card. Select the exact configured "
+                    "Replace the rejected Cue Card. Select the exact selected "
                     "current-Scene lyric token and give it a visible same-Scene "
                     "relation, reaction, and release without carrying it later."
                 ),
@@ -3346,14 +3457,17 @@ def generate_planner_content(
             ),
         )
 
-    action_cue_scopes = dict(scene_priority_cues)
+    action_cue_scopes = dict(required_cue_scopes)
     if lyric_cue_mode == "automatic":
         for key, card in cue_cards.items():
             if card.valid and card.target not in _CUE_NONE_VALUES:
                 action_cue_scopes[key[0]] = (
                     {
                         "token": card.target,
-                        "kind": "automatic",
+                        "kind": (
+                            required_cue_scopes[key[0]][0]["kind"]
+                            if required_cue_scopes.get(key[0]) else "automatic"
+                        ),
                         "evidence": card.evidence,
                     },
                 )
@@ -3609,6 +3723,112 @@ def generate_planner_content(
     shot_context = _shot_context(planned_template, protector)
     dialogue_filter.add_records(protector.records)
 
+    scene_spine_steps: dict[tuple[int, int], SceneSpineStep] = {}
+    scene_spine_raw: dict[tuple[int, int], str] = {}
+    scene_spine_skipped: list[int] = []
+    if performance_mode == "dance_phrase" and "scene-spine" in system_prompts:
+        for scene in planned_template.scenes:
+            if len(scene.shots) < 2:
+                continue
+            card = cue_cards.get((scene.scene_number,))
+            if card is None or not card.valid or card.target in _CUE_NONE_VALUES:
+                continue
+            keys = [(scene.scene_number, index) for index in range(1, len(scene.shots) + 1)]
+            spine_entities = [
+                _Entity(scene.scene_number, key, {
+                    "scene_number": scene.scene_number,
+                    "shot_index": key[1],
+                    "shot_count": len(keys),
+                    "shot_duration_ms": shot_context[key]["shot_duration_ms"],
+                    "editorial_role": _camera_editorial_role(
+                        shot_context[key], lip_sync_active=lip_sync_mode != "off"
+                    ),
+                })
+                for key in keys
+            ]
+            if card.contact == "許可" and all(
+                entity.value["editorial_role"] == "face_performance_cut"
+                for entity in spine_entities
+            ):
+                scene_spine_skipped.append(scene.scene_number)
+                _LOGGER.warning(
+                    "[MV Director - Timeline Planner] Scene spine skipped; "
+                    "scene=%d; reason=no_event_slot_with_contact_coverage; "
+                    "legacy Action/Camera path retained",
+                    scene.scene_number,
+                )
+                continue
+            shared_spine = {
+                "scene_number": scene.scene_number,
+                "lyric_lines": list(dict.fromkeys(
+                    str(lyric["text"])
+                    for key in keys for lyric in shot_context[key]["lyrics"]
+                )),
+                "author_body": list(dict.fromkeys(
+                    str(line)
+                    for key in keys for line in shot_context[key]["author_body"]
+                )),
+                "visual_beat_grounding": card.to_dict(),
+                "spine_event_kind": (
+                    "physical_contact" if card.contact == "許可"
+                    else "non_contact_change"
+                ),
+                "scene_continuation": scene.continuation,
+            }
+            spine_config = replace(
+                runtime_config,
+                max_tokens=min(runtime_config.max_tokens, max(512, 192 * len(keys) + 128)),
+            )
+            last_error = ""
+            for attempt in range(2):
+                raw, issues, retries, missing, recovered = _request_entities(
+                    backend, task="scene-spine", record_type="SPINE",
+                    entities=spine_entities,
+                    shared={**shared_spine, **(
+                        {"retry": "invalid_scene_spine", "last_error": last_error}
+                        if attempt else {}
+                    )},
+                    system_prompt=system_prompts["scene-spine"],
+                    runtime_config=spine_config,
+                    interrupt_callback=interrupt_callback,
+                )
+                all_issues.extend(issues)
+                all_retries.update(retries)
+                protocol_recovered_count += recovered
+                if missing:
+                    last_error = "missing_spine_slots"
+                    continue
+                try:
+                    steps = tuple(parse_scene_spine_step(raw[key]) for key in keys)
+                    validate_scene_spine(steps)
+                    validate_contact_coverage(
+                        steps, contact_allowed=card.contact == "許可"
+                    )
+                    if any(
+                        entity.value["editorial_role"] == "face_performance_cut"
+                        and step.show != "face_eyes_mouth"
+                        for entity, step in zip(spine_entities, steps)
+                    ):
+                        raise ValueError("face cut must show eyes and singing mouth")
+                except (KeyError, ValueError) as error:
+                    last_error = str(error)
+                    continue
+                scene_spine_steps.update(zip(keys, steps))
+                scene_spine_raw.update((key, raw[key]) for key in keys)
+                _LOGGER.info(
+                    "[MV Director - Timeline Planner] Scene spine accepted; "
+                    "scene=%d; shots=%d; attempt=%d",
+                    scene.scene_number, len(keys), attempt + 1,
+                )
+                break
+            else:
+                scene_spine_skipped.append(scene.scene_number)
+                _LOGGER.warning(
+                    "[MV Director - Timeline Planner] Scene spine skipped; "
+                    "scene=%d; reason=%s; legacy Action/Camera path retained",
+                    scene.scene_number, last_error,
+                )
+
     action_values: dict[tuple[int, ...], str] = {}
     previous_action = ""
     recent_action_history: list[str] = []
@@ -3634,8 +3854,19 @@ def generate_planner_content(
                 else ""
             )
             context["visual_beat_grounding"] = cue_card.to_dict()
-            priority_cues = scene_priority_cues.get(key[0], ())
+            if key in scene_spine_steps:
+                context["scene_spine_step"] = scene_spine_steps[key].to_dict()
+                context["scene_spine_previous_end"] = (
+                    scene_spine_steps[(key[0], key[1] - 1)].to_state
+                    if (key[0], key[1] - 1) in scene_spine_steps else ""
+                )
+            priority_cues = required_cue_scopes.get(key[0], ())
             context["priority_lyric_cues"] = list(priority_cues)
+            discovered = discovered_by_scene.get(key[0], ())
+            context["discovered_cue_kind"] = (
+                discovered[0]["kind"] if discovered and discovered[0]["target"] == cue_card.target
+                else ""
+            )
             has_automatic_cue = (
                 lyric_cue_mode == "automatic"
                 and cue_card.valid
@@ -3648,6 +3879,12 @@ def generate_planner_content(
                 if priority_cues or has_automatic_cue
                 else ""
             )
+            if key in scene_spine_steps:
+                grounded_cue_phase = {
+                    "setup": "establish",
+                    "event": "event_and_reaction",
+                    "response": "reaction_and_release",
+                }[scene_spine_steps[key].phase]
             context["grounded_cue_phase"] = grounded_cue_phase
             context["priority_cue_phase"] = (
                 grounded_cue_phase if priority_cues else ""
@@ -4237,6 +4474,14 @@ def generate_planner_content(
                 ),
                 "visual_beat_grounding": cue_card.to_dict(),
                 "locked_action": action_values[key],
+                "scene_spine_step": (
+                    scene_spine_steps[key].to_dict()
+                    if key in scene_spine_steps else {}
+                ),
+                "required_spine_coverage": (
+                    scene_spine_steps[key].required_coverage
+                    if key in scene_spine_steps else ""
+                ),
                 "previous_locked_action": (
                     action_values[previous_action_key]
                     if previous_action_key is not None
@@ -4277,7 +4522,13 @@ def generate_planner_content(
                     shot_context[key],
                     lip_sync_active=lip_sync_mode != "off",
                 ),
-                "face_arc_transition": face_arc_transitions.get(key, ""),
+                "face_arc_transition": (
+                    face_arc_transitions.get(key, "")
+                    if key not in scene_spine_steps
+                    or scene_spine_steps[key].required_coverage not in {
+                        "lyric_target", "lyric_target_and_hands", "face_eyes_mouth"
+                    } else ""
+                ),
             }
             if context["editorial_role"] == "face_performance_cut":
                 camera_values[key] = (
@@ -4720,6 +4971,10 @@ def generate_planner_content(
         action_repetition_warning_count=action_repetition_warning_count,
         camera_repetition_warning_count=camera_repetition_warning_count,
         song_direction_fallback=song_direction_fallback,
+        scene_spine_steps=tuple(
+            (key[0], key[1], text) for key, text in sorted(scene_spine_raw.items())
+        ),
+        scene_spine_skipped_scenes=tuple(scene_spine_skipped),
     )
     return content, ()
 
