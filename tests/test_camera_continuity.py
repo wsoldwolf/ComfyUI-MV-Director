@@ -4,6 +4,7 @@ import unittest
 from core.planner.engine import (
     _Entity, _CameraPlan, _camera_plan_contract_violations,
     _fallback_camera_plan, _select_continuous_camera_plan,
+    build_camera_plan_grammar,
 )
 
 
@@ -23,6 +24,25 @@ def entity(scene, group, slot=1, **extra):
 
 
 class CameraContinuityTests(unittest.TestCase):
+    def test_finite_camera_grammar_keeps_slot_order_and_arc_assignment(self):
+        grammar = build_camera_plan_grammar([
+            {"slot": 1, "camera_protocol": "finite_v1",
+             "arc_permission": "required", "previous_arc_path": "arc_right_60_120_70_90"},
+            {"slot": 2, "camera_protocol": "finite_v1",
+             "arc_permission": "forbidden"},
+        ])
+        self.assertIn(r"CAMERA\t1\tMOTION=", grammar)
+        self.assertIn(r"CAMERA\t2\tMOTION=", grammar)
+        self.assertIn("camera-path-1 ::= \"arc_right_60_120_70_90\"", grammar)
+        self.assertIn("camera-motion-1 ::= \"Arc Shot with large amplitude at fast speed\"", grammar)
+        self.assertNotIn("Arc Shot", grammar.split("camera-motion-2 ::=", 1)[1])
+        self.assertIn(r'"\n"', grammar)
+        for slots in ([], [{"slot": 0, "camera_protocol": "finite_v1"}],
+                      [{"slot": 1, "camera_protocol": "free_text_v1"}],
+                      [{"slot": 1, "camera_protocol": "finite_v1"}] * 2):
+            with self.assertRaises(ValueError):
+                build_camera_plan_grammar(slots)
+
     def test_arc_direction_survives_other_motion_and_batch_boundary(self):
         states = {}
         left = "arc_left_60_120_70_90"
@@ -58,6 +78,19 @@ class CameraContinuityTests(unittest.TestCase):
             self.assertIn("camera_plan_unmotivated_view_change", _camera_plan_contract_violations(e, plan))
         static = _CameraPlan("Static Shot", "medium", "wide", "front", "front", "stationary", "environment_relation")
         self.assertIn("camera_plan_static_scale_change", _camera_plan_contract_violations(e, static))
+
+    def test_arc_must_change_composition_and_closeup_cannot_claim_hand_coverage(self):
+        e = entity(1, 1)
+        unchanged = _CameraPlan("Arc Shot with large amplitude at fast speed",
+            "face_closeup", "face_closeup", "front", "front",
+            "arc_right_60_120_70_90", "face_eyes_mouth")
+        self.assertIn("camera_plan_arc_no_composition_change",
+            _camera_plan_contract_violations(e, unchanged))
+        hidden_hands = _CameraPlan("Arc Shot with large amplitude at fast speed",
+            "upper_body", "face_closeup", "side", "front",
+            "arc_right_60_120_70_90", "upper_body_hands")
+        self.assertIn("camera_plan_coverage_scale_conflict",
+            _camera_plan_contract_violations(e, hidden_hands))
 
     def test_fallback_keeps_assigned_upper_body_coverage(self):
         e = entity(1, 1, editorial_role="upper_body_performance_coverage")

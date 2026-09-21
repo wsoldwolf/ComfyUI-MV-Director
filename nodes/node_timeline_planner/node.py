@@ -27,6 +27,7 @@ try:
         build_discovery_grammar,
         build_action_grammar,
         build_action_audit_grammar,
+        build_camera_plan_grammar,
         PlannerContent,
         generate_planner_content,
         normalize_concept_emd,
@@ -50,6 +51,7 @@ except ImportError:  # Standalone repository tests.
         build_discovery_grammar,
         build_action_grammar,
         build_action_audit_grammar,
+        build_camera_plan_grammar,
         PlannerContent,
         generate_planner_content,
         normalize_concept_emd,
@@ -226,6 +228,14 @@ class _LlamaPlannerBackend:
                 grammar_kwargs["grammar"] = build_grounded_cue_grammar(request["slots"])
                 _LOGGER.info(
                     "[MV Director - Timeline Planner] output constraint=cue_source_v1; slots=%d",
+                    len(request["slots"]),
+                )
+        if task == "cameras":
+            request = json.loads(payload)
+            if request.get("camera_protocol_contract", {}).get("id") == "finite_v1":
+                grammar_kwargs["grammar"] = build_camera_plan_grammar(request["slots"])
+                _LOGGER.info(
+                    "[MV Director - Timeline Planner] output constraint=camera_plan_v1; slots=%d",
                     len(request["slots"]),
                 )
         count = self.lifecycle.count_serialized_prompt(system_prompt + "\n" + model_payload)

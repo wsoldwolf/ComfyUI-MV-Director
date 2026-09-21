@@ -7,6 +7,15 @@ view. Plan toward the next facial accent before zooming: a straight zoom cannot
 rotate a rear view to the front. Keep hands and their target visible while the
 locked action performs contact or an arm accent; use a close-up for the following
 reaction or release, not for the gesture it would conceal.
+previous_locked_action and next_locked_action are the already accepted actions
+in this Scene, not requests to change the current Shot. Use them with
+performance_phase and grounded_cue_phase to film one continuous event:
+establish the existing target and relationship, show the current contact or
+visible change, then reveal the resulting face or body reaction. Choose a
+scale and camera path that keep the current action readable while handing the
+image state to the next accepted action. If the current action is the release
+or reaction after a concrete event, a readable face approach can serve it;
+do not zoom past the target during its contact or visible change.
 Do not append a standalone backslash or Markdown line-continuation marker to the generated text.
 The first field of every output line is the fixed ASCII word CAMERA. The second field is the supplied numeric slot. The third field is a concise Japanese camera direction. Separate the three fields with one literal U+0009 TAB character.
 When a slot has `camera_protocol=finite_v1`, the third field is not free prose.

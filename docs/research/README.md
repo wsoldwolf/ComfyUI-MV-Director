@@ -2,6 +2,7 @@
 
 | 文書 | 内容 |
 |---|---|
+| [cl-japanese2json のプロンプト生成と現行版の比較](japanese2json-prompt-generation-comparison-2026-09-21.md) | 指定された旧8B／27B完成動画の埋め込みPlan・時系列フレーム・9月12日実装を照合し、人物演技とCamera連動の差をShot密度、Scene一体計画、Cue分割、H3条件に分けて結論と検証方法を記録 |
 | [Planner v60：P0〜P3実装と短区間検証](planner-v60-scope-phrase-camera-validation-2026-09-20.md) | 翻訳スコープと描画用profileの分離、演技phase・Camera接続、実8B二試行とH3一Scene三条件の比較。創作品質の未達も記録 |
 | [滝アセットへの鳥居・灯籠の混入](waterfall-shrine-prompt-leakage-2026-09-20.md) | 新しい人物／滝参照とScene 1を照合。Motionの鳥居禁止例と背景参照の固定文がH3へ実際に届くことを確認し、舞台に依存しない契約への修正を提案 |
 | [loop-2完成動画：身体演技の反復とプロトタイプとの差](loop2-performance-regression-review-2026-09-20.md) | 52 Shotと動画・キャッシュを照合。共通Camera文への局所Action混入、Cueでの接触テンプレート化、短い演技とCamera接続の不整合、H3モデル／scheduler差を分け、改善順位と局所検証を提案 |

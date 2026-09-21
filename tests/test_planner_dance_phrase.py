@@ -15,6 +15,20 @@ from test_timeline_planner import CONCEPT, TEMPLATE, FakePlannerBackend, prompts
 
 
 class DancePhraseTests(unittest.TestCase):
+    def test_song_direction_has_bounded_concise_output_budget(self):
+        seen = []
+        class Capture(FakePlannerBackend):
+            def complete_planner(self, *, task, config, **kwargs):
+                if task == "song-direction":
+                    seen.append(config.max_tokens)
+                return super().complete_planner(task=task, config=config, **kwargs)
+        result = plan_timeline(Capture(), template_emd=TEMPLATE, concept_emd=CONCEPT,
+            direction=DirectionArtifact(camera_profile_id="anime_emotional_mv"),
+            lip_sync_mode="off", lip_sync_target="サブジェクト1", lip_sync_audio_slot=1,
+            scenes_per_batch=3, system_prompts=prompts(), runtime_config=runtime())
+        self.assertTrue(result.complete)
+        self.assertEqual(seen, [min(runtime().max_tokens, 512)])
+
     def test_compact_action_prompt_is_selected_only_by_motion_opt_in(self):
         from nodes.node_timeline_planner.node import _system_prompts
         loaded = _system_prompts()
@@ -84,6 +98,24 @@ class DancePhraseTests(unittest.TestCase):
                         self.assertEqual(slot["performance_mode"], expected)
                         self.assertIn("胸郭と肩の反転", str(slot))
                         self.assertIn("鳥居へ正対して静止", str(slot))
+            camera_slots = [
+                slot for task, payload in backend.calls if task == "cameras"
+                for slot in payload["slots"]
+            ]
+            self.assertEqual(len(camera_slots), 2)
+            self.assertEqual(
+                camera_slots[0]["next_locked_action"],
+                camera_slots[1]["locked_action"],
+            )
+            self.assertEqual(
+                camera_slots[1]["previous_locked_action"],
+                camera_slots[0]["locked_action"],
+            )
+            self.assertEqual(
+                [slot["performance_phase"] for slot in camera_slots],
+                ["prepare_and_accent", "release_and_reaction"]
+                if motion else ["", ""],
+            )
         self.assertEqual(calls[""], calls["anime_emotional_mv"])
         self.assertEqual(actions[""], actions["anime_emotional_mv"])
 

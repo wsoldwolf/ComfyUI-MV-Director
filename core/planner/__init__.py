@@ -13,6 +13,7 @@ from .dialogue import (
 from .engine import (
     PLANNER_ALGORITHM_VERSION,
     build_cue_card_grammar,
+    build_camera_plan_grammar,
     PlannerContent,
     TimelinePlannerBackend,
     TimelinePlannerResult,
@@ -39,6 +40,7 @@ __all__ = [
     "PlannerContent",
     "PLANNER_ALGORITHM_VERSION",
     "build_cue_card_grammar",
+    "build_camera_plan_grammar",
     "build_action_grammar",
     "build_action_audit_grammar",
     "build_grounded_cue_grammar",

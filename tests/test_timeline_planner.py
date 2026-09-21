@@ -1691,6 +1691,27 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertNotIn((1, 4), arc_keys)
         self.assertTrue(arc_keys.issubset({(1, 2), (1, 3)}))
 
+    def test_emotional_face_approach_follows_grounded_event_not_contact(self) -> None:
+        entities = [
+            _Entity(1, (1, index), {
+                "editorial_role": role,
+                "shot_duration_ms": 5000,
+                "grounded_cue_phase": cue_phase,
+                "performance_phase": performance_phase,
+            })
+            for index, role, cue_phase, performance_phase in (
+                (1, "expressive_result_coverage", "establish", "prepare_and_accent"),
+                (2, "spatial_reveal_or_interaction_coverage", "reaction", "develop_accent"),
+                (3, "upper_body_performance_coverage", "release", "release_and_reaction"),
+            )
+        ]
+        arcs, faces, transitions = _anime_emotional_mv_camera_emphasis(
+            entities, face_target=1
+        )
+        self.assertEqual(faces, {(1, 3)})
+        self.assertIn((1, 2), arcs)
+        self.assertEqual(transitions[(1, 2)], "arc_into_next_face_cut")
+
     def test_long_arc_emphasis_requires_large_fast_h3_phrase(self) -> None:
         entity = type("Entity", (), {
             "key": (1, 1),

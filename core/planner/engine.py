@@ -45,7 +45,7 @@ from .template import (
 )
 
 
-PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v60"
+PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v61"
 _ACTION_AUDIT_REPAIR_ATTEMPTS = 1
 _LOGGER = logging.getLogger("mv_director.nodes")
 TASKS = (
@@ -364,6 +364,73 @@ _CAMERA_PLAN_COVERAGE = frozenset(
 )
 
 
+def build_camera_plan_grammar(slots: list[Mapping[str, object]]) -> str:
+    """Constrain finite Camera transport without choosing its framing for the LLM."""
+
+    numbers = [slot.get("slot") for slot in slots]
+    if (
+        not numbers
+        or any(type(number) is not int or number < 1 for number in numbers)
+        or len(set(numbers)) != len(numbers)
+        or any(slot.get("camera_protocol") != "finite_v1" for slot in slots)
+    ):
+        raise ValueError("Camera grammar requires unique finite_v1 slots")
+    quote = lambda value: json.dumps(value, ensure_ascii=False)
+    rows: list[str] = []
+    rules = [
+        "camera-scale ::= " + " | ".join(map(quote, sorted(_CAMERA_PLAN_SCALES))),
+        "camera-view ::= " + " | ".join(map(quote, sorted(_CAMERA_PLAN_VIEWS))),
+        "camera-coverage ::= " + " | ".join(map(quote, sorted(_CAMERA_PLAN_COVERAGE))),
+    ]
+    for slot in slots:
+        number = slot["slot"]
+        paths = set(_CAMERA_PATH_MOTIONS)
+        if slot.get("face_zoom_emphasis"):
+            paths = {"zoom_in_35_55"}
+        elif slot.get("arc_permission") == "required" or slot.get("face_arc_transition"):
+            paths = {"arc_left_60_120_70_90", "arc_right_60_120_70_90"}
+        elif slot.get("arc_permission") == "forbidden":
+            paths.difference_update({"arc_left_60_120_70_90", "arc_right_60_120_70_90"})
+        previous_arc = slot.get("previous_arc_path")
+        if previous_arc and paths <= {"arc_left_60_120_70_90", "arc_right_60_120_70_90"}:
+            paths.intersection_update({str(previous_arc)})
+        if not paths:
+            raise ValueError("Camera grammar has no permitted path")
+        motions = {
+            (
+                "Arc Shot with large amplitude at fast speed"
+                if motion == "Arc Shot" else
+                "Zoom In with large amplitude at fast speed"
+                if motion == "Zoom In" else
+                "Zoom Out with large amplitude at fast speed"
+                if motion == "Zoom Out" else
+                motion if motion == "Static Shot" else
+                f"{motion} at fast speed"
+            )
+            for path in paths
+            for motion in _CAMERA_PATH_MOTIONS[path]
+        }
+        rules.append(
+            f"camera-motion-{number} ::= "
+            + " | ".join(map(quote, sorted(motions)))
+        )
+        rules.append(
+            f"camera-path-{number} ::= "
+            + " | ".join(map(quote, sorted(paths)))
+        )
+        rows.append(
+            quote(f"CAMERA\t{number}\tMOTION=")
+            + f" camera-motion-{number} "
+            + quote("｜START_SCALE=") + " camera-scale "
+            + quote("｜END_SCALE=") + " camera-scale "
+            + quote("｜START_VIEW=") + " camera-view "
+            + quote("｜END_VIEW=") + " camera-view "
+            + quote("｜PATH=") + f" camera-path-{number} "
+            + quote("｜COVERAGE=") + " camera-coverage"
+        )
+    return "root ::= " + ' "\\n" '.join(rows) + ' "\\n"?\n' + "\n".join(rules) + "\n"
+
+
 @dataclass(frozen=True, slots=True)
 class _CueCard:
     emotion: str = ""
@@ -503,6 +570,11 @@ def _camera_plan_contract_violations(
     if motion == "Static Shot" and plan.start_scale != plan.end_scale:
         violations.append("camera_plan_static_scale_change")
     if motion == "Arc Shot":
+        if (
+            plan.start_scale == plan.end_scale
+            and plan.start_view == plan.end_view
+        ):
+            violations.append("camera_plan_arc_no_composition_change")
         if int(entity.value.get("shot_duration_ms", 0)) < 2500:
             violations.append("camera_plan_short_arc")
         if entity.value.get("arc_permission") == "forbidden":
@@ -512,6 +584,13 @@ def _camera_plan_contract_violations(
         previous_path = entity.value.get("previous_arc_path")
         if previous_path and plan.path != previous_path:
             violations.append("camera_plan_arc_direction_reversal")
+    if (
+        plan.end_scale == "face_closeup"
+        and plan.coverage in {
+            "environment_relation", "whole_body_emotion", "upper_body_hands"
+        }
+    ):
+        violations.append("camera_plan_coverage_scale_conflict")
     if entity.value.get("arc_permission") == "required" and motion != "Arc Shot":
         violations.append("required_long_arc_emphasis")
     if entity.value.get("face_zoom_emphasis"):
@@ -1989,6 +2068,20 @@ def _anime_emotional_mv_camera_emphasis(
     ordered_face_candidates = sorted(
         range(len(entities)),
         key=lambda value: (
+            0 if (
+                (
+                    entities[value].value.get("grounded_cue_phase") == "release"
+                    or (
+                        entities[value].value.get("grounded_cue_phase")
+                        == "reaction_and_release"
+                        and (
+                            entities[value].value.get("visual_beat_grounding") or {}
+                        ).get("contact") != "許可"
+                    )
+                )
+                and entities[value].value.get("performance_phase")
+                == "release_and_reaction"
+            ) else 1,
             role_priority.get(
                 str(entities[value].value.get("editorial_role")), 9
             ),
@@ -3275,7 +3368,9 @@ def generate_planner_content(
         entities=[direction_entity],
         shared={**scene_shared},
         system_prompt=system_prompts["song-direction"],
-        runtime_config=runtime_config,
+        runtime_config=replace(
+            runtime_config, max_tokens=min(runtime_config.max_tokens, 512)
+        ),
         interrupt_callback=interrupt_callback,
     )
     all_issues.extend(issues)
@@ -4080,6 +4175,12 @@ def generate_planner_content(
     chosen_arc_paths: dict[int, str] = {}
     chosen_camera_plans: dict[int, _CameraPlan] = {}
     all_shot_keys = list(planned_template.shot_keys)
+    scene_action_keys = {
+        scene.scene_number: [
+            key for key in all_shot_keys if key[0] == scene.scene_number
+        ]
+        for scene in planned_template.scenes
+    }
     face_cut_keys = {
         key
         for key in all_shot_keys
@@ -4113,6 +4214,20 @@ def generate_planner_content(
         entities = []
         for key in keys:
             cue_card = cue_cards[(key[0],)]
+            action_keys = scene_action_keys[key[0]]
+            action_position = action_keys.index(key)
+            previous_action_key = (
+                action_keys[action_position - 1] if action_position else None
+            )
+            next_action_key = (
+                action_keys[action_position + 1]
+                if action_position + 1 < len(action_keys) else None
+            )
+            is_reaction_shot = action_position + 1 == len(action_keys)
+            has_grounded_cue = (
+                cue_card.valid and cue_card.target not in _CUE_NONE_VALUES
+            )
+            shot_count = len(action_keys)
             context = {
                 **shot_context[key],
                 "visual_beat": (
@@ -4122,6 +4237,28 @@ def generate_planner_content(
                 ),
                 "visual_beat_grounding": cue_card.to_dict(),
                 "locked_action": action_values[key],
+                "previous_locked_action": (
+                    action_values[previous_action_key]
+                    if previous_action_key is not None
+                    and is_reaction_shot
+                    and previous_action_key not in face_cut_keys else ""
+                ),
+                "next_locked_action": (
+                    action_values[next_action_key]
+                    if next_action_key is not None
+                    and not is_reaction_shot
+                    and next_action_key not in face_cut_keys else ""
+                ),
+                "grounded_cue_phase": (
+                    _priority_cue_phase(action_position + 1, shot_count)
+                    if has_grounded_cue else ""
+                ),
+                "performance_phase": (
+                    "complete_phrase" if shot_count == 1 else
+                    "prepare_and_accent" if action_position == 0 else
+                    "release_and_reaction" if action_position + 1 == shot_count
+                    else "develop_accent"
+                ) if performance_mode == "dance_phrase" else "",
                 "camera_continuity_group": camera_continuity_groups[key[0]],
                 "previous_arc_path": chosen_arc_paths.get(camera_continuity_groups[key[0]], ""),
                 "previous_camera_state": (
@@ -4484,6 +4621,21 @@ def generate_planner_content(
                             previous_plan = _CameraPlan("Zoom In", "head_and_shoulders", "face_closeup",
                                                        "front", "front", "zoom_in_35_55", "face_eyes_mouth")
                         connected = _connect_camera_geometry(plan, previous_plan, chosen_arc_paths.get(group, ""))
+                        connected_entity = _Entity(entity.scene_number, entity.key, {
+                            **entity.value,
+                            "previous_arc_path": chosen_arc_paths.get(group, ""),
+                        })
+                        if _camera_plan_contract_violations(connected_entity, connected):
+                            connected = _connect_camera_geometry(
+                                _fallback_camera_plan(connected_entity, ordinal),
+                                previous_plan,
+                                chosen_arc_paths.get(group, ""),
+                            )
+                            _LOGGER.info(
+                                "[MV Director - Timeline Planner] Camera geometry "
+                                "fallback after continuity connection; scene=%d; shot=%d",
+                                entity.scene_number, entity.key[-1],
+                            )
                         if connected != plan:
                             _LOGGER.info("[MV Director - Timeline Planner] Camera continuity geometry connected; scene=%d; shot=%d; start=%s/%s",
                                          entity.scene_number, entity.key[-1], connected.start_scale, connected.start_view)
