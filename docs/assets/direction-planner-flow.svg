@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1420" viewBox="0 0 1800 1420" role="img" aria-labelledby="title desc">
-  <title id="title">Direction EnhancerとTimeline Planner v55の処理フロー</title>
-  <desc id="desc">Direction Enhancerが人物Concept、背景Scene、利用者希望、外部ProfileをMVD_DIRECTION_V3へ統合し、Timeline Planner v55が条件付き歌詞Cue発見、Visual Beats、Song Direction、Shot Layout、Actions、Action Audit、Camerasを経て完成EMDを作る。LLM自然文のAS IS境界とPython所有処理を示す。</desc>
+  <title id="title">Direction EnhancerとTimeline Planner v64の処理フロー</title>
+  <desc id="desc">Direction Enhancerが人物Concept、背景Scene、追加プロンプト、外部ProfileをMVD_DIRECTION_V3へ統合する。Timeline Planner v64は歌詞Cue、Visual Beats、Song Direction、Shot Layout、条件付きScene spine、Actions、Action Audit、Camerasを経て完成EMDを作る。LLM自然文のAS IS境界とPython所有処理を示す。</desc>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
       <path d="M0 0L10 5L0 10Z" fill="#526273"/>
@@ -11,7 +11,7 @@
   </defs>
 
   <rect class="canvas" width="1800" height="1420" rx="18"/>
-  <text class="title" x="900" y="48">Direction Enhancer → Timeline Planner v55</text>
+  <text class="title" x="900" y="48">Direction Enhancer → Timeline Planner v64</text>
 
   <rect class="input" x="450" y="70" width="22" height="18" rx="3"/><text class="legend" x="482" y="84">入力・外部EMD</text>
   <rect class="llm" x="650" y="70" width="22" height="18" rx="3"/><text class="legend" x="682" y="84">LLM task</text>
@@ -23,7 +23,7 @@
 
   <rect class="input" x="55" y="180" width="270" height="132" rx="12"/>
   <text class="label" x="190" y="214">入力authority</text>
-  <text class="small" x="190" y="242">retention_policy / user_request</text>
+  <text class="small" x="190" y="242">retention_policy / 追加プロンプト</text>
   <text class="small" x="190" y="266">Concept EMD = 人物identity</text>
   <text class="small" x="190" y="290">Scene EMD = 環境・時刻baseline</text>
 
@@ -31,7 +31,7 @@
   <text class="label" x="190" y="369">外部profile EMD</text>
   <text class="small" x="190" y="397">Style / Motion / Camera</text>
   <text class="small" x="190" y="421">planner_policy metadata</text>
-  <text class="small" x="190" y="445">passthrough Direction EMD</text>
+  <text class="small" x="190" y="445">passthrough入力は空欄可</text>
 
   <rect class="python" x="390" y="235" width="280" height="176" rx="12"/>
   <text class="label" x="530" y="270">Profile loader + 構造検証</text>
@@ -72,7 +72,7 @@
   <path class="edge" d="M1395 323H1470"/>
 
   <rect class="panel" x="30" y="555" width="1740" height="815" rx="18"/>
-  <text class="section" x="55" y="590">2. Timeline Planner v55 — 確定Scene時間枠へ歌詞固有のShot演出を展開</text>
+  <text class="section" x="55" y="590">2. Timeline Planner v64 — 確定Scene時間枠へ歌詞固有のShot演出を展開</text>
 
   <rect class="input" x="55" y="625" width="250" height="210" rx="12"/>
   <text class="label" x="180" y="660">Planner入力</text>
@@ -111,25 +111,31 @@
   <text class="small" x="1095" y="822">CUT / CONTINUE + 候補ID</text>
   <text class="small" x="1095" y="846">新しい時刻は生成しない</text>
 
-  <rect class="python" x="1275" y="760" width="250" height="112" rx="12"/>
-  <text class="label" x="1400" y="795">Layout適用</text>
-  <text class="small" x="1400" y="822">候補repair・最大4 Shot</text>
-  <text class="small" x="1400" y="846">H3格子へ時間再配分</text>
+  <rect class="python" x="1275" y="625" width="250" height="112" rx="12"/>
+  <text class="label" x="1400" y="660">Layout適用</text>
+  <text class="small" x="1400" y="687">候補repair・最大4 Shot</text>
+  <text class="small" x="1400" y="711">H3格子へ時間再配分</text>
 
-  <path class="dash" d="M1593 401V540C1593 570 315 570 315 730H305"/>
-  <text class="edgeLabel" x="1240" y="548">typed Direction</text>
+  <rect class="llm" x="1275" y="760" width="250" height="112" rx="12"/>
+  <text class="label" x="1400" y="795">Scene spine</text>
+  <text class="small" x="1400" y="822">条件付き・全Shot一括</text>
+  <text class="small" x="1400" y="846">準備 → 一回のevent → 反応</text>
+
+  <path class="dash" d="M1593 401V540H1740V605H180V625"/>
+  <text class="edgeLabel" x="1635" y="594">typed Direction</text>
   <path class="edge" d="M305 730H355"/>
   <path class="edge" d="M605 680H665"/>
   <path class="edge" d="M790 737V760"/>
   <path class="edge" d="M915 816H970"/>
   <path class="dash" d="M605 680C635 680 635 600 1095 600V625"/>
   <path class="edge" d="M1095 737V760"/>
-  <path class="edge" d="M1220 816H1275"/>
+  <path class="edge" d="M1220 816H1247V681H1275"/>
+  <path class="edge" d="M1400 737V760"/>
 
   <rect class="llm" x="355" y="930" width="275" height="130" rx="12"/>
   <text class="label" x="492.5" y="967">Actions</text>
-  <text class="small" x="492.5" y="994">身体演技・表情・空間関係</text>
-  <text class="small" x="492.5" y="1018">Cue grounding・終端pose</text>
+  <text class="small" x="492.5" y="994">全身演技・表情・空間関係</text>
+  <text class="small" x="492.5" y="1018">Cue可視展開・終端pose</text>
   <text class="tiny" x="492.5" y="1043">ACTION ⇥ SLOT ⇥ TEXT</text>
 
   <rect class="llm" x="690" y="930" width="275" height="130" rx="12"/>
@@ -141,7 +147,7 @@
   <rect class="llm" x="1025" y="930" width="275" height="130" rx="12"/>
   <text class="label" x="1162.5" y="967">Cameras</text>
   <text class="small" x="1162.5" y="994">確定Actionをread-only参照</text>
-  <text class="small" x="1162.5" y="1018">H3 Motion Type・Arc・顔Zoom</text>
+  <text class="small" x="1162.5" y="1018">H3 Motion Type・Scene coverage</text>
   <text class="tiny" x="1162.5" y="1043">CAMERA ⇥ SLOT ⇥ TEXT</text>
 
   <rect class="python" x="1360" y="910" width="355" height="170" rx="12"/>
@@ -166,7 +172,7 @@
 
   <rect class="python" x="645" y="1135" width="440" height="165" rx="12"/>
   <text class="label" x="865" y="1170">Sourceの分離</text>
-  <text class="small" x="865" y="1198">歌詞：具体対象・場所・effectの発生源</text>
+  <text class="small" x="865" y="1198">歌詞：対象・場所・外部自律effect</text>
   <text class="small" x="865" y="1222">Scene EMD：認可対象の空間配置だけ</text>
   <text class="small" x="865" y="1246">Concept EMD：最終Subject定義だけ</text>
   <text class="tiny" x="865" y="1275">背景物・衣装・履物をAction主題へ昇格させない</text>
@@ -178,6 +184,6 @@
   <text class="whiteSmall" x="1432.5" y="1260">→ EMD Compiler (Ref2VA) → Plan JSON</text>
   <path class="edge" d="M1538 1080V1140"/>
 
-  <text class="small" x="900" y="1345">長尺曲はscenes_per_batchで処理し、生成requestの履歴窓を制限しつつ、採用後の反復検査は全履歴を対象にする</text>
-  <text class="small" x="900" y="1380">背景IMAGE tensorはPlannerへ渡さず、同じ背景画像を動画生成時のH3 Picture 2 slotへ直接接続する</text>
+  <text class="small" x="900" y="1335">長尺曲はscenes_per_batchで処理し、生成requestの履歴窓を制限しつつ、採用後の反復検査は全履歴を対象にする</text>
+  <text class="small" x="900" y="1360">背景IMAGE tensorはPlannerへ渡さず、同じ背景画像を動画生成時のH3 Picture 2 slotへ直接接続する</text>
 </svg>

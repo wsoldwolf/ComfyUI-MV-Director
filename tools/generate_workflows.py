@@ -58,7 +58,7 @@ CHARACTER_HINT = (
     "白い足袋と、赤い鼻緒の黒い木下駄を着用する。"
     "下駄の木製台全体は黒色で、赤いのは鼻緒だけである。"
     "目尻は赤い化粧が施されている。"
-    "眉毛は丸く、横に線が伸びない、色は髪と同じである。"
+    "眉毛は丸い、眉はやや高い位置にある、色は髪と同じである。"
 )
 BACKGROUND_INSTRUCTION = (
     "人物、動物、キャラクター及び画面構成資料としての特徴は記述しない。"
@@ -840,17 +840,17 @@ def _decorate_plan_workflow(
         2: ([40, 340], [340, 360], 1),
         14: ([40, 750], [340, 360], 2),
         6: ([450, 180], [500, 100], 11),
-        4: ([40, 2010], [330, 140], 12),
-        5: ([40, 1780], [330, 180], 0),
-        3: ([450, 330], [500, 800], 14),
-        15: ([450, 1180], [500, 800], 15),
+        4: ([50, 1780], [330, 140], 9),
+        5: ([50, 1550], [330, 180], 0),
+        3: ([450, 330], [500, 800], 17),
+        15: ([450, 1180], [500, 800], 18),
         7: ([453.2777777777778, 2040], [490, 240], 16),
-        8: ([1020, 330], [500, 720], 17),
-        9: ([1020, 1120], [500, 620], 19),
-        10: ([1590.631977777778, 1118.0316289243062], [500, 510], 20),
-        11: ([2170.631977777781, 1118.0316289243062], [350, 170], 22),
-        12: ([2170.631977777781, 1338.0316289243062], [350, 170], 21),
-        13: ([2170.631977777781, 1558.0316289243062], [350, 170], 18),
+        8: ([1020, 330], [500, 720], 20),
+        9: ([1020, 1120], [500, 620], 21),
+        10: ([1590.631977777778, 1118.0316289243062], [500, 510], 22),
+        11: ([2170.631977777781, 1118.0316289243062], [350, 170], 24),
+        12: ([2170.631977777781, 1338.0316289243062], [350, 170], 23),
+        13: ([2170.631977777781, 1558.0316289243062], [350, 170], 19),
     }
     source_ids = {2, 4, 5, 14}
     for node_id, (pos, size, order) in layout.items():
@@ -864,9 +864,9 @@ def _decorate_plan_workflow(
             SOURCE_BGCOLOR if node_id in source_ids else PROCESS_BGCOLOR,
         )
 
-    seed = _shared_seed_node(16, (40, 1410))
+    seed = _shared_seed_node(16, (50, 1180))
     seed["size"] = [330, 318]
-    seed["order"] = 9
+    seed["order"] = 10
     workflow["nodes"].append(seed)
     for target_id in (3, 8, 9, 10, 15):
         target = _node_by_id(workflow, target_id)
@@ -944,30 +944,30 @@ def _decorate_plan_workflow(
         ),
         _markdown_note(
             20,
-            (-320, 1420),
-            (330, 110),
+            (-330, 1190),
+            (330, 310),
             "3. シードの設定",
             (
                 "共有seedをVision、Direction、Planner、Compilerへ渡します。"
                 "比較検証ではfixedにすると、設定変更による差を追跡しやすくなります。"
             ),
-            order=10,
+            order=11,
         ),
         _markdown_note(
             21,
-            (-320, 1780),
-            (330, 110),
+            (-330, 1550),
+            (330, 180),
             "4. 歌詞の設定",
             (
                 "歌詞をUTF-8テキストで指定します。歌詞とvocalからWhisper及び"
                 "整列アルゴリズムがScene時間枠とTemplate EMDを生成します。"
             ),
-            order=4,
+            order=12,
         ),
         _markdown_note(
             22,
-            (-330, 2010),
-            (330, 130),
+            (-320, 1780),
+            (320, 140),
             "5. ボーカルステムの設定",
             (
                 "ボーカルだけの音源を指定します。楽器を含むfull mixは歌詞整列の"
@@ -990,12 +990,43 @@ def _decorate_plan_workflow(
             "README",
             readme,
             readme=True,
-            order=8,
+            order=7,
+        ),
+        _markdown_note(
+            26,
+            (-320, 2010),
+            (320, 430),
+            "6. 追加プロンプト(空でも構いません)",
+            (
+                "MV全体に共通する演出希望を自由文で指定します。空欄でも動作します。\n\n"
+                "この入力は全Sceneへ適用されます。一度だけ出したい具体物や"
+                "歌詞固有の動作はここに書かず、Plannerに局所展開させてください。"
+            ),
+            order=14,
         ),
     ]
+    user_prompt = _set_palette(
+        _node(
+            25,
+            "PrimitiveStringMultiline",
+            (50, 2010),
+            (330, 430),
+            "ユーザープロンプト",
+            inputs=[_widget_input("value", "STRING")],
+            outputs=[_output("STRING", "STRING")],
+            widgets=[""],
+            order=15,
+        ),
+        SOURCE_COLOR,
+        SOURCE_BGCOLOR,
+    )
+    workflow["nodes"].append(user_prompt)
+    direction = _node_by_id(workflow, 8)
+    _ensure_widget_inputs(direction, (("user_request", "STRING"),))
+    _connect(workflow, 25, 0, 8, "user_request", "STRING")
     workflow["nodes"].extend(notes)
     workflow["nodes"].sort(key=lambda item: (int(item.get("order", 0)), int(item["id"])))
-    workflow["last_node_id"] = 24
+    workflow["last_node_id"] = 26
     workflow["extra"]["ds"] = {
         "scale": 0.9583200000000043,
         "offset": [916.7349516147216, -542.3761388593111],

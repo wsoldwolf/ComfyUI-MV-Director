@@ -50,6 +50,8 @@ Plannerは`scene_emd`を完成EMDへAS ISで統合し、Compilerが`<Picture 2>`
 
 Plan/Compiler workflowのDirection EnhancerはStyle、Motion及びCameraの三項とも`anime_emotional_mv`を既定値とする。`anime_story_mv`は比較又は手動選択用profileとして残す。
 
+三つのPlan/Compiler workflowには空欄可の「ユーザープロンプト」を置き、Direction Enhancerの`user_request`へ接続している。ここは自由文の全Scene共通方針用であり、Sceneごとの局所演出を予約する欄ではない。`direction_emd_passthrough`は厳格なEMD構文を要求し、選択中のprofileとも整合させる別の入力なので、この自由文ノードは接続しない。
+
 ## 方式ごとの音声経路
 
 ### Context Loop

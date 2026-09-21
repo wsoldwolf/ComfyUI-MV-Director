@@ -186,6 +186,13 @@ class DistributableWorkflowTests(unittest.TestCase):
                 input_link(workflow, direction, "scene_emd")[1:3],
                 [background_vision["id"], 0],
             )
+            user_prompt = titled_node(workflow, "ユーザープロンプト")
+            self.assertEqual(user_prompt["type"], "PrimitiveStringMultiline")
+            self.assertEqual(user_prompt["widgets_values"], [""])
+            self.assertEqual(
+                input_link(workflow, direction, "user_request")[1:3],
+                [user_prompt["id"], 0],
+            )
             self.assertEqual(
                 input_link(workflow, planner, "scene_emd")[1:3],
                 [background_vision["id"], 0],
@@ -234,7 +241,8 @@ class DistributableWorkflowTests(unittest.TestCase):
                 ["anime_emotional_mv"] * 3,
             )
             self.assertEqual(direction["widgets_values"][13], 16384)
-            self.assertIn("眉毛は丸く", character_vision["widgets_values"][2])
+            self.assertIn("眉毛は丸い", character_vision["widgets_values"][2])
+            self.assertIn("眉はやや高い位置", character_vision["widgets_values"][2])
             self.assertIn("木製台全体は黒色", character_vision["widgets_values"][2])
             self.assertEqual(planner["widgets_values"][19], "reuse")
             lyrics = next(
