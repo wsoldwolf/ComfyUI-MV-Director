@@ -2,6 +2,7 @@
 
 from .action_constraints import build_action_grammar, build_action_audit_grammar
 from .cue_constraints import build_grounded_cue_grammar, build_discovery_grammar
+from .choreography import build_choreography_choice_grammar
 
 from .dialogue import (
     DialogueFilter,
@@ -47,6 +48,7 @@ __all__ = [
     "build_action_audit_grammar",
     "build_grounded_cue_grammar",
     "build_discovery_grammar",
+    "build_choreography_choice_grammar",
     "ProtectedDialogue",
     "TimelinePlannerError",
     "TimelinePlannerBackend",

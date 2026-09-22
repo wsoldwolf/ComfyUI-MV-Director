@@ -551,7 +551,7 @@ class DirectionEnhancerTests(unittest.TestCase):
             {
                 "natural_performance", "expressive_mv", "limited_animation",
                 "cinema_mv", "anime_story_mv",
-                "anime_emotional_mv",
+                "anime_emotional_mv", "anime_choreography_mv",
             },
         )
         self.assertEqual(
@@ -580,7 +580,7 @@ class DirectionEnhancerTests(unittest.TestCase):
         self.assertIn("動物耳、耳内部、尾", STYLE_PROFILES["anime_story_mv"])
         self.assertIn("局所的なglow、bloom", STYLE_PROFILES["anime_story_mv"])
         self.assertIn("古傷", STYLE_PROFILES["anime_story_mv"])
-        self.assertIn("皮膚と衣装を清潔で損傷のない状態", STYLE_PROFILES["anime_story_mv"])
+        self.assertIn("完成EMDのShotが可視の状態として明示", STYLE_PROFILES["anime_story_mv"])
         self.assertIn("cinema_mv", DIRECTION_PRESETS)
         self.assertIn("概ね半数", CAMERA_PROFILES["anime_emotional_mv"])
         self.assertIn("2.5秒以上", CAMERA_PROFILES["anime_emotional_mv"])

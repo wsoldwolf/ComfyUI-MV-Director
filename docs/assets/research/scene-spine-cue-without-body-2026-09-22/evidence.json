@@ -1,0 +1,611 @@
+{
+  "source": "C:/Software/ComfyUI/output/mv_director/context_loop_emd_00001.md",
+  "fixture": [
+    {
+      "scene_number": 11,
+      "lyric_lines": [
+        "自由なのか",
+        "それでも新しい足音が",
+        "またこの社へ続くなら"
+      ],
+      "cue": {
+        "valid": true,
+        "emotion": "決意",
+        "evidence": "またこの社へ続くなら",
+        "target": "社",
+        "contact": "禁止",
+        "phenomenon": "なし",
+        "spatial_anchor": "参道の先の社",
+        "visible_development": "社が視界に入る",
+        "body_driver": "左肩を前に出し、右腕を上げ、左足を踏み出す",
+        "final_state": "左足を前に置き、右手を顔の前に止める"
+      },
+      "shot_durations_ms": [
+        4708,
+        5208
+      ],
+      "motion_family": "体幹の方向を変え、腕の大きな軌道に遅れと着地を作る"
+    },
+    {
+      "scene_number": 12,
+      "lyric_lines": [
+        "千年鳥居を",
+        "くぐるそなたよ",
+        "今この刹那を",
+        "わらわに預けよ",
+        "異なる時を"
+      ],
+      "cue": {
+        "valid": true,
+        "emotion": "託す",
+        "evidence": "千年鳥居を",
+        "target": "千年鳥居",
+        "contact": "禁止",
+        "phenomenon": "なし",
+        "spatial_anchor": "参道の鳥居",
+        "visible_development": "鳥居の下へ進む",
+        "body_driver": "右肩を前に出し、左腕を上げ、右足を踏み出す",
+        "final_state": "右足を前に置き、左手を顔の前に止める"
+      },
+      "shot_durations_ms": [
+        4167,
+        5250
+      ],
+      "motion_family": "重心の移動を体幹から腕へ伝え、最後は異なる上半身姿勢で止まる"
+    }
+  ],
+  "model": "E:\\ComfyUI\\models\\LLM\\GGUF\\Qwen3-8B-Abliterated\\qwen3-8b-abliterated-Q4_K_M.gguf",
+  "runtime": {
+    "chat_format": "",
+    "max_tokens": 640,
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "repetition_penalty": 1.05,
+    "gpu_layers": -1,
+    "n_batch": 512,
+    "n_ctx": 16384,
+    "flash_attn": true,
+    "kv_cache_type": "q8_0",
+    "op_offload": true,
+    "keep_model_loaded": false,
+    "seed": 1
+  },
+  "prompt_sha256": "99c029871cc4045253f58699b37bcbe7e2563f9d18582a096fdc7bdf4f7083b8",
+  "guided_prompt_sha256": "8ae3eb48517d66c42a03715b67382021db12d9378baf0c81e03531f56089bff5",
+  "runs": [
+    {
+      "scene_number": 11,
+      "seed": 1,
+      "variant": "cue_without_body",
+      "payload": {
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "task": "scene-spine",
+        "scene_number": 11,
+        "lyric_lines": [
+          "自由なのか",
+          "それでも新しい足音が",
+          "またこの社へ続くなら"
+        ],
+        "author_body": [],
+        "visual_beat_grounding": {
+          "valid": true,
+          "emotion": "決意",
+          "evidence": "またこの社へ続くなら",
+          "target": "社",
+          "contact": "禁止",
+          "phenomenon": "なし",
+          "spatial_anchor": "参道の先の社",
+          "visible_development": "社が視界に入る",
+          "body_driver": "",
+          "final_state": ""
+        },
+        "spine_event_kind": "non_contact_change",
+        "scene_continuation": true,
+        "entry_body_state": "",
+        "slots": [
+          {
+            "slot": 1,
+            "scene_number": 11,
+            "shot_index": 1,
+            "shot_count": 2,
+            "shot_duration_ms": 4708,
+            "editorial_role": "body_performance"
+          },
+          {
+            "slot": 2,
+            "scene_number": 11,
+            "shot_index": 2,
+            "shot_count": 2,
+            "shot_duration_ms": 5208,
+            "editorial_role": "body_performance"
+          }
+        ]
+      },
+      "raw": "SPINE\t1\tPHASE=event｜FROM=社が視界に入る｜ADVANCE=社へ向かう決意を胸に、足音を立てて歩き出す｜TO=社の前へ進み、足元に意識を向ける｜SHOW=lyric_target\nSPINE\t2\tPHASE=response｜FROM=社の前へ進み、足元に意識を向ける｜ADVANCE=社の前で立ち止まり、決意を新たにする｜TO=社の前で立ち止まり、決意を新たにする｜SHOW=face_eyes_mouth\n",
+      "parsed": {
+        "protocol": {
+          "protocol": "MVD_LLM_RECORDS_V1",
+          "records": [
+            {
+              "record_type": "SPINE",
+              "slot": 1,
+              "text": "PHASE=event｜FROM=社が視界に入る｜ADVANCE=社へ向かう決意を胸に、足音を立てて歩き出す｜TO=社の前へ進み、足元に意識を向ける｜SHOW=lyric_target",
+              "line_number": 1
+            },
+            {
+              "record_type": "SPINE",
+              "slot": 2,
+              "text": "PHASE=response｜FROM=社の前へ進み、足元に意識を向ける｜ADVANCE=社の前で立ち止まり、決意を新たにする｜TO=社の前で立ち止まり、決意を新たにする｜SHOW=face_eyes_mouth",
+              "line_number": 2
+            }
+          ],
+          "issues": [],
+          "missing": []
+        },
+        "steps": [
+          {
+            "phase": "event",
+            "from": "社が視界に入る",
+            "advance": "社へ向かう決意を胸に、足音を立てて歩き出す",
+            "to": "社の前へ進み、足元に意識を向ける",
+            "show": "lyric_target"
+          },
+          {
+            "phase": "response",
+            "from": "社の前へ進み、足元に意識を向ける",
+            "advance": "社の前で立ち止まり、決意を新たにする",
+            "to": "社の前で立ち止まり、決意を新たにする",
+            "show": "face_eyes_mouth"
+          }
+        ]
+      },
+      "elapsed_seconds": 3.741
+    },
+    {
+      "scene_number": 11,
+      "seed": 2,
+      "variant": "cue_without_body",
+      "payload": {
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "task": "scene-spine",
+        "scene_number": 11,
+        "lyric_lines": [
+          "自由なのか",
+          "それでも新しい足音が",
+          "またこの社へ続くなら"
+        ],
+        "author_body": [],
+        "visual_beat_grounding": {
+          "valid": true,
+          "emotion": "決意",
+          "evidence": "またこの社へ続くなら",
+          "target": "社",
+          "contact": "禁止",
+          "phenomenon": "なし",
+          "spatial_anchor": "参道の先の社",
+          "visible_development": "社が視界に入る",
+          "body_driver": "",
+          "final_state": ""
+        },
+        "spine_event_kind": "non_contact_change",
+        "scene_continuation": true,
+        "entry_body_state": "",
+        "slots": [
+          {
+            "slot": 1,
+            "scene_number": 11,
+            "shot_index": 1,
+            "shot_count": 2,
+            "shot_duration_ms": 4708,
+            "editorial_role": "body_performance"
+          },
+          {
+            "slot": 2,
+            "scene_number": 11,
+            "shot_index": 2,
+            "shot_count": 2,
+            "shot_duration_ms": 5208,
+            "editorial_role": "body_performance"
+          }
+        ]
+      },
+      "raw": "SPINE\t1\tPHASE=event｜FROM=参道を歩く｜ADVANCE=社へ近づく｜TO=社の前｜SHOW=lyric_target\nSPINE\t2\tPHASE=response｜FROM=社の前｜ADVANCE=決意を新たに｜TO=社の前｜SHOW=face_eyes_mouth\n",
+      "parsed": {
+        "protocol": {
+          "protocol": "MVD_LLM_RECORDS_V1",
+          "records": [
+            {
+              "record_type": "SPINE",
+              "slot": 1,
+              "text": "PHASE=event｜FROM=参道を歩く｜ADVANCE=社へ近づく｜TO=社の前｜SHOW=lyric_target",
+              "line_number": 1
+            },
+            {
+              "record_type": "SPINE",
+              "slot": 2,
+              "text": "PHASE=response｜FROM=社の前｜ADVANCE=決意を新たに｜TO=社の前｜SHOW=face_eyes_mouth",
+              "line_number": 2
+            }
+          ],
+          "issues": [],
+          "missing": []
+        },
+        "steps": [
+          {
+            "phase": "event",
+            "from": "参道を歩く",
+            "advance": "社へ近づく",
+            "to": "社の前",
+            "show": "lyric_target"
+          },
+          {
+            "phase": "response",
+            "from": "社の前",
+            "advance": "決意を新たに",
+            "to": "社の前",
+            "show": "face_eyes_mouth"
+          }
+        ]
+      },
+      "elapsed_seconds": 1.724
+    },
+    {
+      "scene_number": 11,
+      "seed": 3,
+      "variant": "cue_without_body",
+      "payload": {
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "task": "scene-spine",
+        "scene_number": 11,
+        "lyric_lines": [
+          "自由なのか",
+          "それでも新しい足音が",
+          "またこの社へ続くなら"
+        ],
+        "author_body": [],
+        "visual_beat_grounding": {
+          "valid": true,
+          "emotion": "決意",
+          "evidence": "またこの社へ続くなら",
+          "target": "社",
+          "contact": "禁止",
+          "phenomenon": "なし",
+          "spatial_anchor": "参道の先の社",
+          "visible_development": "社が視界に入る",
+          "body_driver": "",
+          "final_state": ""
+        },
+        "spine_event_kind": "non_contact_change",
+        "scene_continuation": true,
+        "entry_body_state": "",
+        "slots": [
+          {
+            "slot": 1,
+            "scene_number": 11,
+            "shot_index": 1,
+            "shot_count": 2,
+            "shot_duration_ms": 4708,
+            "editorial_role": "body_performance"
+          },
+          {
+            "slot": 2,
+            "scene_number": 11,
+            "shot_index": 2,
+            "shot_count": 2,
+            "shot_duration_ms": 5208,
+            "editorial_role": "body_performance"
+          }
+        ]
+      },
+      "raw": "SPINE\t1\tPHASE=event｜FROM=社の前｜ADVANCE=社へ向かって歩き出す｜TO=社の前｜SHOW=lyric_target\nSPINE\t2\tPHASE=response｜FROM=社の前｜ADVANCE=社の前に立つ｜TO=社の前｜SHOW=face_eyes_mouth\n",
+      "parsed": {
+        "protocol": {
+          "protocol": "MVD_LLM_RECORDS_V1",
+          "records": [
+            {
+              "record_type": "SPINE",
+              "slot": 1,
+              "text": "PHASE=event｜FROM=社の前｜ADVANCE=社へ向かって歩き出す｜TO=社の前｜SHOW=lyric_target",
+              "line_number": 1
+            },
+            {
+              "record_type": "SPINE",
+              "slot": 2,
+              "text": "PHASE=response｜FROM=社の前｜ADVANCE=社の前に立つ｜TO=社の前｜SHOW=face_eyes_mouth",
+              "line_number": 2
+            }
+          ],
+          "issues": [],
+          "missing": []
+        },
+        "steps": [
+          {
+            "phase": "event",
+            "from": "社の前",
+            "advance": "社へ向かって歩き出す",
+            "to": "社の前",
+            "show": "lyric_target"
+          },
+          {
+            "phase": "response",
+            "from": "社の前",
+            "advance": "社の前に立つ",
+            "to": "社の前",
+            "show": "face_eyes_mouth"
+          }
+        ]
+      },
+      "elapsed_seconds": 1.79
+    },
+    {
+      "scene_number": 12,
+      "seed": 1,
+      "variant": "cue_without_body",
+      "payload": {
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "task": "scene-spine",
+        "scene_number": 12,
+        "lyric_lines": [
+          "千年鳥居を",
+          "くぐるそなたよ",
+          "今この刹那を",
+          "わらわに預けよ",
+          "異なる時を"
+        ],
+        "author_body": [],
+        "visual_beat_grounding": {
+          "valid": true,
+          "emotion": "託す",
+          "evidence": "千年鳥居を",
+          "target": "千年鳥居",
+          "contact": "禁止",
+          "phenomenon": "なし",
+          "spatial_anchor": "参道の鳥居",
+          "visible_development": "鳥居の下へ進む",
+          "body_driver": "",
+          "final_state": ""
+        },
+        "spine_event_kind": "non_contact_change",
+        "scene_continuation": false,
+        "entry_body_state": "",
+        "slots": [
+          {
+            "slot": 1,
+            "scene_number": 12,
+            "shot_index": 1,
+            "shot_count": 2,
+            "shot_duration_ms": 4167,
+            "editorial_role": "body_performance"
+          },
+          {
+            "slot": 2,
+            "scene_number": 12,
+            "shot_index": 2,
+            "shot_count": 2,
+            "shot_duration_ms": 5250,
+            "editorial_role": "body_performance"
+          }
+        ]
+      },
+      "raw": "SPINE\t1\tPHASE=setup｜FROM=立ち位置｜ADVANCE=千年鳥居の下へ進む｜TO=鳥居の下にいる｜SHOW=lyric_target\nSPINE\t2\tPHASE=event｜FROM=鳥居の下にいる｜ADVANCE=時を託す｜TO=時を託した状態｜SHOW=face_eyes_mouth\n",
+      "parsed": {
+        "protocol": {
+          "protocol": "MVD_LLM_RECORDS_V1",
+          "records": [
+            {
+              "record_type": "SPINE",
+              "slot": 1,
+              "text": "PHASE=setup｜FROM=立ち位置｜ADVANCE=千年鳥居の下へ進む｜TO=鳥居の下にいる｜SHOW=lyric_target",
+              "line_number": 1
+            },
+            {
+              "record_type": "SPINE",
+              "slot": 2,
+              "text": "PHASE=event｜FROM=鳥居の下にいる｜ADVANCE=時を託す｜TO=時を託した状態｜SHOW=face_eyes_mouth",
+              "line_number": 2
+            }
+          ],
+          "issues": [],
+          "missing": []
+        },
+        "steps": [
+          {
+            "phase": "setup",
+            "from": "立ち位置",
+            "advance": "千年鳥居の下へ進む",
+            "to": "鳥居の下にいる",
+            "show": "lyric_target"
+          },
+          {
+            "phase": "event",
+            "from": "鳥居の下にいる",
+            "advance": "時を託す",
+            "to": "時を託した状態",
+            "show": "face_eyes_mouth"
+          }
+        ]
+      },
+      "elapsed_seconds": 2.036
+    },
+    {
+      "scene_number": 12,
+      "seed": 2,
+      "variant": "cue_without_body",
+      "payload": {
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "task": "scene-spine",
+        "scene_number": 12,
+        "lyric_lines": [
+          "千年鳥居を",
+          "くぐるそなたよ",
+          "今この刹那を",
+          "わらわに預けよ",
+          "異なる時を"
+        ],
+        "author_body": [],
+        "visual_beat_grounding": {
+          "valid": true,
+          "emotion": "託す",
+          "evidence": "千年鳥居を",
+          "target": "千年鳥居",
+          "contact": "禁止",
+          "phenomenon": "なし",
+          "spatial_anchor": "参道の鳥居",
+          "visible_development": "鳥居の下へ進む",
+          "body_driver": "",
+          "final_state": ""
+        },
+        "spine_event_kind": "non_contact_change",
+        "scene_continuation": false,
+        "entry_body_state": "",
+        "slots": [
+          {
+            "slot": 1,
+            "scene_number": 12,
+            "shot_index": 1,
+            "shot_count": 2,
+            "shot_duration_ms": 4167,
+            "editorial_role": "body_performance"
+          },
+          {
+            "slot": 2,
+            "scene_number": 12,
+            "shot_index": 2,
+            "shot_count": 2,
+            "shot_duration_ms": 5250,
+            "editorial_role": "body_performance"
+          }
+        ]
+      },
+      "raw": "SPINE\t1\tPHASE=setup｜FROM=立ち止まり鳥居を凝視｜ADVANCE=参道の下へ進む｜TO=歩きながら鳥居を意識的に見上げる｜SHOW=lyric_target\nSPINE\t2\tPHASE=event｜FROM=歩きながら鳥居を意識的に見上げる｜ADVANCE=千年鳥居をくぐる｜TO=鳥居の下へ到達｜SHOW=lyric_target\n",
+      "parsed": {
+        "protocol": {
+          "protocol": "MVD_LLM_RECORDS_V1",
+          "records": [
+            {
+              "record_type": "SPINE",
+              "slot": 1,
+              "text": "PHASE=setup｜FROM=立ち止まり鳥居を凝視｜ADVANCE=参道の下へ進む｜TO=歩きながら鳥居を意識的に見上げる｜SHOW=lyric_target",
+              "line_number": 1
+            },
+            {
+              "record_type": "SPINE",
+              "slot": 2,
+              "text": "PHASE=event｜FROM=歩きながら鳥居を意識的に見上げる｜ADVANCE=千年鳥居をくぐる｜TO=鳥居の下へ到達｜SHOW=lyric_target",
+              "line_number": 2
+            }
+          ],
+          "issues": [],
+          "missing": []
+        },
+        "steps": [
+          {
+            "phase": "setup",
+            "from": "立ち止まり鳥居を凝視",
+            "advance": "参道の下へ進む",
+            "to": "歩きながら鳥居を意識的に見上げる",
+            "show": "lyric_target"
+          },
+          {
+            "phase": "event",
+            "from": "歩きながら鳥居を意識的に見上げる",
+            "advance": "千年鳥居をくぐる",
+            "to": "鳥居の下へ到達",
+            "show": "lyric_target"
+          }
+        ]
+      },
+      "elapsed_seconds": 2.643
+    },
+    {
+      "scene_number": 12,
+      "seed": 3,
+      "variant": "cue_without_body",
+      "payload": {
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "task": "scene-spine",
+        "scene_number": 12,
+        "lyric_lines": [
+          "千年鳥居を",
+          "くぐるそなたよ",
+          "今この刹那を",
+          "わらわに預けよ",
+          "異なる時を"
+        ],
+        "author_body": [],
+        "visual_beat_grounding": {
+          "valid": true,
+          "emotion": "託す",
+          "evidence": "千年鳥居を",
+          "target": "千年鳥居",
+          "contact": "禁止",
+          "phenomenon": "なし",
+          "spatial_anchor": "参道の鳥居",
+          "visible_development": "鳥居の下へ進む",
+          "body_driver": "",
+          "final_state": ""
+        },
+        "spine_event_kind": "non_contact_change",
+        "scene_continuation": false,
+        "entry_body_state": "",
+        "slots": [
+          {
+            "slot": 1,
+            "scene_number": 12,
+            "shot_index": 1,
+            "shot_count": 2,
+            "shot_duration_ms": 4167,
+            "editorial_role": "body_performance"
+          },
+          {
+            "slot": 2,
+            "scene_number": 12,
+            "shot_index": 2,
+            "shot_count": 2,
+            "shot_duration_ms": 5250,
+            "editorial_role": "body_performance"
+          }
+        ]
+      },
+      "raw": "SPINE\t1\tPHASE=setup｜FROM=立ち位置｜ADVANCE=千年鳥居の下へ進む｜TO=鳥居の下に到着｜SHOW=lyric_target\nSPINE\t2\tPHASE=event｜FROM=鳥居の下に到着｜ADVANCE=千年鳥居をくぐる｜TO=鳥居をくぐった後｜SHOW=lyric_target\n",
+      "parsed": {
+        "protocol": {
+          "protocol": "MVD_LLM_RECORDS_V1",
+          "records": [
+            {
+              "record_type": "SPINE",
+              "slot": 1,
+              "text": "PHASE=setup｜FROM=立ち位置｜ADVANCE=千年鳥居の下へ進む｜TO=鳥居の下に到着｜SHOW=lyric_target",
+              "line_number": 1
+            },
+            {
+              "record_type": "SPINE",
+              "slot": 2,
+              "text": "PHASE=event｜FROM=鳥居の下に到着｜ADVANCE=千年鳥居をくぐる｜TO=鳥居をくぐった後｜SHOW=lyric_target",
+              "line_number": 2
+            }
+          ],
+          "issues": [],
+          "missing": []
+        },
+        "steps": [
+          {
+            "phase": "setup",
+            "from": "立ち位置",
+            "advance": "千年鳥居の下へ進む",
+            "to": "鳥居の下に到着",
+            "show": "lyric_target"
+          },
+          {
+            "phase": "event",
+            "from": "鳥居の下に到着",
+            "advance": "千年鳥居をくぐる",
+            "to": "鳥居をくぐった後",
+            "show": "lyric_target"
+          }
+        ]
+      },
+      "elapsed_seconds": 2.171
+    }
+  ]
+}

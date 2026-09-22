@@ -1,6 +1,6 @@
 # プロファイル
 * `planner_policy` anime_emotional_mv
-* `arc_tilt_policy` selective_full_body
+* `arc_roll_policy` selective_arc
 * `lyric_cue_mode` automatic
 * `lyric_interpretation` bounded
 * `render_prompt` 一人の歌唱者を一つの全画面構図で撮る。カメラは人物の演技と空間の奥行きを明瞭に見せ、連続区間では位置、画角、進行方向を滑らかにつなぐ。顔を拡大する場合は両目・両眉・鼻・口を同時に収める。具体的なカメラ動作と到達構図は各Shotの指示に従う。

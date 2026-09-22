@@ -254,7 +254,7 @@ class Ref2VACompilerTests(unittest.TestCase):
             "reconstruct, paste, hold, or transition from the reference image "
             "itself as a frame, still, plate, poster, inset, background, or "
             "composition. Keep visible skin and clothing clean and intact "
-            "unless an author-written Shot explicitly requires a physical "
+            "unless a Shot explicitly requires a physical "
             "condition. Lyric text inside <d> is vocal content only: figurative "
             "words about wounds, scars, pain, blood, or a broken heart never "
             "authorize a visible cut, scar, bruise, bleeding, bandage, lesion, "

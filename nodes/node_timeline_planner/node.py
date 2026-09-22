@@ -29,6 +29,7 @@ try:
         build_action_audit_grammar,
         build_camera_plan_grammar,
         build_scene_spine_grammar,
+        build_choreography_choice_grammar,
         PlannerContent,
         generate_planner_content,
         normalize_concept_emd,
@@ -54,6 +55,7 @@ except ImportError:  # Standalone repository tests.
         build_action_audit_grammar,
         build_camera_plan_grammar,
         build_scene_spine_grammar,
+        build_choreography_choice_grammar,
         PlannerContent,
         generate_planner_content,
         normalize_concept_emd,
@@ -78,6 +80,7 @@ _PROMPT_FILES = {
     "song-direction": "timeline_planner_song_direction_system_prompt.txt",
     "shot-layout": "timeline_planner_shot_layout_system_prompt.txt",
     "scene-spine": "timeline_planner_scene_spine_system_prompt.txt",
+    "choreography-choice": "timeline_planner_choreography_choice_system_prompt.txt",
     "actions": "timeline_planner_actions_system_prompt.txt",
     "actions-dance-phrase": "timeline_planner_actions_dance_phrase_system_prompt.txt",
     "action-audit": "timeline_planner_action_audit_system_prompt.txt",
@@ -146,6 +149,7 @@ class _LlamaPlannerBackend:
             "song-direction": 1,
             "shot-layout": scene_batches,
             "scene-spine": scene_count,
+            "choreography-choice": scene_count,
             "actions": scene_batches,
             "action-audit": scene_batches,
             "cameras": scene_batches,
@@ -219,6 +223,16 @@ class _LlamaPlannerBackend:
                 "[MV Director - Timeline Planner] output constraint=scene_spine_v1; "
                 "scene=%s; shots=%d",
                 request.get("scene_number"), len(request["slots"]),
+            )
+        if task == "choreography-choice":
+            request = json.loads(payload)
+            grammar_kwargs["grammar"] = build_choreography_choice_grammar(
+                [entry["id"] for entry in request["candidates"]]
+            )
+            _LOGGER.info(
+                "[MV Director - Timeline Planner] output constraint=choreography_choice_v1; "
+                "scene=%s; candidates=%d",
+                request.get("scene_number"), len(request["candidates"]),
             )
         if task in {"actions", "action-audit"}:
             request = json.loads(payload)

@@ -1,0 +1,498 @@
+{
+  "fixture_sha256": "b131cdff9a35e254efa76dd8245d86c63f4731289588ddd31374a704fc5ff675",
+  "camera_scaffold_sha256": "6d8952e1f4c009e4b39d23ea18811b681c1ace2e09680111d97ff17315f94876",
+  "profile_sha256": "bfc89c98b727a3f76361063396d8e68b1c5f8418b09f65e5ad0eed5e81968a18",
+  "model": "E:\\ComfyUI\\models\\LLM\\GGUF\\Qwen3-8B-Abliterated\\qwen3-8b-abliterated-Q4_K_M.gguf",
+  "runtime": {
+    "chat_format": "",
+    "max_tokens": 1200,
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "repetition_penalty": 1.05,
+    "gpu_layers": -1,
+    "n_batch": 512,
+    "n_ctx": 8192,
+    "flash_attn": true,
+    "kv_cache_type": "q8_0",
+    "op_offload": true,
+    "keep_model_loaded": false,
+    "seed": 1
+  },
+  "selector_system_prompt": "あなたはアニメMVのScene演技を決める。候補は身体の運動経路であり、歌詞の対象、場所、小道具を決める権限ではない。\n現在Sceneの歌詞、Cue、Shotごとの画角、前Sceneの終端を読み、撮影可能で感情に合う候補を一つ選ぶ。顔だけの画角に見えない新しい踏み替えを割り当てず、接触対象は歌詞とCueにあるものに限る。直前と同じ候補は、他の候補も適合するなら避ける。\n応答は候補IDを一つだけ、説明・引用符・Markdownなしで出力する。",
+  "chain_system_prompt": "You plan one continuous physical performance for one anime music-video Scene. Use only the given lyric, Cue and fixed Shot boundaries.\nWrite a single temporal chain, not a separate Scene outline followed by another Shot outline. Choose a grounded starting pose. For each Shot in order, write the action that takes the performer from the current pose to that Shot's ending pose. The next Shot begins in the previous Shot's ending pose without a reset. The last Shot's ending pose is the Scene ending pose and is passed to the following Scene.\nDeliberate performance has preparation, a readable accent and settling. A body phrase may change support, balance, torso level or orientation and an arm path, but do not mechanically require each body part in each Shot. Mere sway, returning a hand to the waist, a repeated forward lean or camera movement alone is not a complete phrase. A single Shot can contain several ordered movements. Keep grounded support physically possible. Do not add a prop, contact target, place, whole-person spin, or camera direction.\nReturn one JSON object with exactly two keys: start_pose and shots. start_pose is a Japanese string. shots is an array with exactly the number of input shot_slots; each item has exactly action and end_pose as concise Japanese strings. Do not add a separate progression field or duplicate the Scene ending elsewhere. No Markdown or explanation.\nThe camera_coverage entries are a fixed viewing plan, not new lyric, prop, or action authority. Choreograph a visible body change for each Shot that its assigned view can actually show. A face-and-upper-body view should reveal an eye, mouth, shoulder, or hand accent without starting an unseen footstep. A wider moving view can show grounded weight transfer, torso counter-motion, and an arm trajectory before the final pose. The camera travels around the performer; the performer must not spin to imitate that travel. Align the body's accent or settling with the camera's arrival, while preserving the previous Shot's end pose. Do not copy camera directions into the action field or substitute camera movement for acting. Use the viewing plan only to choose observable performance, not to invent an environment or target.\nThe performance_brief is a Scene-specific acting intention derived from its supplied lyric, not text to copy. Realize its preparation, main expressive change, and release across the fixed Shot count. Make the body change physically continuous: establish stable support, transfer weight only when visible, let the torso and arms complete a purposeful path, and carry the resulting pose into the next Shot. A close view shows the upper-body or facial consequence of an earlier visible accent, not a newly invented hidden full-body move. Avoid generic walking, forward-lean repetition, hand-to-waist resets, and mirrored left/right substitutions. Do not add any object, target, setting, or camera instruction from the brief.\nIf continuation is true and previous_scene_end_pose is nonempty, it is the actual starting body state. The selected performance_brief is a movement vocabulary, not a command to restart its written starting pose. Adapt only the unused movement path from the current pose and finish in a new stable pose. Never repeat the previous Scene's support transfer or arm accent. Preserve the lyric meaning and fixed camera coverage.",
+  "runs": [
+    {
+      "seed": 1,
+      "scene_number": 11,
+      "selection_input": {
+        "scene_number": 11,
+        "lyrics": [
+          "なぜ思い出は",
+          "こんなに温かい",
+          "永遠ではなく",
+          "受け渡す心を",
+          "わらわはここで"
+        ],
+        "cue": "温かい思い出を受け渡し、この場所で守る決意へ変わる。",
+        "continuation": true,
+        "previous_scene_end_pose": "",
+        "previous_phrase_id": "",
+        "camera_coverage": [
+          "前方斜めの中距離から側面へ回り、支持脚・体幹・両腕と表情を同じ画面で見せる。アクセント時の全身の釣り合いを保つ。",
+          "顔と上半身へ寄り、両目・歌唱する口・肩・手の収まりを見せる。前Shotの到達姿勢から表情の変化を受け取る。"
+        ],
+        "candidates": [
+          {
+            "id": "passing_memory",
+            "body_path": "始点は両足で安定し、片手は体側、もう片手は肘を曲げて低く置く。片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける。低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る。差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める。物を持つ・渡す動作は歌詞に明示された時だけ。"
+          },
+          {
+            "id": "resolve_diagonal",
+            "body_path": "始点は膝を伸ばし切らず胸郭を正面に保つ。後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せ、一拍のアクセント後、肩と肘を緩めて前足支持で終える。移動を伴う歩行や人物の全身回転にはしない。"
+          },
+          {
+            "id": "hesitation_recovery",
+            "body_path": "始点は両足を地面に置き、両腕を体側の異なる高さに置く。短く膝を緩めて重心を落とし、胸郭をわずかに畳み、片腕だけを胴の前へ横断させる。目を伏せた後、支持を戻しながら横断した腕を外側へほどき、胸郭を開いて視線を結ぶ。終点は開始より直立し、両腕は開き切らず異なる高さで静止する。"
+          },
+          {
+            "id": "joy_rebound",
+            "body_path": "始点は両足支持で腕を低く置く。短い膝の弾みで重心を一度下げ、片足へ受け渡して骨盤を横へ送る。胸郭の遅れに合わせて片腕を横から斜め上へ、反対の腕を腰より低く逆方向へ通す。顔と歌唱口が見える瞬間にアクセントを合わせ、両腕を体側へ落とし切らず、支持足を保って余韻で終える。跳躍や全身回転はしない。"
+          },
+          {
+            "id": "quiet_refrain",
+            "body_path": "始点は片足に軽く荷重し、肩と腕を緩める。支持は変えず胸郭だけを小さく斜めへ向け、片肘を体側から前へほどく。半開きの目から短く閉眼し、歌詞の変化で視線を戻す。手は顔を隠さず肩より下で止め、胸郭を正面へ戻しながら同じ支持のまま終える。静かな歌詞用で、大きな踏み替えを要求しない。"
+          }
+        ]
+      },
+      "selection_raw": "<think>\n\n</think>\n\nresolve_diagonal",
+      "selected_phrase_id": "resolve_diagonal",
+      "chain_input": {
+        "scene_number": 11,
+        "start": "01:25.833",
+        "end": "01:35.750",
+        "continuation": true,
+        "cue": "温かい思い出を受け渡し、この場所で守る決意へ変わる。",
+        "lyrics": [
+          "なぜ思い出は",
+          "こんなに温かい",
+          "永遠ではなく",
+          "受け渡す心を",
+          "わらわはここで"
+        ],
+        "shot_slots": [
+          {
+            "slot": 1,
+            "start": "01:25.833",
+            "end": "01:30.792"
+          },
+          {
+            "slot": 2,
+            "start": "01:30.792",
+            "end": "01:35.750"
+          }
+        ],
+        "previous_scene_end_pose": "",
+        "camera_coverage": [
+          "前方斜めの中距離から側面へ回り、支持脚・体幹・両腕と表情を同じ画面で見せる。アクセント時の全身の釣り合いを保つ。",
+          "顔と上半身へ寄り、両目・歌唱する口・肩・手の収まりを見せる。前Shotの到達姿勢から表情の変化を受け取る。"
+        ],
+        "performance_brief": "始点は膝を伸ばし切らず胸郭を正面に保つ。後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せ、一拍のアクセント後、肩と肘を緩めて前足支持で終える。移動を伴う歩行や人物の全身回転にはしない。"
+      },
+      "chain_raw": "<think>\n\n</think>\n\n{\n  \"start_pose\": \"膝を軽く曲げ、胸郭を正面に保ち、片腕は体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せている。\",\n  \"shots\": [\n    {\n      \"action\": \"後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は斜め前へ通したまま、もう一方は低い位置で反対方向へ開いたまま、顔を上げたままの姿勢を維持する。\",\n      \"end_pose\": \"前足で支持し、胸郭が起き、骨盤が前傾し、片腕は斜め前へ通し、もう一方は低い位置で反対方向へ開き、顔を上げて歌唱口を見せている。\"\n    },\n    {\n      \"action\": \"肩と肘を緩めて、胸郭を前傾させ、片腕は体の横に戻し、もう一方は低い位置で反対方向へ開いたまま、顔を上げたままの姿勢を維持する。\",\n      \"end_pose\": \"前足で支持し、胸郭が前傾し、片腕は体の横に戻し、もう一方は低い位置で反ochondを反対方向へ開き、顔を上げて歌唱口を見せている。\"\n    }\n  ]\n}",
+      "parsed": {
+        "start_pose": "膝を軽く曲げ、胸郭を正面に保ち、片腕は体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せている。",
+        "shots": [
+          {
+            "action": "後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は斜め前へ通したまま、もう一方は低い位置で反対方向へ開いたまま、顔を上げたままの姿勢を維持する。",
+            "end_pose": "前足で支持し、胸郭が起き、骨盤が前傾し、片腕は斜め前へ通し、もう一方は低い位置で反対方向へ開き、顔を上げて歌唱口を見せている。"
+          },
+          {
+            "action": "肩と肘を緩めて、胸郭を前傾させ、片腕は体の横に戻し、もう一方は低い位置で反対方向へ開いたまま、顔を上げたままの姿勢を維持する。",
+            "end_pose": "前足で支持し、胸郭が前傾し、片腕は体の横に戻し、もう一方は低い位置で反ochondを反対方向へ開き、顔を上げて歌唱口を見せている。"
+          }
+        ]
+      },
+      "elapsed_seconds": 2.256
+    },
+    {
+      "seed": 1,
+      "scene_number": 12,
+      "selection_input": {
+        "scene_number": 12,
+        "lyrics": [
+          "守ってゆこう"
+        ],
+        "cue": "受け取った心を守る決意を保ち、次の歌詞へつなぐ。",
+        "continuation": true,
+        "previous_scene_end_pose": "前足で支持し、胸郭が前傾し、片腕は体の横に戻し、もう一方は低い位置で反ochondを反対方向へ開き、顔を上げて歌唱口を見せている。",
+        "previous_phrase_id": "resolve_diagonal",
+        "camera_coverage": [
+          "顔と上半身からやや引き、歌唱する目と口を保ちながら、肩・腕が終端姿勢へ落ち着く様子を見せる。"
+        ],
+        "candidates": [
+          {
+            "id": "passing_memory",
+            "body_path": "始点は両足で安定し、片手は体側、もう片手は肘を曲げて低く置く。片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける。低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る。差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める。物を持つ・渡す動作は歌詞に明示された時だけ。"
+          },
+          {
+            "id": "hesitation_recovery",
+            "body_path": "始点は両足を地面に置き、両腕を体側の異なる高さに置く。短く膝を緩めて重心を落とし、胸郭をわずかに畳み、片腕だけを胴の前へ横断させる。目を伏せた後、支持を戻しながら横断した腕を外側へほどき、胸郭を開いて視線を結ぶ。終点は開始より直立し、両腕は開き切らず異なる高さで静止する。"
+          },
+          {
+            "id": "joy_rebound",
+            "body_path": "始点は両足支持で腕を低く置く。短い膝の弾みで重心を一度下げ、片足へ受け渡して骨盤を横へ送る。胸郭の遅れに合わせて片腕を横から斜め上へ、反対の腕を腰より低く逆方向へ通す。顔と歌唱口が見える瞬間にアクセントを合わせ、両腕を体側へ落とし切らず、支持足を保って余韻で終える。跳躍や全身回転はしない。"
+          },
+          {
+            "id": "quiet_refrain",
+            "body_path": "始点は片足に軽く荷重し、肩と腕を緩める。支持は変えず胸郭だけを小さく斜めへ向け、片肘を体側から前へほどく。半開きの目から短く閉眼し、歌詞の変化で視線を戻す。手は顔を隠さず肩より下で止め、胸郭を正面へ戻しながら同じ支持のまま終える。静かな歌詞用で、大きな踏み替えを要求しない。"
+          }
+        ]
+      },
+      "selection_raw": "<think>\n\n</think>\n\nhesitation_recovery",
+      "selected_phrase_id": "hesitation_recovery",
+      "chain_input": {
+        "scene_number": 12,
+        "start": "01:35.750",
+        "end": "01:40.000",
+        "continuation": true,
+        "cue": "受け取った心を守る決意を保ち、次の歌詞へつなぐ。",
+        "lyrics": [
+          "守ってゆこう"
+        ],
+        "shot_slots": [
+          {
+            "slot": 1,
+            "start": "01:35.750",
+            "end": "01:40.000"
+          }
+        ],
+        "previous_scene_end_pose": "前足で支持し、胸郭が前傾し、片腕は体の横に戻し、もう一方は低い位置で反ochondを反対方向へ開き、顔を上げて歌唱口を見せている。",
+        "camera_coverage": [
+          "顔と上半身からやや引き、歌唱する目と口を保ちながら、肩・腕が終端姿勢へ落ち着く様子を見せる。"
+        ],
+        "performance_brief": "始点は両足を地面に置き、両腕を体側の異なる高さに置く。短く膝を緩めて重心を落とし、胸郭をわずかに畳み、片腕だけを胴の前へ横断させる。目を伏せた後、支持を戻しながら横断した腕を外側へほどき、胸郭を開いて視線を結ぶ。終点は開始より直立し、両腕は開き切らず異なる高さで静止する。"
+      },
+      "chain_raw": "<think>\n\n</think>\n\n{\n  \"start_pose\": \"前足で支持し、胸郭が前傾し、片腕は体の横に戻し、もう一方は低い位置で反ochondを反対方向へ開き、顔を上げて歌唱口を見せている。\",\n  \"shots\": [\n    {\n      \"action\": \"短く膝を緩めて重心を落とし、胸郭をわずかに畳み、片腕だけを胴の前へ横断させる。\",\n      \"end_pose\": \"後足で支持し、胸郭がやや下がり、片腕は胴の前へ横断され、もう一方は低い位置で反ochondを反対方向へ開き、顔を下げた状態で歌唱口を見せている。\"\n    }\n  ]\n}",
+      "parsed": {
+        "start_pose": "前足で支持し、胸郭が前傾し、片腕は体の横に戻し、もう一方は低い位置で反ochondを反対方向へ開き、顔を上げて歌唱口を見せている。",
+        "shots": [
+          {
+            "action": "短く膝を緩めて重心を落とし、胸郭をわずかに畳み、片腕だけを胴の前へ横断させる。",
+            "end_pose": "後足で支持し、胸郭がやや下がり、片腕は胴の前へ横断され、もう一方は低い位置で反ochondを反対方向へ開き、顔を下げた状態で歌唱口を見せている。"
+          }
+        ]
+      },
+      "elapsed_seconds": 1.259
+    },
+    {
+      "seed": 2,
+      "scene_number": 11,
+      "selection_input": {
+        "scene_number": 11,
+        "lyrics": [
+          "なぜ思い出は",
+          "こんなに温かい",
+          "永遠ではなく",
+          "受け渡す心を",
+          "わらわはここで"
+        ],
+        "cue": "温かい思い出を受け渡し、この場所で守る決意へ変わる。",
+        "continuation": true,
+        "previous_scene_end_pose": "",
+        "previous_phrase_id": "",
+        "camera_coverage": [
+          "前方斜めの中距離から側面へ回り、支持脚・体幹・両腕と表情を同じ画面で見せる。アクセント時の全身の釣り合いを保つ。",
+          "顔と上半身へ寄り、両目・歌唱する口・肩・手の収まりを見せる。前Shotの到達姿勢から表情の変化を受け取る。"
+        ],
+        "candidates": [
+          {
+            "id": "passing_memory",
+            "body_path": "始点は両足で安定し、片手は体側、もう片手は肘を曲げて低く置く。片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける。低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る。差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める。物を持つ・渡す動作は歌詞に明示された時だけ。"
+          },
+          {
+            "id": "resolve_diagonal",
+            "body_path": "始点は膝を伸ばし切らず胸郭を正面に保つ。後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せ、一拍のアクセント後、肩と肘を緩めて前足支持で終える。移動を伴う歩行や人物の全身回転にはしない。"
+          },
+          {
+            "id": "hesitation_recovery",
+            "body_path": "始点は両足を地面に置き、両腕を体側の異なる高さに置く。短く膝を緩めて重心を落とし、胸郭をわずかに畳み、片腕だけを胴の前へ横断させる。目を伏せた後、支持を戻しながら横断した腕を外側へほどき、胸郭を開いて視線を結ぶ。終点は開始より直立し、両腕は開き切らず異なる高さで静止する。"
+          },
+          {
+            "id": "joy_rebound",
+            "body_path": "始点は両足支持で腕を低く置く。短い膝の弾みで重心を一度下げ、片足へ受け渡して骨盤を横へ送る。胸郭の遅れに合わせて片腕を横から斜め上へ、反対の腕を腰より低く逆方向へ通す。顔と歌唱口が見える瞬間にアクセントを合わせ、両腕を体側へ落とし切らず、支持足を保って余韻で終える。跳躍や全身回転はしない。"
+          },
+          {
+            "id": "quiet_refrain",
+            "body_path": "始点は片足に軽く荷重し、肩と腕を緩める。支持は変えず胸郭だけを小さく斜めへ向け、片肘を体側から前へほどく。半開きの目から短く閉眼し、歌詞の変化で視線を戻す。手は顔を隠さず肩より下で止め、胸郭を正面へ戻しながら同じ支持のまま終える。静かな歌詞用で、大きな踏み替えを要求しない。"
+          }
+        ]
+      },
+      "selection_raw": "<think>\n\n</think>\n\nresolve_diagonal",
+      "selected_phrase_id": "resolve_diagonal",
+      "chain_input": {
+        "scene_number": 11,
+        "start": "01:25.833",
+        "end": "01:35.750",
+        "continuation": true,
+        "cue": "温かい思い出を受け渡し、この場所で守る決意へ変わる。",
+        "lyrics": [
+          "なぜ思い出は",
+          "こんなに温かい",
+          "永遠ではなく",
+          "受け渡す心を",
+          "わらわはここで"
+        ],
+        "shot_slots": [
+          {
+            "slot": 1,
+            "start": "01:25.833",
+            "end": "01:30.792"
+          },
+          {
+            "slot": 2,
+            "start": "01:30.792",
+            "end": "01:35.750"
+          }
+        ],
+        "previous_scene_end_pose": "",
+        "camera_coverage": [
+          "前方斜めの中距離から側面へ回り、支持脚・体幹・両腕と表情を同じ画面で見せる。アクセント時の全身の釣り合いを保つ。",
+          "顔と上半身へ寄り、両目・歌唱する口・肩・手の収まりを見せる。前Shotの到達姿勢から表情の変化を受け取る。"
+        ],
+        "performance_brief": "始点は膝を伸ばし切らず胸郭を正面に保つ。後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せ、一拍のアクセント後、肩と肘を緩めて前足支持で終える。移動を伴う歩行や人物の全身回転にはしない。"
+      },
+      "chain_raw": "<think>\n\n</think>\n\n{\n  \"start_pose\": \"膝を軽く曲げ、胸郭を正面に保ち、片腕を体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せている。\",\n  \"shots\": [\n    {\n      \"action\": \"後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は斜め前へ引き寄せ、もう一方は低い位置で反対方向へ開いたまま保持する。\",\n      \"end_pose\": \"前足支持で立ち、胸郭が起き上がり、片腕を斜め前へ引き寄せ、もう一方は低い位置で反対方向へ開いた姿勢を保つ。\"\n    },\n    {\n      \"action\": \"顔を上げて歌唱口を見せ、一拍のアクセント後、肩と肘を緩めて前足支持で終える。\",\n      \"end_pose\": \"前足支持で立ち、胸郭が起き上がり、片腕を斜め前へ引き寄せ、もう一方は低い位置で反方向へ開いた姿勢を保つ。を上げて歌唱口を見せている。\"\n    }\n  ]\n}",
+      "parsed": {
+        "start_pose": "膝を軽く曲げ、胸郭を正面に保ち、片腕を体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せている。",
+        "shots": [
+          {
+            "action": "後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は斜め前へ引き寄せ、もう一方は低い位置で反対方向へ開いたまま保持する。",
+            "end_pose": "前足支持で立ち、胸郭が起き上がり、片腕を斜め前へ引き寄せ、もう一方は低い位置で反対方向へ開いた姿勢を保つ。"
+          },
+          {
+            "action": "顔を上げて歌唱口を見せ、一拍のアクセント後、肩と肘を緩めて前足支持で終える。",
+            "end_pose": "前足支持で立ち、胸郭が起き上がり、片腕を斜め前へ引き寄せ、もう一方は低い位置で反方向へ開いた姿勢を保つ。を上げて歌唱口を見せている。"
+          }
+        ]
+      },
+      "elapsed_seconds": 1.958
+    },
+    {
+      "seed": 2,
+      "scene_number": 12,
+      "selection_input": {
+        "scene_number": 12,
+        "lyrics": [
+          "守ってゆこう"
+        ],
+        "cue": "受け取った心を守る決意を保ち、次の歌詞へつなぐ。",
+        "continuation": true,
+        "previous_scene_end_pose": "前足支持で立ち、胸郭が起き上がり、片腕を斜め前へ引き寄せ、もう一方は低い位置で反方向へ開いた姿勢を保つ。を上げて歌唱口を見せている。",
+        "previous_phrase_id": "resolve_diagonal",
+        "camera_coverage": [
+          "顔と上半身からやや引き、歌唱する目と口を保ちながら、肩・腕が終端姿勢へ落ち着く様子を見せる。"
+        ],
+        "candidates": [
+          {
+            "id": "passing_memory",
+            "body_path": "始点は両足で安定し、片手は体側、もう片手は肘を曲げて低く置く。片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける。低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る。差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める。物を持つ・渡す動作は歌詞に明示された時だけ。"
+          },
+          {
+            "id": "hesitation_recovery",
+            "body_path": "始点は両足を地面に置き、両腕を体側の異なる高さに置く。短く膝を緩めて重心を落とし、胸郭をわずかに畳み、片腕だけを胴の前へ横断させる。目を伏せた後、支持を戻しながら横断した腕を外側へほどき、胸郭を開いて視線を結ぶ。終点は開始より直立し、両腕は開き切らず異なる高さで静止する。"
+          },
+          {
+            "id": "joy_rebound",
+            "body_path": "始点は両足支持で腕を低く置く。短い膝の弾みで重心を一度下げ、片足へ受け渡して骨盤を横へ送る。胸郭の遅れに合わせて片腕を横から斜め上へ、反対の腕を腰より低く逆方向へ通す。顔と歌唱口が見える瞬間にアクセントを合わせ、両腕を体側へ落とし切らず、支持足を保って余韻で終える。跳躍や全身回転はしない。"
+          },
+          {
+            "id": "quiet_refrain",
+            "body_path": "始点は片足に軽く荷重し、肩と腕を緩める。支持は変えず胸郭だけを小さく斜めへ向け、片肘を体側から前へほどく。半開きの目から短く閉眼し、歌詞の変化で視線を戻す。手は顔を隠さず肩より下で止め、胸郭を正面へ戻しながら同じ支持のまま終える。静かな歌詞用で、大きな踏み替えを要求しない。"
+          }
+        ]
+      },
+      "selection_raw": "<think>\n\n</think>\n\nhesitation_recovery",
+      "selected_phrase_id": "hesitation_recovery",
+      "chain_input": {
+        "scene_number": 12,
+        "start": "01:35.750",
+        "end": "01:40.000",
+        "continuation": true,
+        "cue": "受け取った心を守る決意を保ち、次の歌詞へつなぐ。",
+        "lyrics": [
+          "守ってゆこう"
+        ],
+        "shot_slots": [
+          {
+            "slot": 1,
+            "start": "01:35.750",
+            "end": "01:40.000"
+          }
+        ],
+        "previous_scene_end_pose": "前足支持で立ち、胸郭が起き上がり、片腕を斜め前へ引き寄せ、もう一方は低い位置で反方向へ開いた姿勢を保つ。を上げて歌唱口を見せている。",
+        "camera_coverage": [
+          "顔と上半身からやや引き、歌唱する目と口を保ちながら、肩・腕が終端姿勢へ落ち着く様子を見せる。"
+        ],
+        "performance_brief": "始点は両足を地面に置き、両腕を体側の異なる高さに置く。短く膝を緩めて重心を落とし、胸郭をわずかに畳み、片腕だけを胴の前へ横断させる。目を伏せた後、支持を戻しながら横断した腕を外側へほどき、胸郭を開いて視線を結ぶ。終点は開始より直立し、両腕は開き切らず異なる高さで静止する。"
+      },
+      "chain_raw": "<think>\n\n</think>\n\n{\n  \"start_pose\": \"前足支持で立ち、胸郭が起き上がり、片腕を斜め前へ引き寄せ、もう一方は低い位置で反方向へ開いた姿勢を保つ。を上げて歌唱口を見せている。\",\n  \"shots\": [\n    {\n      \"action\": \"短く膝を緩めて重心を落とし、胸郭をわずかに畳み、片腕だけを胴の前へ横断させる。\",\n      \"end_pose\": \"前足支持で立ち、胸郭がやや畳まれ、片腕を胴の前へ横断させ、もう一方は低い位置で反方向へ開いた姿勢を保つ。を上げて歌唱口を見せている。\"\n    },\n    {\n      \"action\": \"目を伏せた後、支持を戻しながら横断した腕を外側へほどき、胸郭を開いて視線を結ぶ。\",\n      \"end_pose\": \"前足支持で立ち、胸郭が起き上がり、片腕を外側へほどき、もう一方は低い位置で反き出した姿勢を保つ。を上げて歌唱口を見せている。\"\n    }\n  ]\n}",
+      "error": "shots do not match the fixed Shot count",
+      "elapsed_seconds": 1.768
+    },
+    {
+      "seed": 3,
+      "scene_number": 11,
+      "selection_input": {
+        "scene_number": 11,
+        "lyrics": [
+          "なぜ思い出は",
+          "こんなに温かい",
+          "永遠ではなく",
+          "受け渡す心を",
+          "わらわはここで"
+        ],
+        "cue": "温かい思い出を受け渡し、この場所で守る決意へ変わる。",
+        "continuation": true,
+        "previous_scene_end_pose": "",
+        "previous_phrase_id": "",
+        "camera_coverage": [
+          "前方斜めの中距離から側面へ回り、支持脚・体幹・両腕と表情を同じ画面で見せる。アクセント時の全身の釣り合いを保つ。",
+          "顔と上半身へ寄り、両目・歌唱する口・肩・手の収まりを見せる。前Shotの到達姿勢から表情の変化を受け取る。"
+        ],
+        "candidates": [
+          {
+            "id": "passing_memory",
+            "body_path": "始点は両足で安定し、片手は体側、もう片手は肘を曲げて低く置く。片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける。低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る。差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める。物を持つ・渡す動作は歌詞に明示された時だけ。"
+          },
+          {
+            "id": "resolve_diagonal",
+            "body_path": "始点は膝を伸ばし切らず胸郭を正面に保つ。後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せ、一拍のアクセント後、肩と肘を緩めて前足支持で終える。移動を伴う歩行や人物の全身回転にはしない。"
+          },
+          {
+            "id": "hesitation_recovery",
+            "body_path": "始点は両足を地面に置き、両腕を体側の異なる高さに置く。短く膝を緩めて重心を落とし、胸郭をわずかに畳み、片腕だけを胴の前へ横断させる。目を伏せた後、支持を戻しながら横断した腕を外側へほどき、胸郭を開いて視線を結ぶ。終点は開始より直立し、両腕は開き切らず異なる高さで静止する。"
+          },
+          {
+            "id": "joy_rebound",
+            "body_path": "始点は両足支持で腕を低く置く。短い膝の弾みで重心を一度下げ、片足へ受け渡して骨盤を横へ送る。胸郭の遅れに合わせて片腕を横から斜め上へ、反対の腕を腰より低く逆方向へ通す。顔と歌唱口が見える瞬間にアクセントを合わせ、両腕を体側へ落とし切らず、支持足を保って余韻で終える。跳躍や全身回転はしない。"
+          },
+          {
+            "id": "quiet_refrain",
+            "body_path": "始点は片足に軽く荷重し、肩と腕を緩める。支持は変えず胸郭だけを小さく斜めへ向け、片肘を体側から前へほどく。半開きの目から短く閉眼し、歌詞の変化で視線を戻す。手は顔を隠さず肩より下で止め、胸郭を正面へ戻しながら同じ支持のまま終える。静かな歌詞用で、大きな踏み替えを要求しない。"
+          }
+        ]
+      },
+      "selection_raw": "<think>\n\n</think>\n\nresolve_diagonal",
+      "selected_phrase_id": "resolve_diagonal",
+      "chain_input": {
+        "scene_number": 11,
+        "start": "01:25.833",
+        "end": "01:35.750",
+        "continuation": true,
+        "cue": "温かい思い出を受け渡し、この場所で守る決意へ変わる。",
+        "lyrics": [
+          "なぜ思い出は",
+          "こんなに温かい",
+          "永遠ではなく",
+          "受け渡す心を",
+          "わらわはここで"
+        ],
+        "shot_slots": [
+          {
+            "slot": 1,
+            "start": "01:25.833",
+            "end": "01:30.792"
+          },
+          {
+            "slot": 2,
+            "start": "01:30.792",
+            "end": "01:35.750"
+          }
+        ],
+        "previous_scene_end_pose": "",
+        "camera_coverage": [
+          "前方斜めの中距離から側面へ回り、支持脚・体幹・両腕と表情を同じ画面で見せる。アクセント時の全身の釣り合いを保つ。",
+          "顔と上半身へ寄り、両目・歌唱する口・肩・手の収まりを見せる。前Shotの到達姿勢から表情の変化を受け取る。"
+        ],
+        "performance_brief": "始点は膝を伸ばし切らず胸郭を正面に保つ。後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せ、一拍のアクセント後、肩と肘を緩めて前足支持で終える。移動を伴う歩行や人物の全身回転にはしない。"
+      },
+      "chain_raw": "<think>\n\n</think>\n\n{\n  \"start_pose\": \"膝を軽く曲げ、胸郭を正面に保ち、片腕を体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せている。\",\n  \"shots\": [\n    {\n      \"action\": \"後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は斜め前へ通したまま、もう一方は低い位置で反対方向へ開いたまま保持する。\",\n      \"end_pose\": \"前足支持で立ち、胸郭が起き上がり、片腕は斜め前へ通し、もう一方は低い位置で反対方向へ開いた姿勢を維持している。\"\n    },\n    {\n      \"action\": \"顔を上げて歌唱口を見せ、一拍のアクセント後、肩と肘を緩めて前足支持で終える。\",\n      \"end_pose\": \"前足支持で立ち、胸郭が起き上がり、片腕は斜め前へ通し、もう一方は低い位置で反方向へ開いた姿勢を維持している。\"\n    }\n  ]\n}",
+      "parsed": {
+        "start_pose": "膝を軽く曲げ、胸郭を正面に保ち、片腕を体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せている。",
+        "shots": [
+          {
+            "action": "後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は斜め前へ通したまま、もう一方は低い位置で反対方向へ開いたまま保持する。",
+            "end_pose": "前足支持で立ち、胸郭が起き上がり、片腕は斜め前へ通し、もう一方は低い位置で反対方向へ開いた姿勢を維持している。"
+          },
+          {
+            "action": "顔を上げて歌唱口を見せ、一拍のアクセント後、肩と肘を緩めて前足支持で終える。",
+            "end_pose": "前足支持で立ち、胸郭が起き上がり、片腕は斜め前へ通し、もう一方は低い位置で反方向へ開いた姿勢を維持している。"
+          }
+        ]
+      },
+      "elapsed_seconds": 1.905
+    },
+    {
+      "seed": 3,
+      "scene_number": 12,
+      "selection_input": {
+        "scene_number": 12,
+        "lyrics": [
+          "守ってゆこう"
+        ],
+        "cue": "受け取った心を守る決意を保ち、次の歌詞へつなぐ。",
+        "continuation": true,
+        "previous_scene_end_pose": "前足支持で立ち、胸郭が起き上がり、片腕は斜め前へ通し、もう一方は低い位置で反方向へ開いた姿勢を維持している。",
+        "previous_phrase_id": "resolve_diagonal",
+        "camera_coverage": [
+          "顔と上半身からやや引き、歌唱する目と口を保ちながら、肩・腕が終端姿勢へ落ち着く様子を見せる。"
+        ],
+        "candidates": [
+          {
+            "id": "passing_memory",
+            "body_path": "始点は両足で安定し、片手は体側、もう片手は肘を曲げて低く置く。片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける。低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る。差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める。物を持つ・渡す動作は歌詞に明示された時だけ。"
+          },
+          {
+            "id": "hesitation_recovery",
+            "body_path": "始点は両足を地面に置き、両腕を体側の異なる高さに置く。短く膝を緩めて重心を落とし、胸郭をわずかに畳み、片腕だけを胴の前へ横断させる。目を伏せた後、支持を戻しながら横断した腕を外側へほどき、胸郭を開いて視線を結ぶ。終点は開始より直立し、両腕は開き切らず異なる高さで静止する。"
+          },
+          {
+            "id": "joy_rebound",
+            "body_path": "始点は両足支持で腕を低く置く。短い膝の弾みで重心を一度下げ、片足へ受け渡して骨盤を横へ送る。胸郭の遅れに合わせて片腕を横から斜め上へ、反対の腕を腰より低く逆方向へ通す。顔と歌唱口が見える瞬間にアクセントを合わせ、両腕を体側へ落とし切らず、支持足を保って余韻で終える。跳躍や全身回転はしない。"
+          },
+          {
+            "id": "quiet_refrain",
+            "body_path": "始点は片足に軽く荷重し、肩と腕を緩める。支持は変えず胸郭だけを小さく斜めへ向け、片肘を体側から前へほどく。半開きの目から短く閉眼し、歌詞の変化で視線を戻す。手は顔を隠さず肩より下で止め、胸郭を正面へ戻しながら同じ支持のまま終える。静かな歌詞用で、大きな踏み替えを要求しない。"
+          }
+        ]
+      },
+      "selection_raw": "<think>\n\n</think>\n\nhesitation_recovery",
+      "selected_phrase_id": "hesitation_recovery",
+      "chain_input": {
+        "scene_number": 12,
+        "start": "01:35.750",
+        "end": "01:40.000",
+        "continuation": true,
+        "cue": "受け取った心を守る決意を保ち、次の歌詞へつなぐ。",
+        "lyrics": [
+          "守ってゆこう"
+        ],
+        "shot_slots": [
+          {
+            "slot": 1,
+            "start": "01:35.750",
+            "end": "01:40.000"
+          }
+        ],
+        "previous_scene_end_pose": "前足支持で立ち、胸郭が起き上がり、片腕は斜め前へ通し、もう一方は低い位置で反方向へ開いた姿勢を維持している。",
+        "camera_coverage": [
+          "顔と上半身からやや引き、歌唱する目と口を保ちながら、肩・腕が終端姿勢へ落ち着く様子を見せる。"
+        ],
+        "performance_brief": "始点は両足を地面に置き、両腕を体側の異なる高さに置く。短く膝を緩めて重心を落とし、胸郭をわずかに畳み、片腕だけを胴の前へ横断させる。目を伏せた後、支持を戻しながら横断した腕を外側へほどき、胸郭を開いて視線を結ぶ。終点は開始より直立し、両腕は開き切らず異なる高さで静止する。"
+      },
+      "chain_raw": "<think>\n\n</think>\n\n{\n  \"start_pose\": \"前足支持で立ち、胸郭が起き上がり、片腕は斜め前へ通し、もう一方は低い位置で反方向へ開いた姿勢を維持している。\",\n  \"shots\": [\n    {\n      \"action\": \"短く膝を緩めて重心を落とし、胸郭をわずかに畳み、片腕だけを胴の前へ横断させる。\",\n      \"end_pose\": \"両足を地面に置き、両腕を体側の異なる高さに置く。\"\n    },\n    {\n      \"action\": \"目を伏せた後、支持を戻しながら横断した腕を外側へほどき、胸郭を開いて視線を結ぶ。\",\n      \"end_pose\": \"直立し、両腕は開き切らず異なる高さで静止する。\"\n    }\n  ]\n}",
+      "error": "shots do not match the fixed Shot count",
+      "elapsed_seconds": 1.42
+    }
+  ]
+}

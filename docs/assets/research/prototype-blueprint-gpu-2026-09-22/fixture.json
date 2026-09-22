@@ -1,0 +1,16 @@
+{
+  "source_emd": "C:/Software/ComfyUI/output/mv_director/context_loop_emd_00001.md",
+  "note": "Lyrics and durations copied from Scenes 3 and 4 for a bounded offline comparison; no original Action or Camera is supplied to the model.",
+  "scenes": [
+    {
+      "scene_id": 3,
+      "duration_ms": 9208,
+      "lyrics": ["石段に積もる", "名もなき季節", "昨日の願いは", "苔へと還る", "幼い手で結んだ"]
+    },
+    {
+      "scene_id": 4,
+      "duration_ms": 9917,
+      "lyrics": ["色褪せた契り", "覚えているのは", "わらわだけ", "人は花より", "短く咲いて", "それでも永遠を"]
+    }
+  ]
+}

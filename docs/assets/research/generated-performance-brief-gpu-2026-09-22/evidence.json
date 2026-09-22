@@ -1,0 +1,138 @@
+{
+  "fixture_sha256": "b131cdff9a35e254efa76dd8245d86c63f4731289588ddd31374a704fc5ff675",
+  "camera_scaffold_sha256": "6d8952e1f4c009e4b39d23ea18811b681c1ace2e09680111d97ff17315f94876",
+  "brief_prompt_sha256": "03cf2c116758dc8d1df74325b36611e690338d7acd24df420837b11fc71d70ef",
+  "chain_prompt_sha256": "3829660fdece13dd085df011e31925918d30e93cbfc4eeeb0b3ffff296b49451",
+  "model": "E:\\ComfyUI\\models\\LLM\\GGUF\\Qwen3-8B-Abliterated\\qwen3-8b-abliterated-Q4_K_M.gguf",
+  "runtime": {
+    "chat_format": "",
+    "max_tokens": 1200,
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "repetition_penalty": 1.05,
+    "gpu_layers": -1,
+    "n_batch": 512,
+    "n_ctx": 8192,
+    "flash_attn": true,
+    "kv_cache_type": "q8_0",
+    "op_offload": true,
+    "keep_model_loaded": false,
+    "seed": 1
+  },
+  "runs": [
+    {
+      "seed": 1,
+      "scene_number": 11,
+      "brief_input": {
+        "scene_number": 11,
+        "lyrics": [
+          "なぜ思い出は",
+          "こんなに温かい",
+          "永遠ではなく",
+          "受け渡す心を",
+          "わらわはここで"
+        ],
+        "cue": "温かい思い出を受け渡し、この場所で守る決意へ変わる。",
+        "shot_count": 2,
+        "continuation": true,
+        "previous_scene_end_pose": ""
+      },
+      "brief_raw": "<think>\n\n</think>\n\nBRIEF、1、開始=右手を胸に当てながら顔を上げる｜変化=右手をゆっくり腰へ下げて目を閉じる｜終端=右手を膝の上に置き、顔を少し前傾させる",
+      "brief_elapsed_seconds": 0.361,
+      "error": "brief line protocol is invalid"
+    },
+    {
+      "seed": 1,
+      "scene_number": 12,
+      "brief_input": {
+        "scene_number": 12,
+        "lyrics": [
+          "守ってゆこう"
+        ],
+        "cue": "受け取った心を守る決意を保ち、次の歌詞へつなぐ。",
+        "shot_count": 1,
+        "continuation": true,
+        "previous_scene_end_pose": ""
+      },
+      "brief_raw": "<think>\n\n</think>\n\nBRIEF、1、開始=右手を胸に当ててゆっくり目を閉じる｜変化=目を開きながら右手を顎へ上げる｜終端=右手を顎に添え目をやや閉じた姿勢",
+      "brief_elapsed_seconds": 0.306,
+      "error": "brief line protocol is invalid"
+    },
+    {
+      "seed": 2,
+      "scene_number": 11,
+      "brief_input": {
+        "scene_number": 11,
+        "lyrics": [
+          "なぜ思い出は",
+          "こんなに温かい",
+          "永遠ではなく",
+          "受け渡す心を",
+          "わらわはここで"
+        ],
+        "cue": "温かい思い出を受け渡し、この場所で守る決意へ変わる。",
+        "shot_count": 2,
+        "continuation": true,
+        "previous_scene_end_pose": ""
+      },
+      "brief_raw": "<think>\n\n</think>\n\nBRIEF、1、開始=右手を胸に当てて目を閉じる｜変化=手を上げながら目を開き、前傾して右手を太ももに置く｜終端=右手を太ももに置いた前傾姿勢",
+      "brief_elapsed_seconds": 0.326,
+      "error": "brief line protocol is invalid"
+    },
+    {
+      "seed": 2,
+      "scene_number": 12,
+      "brief_input": {
+        "scene_number": 12,
+        "lyrics": [
+          "守ってゆこう"
+        ],
+        "cue": "受け取った心を守る決意を保ち、次の歌詞へつなぐ。",
+        "shot_count": 1,
+        "continuation": true,
+        "previous_scene_end_pose": ""
+      },
+      "brief_raw": "<think>\n\n</think>\n\nBRIEF、1、開始=右手を胸に当て目を閉じる｜変化=目を開き右手を腰へ下げる｜終端=右手を腰に置いた姿勢で前傾する",
+      "brief_elapsed_seconds": 0.267,
+      "error": "brief line protocol is invalid"
+    },
+    {
+      "seed": 3,
+      "scene_number": 11,
+      "brief_input": {
+        "scene_number": 11,
+        "lyrics": [
+          "なぜ思い出は",
+          "こんなに温かい",
+          "永遠ではなく",
+          "受け渡す心を",
+          "わらわはここで"
+        ],
+        "cue": "温かい思い出を受け渡し、この場所で守る決意へ変わる。",
+        "shot_count": 2,
+        "continuation": true,
+        "previous_scene_end_pose": ""
+      },
+      "brief_raw": "<think>\n\n</think>\n\nBRIEF、1、開始=右手を胸に当てながらゆっくり目を閉じる｜変化=手を上げて頭上へ伸ばし、目を開けて前傾する｜終端=両手を胸の前で重ねて静止",
+      "brief_elapsed_seconds": 0.323,
+      "error": "brief line protocol is invalid"
+    },
+    {
+      "seed": 3,
+      "scene_number": 12,
+      "brief_input": {
+        "scene_number": 12,
+        "lyrics": [
+          "守ってゆこう"
+        ],
+        "cue": "受け取った心を守る決意を保ち、次の歌詞へつなぐ。",
+        "shot_count": 1,
+        "continuation": true,
+        "previous_scene_end_pose": ""
+      },
+      "brief_raw": "<think>\n\n</think>\n\nBRIEF、1、開始=右手を胸に当てて目を閉じる｜変化=目を開き右手を腰へ下げる｜終端=右手を腰に置いた姿勢で前傾する",
+      "brief_elapsed_seconds": 0.277,
+      "error": "brief line protocol is invalid"
+    }
+  ]
+}

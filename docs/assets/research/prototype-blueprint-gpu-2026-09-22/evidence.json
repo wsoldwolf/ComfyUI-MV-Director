@@ -1,0 +1,576 @@
+{
+  "fixture_sha256": "0ddd0c7e0122179291f1ecdd6d29b9e908240d55a183000516d9363e97ea49d7",
+  "prompt": "E:\\ComfyUI\\projects\\ComfyUI-cl-japanese2json\\node_mv_prompt_planner\\prompts\\core\\lyric_action_system_prompt.txt",
+  "prompt_sha256": "bcedd181af0b1907a4e8769f615b1ea23771eb38c1d0b89c51ba031a0eebb311",
+  "model": "E:\\ComfyUI\\models\\LLM\\GGUF\\Qwen3-8B-Abliterated\\qwen3-8b-abliterated-Q4_K_M.gguf",
+  "model_size": 5027784032,
+  "runtime": {
+    "chat_format": "",
+    "max_tokens": 768,
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "repetition_penalty": 1.05,
+    "gpu_layers": -1,
+    "n_batch": 512,
+    "n_ctx": 16384,
+    "flash_attn": true,
+    "kv_cache_type": "q8_0",
+    "op_offload": true,
+    "keep_model_loaded": false,
+    "seed": 1
+  },
+  "runs": [
+    {
+      "scene_id": 3,
+      "seed": 1,
+      "elapsed_seconds": 0.765,
+      "payload": {
+        "protocol": "clmv-lyric-action-line-v1",
+        "planning_constraints": {
+          "subject_identity": [
+            "CLMPSUB1X は一人の女性歌手"
+          ],
+          "retention_constraints": [
+            "人物の同一性と身体構造を保つ"
+          ]
+        },
+        "reference_legend": {
+          "CLMPSUB1X": "<Subject 1>"
+        },
+        "requested_scene_ids": [
+          3
+        ],
+        "requested_scene_count": 1,
+        "scenes": [
+          {
+            "scene_id": 3,
+            "duration_ms": 9208,
+            "lyric_lines": [
+              {
+                "index": 1,
+                "section": "VERSE",
+                "kind": "lyric",
+                "text": "石段に積もる"
+              },
+              {
+                "index": 2,
+                "section": "VERSE",
+                "kind": "lyric",
+                "text": "名もなき季節"
+              },
+              {
+                "index": 3,
+                "section": "VERSE",
+                "kind": "lyric",
+                "text": "昨日の願いは"
+              },
+              {
+                "index": 4,
+                "section": "VERSE",
+                "kind": "lyric",
+                "text": "苔へと還る"
+              },
+              {
+                "index": 5,
+                "section": "VERSE",
+                "kind": "lyric",
+                "text": "幼い手で結んだ"
+              }
+            ],
+            "allowed_response_modes": [
+              "direct_subject_action",
+              "direct_object_action",
+              "spatial_metaphor"
+            ],
+            "semantic_grounding_order": [
+              "choose the earliest complete source predicate",
+              "identify its actor, physical head verb, and concrete target",
+              "make the target recognizable before contact",
+              "execute that exact verb instead of a visually convenient substitute",
+              "show the completed result on the same target after release"
+            ],
+            "style_separation": "This stage has intentionally omitted global medium, background, motif, and camera directions. Resolve only the source lyric's literal visible predicate."
+          }
+        ]
+      },
+      "raw": "<think>\n\n</think>\n\nLYRIC_SCENE\t3\nLYRIC_RESPONSE\t1\tdirect_subject_action\nCOMPOSITION_REQUIREMENT\t石段の表面に苔が広がる\nACTION\t1\tCLMPSUB1X は石段の表面を指でなぞる\nACTION\t2\tCLMPSUB1X は指先で苔を剥がす\nVISIBLE_RESULT\t石段の表面には苔の断片が残る\nEND_LYRIC_SCENE",
+      "summary": {
+        "action_count": 2,
+        "actions": [
+          [
+            1,
+            "CLMPSUB1X は石段の表面を指でなぞる"
+          ],
+          [
+            2,
+            "CLMPSUB1X は指先で苔を剥がす"
+          ]
+        ],
+        "has_required_records": true
+      }
+    },
+    {
+      "scene_id": 3,
+      "seed": 2,
+      "elapsed_seconds": 0.62,
+      "payload": {
+        "protocol": "clmv-lyric-action-line-v1",
+        "planning_constraints": {
+          "subject_identity": [
+            "CLMPSUB1X は一人の女性歌手"
+          ],
+          "retention_constraints": [
+            "人物の同一性と身体構造を保つ"
+          ]
+        },
+        "reference_legend": {
+          "CLMPSUB1X": "<Subject 1>"
+        },
+        "requested_scene_ids": [
+          3
+        ],
+        "requested_scene_count": 1,
+        "scenes": [
+          {
+            "scene_id": 3,
+            "duration_ms": 9208,
+            "lyric_lines": [
+              {
+                "index": 1,
+                "section": "VERSE",
+                "kind": "lyric",
+                "text": "石段に積もる"
+              },
+              {
+                "index": 2,
+                "section": "VERSE",
+                "kind": "lyric",
+                "text": "名もなき季節"
+              },
+              {
+                "index": 3,
+                "section": "VERSE",
+                "kind": "lyric",
+                "text": "昨日の願いは"
+              },
+              {
+                "index": 4,
+                "section": "VERSE",
+                "kind": "lyric",
+                "text": "苔へと還る"
+              },
+              {
+                "index": 5,
+                "section": "VERSE",
+                "kind": "lyric",
+                "text": "幼い手で結んだ"
+              }
+            ],
+            "allowed_response_modes": [
+              "direct_subject_action",
+              "direct_object_action",
+              "spatial_metaphor"
+            ],
+            "semantic_grounding_order": [
+              "choose the earliest complete source predicate",
+              "identify its actor, physical head verb, and concrete target",
+              "make the target recognizable before contact",
+              "execute that exact verb instead of a visually convenient substitute",
+              "show the completed result on the same target after release"
+            ],
+            "style_separation": "This stage has intentionally omitted global medium, background, motif, and camera directions. Resolve only the source lyric's literal visible predicate."
+          }
+        ]
+      },
+      "raw": "<think>\n\n</think>\n\nLYRIC_SCENE\t3\nLYRIC_RESPONSE\t1\tdirect_subject_action\nCOMPOSITION_REQUIREMENT\t石段に積もるを描写する\nACTION\t1\tCLMPSUB1X は石段の上を歩きながら足を踏みしめる\nACTION\t2\tCLMPSUB1X の足は石段の表面に苔を押し付ける\nVISIBLE_RESULT\t石段の表面は苔で覆われている\nEND_LYRIC_SCENE",
+      "summary": {
+        "action_count": 2,
+        "actions": [
+          [
+            1,
+            "CLMPSUB1X は石段の上を歩きながら足を踏みしめる"
+          ],
+          [
+            2,
+            "CLMPSUB1X の足は石段の表面に苔を押し付ける"
+          ]
+        ],
+        "has_required_records": true
+      }
+    },
+    {
+      "scene_id": 3,
+      "seed": 3,
+      "elapsed_seconds": 0.591,
+      "payload": {
+        "protocol": "clmv-lyric-action-line-v1",
+        "planning_constraints": {
+          "subject_identity": [
+            "CLMPSUB1X は一人の女性歌手"
+          ],
+          "retention_constraints": [
+            "人物の同一性と身体構造を保つ"
+          ]
+        },
+        "reference_legend": {
+          "CLMPSUB1X": "<Subject 1>"
+        },
+        "requested_scene_ids": [
+          3
+        ],
+        "requested_scene_count": 1,
+        "scenes": [
+          {
+            "scene_id": 3,
+            "duration_ms": 9208,
+            "lyric_lines": [
+              {
+                "index": 1,
+                "section": "VERSE",
+                "kind": "lyric",
+                "text": "石段に積もる"
+              },
+              {
+                "index": 2,
+                "section": "VERSE",
+                "kind": "lyric",
+                "text": "名もなき季節"
+              },
+              {
+                "index": 3,
+                "section": "VERSE",
+                "kind": "lyric",
+                "text": "昨日の願いは"
+              },
+              {
+                "index": 4,
+                "section": "VERSE",
+                "kind": "lyric",
+                "text": "苔へと還る"
+              },
+              {
+                "index": 5,
+                "section": "VERSE",
+                "kind": "lyric",
+                "text": "幼い手で結んだ"
+              }
+            ],
+            "allowed_response_modes": [
+              "direct_subject_action",
+              "direct_object_action",
+              "spatial_metaphor"
+            ],
+            "semantic_grounding_order": [
+              "choose the earliest complete source predicate",
+              "identify its actor, physical head verb, and concrete target",
+              "make the target recognizable before contact",
+              "execute that exact verb instead of a visually convenient substitute",
+              "show the completed result on the same target after release"
+            ],
+            "style_separation": "This stage has intentionally omitted global medium, background, motif, and camera directions. Resolve only the source lyric's literal visible predicate."
+          }
+        ]
+      },
+      "raw": "<think>\n\n</think>\n\nLYRIC_SCENE\t3\nLYRIC_RESPONSE\t1\tdirect_subject_action\nCOMPOSITION_REQUIREMENT\t石段の表面に苔が広がる\nACTION\t1\tCLMPSUB1X は石段の表面を指でなぞる\nACTION\t2\tCLMPSUB1X は指先で苔を剥がす\nVISIBLE_RESULT\t石段の表面には苔の断片が残る\nEND_LYRIC_SCENE",
+      "summary": {
+        "action_count": 2,
+        "actions": [
+          [
+            1,
+            "CLMPSUB1X は石段の表面を指でなぞる"
+          ],
+          [
+            2,
+            "CLMPSUB1X は指先で苔を剥がす"
+          ]
+        ],
+        "has_required_records": true
+      }
+    },
+    {
+      "scene_id": 4,
+      "seed": 1,
+      "elapsed_seconds": 0.606,
+      "payload": {
+        "protocol": "clmv-lyric-action-line-v1",
+        "planning_constraints": {
+          "subject_identity": [
+            "CLMPSUB1X は一人の女性歌手"
+          ],
+          "retention_constraints": [
+            "人物の同一性と身体構造を保つ"
+          ]
+        },
+        "reference_legend": {
+          "CLMPSUB1X": "<Subject 1>"
+        },
+        "requested_scene_ids": [
+          4
+        ],
+        "requested_scene_count": 1,
+        "scenes": [
+          {
+            "scene_id": 4,
+            "duration_ms": 9917,
+            "lyric_lines": [
+              {
+                "index": 1,
+                "section": "VERSE",
+                "kind": "lyric",
+                "text": "色褪せた契り"
+              },
+              {
+                "index": 2,
+                "section": "VERSE",
+                "kind": "lyric",
+                "text": "覚えているのは"
+              },
+              {
+                "index": 3,
+                "section": "VERSE",
+                "kind": "lyric",
+                "text": "わらわだけ"
+              },
+              {
+                "index": 4,
+                "section": "VERSE",
+                "kind": "lyric",
+                "text": "人は花より"
+              },
+              {
+                "index": 5,
+                "section": "VERSE",
+                "kind": "lyric",
+                "text": "短く咲いて"
+              },
+              {
+                "index": 6,
+                "section": "VERSE",
+                "kind": "lyric",
+                "text": "それでも永遠を"
+              }
+            ],
+            "allowed_response_modes": [
+              "direct_subject_action",
+              "direct_object_action",
+              "spatial_metaphor"
+            ],
+            "semantic_grounding_order": [
+              "choose the earliest complete source predicate",
+              "identify its actor, physical head verb, and concrete target",
+              "make the target recognizable before contact",
+              "execute that exact verb instead of a visually convenient substitute",
+              "show the completed result on the same target after release"
+            ],
+            "style_separation": "This stage has intentionally omitted global medium, background, motif, and camera directions. Resolve only the source lyric's literal visible predicate."
+          }
+        ]
+      },
+      "raw": "<think>\n\n</think>\n\nLYRIC_SCENE\t4\nLYRIC_RESPONSE\t1\tdirect_subject_action\nCOMPOSITION_REQUIREMENT\t契りを色褪せさせる\nACTION\t1\tCLMPSUB1X は指先で契りの表面をなぞる\nACTION\t2\tCLMPSUB1X は指先で契りの表面を擦る\nVISIBLE_RESULT\t契りの表面が色褪せて見える\nEND_LYRIC_SCENE",
+      "summary": {
+        "action_count": 2,
+        "actions": [
+          [
+            1,
+            "CLMPSUB1X は指先で契りの表面をなぞる"
+          ],
+          [
+            2,
+            "CLMPSUB1X は指先で契りの表面を擦る"
+          ]
+        ],
+        "has_required_records": true
+      }
+    },
+    {
+      "scene_id": 4,
+      "seed": 2,
+      "elapsed_seconds": 0.587,
+      "payload": {
+        "protocol": "clmv-lyric-action-line-v1",
+        "planning_constraints": {
+          "subject_identity": [
+            "CLMPSUB1X は一人の女性歌手"
+          ],
+          "retention_constraints": [
+            "人物の同一性と身体構造を保つ"
+          ]
+        },
+        "reference_legend": {
+          "CLMPSUB1X": "<Subject 1>"
+        },
+        "requested_scene_ids": [
+          4
+        ],
+        "requested_scene_count": 1,
+        "scenes": [
+          {
+            "scene_id": 4,
+            "duration_ms": 9917,
+            "lyric_lines": [
+              {
+                "index": 1,
+                "section": "VERSE",
+                "kind": "lyric",
+                "text": "色褪せた契り"
+              },
+              {
+                "index": 2,
+                "section": "VERSE",
+                "kind": "lyric",
+                "text": "覚えているのは"
+              },
+              {
+                "index": 3,
+                "section": "VERSE",
+                "kind": "lyric",
+                "text": "わらわだけ"
+              },
+              {
+                "index": 4,
+                "section": "VERSE",
+                "kind": "lyric",
+                "text": "人は花より"
+              },
+              {
+                "index": 5,
+                "section": "VERSE",
+                "kind": "lyric",
+                "text": "短く咲いて"
+              },
+              {
+                "index": 6,
+                "section": "VERSE",
+                "kind": "lyric",
+                "text": "それでも永遠を"
+              }
+            ],
+            "allowed_response_modes": [
+              "direct_subject_action",
+              "direct_object_action",
+              "spatial_metaphor"
+            ],
+            "semantic_grounding_order": [
+              "choose the earliest complete source predicate",
+              "identify its actor, physical head verb, and concrete target",
+              "make the target recognizable before contact",
+              "execute that exact verb instead of a visually convenient substitute",
+              "show the completed result on the same target after release"
+            ],
+            "style_separation": "This stage has intentionally omitted global medium, background, motif, and camera directions. Resolve only the source lyric's literal visible predicate."
+          }
+        ]
+      },
+      "raw": "<think>\n\n</think>\n\nLYRIC_SCENE\t4\nLYRIC_RESPONSE\t1\tdirect_subject_action\nCOMPOSITION_REQUIREMENT\t契りを色褪せさせる\nACTION\t1\tCLMPSUB1X は指先で契りの表面をなぞる\nACTION\t2\tCLMPSUB1X は指先で契りの表面を強く擦る\nVISIBLE_RESULT\t契りの表面が色褪せて見える\nEND_LYRIC_SCENE",
+      "summary": {
+        "action_count": 2,
+        "actions": [
+          [
+            1,
+            "CLMPSUB1X は指先で契りの表面をなぞる"
+          ],
+          [
+            2,
+            "CLMPSUB1X は指先で契りの表面を強く擦る"
+          ]
+        ],
+        "has_required_records": true
+      }
+    },
+    {
+      "scene_id": 4,
+      "seed": 3,
+      "elapsed_seconds": 0.579,
+      "payload": {
+        "protocol": "clmv-lyric-action-line-v1",
+        "planning_constraints": {
+          "subject_identity": [
+            "CLMPSUB1X は一人の女性歌手"
+          ],
+          "retention_constraints": [
+            "人物の同一性と身体構造を保つ"
+          ]
+        },
+        "reference_legend": {
+          "CLMPSUB1X": "<Subject 1>"
+        },
+        "requested_scene_ids": [
+          4
+        ],
+        "requested_scene_count": 1,
+        "scenes": [
+          {
+            "scene_id": 4,
+            "duration_ms": 9917,
+            "lyric_lines": [
+              {
+                "index": 1,
+                "section": "VERSE",
+                "kind": "lyric",
+                "text": "色褪せた契り"
+              },
+              {
+                "index": 2,
+                "section": "VERSE",
+                "kind": "lyric",
+                "text": "覚えているのは"
+              },
+              {
+                "index": 3,
+                "section": "VERSE",
+                "kind": "lyric",
+                "text": "わらわだけ"
+              },
+              {
+                "index": 4,
+                "section": "VERSE",
+                "kind": "lyric",
+                "text": "人は花より"
+              },
+              {
+                "index": 5,
+                "section": "VERSE",
+                "kind": "lyric",
+                "text": "短く咲いて"
+              },
+              {
+                "index": 6,
+                "section": "VERSE",
+                "kind": "lyric",
+                "text": "それでも永遠を"
+              }
+            ],
+            "allowed_response_modes": [
+              "direct_subject_action",
+              "direct_object_action",
+              "spatial_metaphor"
+            ],
+            "semantic_grounding_order": [
+              "choose the earliest complete source predicate",
+              "identify its actor, physical head verb, and concrete target",
+              "make the target recognizable before contact",
+              "execute that exact verb instead of a visually convenient substitute",
+              "show the completed result on the same target after release"
+            ],
+            "style_separation": "This stage has intentionally omitted global medium, background, motif, and camera directions. Resolve only the source lyric's literal visible predicate."
+          }
+        ]
+      },
+      "raw": "<think>\n\n</think>\n\nLYRIC_SCENE\t4\nLYRIC_RESPONSE\t1\tdirect_subject_action\nCOMPOSITION_REQUIREMENT\t契りを色褪せさせる\nACTION\t1\tCLMPSUB1X は指先で契りの表面をなぞる\nACTION\t2\tCLMPSUB1X は指先で契りの表面を擦る\nVISIBLE_RESULT\t契りの表面が色褪せて見える\nEND_LYRIC_SCENE",
+      "summary": {
+        "action_count": 2,
+        "actions": [
+          [
+            1,
+            "CLMPSUB1X は指先で契りの表面をなぞる"
+          ],
+          [
+            2,
+            "CLMPSUB1X は指先で契りの表面を擦る"
+          ]
+        ],
+        "has_required_records": true
+      }
+    }
+  ]
+}

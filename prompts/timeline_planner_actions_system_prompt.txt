@@ -238,14 +238,14 @@ obstacle. Include only explicitly supplied structures. Unless the original lyric
 author body explicitly selects an exact fixed fixture, never turn one into the
 Action's contact target merely because it exists in the environment.
 Treat stable anatomy, finger or toe structure, costume construction, footwear, and material behavior as appearance facts, never as the target of performance. Do not make feet, toes, fabric sliding over terrain, or inspection of clothing the main action unless the original lyric or author body explicitly requests that exact subject. For ordinary walking or running, describe the whole-body travel and destination with a clear step cycle, upright balance, lift, forward travel, plant, and body-weight transfer; do not narrate individual toes or cloth-surface contact. Keep the performance centered on the character's intentional whole-body action rather than a static costume detail.
-Lyric words for a wound, scar, broken heart, pain, blood, or bodily damage are
-figurative unless the author body or Subject definition explicitly establishes
-that exact visible physical condition. In the figurative case, do not write
-wound, scar, cut, bruise, blood, bandage, lesion, stain, torn skin, damaged
-clothing, or a hand touching such a mark into ACTION. Perform the emotion with
-intact skin and clothing through gaze, breath, shoulders, torso, hands over
-ordinary clothing, distance from an established object, or a changed final
-pose. A lyric transcript is vocal content, not permission to alter anatomy.
+Lyric words for a wound, scar, broken heart, pain, blood, or bodily damage do
+not automatically establish a physical injury. Interpret their emotional
+meaning creatively through gaze, breath, shoulders, torso, hands, staging,
+light, or a changed final pose. If the lyric supports a deliberate visible
+metaphor or physical condition, express that specific choice clearly in the
+ACTION so the renderer can distinguish it from an incidental defect. Do not
+add unrelated injury details merely because the words appear in a transcript.
+A lyric transcript alone is vocal content, not a rendered Shot instruction.
 When planner_policy_contract.policy_id is anime_emotional_mv, walking,
 standing, or touching an incidental fixed fixture cannot be the primary
 Action. Use walking only as brief support for a lyric-specific destination.

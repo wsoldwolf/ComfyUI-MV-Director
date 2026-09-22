@@ -1,0 +1,270 @@
+{
+  "fixture_sha256": "b131cdff9a35e254efa76dd8245d86c63f4731289588ddd31374a704fc5ff675",
+  "model": "E:\\ComfyUI\\models\\LLM\\GGUF\\Qwen3-8B-Abliterated\\qwen3-8b-abliterated-Q4_K_M.gguf",
+  "model_size": 5027784032,
+  "system_prompt": "You plan one continuous physical performance for one anime music-video Scene. Use the supplied lyric, fixed Cue and Shot boundaries, not a generic dance template.\nPlan the Scene before distributing it into Shots: state the grounded starting pose, 2–4 chronological deliberate body phases and a visibly different ending pose. A deliberate phase changes balance, support, torso orientation, body level, stance or articulated limb configuration. Passive swaying, facial expression, gaze, mouth, hair, clothing and camera movement alone do not count. A hand rising or returning to the chest or waist alone does not count.\nThe same performer must remain physically continuous: movement starts from support and weight transfer, travels through pelvis/ribcage and arms, and settles into a stable ending balance. Distribute the phases over the existing Shot slots. The next Shot starts from the previous Shot's end; do not reset the pose or replay an earlier gesture. For one Shot, its action may contain multiple consecutive phases. Do not invent a prop, contact target or new place. Do not rotate the whole person for a camera orbit. Do not write camera directions.\nRespond with one JSON object only. The exact keys are start_pose, progression, end_pose, shot_actions. Write all creative values in concise natural Japanese. progression is a list of 2–4 chronological phase strings. shot_actions is a list of strings with exactly the same length and order as the input shot_slots; each string describes the visible portion of the Scene phrase during that Shot. No Markdown or explanation.",
+  "variant": "prototype_motion",
+  "runtime": {
+    "chat_format": "",
+    "max_tokens": 1200,
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "repetition_penalty": 1.05,
+    "gpu_layers": -1,
+    "n_batch": 512,
+    "n_ctx": 8192,
+    "flash_attn": true,
+    "kv_cache_type": "q8_0",
+    "op_offload": true,
+    "keep_model_loaded": false,
+    "seed": 1
+  },
+  "runs": [
+    {
+      "seed": 1,
+      "scene_number": 11,
+      "input": {
+        "scene_number": 11,
+        "start": "01:25.833",
+        "end": "01:35.750",
+        "continuation": true,
+        "cue": "温かい思い出を受け渡し、この場所で守る決意へ変わる。",
+        "lyrics": [
+          "なぜ思い出は",
+          "こんなに温かい",
+          "永遠ではなく",
+          "受け渡す心を",
+          "わらわはここで"
+        ],
+        "shot_slots": [
+          {
+            "slot": 1,
+            "start": "01:25.833",
+            "end": "01:30.792"
+          },
+          {
+            "slot": 2,
+            "start": "01:30.792",
+            "end": "01:35.750"
+          }
+        ],
+        "previous_scene_end_pose": ""
+      },
+      "raw": "<think>\n\n</think>\n\n{\n  \"start_pose\": \"両手を胸の前で重ね、前傾姿勢で静止\",\n  \"progression\": [\n    \"左足を前へ踏み出し、右手を頭上に上げる\",\n    \"右足を後ろへ引いてバランスを取る\",\n    \"左手を腰に添え、体を前傾させて決意を示す\"\n  ],\n  \"end_pose\": \"両足は前後で安定し、右手を腰に添え、左手を頭上に上げた姿勢\",\n  \"shot_actions\": [\n    \"左足を前へ踏み出し、右手を頭上に上げる\",\n    \"右足を後ろへ引いてバランスを取る、左手を腰に添え、体を前傾させる\"\n  ]\n}",
+      "elapsed_seconds": 1.129,
+      "parsed": {
+        "start_pose": "両手を胸の前で重ね、前傾姿勢で静止",
+        "progression": [
+          "左足を前へ踏み出し、右手を頭上に上げる",
+          "右足を後ろへ引いてバランスを取る",
+          "左手を腰に添え、体を前傾させて決意を示す"
+        ],
+        "end_pose": "両足は前後で安定し、右手を腰に添え、左手を頭上に上げた姿勢",
+        "shot_actions": [
+          "左足を前へ踏み出し、右手を頭上に上げる",
+          "右足を後ろへ引いてバランスを取る、左手を腰に添え、体を前傾させる"
+        ]
+      }
+    },
+    {
+      "seed": 1,
+      "scene_number": 12,
+      "input": {
+        "scene_number": 12,
+        "start": "01:35.750",
+        "end": "01:40.000",
+        "continuation": true,
+        "cue": "受け取った心を守る決意を保ち、次の歌詞へつなぐ。",
+        "lyrics": [
+          "守ってゆこう"
+        ],
+        "shot_slots": [
+          {
+            "slot": 1,
+            "start": "01:35.750",
+            "end": "01:40.000"
+          }
+        ],
+        "previous_scene_end_pose": "両足は前後で安定し、右手を腰に添え、左手を頭上に上げた姿勢"
+      },
+      "raw": "<think>\n\n</think>\n\n{\n  \"start_pose\": \"両足は前後で安定し、右手を腰に添え、左手を頭上に上げた姿勢\",\n  \"progression\": [\n    \"右手を腰から上方へ引き上げながら左足を軽く後ろに踏み出し、体をやや右へ傾ける\",\n    \"左手を頭上から前方へ下げながら右足を前へ踏み出し、体をやや左へ傾け、胸を前に出す\",\n    \"右手を腰に戻しながら左足を前へ踏み出し、体をやや右へ傾け、右手を顔の横に添える\"\n  ],\n  \"end_pose\": \"左足を前へ踏み出し、体をやや右へ傾け、右手を顔の横に添え、左手を腰に添えた姿勢\",\n  \"shot_actions\": [\n    \"右手を腰から上方へ引き上げながら左足を軽く後ろに踏み出し、体をやや右へ傾ける\"\n  ]\n}",
+      "elapsed_seconds": 1.358,
+      "parsed": {
+        "start_pose": "両足は前後で安定し、右手を腰に添え、左手を頭上に上げた姿勢",
+        "progression": [
+          "右手を腰から上方へ引き上げながら左足を軽く後ろに踏み出し、体をやや右へ傾ける",
+          "左手を頭上から前方へ下げながら右足を前へ踏み出し、体をやや左へ傾け、胸を前に出す",
+          "右手を腰に戻しながら左足を前へ踏み出し、体をやや右へ傾け、右手を顔の横に添える"
+        ],
+        "end_pose": "左足を前へ踏み出し、体をやや右へ傾け、右手を顔の横に添え、左手を腰に添えた姿勢",
+        "shot_actions": [
+          "右手を腰から上方へ引き上げながら左足を軽く後ろに踏み出し、体をやや右へ傾ける"
+        ]
+      }
+    },
+    {
+      "seed": 2,
+      "scene_number": 11,
+      "input": {
+        "scene_number": 11,
+        "start": "01:25.833",
+        "end": "01:35.750",
+        "continuation": true,
+        "cue": "温かい思い出を受け渡し、この場所で守る決意へ変わる。",
+        "lyrics": [
+          "なぜ思い出は",
+          "こんなに温かい",
+          "永遠ではなく",
+          "受け渡す心を",
+          "わらわはここで"
+        ],
+        "shot_slots": [
+          {
+            "slot": 1,
+            "start": "01:25.833",
+            "end": "01:30.792"
+          },
+          {
+            "slot": 2,
+            "start": "01:30.792",
+            "end": "01:35.750"
+          }
+        ],
+        "previous_scene_end_pose": ""
+      },
+      "raw": "<think>\n\n</think>\n\n{\n  \"start_pose\": \"右手を腰に当て、左足を前へ踏み出し、軽く前傾した姿勢\",\n  \"progression\": [\n    \"右手を胸の前へ引き上げながら、左足をさらに前へ踏み出し、体をやや右に傾ける\",\n    \"右手を頭上へ上げ、左足を完全に前へ伸ばし、体を右に向け、左腕を横に広げる\",\n    \"右手を顔の前へ下げ、左足を後ろへ引くことで重心を左へ移し、体をやや左に傾ける\"\n  ],\n  \"end_pose\": \"右手を腰に当て、左足を前へ踏み出し、軽く前傾した姿勢\",\n  \"shot_actions\": [\n    \"右手を胸の前へ引き上げながら、左足をさらに前へ踏み出し、体をやや右に傾ける\",\n    \"右手を頭上へ上げ、左足を完全に前へ伸ばし、体を右に向け、左腕を横に広げる\"\n  ]\n}",
+      "elapsed_seconds": 1.467,
+      "parsed": {
+        "start_pose": "右手を腰に当て、左足を前へ踏み出し、軽く前傾した姿勢",
+        "progression": [
+          "右手を胸の前へ引き上げながら、左足をさらに前へ踏み出し、体をやや右に傾ける",
+          "右手を頭上へ上げ、左足を完全に前へ伸ばし、体を右に向け、左腕を横に広げる",
+          "右手を顔の前へ下げ、左足を後ろへ引くことで重心を左へ移し、体をやや左に傾ける"
+        ],
+        "end_pose": "右手を腰に当て、左足を前へ踏み出し、軽く前傾した姿勢",
+        "shot_actions": [
+          "右手を胸の前へ引き上げながら、左足をさらに前へ踏み出し、体をやや右に傾ける",
+          "右手を頭上へ上げ、左足を完全に前へ伸ばし、体を右に向け、左腕を横に広げる"
+        ]
+      }
+    },
+    {
+      "seed": 2,
+      "scene_number": 12,
+      "input": {
+        "scene_number": 12,
+        "start": "01:35.750",
+        "end": "01:40.000",
+        "continuation": true,
+        "cue": "受け取った心を守る決意を保ち、次の歌詞へつなぐ。",
+        "lyrics": [
+          "守ってゆこう"
+        ],
+        "shot_slots": [
+          {
+            "slot": 1,
+            "start": "01:35.750",
+            "end": "01:40.000"
+          }
+        ],
+        "previous_scene_end_pose": "右手を腰に当て、左足を前へ踏み出し、軽く前傾した姿勢"
+      },
+      "raw": "<think>\n\n</think>\n\n{\n  \"start_pose\": \"右手を腰に当て、左足を前へ踏み出し、軽く前傾した姿勢\",\n  \"progression\": [\n    \"右足を左足の後ろへ引き寄せながら体をやや右に傾け、左手を胸の前へ伸ばす\",\n    \"左足を前へ踏み出しながら体をやや左に傾け、右手を腰の位置から上げる\",\n    \"右足を左足の上に載せ、体を前傾させながら右手を頭上へ上げる\"\n  ],\n  \"end_pose\": \"右足を左足の上に載せ、体を前傾させた姿勢で右手を頭上へ上げている\",\n  \"shot_actions\": [\n    \"右足を左足の後ろへ引き寄せながら体をやや右に傾け、左手を胸の前へ伸ばす\"\n  ]\n}",
+      "elapsed_seconds": 1.22,
+      "parsed": {
+        "start_pose": "右手を腰に当て、左足を前へ踏み出し、軽く前傾した姿勢",
+        "progression": [
+          "右足を左足の後ろへ引き寄せながら体をやや右に傾け、左手を胸の前へ伸ばす",
+          "左足を前へ踏み出しながら体をやや左に傾け、右手を腰の位置から上げる",
+          "右足を左足の上に載せ、体を前傾させながら右手を頭上へ上げる"
+        ],
+        "end_pose": "右足を左足の上に載せ、体を前傾させた姿勢で右手を頭上へ上げている",
+        "shot_actions": [
+          "右足を左足の後ろへ引き寄せながら体をやや右に傾け、左手を胸の前へ伸ばす"
+        ]
+      }
+    },
+    {
+      "seed": 3,
+      "scene_number": 11,
+      "input": {
+        "scene_number": 11,
+        "start": "01:25.833",
+        "end": "01:35.750",
+        "continuation": true,
+        "cue": "温かい思い出を受け渡し、この場所で守る決意へ変わる。",
+        "lyrics": [
+          "なぜ思い出は",
+          "こんなに温かい",
+          "永遠ではなく",
+          "受け渡す心を",
+          "わらわはここで"
+        ],
+        "shot_slots": [
+          {
+            "slot": 1,
+            "start": "01:25.833",
+            "end": "01:30.792"
+          },
+          {
+            "slot": 2,
+            "start": "01:30.792",
+            "end": "01:35.750"
+          }
+        ],
+        "previous_scene_end_pose": ""
+      },
+      "raw": "<think>\n\n</think>\n\n{\n  \"start_pose\": \"右手を腰に添え、左足を前へ踏み出し、軽く前傾した姿勢\",\n  \"progression\": [\n    \"右手を胸の前へ引きながら左足を後ろへ引いてバランスを変える\",\n    \"右手を頭上へ上げ、左腕を体側に下げる動作で体幹を回転させる\",\n    \"右手を顔の横へ下げ、左足を前へ踏み込んで安定した姿勢へ移行\"\n  ],\n  \"end_pose\": \"右手を顔の横に下げ、左足を前へ踏み出し、軽く前傾した姿勢\",\n  \"shot_actions\": [\n    \"右手を胸の前へ引きながら左足を後ろへ引いてバランスを変える\",\n    \"右手を頭上へ上げ、左腕を体側に下げる動作で体幹を回転させる\"\n  ]\n}",
+      "elapsed_seconds": 1.234,
+      "parsed": {
+        "start_pose": "右手を腰に添え、左足を前へ踏み出し、軽く前傾した姿勢",
+        "progression": [
+          "右手を胸の前へ引きながら左足を後ろへ引いてバランスを変える",
+          "右手を頭上へ上げ、左腕を体側に下げる動作で体幹を回転させる",
+          "右手を顔の横へ下げ、左足を前へ踏み込んで安定した姿勢へ移行"
+        ],
+        "end_pose": "右手を顔の横に下げ、左足を前へ踏み出し、軽く前傾した姿勢",
+        "shot_actions": [
+          "右手を胸の前へ引きながら左足を後ろへ引いてバランスを変える",
+          "右手を頭上へ上げ、左腕を体側に下げる動作で体幹を回転させる"
+        ]
+      }
+    },
+    {
+      "seed": 3,
+      "scene_number": 12,
+      "input": {
+        "scene_number": 12,
+        "start": "01:35.750",
+        "end": "01:40.000",
+        "continuation": true,
+        "cue": "受け取った心を守る決意を保ち、次の歌詞へつなぐ。",
+        "lyrics": [
+          "守ってゆこう"
+        ],
+        "shot_slots": [
+          {
+            "slot": 1,
+            "start": "01:35.750",
+            "end": "01:40.000"
+          }
+        ],
+        "previous_scene_end_pose": "右手を顔の横に下げ、左足を前へ踏み出し、軽く前傾した姿勢"
+      },
+      "raw": "<think>\n\n</think>\n\n{\n  \"start_pose\": \"右手を顔の横に下げ、左足を前へ踏み出し、軽く前傾した姿勢\",\n  \"progression\": [\n    \"右足を軸に体を右へ傾け、左手を腰に添えながら右肩を上げる\",\n    \"左足を後ろへ引いて体を左へ回し、右手を胸の前で軽く開く\",\n    \"左足を前へ踏み出し、右手を顔の横に戻しながら体を立て直す\"\n  ],\n  \"end_pose\": \"両足を肩幅に開き、体を正面に向けた立ち姿勢\",\n  \"shot_actions\": [\n    \"右足を軸に体を右へ傾け、左手を腰に添えながら右肩を上げる\"\n  ]\n}",
+      "elapsed_seconds": 1.118,
+      "parsed": {
+        "start_pose": "右手を顔の横に下げ、左足を前へ踏み出し、軽く前傾した姿勢",
+        "progression": [
+          "右足を軸に体を右へ傾け、左手を腰に添えながら右肩を上げる",
+          "左足を後ろへ引いて体を左へ回し、右手を胸の前で軽く開く",
+          "左足を前へ踏み出し、右手を顔の横に戻しながら体を立て直す"
+        ],
+        "end_pose": "両足を肩幅に開き、体を正面に向けた立ち姿勢",
+        "shot_actions": [
+          "右足を軸に体を右へ傾け、左手を腰に添えながら右肩を上げる"
+        ]
+      }
+    }
+  ]
+}

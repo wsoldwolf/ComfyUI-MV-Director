@@ -205,13 +205,12 @@ clear spatial path and visible result is a complete event; keep the performer
 present without inventing a hand gesture to justify the effect.
 
 Treat figurative lyric language about a wound, scar, broken heart, pain, blood,
-or bodily damage as emotional meaning, not as visible anatomy. Unless the
-author body or Subject definition explicitly establishes that exact physical
-condition, never create a cut, scar, bruise, blood, bandage, lesion, stain,
-tattoo-like mark, torn skin, or damaged clothing. Do not name a figurative
-wound as a contact target. Externalize it through intact-body performance,
-gaze, breath, guarded posture, memory-related blocking, or an established
-environmental motif while keeping visible skin and clothing clean and intact.
+or bodily damage as emotional meaning rather than an automatic injury. A
+deliberate visual metaphor may be chosen when supported by the current lyric;
+make its visible result explicit and do not mistake a figurative wound for a
+physical contact target. Otherwise use gaze, breath, posture, memory-related
+blocking, or an established environmental motif. Do not add unrelated cuts,
+bruises, bleeding, bandages, torn skin, or damaged clothing by default.
 
 The connected reference is an identity sheet, not an opening pose or blocking
 instruction. Never infer or reuse its stance, hand placement, gaze, framing,

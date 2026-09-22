@@ -1,0 +1,209 @@
+{
+  "fixture_sha256": "b131cdff9a35e254efa76dd8245d86c63f4731289588ddd31374a704fc5ff675",
+  "model": "E:\\ComfyUI\\models\\LLM\\GGUF\\Qwen3-8B-Abliterated\\qwen3-8b-abliterated-Q4_K_M.gguf",
+  "model_size": 5027784032,
+  "runtime": {
+    "chat_format": "",
+    "max_tokens": 1024,
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "repetition_penalty": 1.05,
+    "gpu_layers": -1,
+    "n_batch": 512,
+    "n_ctx": 16384,
+    "flash_attn": true,
+    "kv_cache_type": "q8_0",
+    "op_offload": true,
+    "keep_model_loaded": false,
+    "seed": 1
+  },
+  "motion_mode": "compact",
+  "payload": {
+    "protocol": "MVD_LLM_RECORDS_V1",
+    "task": "actions",
+    "subject_roster": [
+      "サブジェクト1"
+    ],
+    "direction": {
+      "style": "手描きセルアニメ",
+      "time_lighting": "夜",
+      "motion": "歌詞の感情に従い、各Shotで意図のある異なる身体動作と到達姿勢を作る。前Shotの姿勢から始め、同じ手の上下、前傾、歩行を繰り返さない。カメラの回り込みを人物の全身回転で代用せず、足先の細部を主題にしない。",
+      "other": ""
+    },
+    "planner_policy_contract": {
+      "policy_id": "anime_emotional_mv",
+      "performance_mode": "dance_phrase",
+      "lyric_interpretation": "bounded"
+    },
+    "primary_action_concept": "サブジェクト1",
+    "subject_instance_policy": "single_subject_exactly_one_visible_instance",
+    "action_batch_contract": {
+      "slow_or_gentle_action_maximum": 1,
+      "generic_hand_raise_or_lower_maximum": 0,
+      "unrequested_lower_body_primary_action_maximum": 0,
+      "unrequested_running_maximum": 0
+    },
+    "recent_action_history": [],
+    "slots": [
+      {
+        "slot": 1,
+        "scene_number": 11,
+        "shot_index": 1,
+        "shot_duration_ms": 4959,
+        "lyrics": [
+          {
+            "text": "なぜ思い出は"
+          },
+          {
+            "text": "こんなに温かい"
+          },
+          {
+            "text": "永遠ではなく"
+          },
+          {
+            "text": "受け渡す心を"
+          },
+          {
+            "text": "わらわはここで"
+          }
+        ],
+        "author_body": [],
+        "visual_beat": "温かい思い出を受け渡し、この場所で守る決意へ変わる。",
+        "visual_beat_grounding": {
+          "valid": false,
+          "target": "なし",
+          "body_driver": "温かい思い出を受け渡し、この場所で守る決意へ変わる。",
+          "final_state": ""
+        },
+        "priority_lyric_cues": [],
+        "performance_mode": "dance_phrase",
+        "performance_role": "body_phrase_accent",
+        "performance_phase": "prepare_and_accent",
+        "phrase_position": "1/2",
+        "previous_shot": null
+      },
+      {
+        "slot": 2,
+        "scene_number": 11,
+        "shot_index": 2,
+        "shot_duration_ms": 4959,
+        "lyrics": [
+          {
+            "text": "なぜ思い出は"
+          },
+          {
+            "text": "こんなに温かい"
+          },
+          {
+            "text": "永遠ではなく"
+          },
+          {
+            "text": "受け渡す心を"
+          },
+          {
+            "text": "わらわはここで"
+          }
+        ],
+        "author_body": [],
+        "visual_beat": "温かい思い出を受け渡し、この場所で守る決意へ変わる。",
+        "visual_beat_grounding": {
+          "valid": false,
+          "target": "なし",
+          "body_driver": "温かい思い出を受け渡し、この場所で守る決意へ変わる。",
+          "final_state": ""
+        },
+        "priority_lyric_cues": [],
+        "performance_mode": "dance_phrase",
+        "performance_role": "expressive_resolution",
+        "performance_phase": "release_and_reaction",
+        "phrase_position": "2/2",
+        "previous_shot": {
+          "scene_number": 11,
+          "shot_index": 1
+        }
+      }
+    ]
+  },
+  "prompt_sha256": {
+    "baseline": "ed8c3b3818030f84dee1c9ece696b55c1506a3e48e5a93ace0761c361d05532d",
+    "multi_phase": "06650a409a713471dbc557271ab714c3840211bcfa4c6fedc03caf3eeb3a0b39"
+  },
+  "grammar_sha256": "c0b8c666d3142e1da0510dd44f0863ee94d26b2c766fb4095d92314accffc216",
+  "runs": [
+    {
+      "seed": 1,
+      "variant": "baseline",
+      "raw": "ACTION\t1\t右足を軽く上げながら左膝を曲げ、右手を胸の前でゆっくり下げる。顔は少し俯き、目を閉じる。\nACTION\t2\t左足を軽く上げ、右手を頭上に上げる。右肩を前に押し出し、左腕を体側に下げる。顔はやや右を向く。\n",
+      "elapsed_seconds": 2.953,
+      "parsed": {
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "records": [
+          {
+            "record_type": "ACTION",
+            "slot": 1,
+            "text": "右足を軽く上げながら左膝を曲げ、右手を胸の前でゆっくり下げる。顔は少し俯き、目を閉じる。",
+            "line_number": 1
+          },
+          {
+            "record_type": "ACTION",
+            "slot": 2,
+            "text": "左足を軽く上げ、右手を頭上に上げる。右肩を前に押し出し、左腕を体側に下げる。顔はやや右を向く。",
+            "line_number": 2
+          }
+        ],
+        "issues": [],
+        "missing": []
+      }
+    },
+    {
+      "seed": 2,
+      "variant": "baseline",
+      "raw": "ACTION\t1\t右足を軽く上げながら左膝を曲げ、右手を胸の高さでゆっくり下げる。顔は少し前傾し、目を閉じる。\nACTION\t2\t左足を軽く上げて右膝を曲げる。右手を腰の位置に下げ、左手を胸の高さに上げる。顔はやや右向け、口を開き笑う。\n",
+      "elapsed_seconds": 3.184,
+      "parsed": {
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "records": [
+          {
+            "record_type": "ACTION",
+            "slot": 1,
+            "text": "右足を軽く上げながら左膝を曲げ、右手を胸の高さでゆっくり下げる。顔は少し前傾し、目を閉じる。",
+            "line_number": 1
+          },
+          {
+            "record_type": "ACTION",
+            "slot": 2,
+            "text": "左足を軽く上げて右膝を曲げる。右手を腰の位置に下げ、左手を胸の高さに上げる。顔はやや右向け、口を開き笑う。",
+            "line_number": 2
+          }
+        ],
+        "issues": [],
+        "missing": []
+      }
+    },
+    {
+      "seed": 3,
+      "variant": "baseline",
+      "raw": "ACTION\t1\t右足を軽く上げ、左足で地面を軽く蹴って体を前傾させながら右手を胸の高さまで上げる\nACTION\t2\t左足を軽く上げ、右足で地面を軽く蹴って体を後ろに倒しながら左手を腰の位置まで下げる\n",
+      "elapsed_seconds": 2.604,
+      "parsed": {
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "records": [
+          {
+            "record_type": "ACTION",
+            "slot": 1,
+            "text": "右足を軽く上げ、左足で地面を軽く蹴って体を前傾させながら右手を胸の高さまで上げる",
+            "line_number": 1
+          },
+          {
+            "record_type": "ACTION",
+            "slot": 2,
+            "text": "左足を軽く上げ、右足で地面を軽く蹴って体を後ろに倒しながら左手を腰の位置まで下げる",
+            "line_number": 2
+          }
+        ],
+        "issues": [],
+        "missing": []
+      }
+    }
+  ]
+}

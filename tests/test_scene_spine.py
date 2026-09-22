@@ -7,8 +7,10 @@ from core.artifacts import DirectionArtifact
 from core.planner import build_scene_spine_grammar, plan_timeline
 from core.planner.engine import (
     _CameraPlan,
+    _CueCard,
     _Entity,
     _camera_plan_contract_violations,
+    _continuation_body_state,
     _fallback_camera_plan,
 )
 from core.planner.scene_spine import (
@@ -16,10 +18,39 @@ from core.planner.scene_spine import (
     validate_contact_coverage,
     validate_scene_spine,
 )
-from test_timeline_planner import CONCEPT, TEMPLATE, FakePlannerBackend, prompts, runtime
+from test_timeline_planner import (
+    CONCEPT, INSTRUMENTAL_TAIL, TEMPLATE, FakePlannerBackend, prompts, runtime,
+)
 
 
 class SceneSpineTests(unittest.TestCase):
+    def test_continuation_uses_accepted_spine_end_before_cue_fallback(self) -> None:
+        step = parse_scene_spine_step(
+            "PHASE=response｜FROM=腕を伸ばす｜ADVANCE=腕を戻す"
+            "｜TO=左手を胸に置いて立つ｜SHOW=upper_body_hands"
+        )
+        arguments = {
+            "last_shot_by_scene": {1: 2},
+            "cue_cards": {(1,): _CueCard(final_state="前のCue終端")},
+            "scene_spine_steps": {(1, 2): step},
+        }
+        self.assertEqual(
+            _continuation_body_state(1, continuation=True, **arguments),
+            "左手を胸に置いて立つ",
+        )
+        self.assertEqual(
+            _continuation_body_state(
+                1, continuation=True, **{**arguments, "scene_spine_steps": {}}
+            ),
+            "前のCue終端",
+        )
+        self.assertEqual(
+            _continuation_body_state(1, continuation=False, **arguments), ""
+        )
+        self.assertEqual(
+            _continuation_body_state(None, continuation=True, **arguments), ""
+        )
+
     def test_spine_protocol_and_scene_order(self) -> None:
         first = parse_scene_spine_step(
             "PHASE=event｜FROM=手を下ろす｜ADVANCE=指先で苔に一度触れる"
@@ -112,7 +143,7 @@ class SceneSpineTests(unittest.TestCase):
         backend = Backend()
         system_prompts = {**prompts(), "scene-spine": "scene-spine"}
         result = plan_timeline(
-            backend, template_emd=TEMPLATE, concept_emd=CONCEPT,
+            backend, template_emd=TEMPLATE + INSTRUMENTAL_TAIL, concept_emd=CONCEPT,
             direction=DirectionArtifact(
                 motion_profile_id="anime_emotional_mv",
                 camera_profile_id="anime_emotional_mv",
@@ -130,6 +161,14 @@ class SceneSpineTests(unittest.TestCase):
         self.assertEqual(
             action_payload["slots"][0]["scene_spine_step"]["advance"],
             "鳥居へ手を伸ばす",
+        )
+        second_action_payload = next(
+            payload for task, payload in backend.calls
+            if task == "actions" and payload["slots"][0]["scene_number"] == 2
+        )
+        self.assertEqual(
+            second_action_payload["slots"][0]["entry_body_state"],
+            "正面を見る",
         )
         camera_payload = next(payload for task, payload in backend.calls if task == "cameras")
         self.assertEqual(

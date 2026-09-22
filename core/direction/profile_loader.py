@@ -18,19 +18,21 @@ _KIND_HEADINGS = {
     "camera": "カメラ",
 }
 _STYLE_META_KEYS = frozenset({"locked", "retention", "scene_reinforcement"})
-_MOTION_META_KEYS = frozenset({"performance_mode", "body_accent_policy", "render_prompt"})
+_MOTION_META_KEYS = frozenset({"performance_mode", "body_accent_policy", "choreography_policy", "render_prompt"})
 _CAMERA_META_KEYS = frozenset(
-    {"planner_policy", "arc_tilt_policy", "lyric_cue_mode", "priority_lyric_cues", "lyric_interpretation", "render_prompt"}
+    {"planner_policy", "arc_roll_policy", "arc_tilt_policy", "lyric_cue_mode", "priority_lyric_cues", "lyric_interpretation", "render_prompt"}
 )
 _META_KEYS = _STYLE_META_KEYS | _CAMERA_META_KEYS | _MOTION_META_KEYS
 _PERFORMANCE_MODES = frozenset({"event_based", "dance_phrase"})
 _BODY_ACCENT_POLICIES = frozenset({"off", "sparse_chorus"})
-_ARC_TILT_POLICIES = frozenset({"off", "selective_full_body"})
+_CHOREOGRAPHY_POLICIES = frozenset({"off", "scene_choice", "scene_palette"})
+_ARC_ROLL_POLICIES = frozenset({"off", "selective_arc"})
 _PRIORITY_CUE_KINDS = frozenset(
     {"object", "symbolic_motif", "external_effect"}
 )
 _LYRIC_CUE_MODES = frozenset({"automatic", "priority_only", "off"})
 _LYRIC_INTERPRETATIONS = frozenset({"literal", "bounded"})
+_CHOREOGRAPHY_RE = re.compile(r"\* `([a-z][a-z0-9_]*)`\s+(.+)\Z")
 
 
 class DirectionProfileError(ValueError):
@@ -47,13 +49,15 @@ class DirectionProfile:
     retention: str = ""
     scene_reinforcement: str = ""
     planner_policy: str = ""
-    arc_tilt_policy: str = "off"
+    arc_roll_policy: str = "off"
     lyric_cue_mode: str = ""
     lyric_interpretation: str = "literal"
     priority_lyric_cues: tuple[tuple[str, str], ...] = ()
     performance_mode: str = "event_based"
     body_accent_policy: str = "off"
+    choreography_policy: str = "off"
     render_prompt: str = ""
+    choreography_phrases: tuple[tuple[str, str], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,12 +69,14 @@ class DirectionProfileCatalog:
     style_retention: dict[str, str]
     style_scene_reinforcement: dict[str, str]
     camera_planner_policy: dict[str, str]
-    camera_arc_tilt_policy: dict[str, str]
+    camera_arc_roll_policy: dict[str, str]
     camera_lyric_cue_mode: dict[str, str]
     camera_lyric_interpretation: dict[str, str]
     camera_priority_lyric_cues: dict[str, tuple[tuple[str, str], ...]]
     motion_performance_mode: dict[str, str]
     motion_body_accent_policy: dict[str, str]
+    motion_choreography_policy: dict[str, str]
+    motion_choreography_phrases: dict[str, tuple[tuple[str, str], ...]]
     render_prompts: dict[str, dict[str, str]]
 
 
@@ -165,7 +171,7 @@ def load_direction_profile(path: Path, kind: str) -> DirectionProfile:
         raise _fail(path, f"line {position + 1}: expected {expected_heading!r}")
     position += 1
     body: list[str] = []
-    while position < len(lines):
+    while position < len(lines) and lines[position] != "# 振付候補":
         line = lines[position]
         if not line.startswith("* ") or not line[2:].strip():
             raise _fail(path, f"line {position + 1}: expected a nonempty list item")
@@ -173,6 +179,26 @@ def load_direction_profile(path: Path, kind: str) -> DirectionProfile:
         position += 1
     if not body:
         raise _fail(path, f"{expected_heading} requires at least one list item")
+    choreography_phrases: list[tuple[str, str]] = []
+    if position < len(lines):
+        if kind != "motion":
+            raise _fail(path, "choreography phrases are supported only by motion profiles")
+        position += 1
+        seen_phrase_ids: set[str] = set()
+        while position < len(lines):
+            match = _CHOREOGRAPHY_RE.fullmatch(lines[position])
+            if match is None:
+                raise _fail(path, f"line {position + 1}: invalid choreography phrase")
+            phrase_id, phrase = match.groups()
+            if phrase_id in seen_phrase_ids:
+                raise _fail(path, f"duplicate choreography phrase {phrase_id!r}")
+            if len(phrase) > 512:
+                raise _fail(path, f"choreography phrase {phrase_id!r} exceeds 512 characters")
+            seen_phrase_ids.add(phrase_id)
+            choreography_phrases.append((phrase_id, phrase))
+            position += 1
+        if len(choreography_phrases) < 2:
+            raise _fail(path, "choreography requires at least two phrases")
 
     allowed_metadata = (
         _STYLE_META_KEYS
@@ -199,11 +225,13 @@ def load_direction_profile(path: Path, kind: str) -> DirectionProfile:
     planner_policy = metadata.get("planner_policy", "")
     if planner_policy and not _PROFILE_ID_RE.fullmatch(planner_policy):
         raise _fail(path, "planner_policy must be a lowercase policy id")
-    arc_tilt_policy = metadata.get("arc_tilt_policy", "off")
-    if arc_tilt_policy not in _ARC_TILT_POLICIES:
-        raise _fail(path, "arc_tilt_policy must be off or selective_full_body")
-    if arc_tilt_policy != "off" and planner_policy != "anime_emotional_mv":
-        raise _fail(path, "arc_tilt_policy requires anime_emotional_mv planner_policy")
+    if "arc_tilt_policy" in metadata:
+        raise _fail(path, "arc_tilt_policy is retired; use arc_roll_policy selective_arc for an Arc with a canted frame")
+    arc_roll_policy = metadata.get("arc_roll_policy", "off")
+    if arc_roll_policy not in _ARC_ROLL_POLICIES:
+        raise _fail(path, "arc_roll_policy must be off or selective_arc")
+    if arc_roll_policy != "off" and planner_policy != "anime_emotional_mv":
+        raise _fail(path, "arc_roll_policy requires anime_emotional_mv planner_policy")
     lyric_cue_mode = metadata.get("lyric_cue_mode", "")
     if lyric_cue_mode and lyric_cue_mode not in _LYRIC_CUE_MODES:
         raise _fail(
@@ -221,6 +249,15 @@ def load_direction_profile(path: Path, kind: str) -> DirectionProfile:
         raise _fail(path, "body_accent_policy must be off or sparse_chorus")
     if body_accent_policy != "off" and performance_mode != "dance_phrase":
         raise _fail(path, "body_accent_policy requires dance_phrase")
+    choreography_policy = metadata.get("choreography_policy", "off")
+    if choreography_policy not in _CHOREOGRAPHY_POLICIES:
+        raise _fail(path, "choreography_policy must be off, scene_choice, or scene_palette")
+    if choreography_policy in {"scene_choice", "scene_palette"} and (
+        performance_mode != "dance_phrase" or len(choreography_phrases) < 2
+    ):
+        raise _fail(path, "choreography policy requires dance_phrase and at least two choreography phrases")
+    if choreography_phrases and choreography_policy == "off":
+        raise _fail(path, "choreography phrases require an enabled choreography_policy")
     priority_lyric_cues = (
         _parse_priority_lyric_cues(path, metadata["priority_lyric_cues"])
         if "priority_lyric_cues" in metadata
@@ -235,13 +272,15 @@ def load_direction_profile(path: Path, kind: str) -> DirectionProfile:
         retention=retention,
         scene_reinforcement=metadata.get("scene_reinforcement", ""),
         planner_policy=planner_policy,
-        arc_tilt_policy=arc_tilt_policy,
+        arc_roll_policy=arc_roll_policy,
         lyric_cue_mode=lyric_cue_mode,
         lyric_interpretation=lyric_interpretation,
         priority_lyric_cues=priority_lyric_cues,
         performance_mode=performance_mode,
         body_accent_policy=body_accent_policy,
+        choreography_policy=choreography_policy,
         render_prompt=metadata.get("render_prompt", ""),
+        choreography_phrases=tuple(choreography_phrases),
     )
 
 
@@ -274,6 +313,14 @@ def load_direction_profiles(root: Path = PROFILE_ROOT) -> DirectionProfileCatalo
         motion_body_accent_policy={
             key: value.body_accent_policy for key, value in grouped["motion"].items()
         },
+        motion_choreography_policy={
+            key: value.choreography_policy for key, value in grouped["motion"].items()
+        },
+        motion_choreography_phrases={
+            key: value.choreography_phrases
+            for key, value in grouped["motion"].items()
+            if value.choreography_phrases
+        },
         camera={key: value.text for key, value in grouped["camera"].items()},
         locked_style=frozenset(
             key for key, value in styles.items() if value.locked
@@ -291,8 +338,8 @@ def load_direction_profiles(root: Path = PROFILE_ROOT) -> DirectionProfileCatalo
             for key, value in grouped["camera"].items()
             if value.planner_policy
         },
-        camera_arc_tilt_policy={
-            key: value.arc_tilt_policy
+        camera_arc_roll_policy={
+            key: value.arc_roll_policy
             for key, value in grouped["camera"].items()
         },
         camera_lyric_cue_mode={

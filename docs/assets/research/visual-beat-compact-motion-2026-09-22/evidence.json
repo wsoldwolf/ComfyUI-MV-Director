@@ -1,0 +1,186 @@
+{
+  "fixture_sha256": "5805a754df3f566b667a75db554bcb3700999a8f378954774f31f5aa1340026c",
+  "model": "E:\\ComfyUI\\models\\LLM\\GGUF\\Qwen3-8B-Abliterated\\qwen3-8b-abliterated-Q4_K_M.gguf",
+  "model_size": 5027784032,
+  "runtime": {
+    "chat_format": "",
+    "max_tokens": 1024,
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "repetition_penalty": 1.05,
+    "gpu_layers": -1,
+    "n_batch": 512,
+    "n_ctx": 16384,
+    "flash_attn": true,
+    "kv_cache_type": "q8_0",
+    "op_offload": true,
+    "keep_model_loaded": false,
+    "seed": 1
+  },
+  "motion_mode": "compact",
+  "prompt_sha256": {
+    "baseline": "5f47a0be7e79554a8036005b7d30a7b754bb01ddfbd7dc4a39c3eaa79c52d91c",
+    "choreography": "5f47a0be7e79554a8036005b7d30a7b754bb01ddfbd7dc4a39c3eaa79c52d91c"
+  },
+  "payload": {
+    "protocol": "MVD_LLM_RECORDS_V1",
+    "task": "visual-beats",
+    "planner_policy_contract": {
+      "policy_id": "anime_emotional_mv",
+      "performance_mode": "dance_phrase",
+      "lyric_interpretation": "bounded",
+      "lyric_cue_mode": "automatic"
+    },
+    "direction": {
+      "style": "手描きセルアニメ",
+      "time_lighting": "夜の神社参道。月光。",
+      "motion": "歌詞の感情を人物の姿勢変化にし、Sceneごとに異なる身体の到達状態を作る。Cameraの回り込みを人物自身の回転で代用しない。",
+      "other": ""
+    },
+    "subject_roster": [
+      "サブジェクト1"
+    ],
+    "scene_context_usage": "spatial_support_only_never_activates_an_action_target",
+    "recent_visual_beat_history": [],
+    "slots": [
+      {
+        "slot": 1,
+        "scene_number": 11,
+        "total_scene_count": 16,
+        "timeline_position": "middle",
+        "has_resolved_lyrics": true,
+        "lyrics": [
+          {
+            "text": "自由なのか"
+          },
+          {
+            "text": "それでも新しい足音が"
+          },
+          {
+            "text": "またこの社へ続くなら"
+          }
+        ],
+        "author_body": [],
+        "priority_lyric_cues": [],
+        "discovered_cues": [
+          {
+            "kind": "place",
+            "target": "社",
+            "evidence": "またこの社へ続くなら"
+          }
+        ]
+      },
+      {
+        "slot": 2,
+        "scene_number": 12,
+        "total_scene_count": 16,
+        "timeline_position": "middle",
+        "has_resolved_lyrics": true,
+        "lyrics": [
+          {
+            "text": "千年鳥居を"
+          },
+          {
+            "text": "くぐるそなたよ"
+          },
+          {
+            "text": "今この刹那を"
+          },
+          {
+            "text": "わらわに預けよ"
+          },
+          {
+            "text": "異なる時を"
+          }
+        ],
+        "author_body": [],
+        "priority_lyric_cues": [],
+        "discovered_cues": [
+          {
+            "kind": "place",
+            "target": "千年鳥居",
+            "evidence": "千年鳥居を"
+          }
+        ]
+      }
+    ]
+  },
+  "grammar_sha256": "f553a050d04a7ce7940d7c924240a63aa455caf4363287dd94b1fc1c44ebff97",
+  "runs": [
+    {
+      "seed": 1,
+      "variant": "choreography",
+      "raw": "BEAT\t1\t対象=社｜根拠=またこの社へ続くなら｜感情=到達｜接触=許可｜現象=なし｜配置=社の前庭｜可視展開=石畳に足音が響く｜身体主導=足を進め｜終端=社の前庭に立つ\nBEAT\t2\t対象=千年鳥居｜根拠=千年鳥居を｜感情=到達｜接触=許可｜現象=なし｜配置=千年鳥居の下｜可視展開=鳥居の木が揺れる｜身体主導=手をかざす｜終端=鳥居の下に立つ\n",
+      "elapsed_seconds": 3.938,
+      "parsed": {
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "records": [
+          {
+            "record_type": "BEAT",
+            "slot": 1,
+            "text": "対象=社｜根拠=またこの社へ続くなら｜感情=到達｜接触=許可｜現象=なし｜配置=社の前庭｜可視展開=石畳に足音が響く｜身体主導=足を進め｜終端=社の前庭に立つ",
+            "line_number": 1
+          },
+          {
+            "record_type": "BEAT",
+            "slot": 2,
+            "text": "対象=千年鳥居｜根拠=千年鳥居を｜感情=到達｜接触=許可｜現象=なし｜配置=千年鳥居の下｜可視展開=鳥居の木が揺れる｜身体主導=手をかざす｜終端=鳥居の下に立つ",
+            "line_number": 2
+          }
+        ],
+        "issues": [],
+        "missing": []
+      }
+    },
+    {
+      "seed": 2,
+      "variant": "choreography",
+      "raw": "BEAT\t1\t対象=社｜根拠=またこの社へ続くなら｜感情=到達｜接触=許可｜現象=なし｜配置=社の前庭｜可視展開=石畳に足音が響く｜身体主導=足を進め｜終端=社の鳥居の下にいる\nBEAT\t2\t対象=千年鳥居｜根拠=千年鳥居を｜感情=到達｜接触=許可｜現象=なし｜配置=千年鳥居の前庭｜可視展開=鳥居の両端に光が揺れる｜身体主導=手をかざす｜終端=鳥居の下にいる\n",
+      "elapsed_seconds": 3.667,
+      "parsed": {
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "records": [
+          {
+            "record_type": "BEAT",
+            "slot": 1,
+            "text": "対象=社｜根拠=またこの社へ続くなら｜感情=到達｜接触=許可｜現象=なし｜配置=社の前庭｜可視展開=石畳に足音が響く｜身体主導=足を進め｜終端=社の鳥居の下にいる",
+            "line_number": 1
+          },
+          {
+            "record_type": "BEAT",
+            "slot": 2,
+            "text": "対象=千年鳥居｜根拠=千年鳥居を｜感情=到達｜接触=許可｜現象=なし｜配置=千年鳥居の前庭｜可視展開=鳥居の両端に光が揺れる｜身体主導=手をかざす｜終端=鳥居の下にいる",
+            "line_number": 2
+          }
+        ],
+        "issues": [],
+        "missing": []
+      }
+    },
+    {
+      "seed": 3,
+      "variant": "choreography",
+      "raw": "BEAT\t1\t対象=社｜根拠=またこの社へ続くなら｜感情=前向き｜接触=許可｜現象=なし｜配置=社の前庭｜可視展開=石畳に足音が響く｜身体主導=歩行｜終端=足を止め立ち止まる\nBEAT\t2\t対象=千年鳥居｜根拠=千年鳥居を｜感情=前向き｜接触=許可｜現象=なし｜配置=千年鳥居の下｜可視展開=鳥居の木が揺れる｜身体主導=歩行｜終端=足を止め立ち止まる\n",
+      "elapsed_seconds": 3.363,
+      "parsed": {
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "records": [
+          {
+            "record_type": "BEAT",
+            "slot": 1,
+            "text": "対象=社｜根拠=またこの社へ続くなら｜感情=前向き｜接触=許可｜現象=なし｜配置=社の前庭｜可視展開=石畳に足音が響く｜身体主導=歩行｜終端=足を止め立ち止まる",
+            "line_number": 1
+          },
+          {
+            "record_type": "BEAT",
+            "slot": 2,
+            "text": "対象=千年鳥居｜根拠=千年鳥居を｜感情=前向き｜接触=許可｜現象=なし｜配置=千年鳥居の下｜可視展開=鳥居の木が揺れる｜身体主導=歩行｜終端=足を止め立ち止まる",
+            "line_number": 2
+          }
+        ],
+        "issues": [],
+        "missing": []
+      }
+    }
+  ]
+}
