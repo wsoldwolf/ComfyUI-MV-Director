@@ -18,12 +18,14 @@ _KIND_HEADINGS = {
     "camera": "カメラ",
 }
 _STYLE_META_KEYS = frozenset({"locked", "retention", "scene_reinforcement"})
-_MOTION_META_KEYS = frozenset({"performance_mode", "render_prompt"})
+_MOTION_META_KEYS = frozenset({"performance_mode", "body_accent_policy", "render_prompt"})
 _CAMERA_META_KEYS = frozenset(
-    {"planner_policy", "lyric_cue_mode", "priority_lyric_cues", "lyric_interpretation", "render_prompt"}
+    {"planner_policy", "arc_tilt_policy", "lyric_cue_mode", "priority_lyric_cues", "lyric_interpretation", "render_prompt"}
 )
 _META_KEYS = _STYLE_META_KEYS | _CAMERA_META_KEYS | _MOTION_META_KEYS
 _PERFORMANCE_MODES = frozenset({"event_based", "dance_phrase"})
+_BODY_ACCENT_POLICIES = frozenset({"off", "sparse_chorus"})
+_ARC_TILT_POLICIES = frozenset({"off", "selective_full_body"})
 _PRIORITY_CUE_KINDS = frozenset(
     {"object", "symbolic_motif", "external_effect"}
 )
@@ -45,10 +47,12 @@ class DirectionProfile:
     retention: str = ""
     scene_reinforcement: str = ""
     planner_policy: str = ""
+    arc_tilt_policy: str = "off"
     lyric_cue_mode: str = ""
     lyric_interpretation: str = "literal"
     priority_lyric_cues: tuple[tuple[str, str], ...] = ()
     performance_mode: str = "event_based"
+    body_accent_policy: str = "off"
     render_prompt: str = ""
 
 
@@ -61,10 +65,12 @@ class DirectionProfileCatalog:
     style_retention: dict[str, str]
     style_scene_reinforcement: dict[str, str]
     camera_planner_policy: dict[str, str]
+    camera_arc_tilt_policy: dict[str, str]
     camera_lyric_cue_mode: dict[str, str]
     camera_lyric_interpretation: dict[str, str]
     camera_priority_lyric_cues: dict[str, tuple[tuple[str, str], ...]]
     motion_performance_mode: dict[str, str]
+    motion_body_accent_policy: dict[str, str]
     render_prompts: dict[str, dict[str, str]]
 
 
@@ -193,6 +199,11 @@ def load_direction_profile(path: Path, kind: str) -> DirectionProfile:
     planner_policy = metadata.get("planner_policy", "")
     if planner_policy and not _PROFILE_ID_RE.fullmatch(planner_policy):
         raise _fail(path, "planner_policy must be a lowercase policy id")
+    arc_tilt_policy = metadata.get("arc_tilt_policy", "off")
+    if arc_tilt_policy not in _ARC_TILT_POLICIES:
+        raise _fail(path, "arc_tilt_policy must be off or selective_full_body")
+    if arc_tilt_policy != "off" and planner_policy != "anime_emotional_mv":
+        raise _fail(path, "arc_tilt_policy requires anime_emotional_mv planner_policy")
     lyric_cue_mode = metadata.get("lyric_cue_mode", "")
     if lyric_cue_mode and lyric_cue_mode not in _LYRIC_CUE_MODES:
         raise _fail(
@@ -205,6 +216,11 @@ def load_direction_profile(path: Path, kind: str) -> DirectionProfile:
     performance_mode = metadata.get("performance_mode", "event_based")
     if performance_mode not in _PERFORMANCE_MODES:
         raise _fail(path, "performance_mode must be event_based or dance_phrase")
+    body_accent_policy = metadata.get("body_accent_policy", "off")
+    if body_accent_policy not in _BODY_ACCENT_POLICIES:
+        raise _fail(path, "body_accent_policy must be off or sparse_chorus")
+    if body_accent_policy != "off" and performance_mode != "dance_phrase":
+        raise _fail(path, "body_accent_policy requires dance_phrase")
     priority_lyric_cues = (
         _parse_priority_lyric_cues(path, metadata["priority_lyric_cues"])
         if "priority_lyric_cues" in metadata
@@ -219,10 +235,12 @@ def load_direction_profile(path: Path, kind: str) -> DirectionProfile:
         retention=retention,
         scene_reinforcement=metadata.get("scene_reinforcement", ""),
         planner_policy=planner_policy,
+        arc_tilt_policy=arc_tilt_policy,
         lyric_cue_mode=lyric_cue_mode,
         lyric_interpretation=lyric_interpretation,
         priority_lyric_cues=priority_lyric_cues,
         performance_mode=performance_mode,
+        body_accent_policy=body_accent_policy,
         render_prompt=metadata.get("render_prompt", ""),
     )
 
@@ -253,6 +271,9 @@ def load_direction_profiles(root: Path = PROFILE_ROOT) -> DirectionProfileCatalo
         motion_performance_mode={
             key: value.performance_mode for key, value in grouped["motion"].items()
         },
+        motion_body_accent_policy={
+            key: value.body_accent_policy for key, value in grouped["motion"].items()
+        },
         camera={key: value.text for key, value in grouped["camera"].items()},
         locked_style=frozenset(
             key for key, value in styles.items() if value.locked
@@ -269,6 +290,10 @@ def load_direction_profiles(root: Path = PROFILE_ROOT) -> DirectionProfileCatalo
             key: value.planner_policy
             for key, value in grouped["camera"].items()
             if value.planner_policy
+        },
+        camera_arc_tilt_policy={
+            key: value.arc_tilt_policy
+            for key, value in grouped["camera"].items()
         },
         camera_lyric_cue_mode={
             key: value.lyric_cue_mode

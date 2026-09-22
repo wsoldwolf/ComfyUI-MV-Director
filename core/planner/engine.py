@@ -11,10 +11,12 @@ from typing import Any, Mapping, Protocol
 
 from ..artifacts import DirectionArtifact, EMDTextArtifact, canonical_json, normalize_newlines
 from ..direction.profiles import (
+    CAMERA_ARC_TILT_POLICIES,
     CAMERA_LYRIC_CUE_MODES,
     CAMERA_LYRIC_INTERPRETATIONS,
     CAMERA_PLANNER_POLICIES,
     CAMERA_PRIORITY_LYRIC_CUES,
+    MOTION_BODY_ACCENT_POLICIES,
     MOTION_PERFORMANCE_MODES,
 )
 from ..emd import parse_scene_emd_fragment
@@ -49,7 +51,7 @@ from .template import (
 )
 
 
-PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v64"
+PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v70"
 _ACTION_AUDIT_REPAIR_ATTEMPTS = 1
 _LOGGER = logging.getLogger("mv_director.nodes")
 TASKS = (
@@ -132,6 +134,7 @@ _ACTION_AUDIT_REASONS = frozenset(
         "MISSING_GROUNDED_CUE",
         "FACE_PERFORMANCE_MISSING",
         "BODY_TEMPLATE_REPETITION",
+        "BODY_ACCENT_MISSING",
         "INTERNAL_PROTOCOL_LABEL",
     }
 )
@@ -361,6 +364,8 @@ _CAMERA_PLAN_PATHS = frozenset(
         "pedestal_down",
         "arc_left_60_120_70_90",
         "arc_right_60_120_70_90",
+        "arc_left_60_120_70_90_tilt_up",
+        "arc_right_60_120_70_90_tilt_up",
         "tracking_forward",
         "tracking_lateral",
         "shake",
@@ -368,6 +373,12 @@ _CAMERA_PLAN_PATHS = frozenset(
         "roll_counterclockwise",
     }
 )
+_ARC_BASE_PATHS = frozenset({"arc_left_60_120_70_90", "arc_right_60_120_70_90"})
+_ARC_TILT_PATHS = frozenset(f"{path}_tilt_up" for path in _ARC_BASE_PATHS)
+
+
+def _arc_base_path(path: str) -> str:
+    return path.removesuffix("_tilt_up") if path in _ARC_TILT_PATHS else path
 _CAMERA_PLAN_COVERAGE = frozenset(
     {
         "environment_relation",
@@ -395,7 +406,6 @@ def build_camera_plan_grammar(slots: list[Mapping[str, object]]) -> str:
     quote = lambda value: json.dumps(value, ensure_ascii=False)
     rows: list[str] = []
     rules = [
-        "camera-scale ::= " + " | ".join(map(quote, sorted(_CAMERA_PLAN_SCALES))),
         "camera-view ::= " + " | ".join(map(quote, sorted(_CAMERA_PLAN_VIEWS))),
     ]
     for slot in slots:
@@ -403,13 +413,15 @@ def build_camera_plan_grammar(slots: list[Mapping[str, object]]) -> str:
         paths = set(_CAMERA_PATH_MOTIONS)
         if slot.get("face_zoom_emphasis"):
             paths = {"zoom_in_35_55"}
+        elif slot.get("arc_tilt_emphasis"):
+            paths = set(_ARC_TILT_PATHS)
         elif slot.get("arc_permission") == "required" or slot.get("face_arc_transition"):
-            paths = {"arc_left_60_120_70_90", "arc_right_60_120_70_90"}
+            paths = set(_ARC_BASE_PATHS)
         elif slot.get("arc_permission") == "forbidden":
-            paths.difference_update({"arc_left_60_120_70_90", "arc_right_60_120_70_90"})
+            paths.difference_update(_ARC_BASE_PATHS | _ARC_TILT_PATHS)
         previous_arc = slot.get("previous_arc_path")
-        if previous_arc and paths <= {"arc_left_60_120_70_90", "arc_right_60_120_70_90"}:
-            paths.intersection_update({str(previous_arc)})
+        if previous_arc and paths <= _ARC_BASE_PATHS | _ARC_TILT_PATHS:
+            paths = {path for path in paths if _arc_base_path(path) == previous_arc}
         if not paths:
             raise ValueError("Camera grammar has no permitted path")
         motions = {
@@ -430,11 +442,19 @@ def build_camera_plan_grammar(slots: list[Mapping[str, object]]) -> str:
             f"camera-motion-{number} ::= "
             + " | ".join(map(quote, sorted(motions)))
         )
+        scale_values = {"full_body"} if slot.get("arc_tilt_emphasis") else _CAMERA_PLAN_SCALES
+        rules.append(
+            f"camera-scale-{number} ::= "
+            + " | ".join(map(quote, sorted(scale_values)))
+        )
         rules.append(
             f"camera-path-{number} ::= "
             + " | ".join(map(quote, sorted(paths)))
         )
-        required_coverage = slot.get("required_spine_coverage")
+        required_coverage = (
+            "whole_body_emotion" if slot.get("arc_tilt_emphasis")
+            else slot.get("required_spine_coverage")
+        )
         coverages = (
             {str(required_coverage)} if required_coverage in _CAMERA_PLAN_COVERAGE
             else _CAMERA_PLAN_COVERAGE
@@ -446,8 +466,8 @@ def build_camera_plan_grammar(slots: list[Mapping[str, object]]) -> str:
         rows.append(
             quote(f"CAMERA\t{number}\tMOTION=")
             + f" camera-motion-{number} "
-            + quote("｜START_SCALE=") + " camera-scale "
-            + quote("｜END_SCALE=") + " camera-scale "
+            + quote("｜START_SCALE=") + f" camera-scale-{number} "
+            + quote("｜END_SCALE=") + f" camera-scale-{number} "
             + quote("｜START_VIEW=") + " camera-view "
             + quote("｜END_VIEW=") + " camera-view "
             + quote("｜PATH=") + f" camera-path-{number} "
@@ -573,6 +593,8 @@ _CAMERA_PATH_MOTIONS = {
     "pedestal_down": frozenset({"Pedestal Down"}),
     "arc_left_60_120_70_90": frozenset({"Arc Shot"}),
     "arc_right_60_120_70_90": frozenset({"Arc Shot"}),
+    "arc_left_60_120_70_90_tilt_up": frozenset({"Arc Shot"}),
+    "arc_right_60_120_70_90_tilt_up": frozenset({"Arc Shot"}),
     "tracking_forward": frozenset({"Tracking Shot"}),
     "tracking_lateral": frozenset({"Tracking Shot"}),
     "shake": frozenset({"Shake Slightly", "Shake Strongly"}),
@@ -607,8 +629,21 @@ def _camera_plan_contract_violations(
         if not _LARGE_FAST_ARC_RE.search(plan.motion):
             violations.append("required_long_arc_energy")
         previous_path = entity.value.get("previous_arc_path")
-        if previous_path and plan.path != previous_path:
+        if previous_path and _arc_base_path(plan.path) != previous_path:
             violations.append("camera_plan_arc_direction_reversal")
+    if plan.path in _ARC_TILT_PATHS:
+        if not entity.value.get("arc_tilt_emphasis"):
+            violations.append("unassigned_arc_tilt")
+        if (plan.start_scale, plan.end_scale, plan.coverage) != (
+            "full_body", "full_body", "whole_body_emotion"
+        ):
+            violations.append("arc_tilt_requires_whole_body")
+        if entity.value.get("face_arc_transition") or entity.value.get(
+            "required_spine_coverage"
+        ) in {"lyric_target", "lyric_target_and_hands", "face_eyes_mouth"}:
+            violations.append("arc_tilt_conflicts_with_coverage")
+    elif entity.value.get("arc_tilt_emphasis"):
+        violations.append("required_arc_tilt")
     if (
         plan.end_scale == "face_closeup"
         and plan.coverage in {
@@ -688,6 +723,8 @@ _CAMERA_PATH_TEXT = {
     "pedestal_down": "Move the entire camera vertically downward",
     "arc_left_60_120_70_90": "Travel on a 60-to-120-degree left arc for 70-to-90 percent of the shot with strong parallax",
     "arc_right_60_120_70_90": "Travel on a 60-to-120-degree right arc for 70-to-90 percent of the shot with strong parallax",
+    "arc_left_60_120_70_90_tilt_up": "Travel on a 60-to-120-degree left arc for 70-to-90 percent of the shot with strong parallax; during the final quarter, blend in Tilt Up with small amplitude while the leftward orbit stays continuous and the complete figure remains in frame",
+    "arc_right_60_120_70_90_tilt_up": "Travel on a 60-to-120-degree right arc for 70-to-90 percent of the shot with strong parallax; during the final quarter, blend in Tilt Up with small amplitude while the rightward orbit stays continuous and the complete figure remains in frame",
     "tracking_forward": "Follow the existing subject displacement forward through depth",
     "tracking_lateral": "Follow the existing subject displacement laterally",
     "shake": "Apply the named camera shake without changing the framing purpose",
@@ -788,7 +825,7 @@ def _select_continuous_camera_plan(
                 break
     assert plan is not None
     if _camera_motion_type(plan.motion) == "Arc Shot":
-        arc_paths[group] = plan.path
+        arc_paths[group] = _arc_base_path(plan.path)
     return plan, violations
 
 
@@ -796,6 +833,19 @@ def _fallback_camera_plan(entity: _Entity, ordinal: int) -> _CameraPlan:
     """Choose a varied finite structural fallback for an invalid 8B response."""
 
     required_coverage = entity.value.get("required_spine_coverage")
+    if entity.value.get("arc_tilt_emphasis"):
+        previous_state = entity.value.get("previous_camera_state") or {}
+        start_view = str(previous_state.get("end_view") or "low_front_three_quarter")
+        end_view = "side" if start_view != "side" else "front_three_quarter"
+        options = tuple(
+            _CameraPlan(
+                "Arc Shot with large amplitude at fast speed",
+                "full_body", "full_body", start_view, end_view,
+                path, "whole_body_emotion",
+            )
+            for path in sorted(_ARC_TILT_PATHS)
+        )
+        return _choose_fallback_camera_option(entity, ordinal, options)
     if required_coverage in {"lyric_target", "lyric_target_and_hands"}:
         if entity.value.get("arc_permission") == "required":
             options = tuple(
@@ -1973,7 +2023,7 @@ def _camera_budget_violations(
             })
             contract_violations = _camera_plan_contract_violations(continuity_entity, plan)
             if _camera_motion_type(plan.motion) == "Arc Shot" and not contract_violations:
-                arc_paths[group] = plan.path
+                arc_paths[group] = _arc_base_path(plan.path)
             if contract_violations:
                 violations.setdefault(entity.key, []).extend(contract_violations)
             rendered_plan = _render_camera_plan(plan)
@@ -2133,6 +2183,35 @@ def _anime_story_mv_face_zoom_key(
         ),
     )
     return selected.key
+
+
+def _select_full_body_arc_tilt(
+    entities: list[_Entity],
+    long_arc_keys: set[tuple[int, ...]],
+    face_transitions: Mapping[tuple[int, ...], str],
+) -> tuple[int, ...] | None:
+    """Use at most one established whole-body Arc for a vertical camera accent."""
+
+    for entity in entities:
+        value = entity.value
+        if (
+            entity.key not in long_arc_keys
+            or int(value.get("shot_duration_ms", 0)) < 3500
+            or face_transitions.get(entity.key)
+            or value.get("face_arc_transition")
+            or (value.get("required_spine_coverage") or "")
+            not in {"", "whole_body_emotion"}
+            or value.get("previous_camera_in_batch")
+            or value.get("editorial_role") == "upper_body_performance_coverage"
+        ):
+            continue
+        previous_state = value.get("previous_camera_state") or {}
+        if previous_state and previous_state.get("end_scale") != "full_body":
+            continue
+        if value.get("scene_continuation") and not previous_state:
+            continue
+        return entity.key
+    return None
 
 
 def _anime_emotional_mv_camera_emphasis(
@@ -2444,6 +2523,13 @@ def _action_audit_failures(
         if match:
             reasons = tuple(dict.fromkeys(match.group(1).split(",")))
             if reasons and all(reason in _ACTION_AUDIT_REASONS for reason in reasons):
+                if entity.value.get("performance_role") != "body_phrase_accent":
+                    reasons = tuple(
+                        reason for reason in reasons
+                        if reason != "BODY_ACCENT_MISSING"
+                    )
+                if not reasons:
+                    continue
                 failures[entity.key] = reasons
                 continue
         failures[entity.key] = ("INVALID_AUDIT_VERDICT",)
@@ -2587,6 +2673,42 @@ def _performance_role(
     if shot_index == 3:
         return "environment_interaction_or_body_turn"
     return "expressive_resolution"
+
+
+def _sparse_body_accent_keys(
+    shot_context: Mapping[tuple[int, int], Mapping[str, object]],
+    scene_spine_steps: Mapping[tuple[int, int], SceneSpineStep],
+    *,
+    lip_sync_active: bool,
+) -> set[tuple[int, int]]:
+    """Reserve at most one non-face performance Shot per chorus Scene."""
+
+    by_scene: dict[int, list[tuple[int, int]]] = {}
+    for key in sorted(shot_context):
+        by_scene.setdefault(key[0], []).append(key)
+    selected: set[tuple[int, int]] = set()
+    for keys in by_scene.values():
+        sections = {
+            str(lyric.get("section", "")).upper()
+            for key in keys
+            for lyric in shot_context[key].get("lyrics", [])
+            if isinstance(lyric, Mapping)
+        }
+        if not sections.intersection({"CHORUS", "FINAL_CHORUS"}):
+            continue
+        for key in keys:
+            if _performance_role(
+                shot_context[key], lip_sync_active=lip_sync_active
+            ) == "face_and_upper_body_accent":
+                continue
+            spine = scene_spine_steps.get(key)
+            if spine is not None and spine.show not in {
+                "whole_body", "upper_body_hands"
+            }:
+                continue
+            selected.add(key)
+            break
+    return selected
 
 
 def _camera_editorial_role(
@@ -2963,7 +3085,8 @@ def generate_planner_content(
     if (
         not set(TASKS).issubset(prompt_keys)
         or prompt_keys - set(TASKS) - {
-            "visual-beats-bounded", "actions-bounded", "actions-dance-phrase", "lyric-cues", "scene-spine"
+            "visual-beats-bounded", "actions-bounded", "actions-dance-phrase",
+            "lyric-cues", "scene-spine"
         }
         or any(not value.strip() for value in system_prompts.values())
     ):
@@ -3075,7 +3198,9 @@ def generate_planner_content(
             grounded_cue_development="anchor_then_event_then_optional_subject_response",
         )
     performance_mode = MOTION_PERFORMANCE_MODES.get(direction.motion_profile_id, "event_based")
+    body_accent_policy = MOTION_BODY_ACCENT_POLICIES.get(direction.motion_profile_id, "off")
     planner_policy_contract["performance_mode"] = performance_mode
+    planner_policy_contract["body_accent_policy"] = body_accent_policy
     if performance_mode == "dance_phrase":
         if "actions-dance-phrase" in system_prompts:
             system_prompts["actions"] = system_prompts["actions-dance-phrase"]
@@ -3830,6 +3955,17 @@ def generate_planner_content(
                 )
 
     action_values: dict[tuple[int, ...], str] = {}
+    body_accent_keys = (
+        _sparse_body_accent_keys(
+            shot_context, scene_spine_steps, lip_sync_active=lip_sync_mode != "off"
+        )
+        if body_accent_policy == "sparse_chorus" else set()
+    )
+    _LOGGER.info(
+        "[MV Director - Timeline Planner] body accents; policy=%s; slots=%s",
+        body_accent_policy,
+        ",".join(f"scene{scene}:shot{shot}" for scene, shot in sorted(body_accent_keys)) or "none",
+    )
     previous_action = ""
     recent_action_history: list[str] = []
     scene_shot_counts = {
@@ -3921,7 +4057,12 @@ def generate_planner_content(
                     if previous_card and context["scene_continuation"] and key[-1] == 1
                     else ""
                 )
-                if context["performance_role"] != "face_and_upper_body_accent":
+                if key in body_accent_keys:
+                    context["performance_role"] = "body_phrase_accent"
+                elif (
+                    body_accent_policy == "off"
+                    and context["performance_role"] != "face_and_upper_body_accent"
+                ):
                     context["performance_role"] = "continuous_upper_body_phrase"
             context["previous_shot"] = (
                 None
@@ -4113,6 +4254,7 @@ def generate_planner_content(
                             "REJECT:MISSING_GROUNDED_CUE",
                             "REJECT:FACE_PERFORMANCE_MISSING",
                             "REJECT:BODY_TEMPLATE_REPETITION",
+                            "REJECT:BODY_ACCENT_MISSING",
                             "REJECT:INTERNAL_PROTOCOL_LABEL",
                         ],
                         "repair_attempts": _ACTION_AUDIT_REPAIR_ATTEMPTS,
@@ -4575,6 +4717,13 @@ def generate_planner_content(
             )
             if face_zoom_key is not None:
                 face_zoom_keys.add(face_zoom_key)
+            arc_tilt_key = (
+                _select_full_body_arc_tilt(entities, long_arc_keys, emotional_transitions)
+                if anime_emotional_mv
+                and CAMERA_ARC_TILT_POLICIES.get(direction.camera_profile_id)
+                == "selective_full_body"
+                else None
+            )
             if long_arc_keys or face_zoom_keys or anime_emotional_mv:
                 entities = [
                     _Entity(
@@ -4587,6 +4736,7 @@ def generate_planner_content(
                                 or entity.value.get("face_arc_transition", "")
                             ),
                             "long_arc_emphasis": entity.key in long_arc_keys,
+                            "arc_tilt_emphasis": entity.key == arc_tilt_key,
                             "long_arc_duration_fraction": "70-90%",
                             "face_zoom_emphasis": entity.key in face_zoom_keys,
                             "arc_permission": (
@@ -4636,6 +4786,7 @@ def generate_planner_content(
                 "arc_shot_maximum": arc_maximum,
                 "face_arc_transition_count": face_arc_count,
                 "long_arc_emphasis_count": len(long_arc_keys),
+                "arc_tilt_emphasis_count": int(arc_tilt_key is not None),
                 "long_arc_duration_fraction": "70-90%" if long_arc_keys else "none",
                 "face_zoom_emphasis_count": len(face_zoom_keys),
                 "tracking_shot_maximum": 1,
@@ -4653,6 +4804,7 @@ def generate_planner_content(
                     "start_view_values": sorted(_CAMERA_PLAN_VIEWS),
                     "end_view_values": sorted(_CAMERA_PLAN_VIEWS),
                     "path_values": sorted(_CAMERA_PLAN_PATHS),
+                    "arc_tilt_path_values": sorted(_ARC_TILT_PATHS),
                     "coverage_values": sorted(_CAMERA_PLAN_COVERAGE),
                     "serialization": "python_owned_fixed_h3_camera_sentence",
                     "free_prose": False,
@@ -4663,10 +4815,11 @@ def generate_planner_content(
             if anime_emotional_mv:
                 _LOGGER.info(
                     "[MV Director - Timeline Planner] Camera role assignment; "
-                    "scenes=%s; long_arcs=%d; face_zooms=%d; "
+                    "scenes=%s; long_arcs=%d; arc_tilts=%d; face_zooms=%d; "
                     "arc_forbidden=%d; short_arc_ineligible=%d",
                     ",".join(str(scene.scene_number) for scene in scene_batch),
                     len(long_arc_keys),
+                    int(arc_tilt_key is not None),
                     len(face_zoom_keys),
                     sum(
                         entity.value.get("arc_permission") == "forbidden"
@@ -4892,7 +5045,7 @@ def generate_planner_content(
                                          entity.scene_number, entity.key[-1], connected.start_scale, connected.start_view)
                         plan = connected
                         if _camera_motion_type(plan.motion) == "Arc Shot":
-                            chosen_arc_paths[group] = plan.path
+                            chosen_arc_paths[group] = _arc_base_path(plan.path)
                     chosen_camera_plans[int(entity.value["camera_continuity_group"])] = plan
                     rendered_plan = _render_camera_plan(plan)
                     values[entity.key] = rendered_plan

@@ -16,7 +16,15 @@ Do not demand a full phrase in each short slot or in a face accent. Do not
 reject only because the performance could be more dramatic. Keep the same
 finite verdicts and all grounding, contact, face and appearance constraints.
 Upper-body phrases are complete performances; do not demand a step, knee pulse,
-or full-body rotation. Use PROFILE_CONFLICT for trampling a lyric-selected plant,
+or full-body rotation by default.
+The one opt-in performance_role=body_phrase_accent is an exception: require one
+connected support-leg step, knee pulse, or weight transfer through pelvis/torso
+to asymmetric arm paths and a readable ending pose. If it only raises a hand,
+sways shoulders/chest, holds a stance, or substitutes camera movement for that
+body phrase, return REJECT:BODY_ACCENT_MISSING. Never require a body spin,
+running, visible toes/footwear detail, or repetition of a completed lyric event.
+For every other role, an upper-body phrase may still be complete.
+Use PROFILE_CONFLICT for trampling a lyric-selected plant,
 standing on top of a gate, an unrequested body spin, or an unexplained change of
 physical footing. Contact permission alone does not authorize those actions.
 A clearly specified subjective dissolve may introduce an imagined target while
@@ -36,6 +44,7 @@ Return PASS when the candidate is acceptable under all explicit contracts; it do
 - MISSING_GROUNDED_CUE: visual_beat_grounding is valid and names a target, or priority_lyric_cues supplies an exact current-Scene token, but the Scene candidates collectively omit that exact target, flatten its spatial_anchor or visible_development back to a bare noun, fail the assigned priority_cue_phase, or fail to show its authorized spatial relation, visible change, emotional response, release, or autonomous phenomenon. For a priority external_effect, also use this code when its own origin-to-destination spatial motion or environmental result is absent, or when the Subject touches it, reaches toward it as if touching, approaches it face-first, creates it, holds it, gathers it, guides it, or releases it.
 - FACE_PERFORMANCE_MISSING: performance_role is face_and_upper_body_accent, but the candidate supplies no readable eyelid, gaze, eyebrow, mouth, or facial-expression change and relies only on hands, head direction, shoulders, chest, or torso.
 - BODY_TEMPLATE_REPETITION: the candidate reuses a choreography skeleton from another candidate or recent history, including torso rotation plus opposite-shoulder lowering, rounded back, chest thrust, forward lean, or generic hand sweep with only side, order, or adjectives changed.
+- BODY_ACCENT_MISSING: only for performance_role=body_phrase_accent; the requested connected support-leg or weight-transfer to torso, arms, and final pose is absent or replaced by a small upper-body gesture.
 - INTERNAL_PROTOCOL_LABEL: candidate_action contains a duplicated transport
   record wrapper, slot field, or separator placeholder inside semantic TEXT.
 Do not reject an incidental body mechanic that merely supports a distinct lyric-led whole-body performance. Do reject a forward lean, open-arm silhouette, generic walking cycle, or fixture approach when it recurs under different wording or becomes the default ending pose. Environment inventory proves that an object exists; it never activates interaction by itself.

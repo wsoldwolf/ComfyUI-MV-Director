@@ -73,7 +73,7 @@ Direction→Plannerの計画用入力として従来どおり使い、EMDへ出�
 ```
 
 `performance_mode`は`event_based`（省略時）又は`dance_phrase`です。
-`anime_emotional_mv`のMotionは`dance_phrase`を選びます。選択したMotionの
+`anime_emotional_mv`と、現在その内容を複製した`anime_story_mv`のMotionは`dance_phrase`を選びます。選択したMotionの
 metadataだけで切り替え、UI項目は追加しません。Cameraだけをemotionalにしても
 有効になりません。設定もPlannerのcache keyへ含めます。
 
@@ -115,6 +115,12 @@ Cameraは任意の`planner_policy`、
 ```
 
 `planner_policy`はUIへ別項目を追加せず、Camera profileを選んだ時にだけTimeline PlannerのShot配分、CUT/CONTINUE方針及びCamera構造予算を切り替える内部policy IDです。本文の自然文をPythonで書き換える機能ではありません。`anime_emotional_mv`では現在Sceneの元歌詞だけを対象triggerとし、scene EMD又はDirectionの環境inventoryをAction sourceにせず、対象の一Scene消費、外部effectの自律性、まぶたを含む全身演技及び曲全体で疎な顔Zoomをplanning stageへ共有します。未知policyは本文だけの通常profileとして動作し、実装済みpolicyだけが追加の構造契約を持ちます。選択したMotion/Camera profile本文は対応するtyped fieldを機械的に所有し、LLMのMOTION/CAMERA言い換えでは置換されません。これによりStyleや履物条件がCameraへ誤分類されることを防ぎます。ユーザーが完全なDirection EMDを直接管理する場合は外部profileではなく、Direction Enhancerの`passthrough`を使います。
+
+`anime_story_mv`はStyle/Motion/Cameraを`anime_emotional_mv`から複製した比較用基準です。Cameraの`planner_policy`は両者とも`anime_emotional_mv`です。現在は`anime_emotional_mv`を開発用とし、そのMotionだけに`body_accent_policy=sparse_chorus`、Cameraだけに`arc_tilt_policy=selective_full_body`を付けています。`anime_story_mv`は両metadataとも省略時の`off`で、従来の上半身roleとCamera経路を保ちます。変更前のstory profileはGit履歴から参照できます。
+
+Motion profileの`body_accent_policy`は`off`（省略時）又は`sparse_chorus`を指定できます。後者は`performance_mode=dance_phrase`を必要とし、サビ及び最終サビの適格なSceneで最大一Shotだけ`body_phrase_accent`を選びます。顔Shot及びScene-spineが対象との接触・現象・顔だけを要求するShotは除外します。本文をPythonで書き換えず、LLMに支持脚から体幹・腕へつながる演技を要求します。監査はこのroleにだけ不足理由を返せますが、再要求上限に達した場合は既存のAS IS候補を警告付きで残します。metadataはPlanner cache keyに含めます。
+
+Camera profileの`arc_tilt_policy`は`off`（省略時）又は`selective_full_body`です。後者は、十分な尺のある全身用長尺Arcからbatch当たり最大一Shotを選び、Arcの終盤に小振幅の`Tilt Up`を重ねます。主要Motion Typeは`Arc Shot`のままで、全身構図と同じ旋回方向を保ちます。顔へのArc移行、歌詞対象の接触・可視変化、上半身専用Shot、短いShotには使いません。有限Camera fieldをLLMが選び、Pythonは選択済み経路を固定H3文へ直列化するだけです。`anime_story_mv`では従来どおり無効です。
 
 `lyric_cue_mode`は`automatic`、`priority_only`又は`off`です。
 `automatic`ではVisual Beatが現在Sceneの歌詞又は作者本文を読み、物理的に

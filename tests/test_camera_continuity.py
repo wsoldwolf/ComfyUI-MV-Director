@@ -1,9 +1,13 @@
 """Regressions for loop-10 orbit reversal and impossible optical moves."""
 
 import unittest
+from pathlib import Path
+from core.direction.profile_loader import DirectionProfileError, load_direction_profile
+from core.direction.profiles import CAMERA_ARC_TILT_POLICIES, planner_profile_metadata
 from core.planner.engine import (
     _Entity, _CameraPlan, _camera_plan_contract_violations,
-    _fallback_camera_plan, _select_continuous_camera_plan,
+    _fallback_camera_plan, _parse_camera_plan, _render_camera_plan,
+    _select_continuous_camera_plan, _select_full_body_arc_tilt,
     build_camera_plan_grammar,
 )
 
@@ -24,6 +28,81 @@ def entity(scene, group, slot=1, **extra):
 
 
 class CameraContinuityTests(unittest.TestCase):
+    def test_arc_tilt_profile_is_explicit_and_baseline_stays_off(self):
+        root = Path(__file__).resolve().parents[1]
+        emotional = load_direction_profile(root / "profiles/camera/anime_emotional_mv.md", "camera")
+        story = load_direction_profile(root / "profiles/camera/anime_story_mv.md", "camera")
+        self.assertEqual(emotional.arc_tilt_policy, "selective_full_body")
+        self.assertEqual(story.arc_tilt_policy, "off")
+        self.assertEqual(CAMERA_ARC_TILT_POLICIES["anime_emotional_mv"], "selective_full_body")
+        self.assertEqual(planner_profile_metadata("anime_emotional_mv")["arc_tilt_policy"], "selective_full_body")
+        bad = root / "profiles/camera/anime_emotional_mv.md"
+        with self.assertRaisesRegex(DirectionProfileError, "arc_tilt_policy"):
+            from unittest.mock import patch
+            with patch("pathlib.Path.read_text", return_value=bad.read_text(encoding="utf-8").replace(
+                "selective_full_body", "every_shot", 1
+            )):
+                load_direction_profile(bad, "camera")
+        with self.assertRaisesRegex(DirectionProfileError, "requires anime_emotional_mv"):
+            with patch("pathlib.Path.read_text", return_value=bad.read_text(encoding="utf-8").replace(
+                "`planner_policy` anime_emotional_mv", "`planner_policy` anime_story_mv", 1
+            )):
+                load_direction_profile(bad, "camera")
+
+    def test_arc_tilt_is_sparse_and_preserves_whole_body_and_orbit_direction(self):
+        chosen = entity(1, 1, shot_duration_ms=4500, arc_tilt_emphasis=True,
+                        editorial_role="new_scene_establishing_edit")
+        blocked = entity(2, 2, shot_duration_ms=4500,
+                         required_spine_coverage="lyric_target")
+        selected = _select_full_body_arc_tilt(
+            [blocked, chosen], {blocked.key, chosen.key}, {}
+        )
+        self.assertEqual(selected, chosen.key)
+        self.assertIsNone(_select_full_body_arc_tilt(
+            [chosen], {chosen.key}, {chosen.key: "arc_into_next_face_cut"}
+        ))
+        slot = {**chosen.value, "slot": 1, "camera_protocol": "finite_v1",
+                "previous_arc_path": "arc_right_60_120_70_90"}
+        grammar = build_camera_plan_grammar([slot])
+        self.assertIn('camera-path-1 ::= "arc_right_60_120_70_90_tilt_up"', grammar)
+        self.assertIn('camera-scale-1 ::= "full_body"', grammar)
+        line = (
+            "MOTION=Arc Shot with large amplitude at fast speed｜"
+            "START_SCALE=full_body｜END_SCALE=full_body｜"
+            "START_VIEW=low_front_three_quarter｜END_VIEW=side｜"
+            "PATH=arc_right_60_120_70_90_tilt_up｜COVERAGE=whole_body_emotion"
+        )
+        plan, errors = _parse_camera_plan(line)
+        self.assertEqual(errors, ())
+        self.assertEqual(_camera_plan_contract_violations(chosen, plan), ())
+        rendered = _render_camera_plan(plan)
+        self.assertTrue(rendered.startswith("Arc Shot with large amplitude at fast speed."))
+        self.assertIn("Tilt Up with small amplitude", rendered)
+        self.assertIn("complete figure remains in frame", rendered)
+        wrong_scale = _CameraPlan(
+            plan.motion, "medium", plan.end_scale, plan.start_view,
+            plan.end_view, plan.path, plan.coverage,
+        )
+        self.assertIn("arc_tilt_requires_whole_body", _camera_plan_contract_violations(chosen, wrong_scale))
+        self.assertIn("unassigned_arc_tilt", _camera_plan_contract_violations(
+            entity(1, 1), plan,
+        ))
+        arc_paths = {}
+        _, errors = _select_continuous_camera_plan(chosen, line, 0, set(), arc_paths)
+        self.assertEqual(errors, ())
+        self.assertEqual(arc_paths[1], "arc_right_60_120_70_90")
+        next_plan, errors = _select_continuous_camera_plan(
+            entity(2, 1, previous_arc_path="arc_right_60_120_70_90"),
+            record("arc_right_60_120_70_90"), 0, set(), arc_paths,
+        )
+        self.assertEqual(errors, ())
+        self.assertEqual(next_plan.path, "arc_right_60_120_70_90")
+        fallback = _fallback_camera_plan(entity(3, 1, arc_tilt_emphasis=True,
+            previous_arc_path="arc_right_60_120_70_90"), 0)
+        self.assertEqual(fallback.path, "arc_right_60_120_70_90_tilt_up")
+        self.assertEqual(_camera_plan_contract_violations(entity(3, 1,
+            arc_tilt_emphasis=True, previous_arc_path="arc_right_60_120_70_90"), fallback), ())
+
     def test_finite_camera_grammar_keeps_slot_order_and_arc_assignment(self):
         grammar = build_camera_plan_grammar([
             {"slot": 1, "camera_protocol": "finite_v1",

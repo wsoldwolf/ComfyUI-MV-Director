@@ -10,11 +10,13 @@ _CATALOG = load_direction_profiles(PROFILE_ROOT)
 STYLE_PROFILES = _CATALOG.style
 MOTION_PROFILES = _CATALOG.motion
 MOTION_PERFORMANCE_MODES = _CATALOG.motion_performance_mode
+MOTION_BODY_ACCENT_POLICIES = _CATALOG.motion_body_accent_policy
 CAMERA_PROFILES = _CATALOG.camera
 LOCKED_STYLE_PROFILES = _CATALOG.locked_style
 STYLE_RETENTION_POLICIES = _CATALOG.style_retention
 STYLE_SCENE_REINFORCEMENTS = _CATALOG.style_scene_reinforcement
 CAMERA_PLANNER_POLICIES = _CATALOG.camera_planner_policy
+CAMERA_ARC_TILT_POLICIES = _CATALOG.camera_arc_tilt_policy
 CAMERA_LYRIC_CUE_MODES = _CATALOG.camera_lyric_cue_mode
 CAMERA_LYRIC_INTERPRETATIONS = _CATALOG.camera_lyric_interpretation
 CAMERA_PRIORITY_LYRIC_CUES = _CATALOG.camera_priority_lyric_cues
@@ -39,7 +41,9 @@ def planner_profile_metadata(profile_id: str, motion_profile_id: str = "") -> di
             "motion": RENDER_PROMPTS.get("motion", {}).get(motion_profile_id, ""),
         },
         "performance_mode": MOTION_PERFORMANCE_MODES.get(motion_profile_id, "event_based"),
+        "body_accent_policy": MOTION_BODY_ACCENT_POLICIES.get(motion_profile_id, "off"),
         "planner_policy": CAMERA_PLANNER_POLICIES.get(profile_id, ""),
+        "arc_tilt_policy": CAMERA_ARC_TILT_POLICIES.get(profile_id, "off"),
         "lyric_cue_mode": CAMERA_LYRIC_CUE_MODES.get(
             profile_id, "priority_only" if cues else "off"
         ),

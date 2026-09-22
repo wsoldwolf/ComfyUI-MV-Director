@@ -151,12 +151,14 @@ ACTION<TAB>2<TAB>人物は立ち止まり、上げた手を胸元へ静かに戻
 
 組み込みの初期セットは次の通りとする。本文はPython定数へ埋め込まず、repository直下の`profiles/style/*.md`、`profiles/motion/*.md`、`profiles/camera/*.md`からUTF-8 EMDとして起動時に読み込む。拡張子を除く小文字英数字・underscoreのファイル名をprofile IDとし、`passthrough`は予約する。各文書は`# 共通プロンプト`と種別に一致する一つの`## スタイル`、`## モーション`又は`## カメラ`を持ち、一個以上のlist itemを文書順に空白一個で結合してprofile本文とする。別section、空item、code fence、NUL、未知metadata及びディレクトリとsubsectionの不一致は起動時エラーとする。ファイル変更はComfyUI再起動後に反映する。
 
-Style文書だけは`# 共通プロンプト`の前に任意の`# プロファイル`を持ち、``locked true|false``、``retention TEXT``、``scene_reinforcement TEXT``を一回ずつ指定できる。`retention`は`` `fully_preserved` ``又は`` `partially_preserved` ``から始める。Motionはmetadataを持たない。Camera文書は任意の``planner_policy POLICY_ID``を一回だけ持てる。このmetadataはUI socketを増やさず、実装済みのPlanner構造最適化をprofile選択と同時に切り替える。生成済み自然文の置換又は修復には使わない。
+Style、Motion、Camera文書は`# 共通プロンプト`の前に任意の`# プロファイル`を持てる。Styleは``locked true|false``、``retention TEXT``、``scene_reinforcement TEXT``、Motionは``performance_mode event_based|dance_phrase``、``body_accent_policy off|sparse_chorus``と``render_prompt TEXT``、Cameraは``planner_policy POLICY_ID``、``lyric_cue_mode MODE``、``lyric_interpretation MODE``と``render_prompt TEXT``などの種別に応じたmetadataを持つ。`retention`は`` `fully_preserved` ``又は`` `partially_preserved` ``から始める。metadataはUI socketを増やさず、実装済みのPlanner構造最適化をprofile選択と同時に切り替える。生成済み自然文の意味的な置換又は修復には使わない。
+
+Cameraの追加metadata ``arc_tilt_policy off|selective_full_body`` は有限Camera計画の全身Arc→Tiltを切り替える。`selective_full_body`は`planner_policy=anime_emotional_mv`を必要とし、Planner cache keyへ含める。
 
 | 軸 | profile | H3へ伝える肯定的な核 |
 |---|---|---|
 | 画風 | `reference_anime`（既定） | 参照画像の顔・体格・衣装・配色を同じ設計で保ち、整理された線、明瞭な色面、セル影、繊細な光で手描き2Dアニメとして描く |
-| 画風 | `anime_story_mv` | 人物の識別要素は保ちながら、入力画像の線画・塗り・画材表現は固定せず、映像作品として統一されたセルアニメMVへ強く再構成する。髪、体毛、動物耳、耳内部、尾、皮膚及び衣装は非発光素材とし、明示指示なしの局所glow、bloom、halo、強い透過光及び白飛びを禁止する |
+| 画風 | `anime_story_mv` | 現在は`anime_emotional_mv`と同一内容の比較用基準。識別要素だけを保持し、感情を伴うセルアニメの身体演技へ再構成する |
 | 画風 | `anime_emotional_mv` | `anime_story_mv`の単一画面、非発光素材、参照構図非継承及び無傷の人物契約を維持し、感情を伴う身体演技を主題として再構成する |
 | 画風 | `reference_cinematic` | 参照画像の人物設計を保ち、自然な皮膚・布・材質、映画照明、レンズによる奥行きで実写映画として描く |
 | 画風 | `illust_to_photoreal` | 2026-09-16 20:30に実写風生成へ成功した保存Planの長い英語anchorを`prompt_prefix`先頭へ完全一致で置き、各Scene先頭Shotにも成功時の短い実写文を明示する。保持分析も同Planの識別要素範囲を使う |
@@ -165,13 +167,13 @@ Style文書だけは`# 共通プロンプト`の前に任意の`# プロファ�
 | 動作 | `expressive_mv` | 静かな区間は小さな重心と手の動き、強い区間は踏み込み、胴体のひねり、腕の広い軌道へ変化させる |
 | 動作 | `limited_animation` | 大きく読めるキーポーズとポーズ間の移行を使い、身体と口形のタイミングを別々に保つ |
 | 動作 | `cinema_mv` | 従来のセルアニメ2コマ・3コマ打ち、短いポーズ保持、ポーズ・トゥ・ポーズ及び自然な収束を使う穏やかな映画的MV演技 |
-| 動作 | `anime_story_mv` | セルアニメの2コマ・3コマ打ちとポーズ・トゥ・ポーズを使うが、コマ打ちは静止hold、表情の溜め及び末端追従へ限定する。主要な身体動作、関節軌道、接地及び重心移動は時間方向に連続させ、pose飛び、瞬間移動、往復反転及び痙攣状motionを避ける。静かな溜めに対して加速、重心移動、方向転換、鋭い停止及び大きな終端pose差を歌詞と拍へ合わせる。通常歩行では遊脚を持ち上げて前へ運び、接地後に重心を移し、明示のない摺り足を避ける |
-| 動作 | `anime_emotional_mv` | 歩行を意味のある二状態間の補助へ限定し、現在Sceneの元歌詞又は作者指示だけで対象を活性化する。対象名だけでは接触を許可せず、歌詞に物理的操作の意味が無い時は、まぶた、視線、頭、肩、胴体、骨盤、腕、手、支持脚、遊脚、重心及び身体レベルを連動した非接触の全身演技を使う。外部effectは既定で人物から独立して移動し、後続Sceneで同じ対象を再利用するには新しい歌詞triggerを必要とする |
+| 動作 | `anime_story_mv` | `dance_phrase`の比較用基準。Motion本文は`anime_emotional_mv`と同じだが、`body_accent_policy=off`のため従来の上半身role割当を保つ |
+| 動作 | `anime_emotional_mv` | 開発用。`dance_phrase`に`body_accent_policy=sparse_chorus`を重ね、サビ／最終サビの適格なSceneで最大一Shotに支持脚・骨盤・体幹・腕の連動した身体accentを要求する。その他のShotは元のroleを保つ。現在Sceneの元歌詞又は作者指示だけで対象を活性化し、外部effectは人物から独立させる |
 | カメラ | `readable_depth`（既定） | 顔、全身動作、接触点を読める距離を保ち、安定した構図、緩やかな接近・後退・横移動を使い分ける |
 | カメラ | `cinematic_depth` | 開始視点、被写体の側面を通る経路、終了視点、前景・中景・遠景の視差を明示する |
 | カメラ | `rhythmic_mv` | 楽曲強度に合わせて移動量と構図保持を変え、Scene間で角度、高さ、距離、移動方向を展開する |
 | カメラ | `cinema_mv` | 従来の穏やかな映画的camera設計を保持し、Shot目的に必要な時だけarc又はclose-upを選ぶ |
-| カメラ | `anime_story_mv` | Shotごとの意味に合わせ、MiniMax H3正式Motion Typeを各Camera行頭へそのまま置く。適格な通常Shotのおよそ3分の1へ`Arc Shot with large amplitude at fast speed`で始まる60～120度かつShot尺70～90%の長尺Arcと強い視差を使い、移動する別Shotは`Tracking Shot`で追う。各リップシンクbatchは固定顔インサート又は追加の`face_zoom_emphasis`を一件持ち、頭肩構図から両目、両眉、鼻、口全体及び顔輪郭を保ったまま顔アップへ`Zoom In`する |
+| カメラ | `anime_story_mv` | 現在は`anime_emotional_mv`と同一内容で、metadataも`planner_policy=anime_emotional_mv`。Camera選択時のPlanner構造契約はemotionalと同じ |
 | カメラ | `anime_emotional_mv` | 2.5秒以上の適格な非顔slotのおよそ半数を`Arc Shot with large amplitude at fast speed`で始まる60～120度かつShot尺70～90%の長尺Arc候補とし、未割当slotではArcを禁止する。顔Zoomはbatchごとではなく曲全体の疎な予算と既存section face cutで選び、35～55%で顔へ到達して短い表情accentだけを保持する。同一Scene内でArcから顔へ入る又は顔からArcで空間へ抜ける連続phraseを作り、後続Sceneの少なくとも4分の3をCONTINUE可能にし、すべてCONTINUEも許す |
 
 「禁止リストを増やす」のではなく、実現したい材質、形、動き、軌道を記述する。ただしユーザー自身が否定条件を指定した場合は削除しない。
@@ -624,6 +626,8 @@ Plannerの順序は次で固定する。
 
 `planner_policy=anime_emotional_mv`ではstep 4の通常境界mixを置換し、先頭SceneだけをCUT固定、後続Sceneの4分の3以上をCONTINUEとし、CUT最小数及び同一mode最大3連続を要求しない。step 2のVisual Beatは`感情、根拠、対象、接触、現象、身体主導、終端`のCue Cardを出し、step 6へは検証済みCue Cardと元歌詞だけが具体対象を活性化すること、動詞のない具体名詞又はeffectも同一Sceneの自律的な可視述語へすること、scene EMDとDirectionのEnvironment inventoryをVisual Beat、Action及びCamera sourceにしないこと、一つの対象triggerを一Sceneで消費すること、接触には歌詞上の物理的操作意味を別途必要とすること、外部effectを既定で自律させること、まぶたと誇張した全身の感情演技を使うことを構造契約として渡す。Environmentは最終EMDで独立して合成する。Song Directionは感情・energy・編集連続性だけを扱い、ActionとCameraへ直接渡さない。step 8では2.5秒以上の適格な非顔Camera slotのおよそ半数を長尺Arcへ割り当てる一方、顔Zoomは曲全体のScene数と既存section face cutを合わせた疎な予算にする。顔Zoomは35～55%で到達し、可能なら同一Scene内の隣接slotへArc-in又はArc-out関係を設定する。これらはprofile EMD metadata由来のslot契約であり、LLMが返したAction又はCamera本文をPythonで書き換えない。
 `anime_emotional_mv`の通常Camera slotは自由文を廃止し、`MOTION、START_SCALE、END_SCALE、START_VIEW、END_VIEW、PATH、COVERAGE`の七つの有限fieldを固定順で返す。各fieldはrequestに添付された列挙値だけを使い、Pythonは選択値を意味変更せず、対象名又は人物動作を追加しない固定英語H3 Camera文へ直列化する。Motion TypeとPATHの物理的一致、短尺Arc禁止、`arc_permission`、顔Zoomの顔可視範囲及び顔Arc handoffを構造検証する。不正slotだけを一回再要求し、なお不正なら同じslot role、Arc割当、顔割当及びShot尺から決定論的な有限fallbackを選ぶ。 同一七field計画は同一batch及び直近12 Shotで一回だけ許し、重複を品質違反として再要求する。fallbackはScene番号とShot番号から複数のArc左右、開始・終了scale、view及び非Arc motionへ分散し、直近と同じ直列化文を可能な限り選ばない。fallbackは環境物名、歌詞対象及び人物Actionを含めない。通常profileは従来のCamera自由文をAS ISで使用する。
+
+Camera profileの`arc_tilt_policy`は`off`（省略時）又は`selective_full_body`とする。後者は開発用`anime_emotional_mv`の長尺Arcから、3.5秒以上で全身coverageが可能、顔Arc handoff又は歌詞対象との相互作用がないShotをbatch当たり最大一つ選ぶ。有限Camera計画では主要Motion Typeを`Arc Shot with large amplitude at fast speed`とし、専用PATHで旋回終盤に小振幅の`Tilt Up`を重ねる。開始・終了scaleは`full_body`、coverageは`whole_body_emotion`とし、足元だけのdetailへ移行しない。PATHはArc左右の基底方向を保持するため、後続CONTINUE Shotの旋回方向判定に使う方向はTiltの有無に依存しない。LLMのfield選択をAction変更へ拡張せず、不正fieldには既存の有限fallbackを使用する。`anime_story_mv`は`off`で比較基準を保つ。
 
 Camera profileの`lyric_cue_mode`は`automatic`、`priority_only`又は`off`とする。
 `automatic`では現在Sceneの原文からVisual Beat LLMが最も具体的な可視名詞句
