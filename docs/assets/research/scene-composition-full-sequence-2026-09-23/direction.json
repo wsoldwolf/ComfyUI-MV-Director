@@ -1,0 +1,257 @@
+{
+  "camera_direction": [
+    "感情を伴うアニメMVとして、確定済みActionを変更又は言い換えず、その演技、現在Sceneだけに選ばれた対象との関係及び可視の結果を一つのcamera choreographyとして明瞭に収める。Camera文はMotion Type、画角、視点、経路、視差及び確定Actionに必要な可視範囲だけを記述し、新たな姿勢、手足の動作、接触、歩行、視線変化又は終端poseを追加しない。Camera motionはMiniMax H3の正式名称 Zoom In、Zoom Out、Push In、Pull Out、Pan Left、Pan Right、Truck Left、Truck Right、Tilt Up、Tilt Down、Pedestal Up、Pedestal Down、Arc Shot、Tracking Shot、Static Shot、Shake Slightly、Shake Strongly、POV、Roll Clockwise又はRoll Counterclockwiseのいずれかをそのまま明記し、必要に応じて with small amplitude、with large amplitude、at slow speed又はat fast speedを続ける。複数ShotではArc Shotを主要な展開手段として使うが、長尺Arcは2.5秒以上の適格な非顔Shotの概ね半数に限定し、残りはZoom、Push/Pull、Tracking、Pan/Tilt、Pedestal又はStaticによる対照を作る。選択された長尺Arcは60度から120度の経路をShot尺の70%から90%にわたり連続して進み、必ず `Arc Shot with large amplitude at fast speed` で開始して、開始視点、前景・中景・背景の強い視差及び明確に異なる終了視点を作る。固定正面又は固定背面の記録画を連続させず、低い斜め前方から側面、側面から後方三分の四、後方三分の四から正面若しくは斜め正面へ抜ける大きな角度変化を使う。連続Arcは同じ軌道の反復にせず、身体又は環境を示す構図から正面若しくは斜め正面の頭肩構図へ入る長尺Arcと、読み取れる顔構図から半径を広げて上半身、全身又は環境へ抜ける長尺Arcを選択的に使う。顔へのZoom In又は顔から全身へ抜けるArcとの接続は、歌詞の感情転換又はsection上の要点に限定し、各Sceneの定型句にしない。顔へのZoom Inは頭肩構図から始め、両目、両眉、鼻、口全体及び顔輪郭を全行程で同時に残し、目又は口だけへ切り詰めない。顔拡大への移行はShotの35%から55%で完了し、短い表情accentだけを読ませ、同じscaleを長時間保持しない。閉眼、半開き、伏し目又は再び目を開く演技も構図内で読めるようにし、常に全開の目を要求しない。上半身中心の演技では両目、歌唱口、肩、肘、手の軌道が読める上半身構図を優先する。全身表示は支持脚の動きそのものが確定Actionに必要な場合に限る。手の動作が収まる感情の要点で、人物は自転せずカメラが回り込み、両目と口を含む短い顔拡大へつなぐ。長尺ArcはShotの途中で減速して固定構図へ戻らず、終端近くまで勢いと視差を保つ。歩行又は明確な位置移動を追う場合だけTracking Shotを使い、単なる移動をcameraの主題として反復しない。低い斜め前方、側面、後方三分の四、over-shoulder、垂直方向及び奥行き方向を使い分け、画角と距離の変化で対照を作り、同じ旋回方向を維持することは反復と見なさない。CUTまでの一続きの区間では、間にZoomや静止が挟まってもArcの左右方向を維持し、急停止、急反転又は逆向きへの切り返しを加えない。Zoom又は直線的なPush/Pullだけで正面から背面へ回り込まない。固定設備又はシーン参照内の装飾物をcamera目的として選ばず、人物の全身感情、現在歌詞に固有の一回限りの対象、表情反応及び異なる終端silhouetteを優先する。"
+  ],
+  "camera_profile_id": "anime_emotional_mv",
+  "environment_direction": [
+    "夜の森の中の神社境内。鳥居、石灯籠、石畳の道、紅葉した木々、神社の建物が存在する。夜、曇り。暗い夜空と灯りの照らし出された石畳の道。"
+  ],
+  "motion_direction": [
+    "手描きセルアニメーションとして二コマ打ち又は三コマ打ちを使う。人物の支持、重心、体幹、腕及び表情はShot間で連続し、重要なアクセントを明瞭なキーポーズで示す。 歌詞に合う身体演技を見せる。対象物の変化と人物の演技を区別し、Shotに指定された出来事、演技及び撮影を同じ時間軸で行う。"
+  ],
+  "motion_profile_id": "anime_scene_composed_mv",
+  "other_direction": [
+    "狐巫女が白い足袋と黒い木製台の下駄を着用する。赤い鼻緒は黒い木製台の上に正しく装着し、足元を接写の主題にしない。尾の先端は白く、狐尻尾。髪の色と同色の眉毛。目尻に赤い化粧あり。耳の先端は黒く、髪の色と同色。白い着物に赤い帯と袖口の結び目。"
+  ],
+  "provenance": [
+    {
+      "disposition": "supplied",
+      "reason": "direct_input",
+      "record_id": "src_0001",
+      "record_kind": "input",
+      "sha256": "91b6521616a20316ca3b51eb80f5648833da3e9d82efc5816d63aac62d0f6727",
+      "source": "user",
+      "source_position": 0,
+      "source_ref": "user_request",
+      "target": null
+    },
+    {
+      "disposition": "supplied",
+      "reason": "direct_input",
+      "record_id": "src_0002",
+      "record_kind": "input",
+      "sha256": "2c8e6d94c1ae6045412947c1d7f8d82c9fe2514f43ad8ca1f10869700d522dcb",
+      "source": "vision",
+      "source_position": 1,
+      "source_ref": "concept_emd",
+      "target": null
+    },
+    {
+      "disposition": "supplied",
+      "reason": "direct_input",
+      "record_id": "src_0003",
+      "record_kind": "input",
+      "sha256": "7d15b962037bd7fa106643379726ad4447a5c40de172d961d0e43d1a6d04757d",
+      "source": "vision",
+      "source_position": 2,
+      "source_ref": "scene_emd",
+      "target": null
+    },
+    {
+      "disposition": "supplied",
+      "reason": "direct_input",
+      "record_id": "src_0004",
+      "record_kind": "input",
+      "sha256": "5aabf31fb2615bc9571eb52f7c5b88e99fee2c398f54e3d2bc094e8448696bdd",
+      "source": "profile",
+      "source_position": 3,
+      "source_ref": "anime_emotional_mv",
+      "target": null
+    },
+    {
+      "disposition": "supplied",
+      "reason": "direct_input",
+      "record_id": "src_0005",
+      "record_kind": "input",
+      "sha256": "66e7dd62218a1f92c09a4b74dc3912befa22795f5c1d3e61b326f4a8e7fc1abc",
+      "source": "profile",
+      "source_position": 4,
+      "source_ref": "anime_scene_composed_mv",
+      "target": null
+    },
+    {
+      "disposition": "supplied",
+      "reason": "direct_input",
+      "record_id": "src_0006",
+      "record_kind": "input",
+      "sha256": "56cedabb9f22bad023310dfc3648d1fe24a5af6bae122d39f0e0521580f1f2f6",
+      "source": "profile",
+      "source_position": 5,
+      "source_ref": "anime_emotional_mv",
+      "target": null
+    },
+    {
+      "disposition": "discarded",
+      "reason": "invalid_line_record",
+      "record_id": "drop_0001",
+      "record_kind": "discard",
+      "sha256": "e1d9a43582c1ff2df2149448786c861497e5934955f874092d702b36d01f76df",
+      "source": "generated",
+      "source_position": 2,
+      "source_ref": "response_line:3",
+      "target": null
+    },
+    {
+      "disposition": "accepted",
+      "reason": "profile_enforced",
+      "record_id": "out_style_direction_0001",
+      "record_kind": "output",
+      "sha256": "5aabf31fb2615bc9571eb52f7c5b88e99fee2c398f54e3d2bc094e8448696bdd",
+      "source": "profile",
+      "source_position": 0,
+      "source_ref": "anime_emotional_mv",
+      "target": "style_direction[0]"
+    },
+    {
+      "disposition": "accepted",
+      "reason": "profile_enforced",
+      "record_id": "out_motion_direction_0001",
+      "record_kind": "output",
+      "sha256": "66e7dd62218a1f92c09a4b74dc3912befa22795f5c1d3e61b326f4a8e7fc1abc",
+      "source": "profile",
+      "source_position": 0,
+      "source_ref": "anime_scene_composed_mv",
+      "target": "motion_direction[0]"
+    },
+    {
+      "disposition": "accepted",
+      "reason": "profile_enforced",
+      "record_id": "out_camera_direction_0001",
+      "record_kind": "output",
+      "sha256": "56cedabb9f22bad023310dfc3648d1fe24a5af6bae122d39f0e0521580f1f2f6",
+      "source": "profile",
+      "source_position": 0,
+      "source_ref": "anime_emotional_mv",
+      "target": "camera_direction[0]"
+    },
+    {
+      "disposition": "accepted",
+      "reason": "valid_line_record",
+      "record_id": "out_environment_0001",
+      "record_kind": "output",
+      "sha256": "3a9b4983ad9d5dd9a6d576811cb341cc031225c0bab32527d4a156f3d8e2a0f2",
+      "source": "generated",
+      "source_position": 3,
+      "source_ref": "ENVIRONMENT:1",
+      "target": "environment_direction[0]"
+    },
+    {
+      "disposition": "accepted",
+      "reason": "valid_line_record",
+      "record_id": "out_time_lighting_0001",
+      "record_kind": "output",
+      "sha256": "29f153d43eba60f6c18f959bb77df278bec2909400a9bf6cf20966a4ea206cd2",
+      "source": "generated",
+      "source_position": 4,
+      "source_ref": "TIME_LIGHTING:1",
+      "target": "time_lighting_direction[0]"
+    },
+    {
+      "disposition": "accepted",
+      "reason": "valid_line_record",
+      "record_id": "out_other_0001",
+      "record_kind": "output",
+      "sha256": "642adbe65f04bc4f0d0ee0128835f49d6d6955bf8d19ca06320f06d352ed0033",
+      "source": "generated",
+      "source_position": 5,
+      "source_ref": "OTHER:1",
+      "target": "other_direction[0]"
+    },
+    {
+      "disposition": "accepted",
+      "reason": "planning_directive",
+      "record_id": "out_staging_0001",
+      "record_kind": "output",
+      "sha256": "6287c24c04f75c89b4a5626b164215b28bb86cf1c952febaaad68179bc955af2",
+      "source": "user",
+      "source_position": 0,
+      "source_ref": "user_request",
+      "target": "staging_candidates[0]"
+    },
+    {
+      "disposition": "accepted",
+      "reason": "planning_directive",
+      "record_id": "out_staging_0002",
+      "record_kind": "output",
+      "sha256": "89421530daa6b214ac92899a6c4ac0ed77cf16892d28203f469364ffd1ff1679",
+      "source": "user",
+      "source_position": 1,
+      "source_ref": "user_request",
+      "target": "staging_candidates[1]"
+    },
+    {
+      "disposition": "accepted",
+      "reason": "planning_directive",
+      "record_id": "out_staging_0003",
+      "record_kind": "output",
+      "sha256": "a09737fbaee2ea2953e08307ebbeb5576ec7321e9f7abc2fee24dd9919f60e33",
+      "source": "user",
+      "source_position": 2,
+      "source_ref": "user_request",
+      "target": "staging_candidates[2]"
+    },
+    {
+      "disposition": "accepted",
+      "reason": "planning_directive",
+      "record_id": "out_staging_0004",
+      "record_kind": "output",
+      "sha256": "c6bfbf465e83b7c57074e21dee1d0524344d014b8ee3fea52d8cb77226ef659a",
+      "source": "user",
+      "source_position": 3,
+      "source_ref": "user_request",
+      "target": "staging_candidates[3]"
+    },
+    {
+      "disposition": "accepted",
+      "reason": "planning_directive",
+      "record_id": "out_staging_0005",
+      "record_kind": "output",
+      "sha256": "bf41526cad0f0045b19ff0c63396e774f4cfdfcabb7b75c687805854a1cac546",
+      "source": "user",
+      "source_position": 4,
+      "source_ref": "user_request",
+      "target": "staging_candidates[4]"
+    },
+    {
+      "disposition": "accepted",
+      "reason": "planning_directive",
+      "record_id": "out_staging_0006",
+      "record_kind": "output",
+      "sha256": "661d3ec8a64705d260895064d55cdf36aeaeeb1ae4fbbca4b9360663c08eace7",
+      "source": "user",
+      "source_position": 5,
+      "source_ref": "user_request",
+      "target": "staging_candidates[5]"
+    },
+    {
+      "disposition": "accepted",
+      "reason": "planning_directive",
+      "record_id": "out_staging_0007",
+      "record_kind": "output",
+      "sha256": "8df38abc98b866888add761ce942d785464949a54dc611c2f2130b33ed1252d3",
+      "source": "user",
+      "source_position": 6,
+      "source_ref": "user_request",
+      "target": "staging_candidates[6]"
+    }
+  ],
+  "retention_lines": [],
+  "retention_policy": "profile",
+  "schema": "MVD_DIRECTION_V4",
+  "staging_candidates": [
+    "歌詞「苔へと還る」を扱うSceneで、参道脇に立つ大樹と根元の苔を同じ場所として確立する。人物が大樹へ寄り、幹の根元に生えた苔を指先で一度撫で、手を離して余韻を表情に残す。",
+    "歌詞に「狐火」が現れるSceneで、複数の狐火が人物の胸前の空間に現れる。人物は両手を異なる高さに構え、片手で大きな円弧を描き、もう片手で流れを受け渡す。手の振付に呼応して狐火が人物の周囲を勢いよく旋回し、人物が両手を開くと樹間へ広がる。人物は地面に立ち、視線と表情も狐火の動きに合わせて変化する。",
+    "始点は両足で安定し、片手は体側、もう片手は肘を曲げて低く置く。片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける。低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る。差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める。物を持つ・渡す動作は歌詞に明示された時だけ。",
+    "始点は膝を伸ばし切らず胸郭を正面に保つ。後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せ、一拍のアクセント後、肩と肘を緩めて前足支持で終える。移動を伴う歩行や人物の全身回転にはしない。",
+    "始点は両足を地面に置き、両腕を体側の異なる高さに置く。短く膝を緩めて重心を落とし、胸郭をわずかに畳み、片腕だけを胴の前へ横断させる。目を伏せた後、支持を戻しながら横断した腕を外側へほどき、胸郭を開いて視線を結ぶ。終点は開始より直立し、両腕は開き切らず異なる高さで静止する。",
+    "始点は両足支持で腕を低く置く。短い膝の弾みで重心を一度下げ、片足へ受け渡して骨盤を横へ送る。胸郭の遅れに合わせて片腕を横から斜め上へ、反対の腕を腰より低く逆方向へ通す。顔と歌唱口が見える瞬間にアクセントを合わせ、両腕を体側へ落とし切らず、支持足を保って余韻で終える。跳躍や全身回転はしない。",
+    "始点は片足に軽く荷重し、肩と腕を緩める。支持は変えず胸郭だけを小さく斜めへ向け、片肘を体側から前へほどく。半開きの目から短く閉眼し、歌詞の変化で視線を戻す。手は顔を隠さず肩より下で止め、胸郭を正面へ戻しながら同じ支持のまま終える。静かな歌詞用で、大きな踏み替えを要求しない。"
+  ],
+  "style_direction": [
+    "参照画像から人物の識別要素、髪型、髪色、瞳色、衣装、配色、装飾及び身体的特徴だけを保持する。参照画像のポーズ、手足の配置、視線、画角、視点、切り抜き、左右分割又は複数パネル構成、背景、線質、塗り、陰影及びブラシ表現は継承せず、各Shotで指定された一人の人物と感情を伴う身体演技を映画的な手描きセルアニメーションとして再設計する。各Shotの先頭frameからShot固有の身体姿勢、視線、手足配置、blocking、画角、視点、camera高及び距離を使用し、参照画像そのもの又は参照構図を静止画、開始画面、plate、poster、inset、背景として表示せず、参照ポーズからの変形又は遷移も行わない。各Sceneで指定された環境、時刻及び照明だけを完成映像の世界として使用し、参照画像内の白背景、無地背景、昼光、撮影用backdrop又はpanel固有の背景と照明を描画へ持ち込まない。指定されたScene環境を人物の背後と周囲を含む画面全体へ連続させる。画面全体を一つの連続した単一カメラ画像として使用し、画角及び視点の変更は時間方向のカメラ移動又はscene cutで表す。同一frame内へ複数視点、左右並列像、内部境界、inset又はpicture-in-pictureを同時配置しない。整理された強弱のある輪郭線、明瞭な色面、制御されたセル影、背景と統合された撮影処理及びアニメ映画的な照明で描く。人物の髪、体毛、動物耳、耳内部、尾、皮膚及び衣装は通常は非発光素材として扱う。完成EMDのShotが意図的な発光演出を明示する場合はその範囲を尊重する。それ以外ではこれらを光源、発光体又は強い透過光として描かず、局所的なglow、bloom、発光halo及び白飛びを生じさせない。月光、逆光及び実在する環境光は穏やかな反射光としてだけ表現し、耳内部の露出を周囲の毛並みから不自然に上げない。 歌詞中の傷、古傷、痛み、血又は心の損傷を、歌詞文字列だけで身体の損傷へ直結させない。人物設定又は完成EMDのShotが可視の状態として明示する場合は、その意図的な演出を尊重する。Shotで明示されない傷跡、切創、痣、出血、包帯、病変、染み、刺青状の印、裂けた皮膚又は破れた衣装は追加しない。歌詞の感情は視線、頭部、肩、胴体、手、対象との距離及び終端ポーズの変化でも表現する。 人物が足袋を着用する場合、滑らかで不透明な白いsplit-toe足袋として描き、つま先は親指側と残り四趾側の二つの連続した布形状だけにまとめる。黒い木下駄は足袋の外側へ正しく装着し、鼻緒だけを指定色で描く。作者又は歌詞が足元を明示しない限り、履物又は地面を接写の主題にしない。"
+  ],
+  "style_profile_id": "anime_emotional_mv",
+  "time_lighting_direction": [
+    "夜、曇り。暗い夜空と灯りの照らし出された石畳の道。月光や逆光は穏やかな反射光として表現し、耳内部の露出を周囲の毛並みから不自然に上げない。"
+  ]
+}

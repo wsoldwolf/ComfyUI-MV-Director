@@ -1,0 +1,66 @@
+{
+  "source_emd": "C:/Software/ComfyUI/output/mv_director/context_loop_emd_00001.md",
+  "source_scene": 9,
+  "local_time_rebased": true,
+  "seed": 2,
+  "fixed_call_seed": true,
+  "motion_profile": "anime_scene_composed_mv",
+  "motion_composition_disabled": true,
+  "motion_compositions": [],
+  "model": "qwen3-8b-abliterated-Q4_K_M.gguf",
+  "complete": true,
+  "missing": [],
+  "task_calls": {
+    "scene-author-event": 1,
+    "scene-author-performance": 1,
+    "scene-author-camera": 1
+  },
+  "trace": [
+    {
+      "task": "scene-author-event",
+      "payload": "{\"continuation\":false,\"event_position_retry\":false,\"original_lyrics\":[{\"lyrics\":[{\"end_ms\":1128,\"section\":\"CHORUS\",\"source_line\":10,\"start_ms\":0,\"text\":\"永遠と呼べるなら\"},{\"end_ms\":3028,\"section\":\"CHORUS\",\"source_line\":14,\"start_ms\":1128,\"text\":\"この手を離すことも\"},{\"end_ms\":4848,\"section\":\"CHORUS\",\"source_line\":18,\"start_ms\":3028,\"text\":\"愛なのだろうか\"},{\"end_ms\":6368,\"section\":\"CHORUS\",\"source_line\":22,\"start_ms\":4848,\"text\":\"朱の空に舞う\"}],\"shot\":1},{\"lyrics\":[{\"end_ms\":7648,\"section\":\"CHORUS\",\"source_line\":28,\"start_ms\":6468,\"text\":\"狐火へ問う\"},{\"end_ms\":9368,\"section\":\"CHORUS\",\"source_line\":32,\"start_ms\":7648,\"text\":\"忘れぬことは\"}],\"shot\":2}],\"previous_accepted_terminal\":{},\"protocol\":\"MVD_LLM_RECORDS_V1\",\"scene_descriptions\":[],\"scene_emd\":\"\",\"scene_end_ms\":9916,\"scene_environment\":[],\"scene_number\":1,\"scene_other\":[],\"scene_start_ms\":0,\"scene_time_lighting\":[],\"section_lyric_context\":[{\"boundary_source\":\"template_label_run\",\"coverage\":\"available_run\",\"lines\":[{\"end_ms\":1128,\"scene\":1,\"source_line\":10,\"start_ms\":0,\"text\":\"永遠と呼べるなら\"},{\"end_ms\":3028,\"scene\":1,\"source_line\":14,\"start_ms\":1128,\"text\":\"この手を離すことも\"},{\"end_ms\":4848,\"scene\":1,\"source_line\":18,\"start_ms\":3028,\"text\":\"愛なのだろうか\"},{\"end_ms\":6368,\"scene\":1,\"source_line\":22,\"start_ms\":4848,\"text\":\"朱の空に舞う\"},{\"end_ms\":7648,\"scene\":1,\"source_line\":28,\"start_ms\":6468,\"text\":\"狐火へ問う\"},{\"end_ms\":9368,\"scene\":1,\"source_line\":32,\"start_ms\":7648,\"text\":\"忘れぬことは\"}],\"occurrence\":1,\"section\":\"CHORUS\"}],\"shot_positions\":[{\"author_body\":[],\"end_ms\":4958,\"fixed_camera\":\"\",\"fixed_event\":\"\",\"fixed_performance\":\"\",\"shot\":1,\"start_ms\":0},{\"author_body\":[],\"end_ms\":9916,\"fixed_camera\":\"\",\"fixed_event\":\"\",\"fixed_performance\":\"\",\"shot\":2,\"start_ms\":4958}],\"slots\":[{\"scene\":1,\"scene_number\":1,\"scope\":\"one_scene_event\",\"shot_numbers\":[1,2],\"slot\":1}],\"staging_candidates_optional\":[],\"subject_emd\":\"# サブジェクト\\n* 狐耳と狐尻尾のある一人の歌唱者。\\n\",\"task\":\"scene-author-event\"}",
+      "response": "EVENT\t1\tSHOT=1｜朱の空に舞う描写を背景に、狐火が空中で揺れて光る。\n"
+    },
+    {
+      "task": "scene-author-performance",
+      "payload": "{\"accepted_event\":\"朱の空に舞う描写を背景に、狐火が空中で揺れて光る。\",\"accepted_event_shot\":1,\"continuation\":false,\"event_source\":\"llm\",\"fixed_performances\":{},\"original_lyrics\":[{\"lyrics\":[{\"end_ms\":1128,\"section\":\"CHORUS\",\"source_line\":10,\"start_ms\":0,\"text\":\"永遠と呼べるなら\"},{\"end_ms\":3028,\"section\":\"CHORUS\",\"source_line\":14,\"start_ms\":1128,\"text\":\"この手を離すことも\"},{\"end_ms\":4848,\"section\":\"CHORUS\",\"source_line\":18,\"start_ms\":3028,\"text\":\"愛なのだろうか\"},{\"end_ms\":6368,\"section\":\"CHORUS\",\"source_line\":22,\"start_ms\":4848,\"text\":\"朱の空に舞う\"}],\"shot\":1},{\"lyrics\":[{\"end_ms\":7648,\"section\":\"CHORUS\",\"source_line\":28,\"start_ms\":6468,\"text\":\"狐火へ問う\"},{\"end_ms\":9368,\"section\":\"CHORUS\",\"source_line\":32,\"start_ms\":7648,\"text\":\"忘れぬことは\"}],\"shot\":2}],\"previous_accepted_terminal\":{},\"protocol\":\"MVD_LLM_RECORDS_V1\",\"scene_descriptions\":[],\"scene_emd\":\"\",\"scene_end_ms\":9916,\"scene_environment\":[],\"scene_motion\":[\"手描きセルアニメーションとして二コマ打ち又は三コマ打ちを使う。人物の支持、重心、体幹、腕及び表情はShot間で連続し、重要なアクセントを明瞭なキーポーズで示す。 歌詞に合う身体演技を見せる。対象物の変化と人物の演技を区別し、Shotに指定された出来事、演技及び撮影を同じ時間軸で行う。\"],\"scene_number\":1,\"scene_other\":[],\"scene_start_ms\":0,\"scene_time_lighting\":[],\"section_lyric_context\":[{\"boundary_source\":\"template_label_run\",\"coverage\":\"available_run\",\"lines\":[{\"end_ms\":1128,\"scene\":1,\"source_line\":10,\"start_ms\":0,\"text\":\"永遠と呼べるなら\"},{\"end_ms\":3028,\"scene\":1,\"source_line\":14,\"start_ms\":1128,\"text\":\"この手を離すことも\"},{\"end_ms\":4848,\"scene\":1,\"source_line\":18,\"start_ms\":3028,\"text\":\"愛なのだろうか\"},{\"end_ms\":6368,\"scene\":1,\"source_line\":22,\"start_ms\":4848,\"text\":\"朱の空に舞う\"},{\"end_ms\":7648,\"scene\":1,\"source_line\":28,\"start_ms\":6468,\"text\":\"狐火へ問う\"},{\"end_ms\":9368,\"scene\":1,\"source_line\":32,\"start_ms\":7648,\"text\":\"忘れぬことは\"}],\"occurrence\":1,\"section\":\"CHORUS\"}],\"shot_positions\":[{\"author_body\":[],\"end_ms\":4958,\"fixed_camera\":\"\",\"fixed_event\":\"\",\"fixed_performance\":\"\",\"shot\":1,\"start_ms\":0},{\"author_body\":[],\"end_ms\":9916,\"fixed_camera\":\"\",\"fixed_event\":\"\",\"fixed_performance\":\"\",\"shot\":2,\"start_ms\":4958}],\"slots\":[{\"position\":{\"author_body\":[],\"end_ms\":4958,\"fixed_camera\":\"\",\"fixed_event\":\"\",\"fixed_performance\":\"\",\"shot\":1,\"start_ms\":0},\"scene\":1,\"scene_number\":1,\"shot\":1,\"slot\":1},{\"position\":{\"author_body\":[],\"end_ms\":9916,\"fixed_camera\":\"\",\"fixed_event\":\"\",\"fixed_performance\":\"\",\"shot\":2,\"start_ms\":4958},\"scene\":1,\"scene_number\":1,\"shot\":2,\"slot\":2}],\"staging_candidates_optional\":[],\"subject_emd\":\"# サブジェクト\\n* 狐耳と狐尻尾のある一人の歌唱者。\\n\",\"task\":\"scene-author-performance\"}",
+      "response": "PERFORMANCE\t1\t右手を胸の前で軽く揃え、左手を腰に置き、足は前後に開いたポーズ。顔は少し俯き、瞳はやや閉じた状態で、静かな感情を表現する。\nPERFORMANCE\t2\t右手をゆっくりと上げ、左腕を横に広げながら、足は軽く踏み出す。顔はやや上向きになり、瞳は開き、感情が高まり始めた様子を表現する。\n"
+    },
+    {
+      "task": "scene-author-camera",
+      "payload": "{\"accepted_event\":\"朱の空に舞う描写を背景に、狐火が空中で揺れて光る。\",\"accepted_event_shot\":1,\"accepted_performances\":{\"1\":\"右手を胸の前で軽く揃え、左手を腰に置き、足は前後に開いたポーズ。顔は少し俯き、瞳はやや閉じた状態で、静かな感情を表現する。\",\"2\":\"右手をゆっくりと上げ、左腕を横に広げながら、足は軽く踏み出す。顔はやや上向きになり、瞳は開き、感情が高まり始めた様子を表現する。\"},\"continuation\":false,\"event_source\":\"llm\",\"fixed_cameras\":{},\"original_lyrics\":[{\"lyrics\":[{\"end_ms\":1128,\"section\":\"CHORUS\",\"source_line\":10,\"start_ms\":0,\"text\":\"永遠と呼べるなら\"},{\"end_ms\":3028,\"section\":\"CHORUS\",\"source_line\":14,\"start_ms\":1128,\"text\":\"この手を離すことも\"},{\"end_ms\":4848,\"section\":\"CHORUS\",\"source_line\":18,\"start_ms\":3028,\"text\":\"愛なのだろうか\"},{\"end_ms\":6368,\"section\":\"CHORUS\",\"source_line\":22,\"start_ms\":4848,\"text\":\"朱の空に舞う\"}],\"shot\":1},{\"lyrics\":[{\"end_ms\":7648,\"section\":\"CHORUS\",\"source_line\":28,\"start_ms\":6468,\"text\":\"狐火へ問う\"},{\"end_ms\":9368,\"section\":\"CHORUS\",\"source_line\":32,\"start_ms\":7648,\"text\":\"忘れぬことは\"}],\"shot\":2}],\"previous_accepted_terminal\":{},\"protocol\":\"MVD_LLM_RECORDS_V1\",\"scene_camera\":[\"感情を伴うアニメMVとして、確定済みActionを変更又は言い換えず、その演技、現在Sceneだけに選ばれた対象との関係及び可視の結果を一つのcamera choreographyとして明瞭に収める。Camera文はMotion Type、画角、視点、経路、視差及び確定Actionに必要な可視範囲だけを記述し、新たな姿勢、手足の動作、接触、歩行、視線変化又は終端poseを追加しない。Camera motionはMiniMax H3の正式名称 Zoom In、Zoom Out、Push In、Pull Out、Pan Left、Pan Right、Truck Left、Truck Right、Tilt Up、Tilt Down、Pedestal Up、Pedestal Down、Arc Shot、Tracking Shot、Static Shot、Shake Slightly、Shake Strongly、POV、Roll Clockwise又はRoll Counterclockwiseのいずれかをそのまま明記し、必要に応じて with small amplitude、with large amplitude、at slow speed又はat fast speedを続ける。複数ShotではArc Shotを主要な展開手段として使うが、長尺Arcは2.5秒以上の適格な非顔Shotの概ね半数に限定し、残りはZoom、Push/Pull、Tracking、Pan/Tilt、Pedestal又はStaticによる対照を作る。選択された長尺Arcは60度から120度の経路をShot尺の70%から90%にわたり連続して進み、必ず `Arc Shot with large amplitude at fast speed` で開始して、開始視点、前景・中景・背景の強い視差及び明確に異なる終了視点を作る。固定正面又は固定背面の記録画を連続させず、低い斜め前方から側面、側面から後方三分の四、後方三分の四から正面若しくは斜め正面へ抜ける大きな角度変化を使う。連続Arcは同じ軌道の反復にせず、身体又は環境を示す構図から正面若しくは斜め正面の頭肩構図へ入る長尺Arcと、読み取れる顔構図から半径を広げて上半身、全身又は環境へ抜ける長尺Arcを選択的に使う。顔へのZoom In又は顔から全身へ抜けるArcとの接続は、歌詞の感情転換又はsection上の要点に限定し、各Sceneの定型句にしない。顔へのZoom Inは頭肩構図から始め、両目、両眉、鼻、口全体及び顔輪郭を全行程で同時に残し、目又は口だけへ切り詰めない。顔拡大への移行はShotの35%から55%で完了し、短い表情accentだけを読ませ、同じscaleを長時間保持しない。閉眼、半開き、伏し目又は再び目を開く演技も構図内で読めるようにし、常に全開の目を要求しない。上半身中心の演技では両目、歌唱口、肩、肘、手の軌道が読める上半身構図を優先する。全身表示は支持脚の動きそのものが確定Actionに必要な場合に限る。手の動作が収まる感情の要点で、人物は自転せずカメラが回り込み、両目と口を含む短い顔拡大へつなぐ。長尺ArcはShotの途中で減速して固定構図へ戻らず、終端近くまで勢いと視差を保つ。歩行又は明確な位置移動を追う場合だけTracking Shotを使い、単なる移動をcameraの主題として反復しない。低い斜め前方、側面、後方三分の四、over-shoulder、垂直方向及び奥行き方向を使い分け、画角と距離の変化で対照を作り、同じ旋回方向を維持することは反復と見なさない。CUTまでの一続きの区間では、間にZoomや静止が挟まってもArcの左右方向を維持し、急停止、急反転又は逆向きへの切り返しを加えない。Zoom又は直線的なPush/Pullだけで正面から背面へ回り込まない。固定設備又はシーン参照内の装飾物をcamera目的として選ばず、人物の全身感情、現在歌詞に固有の一回限りの対象、表情反応及び異なる終端silhouetteを優先する。\"],\"scene_descriptions\":[],\"scene_emd\":\"\",\"scene_end_ms\":9916,\"scene_environment\":[],\"scene_number\":1,\"scene_other\":[],\"scene_start_ms\":0,\"scene_time_lighting\":[],\"section_lyric_context\":[{\"boundary_source\":\"template_label_run\",\"coverage\":\"available_run\",\"lines\":[{\"end_ms\":1128,\"scene\":1,\"source_line\":10,\"start_ms\":0,\"text\":\"永遠と呼べるなら\"},{\"end_ms\":3028,\"scene\":1,\"source_line\":14,\"start_ms\":1128,\"text\":\"この手を離すことも\"},{\"end_ms\":4848,\"scene\":1,\"source_line\":18,\"start_ms\":3028,\"text\":\"愛なのだろうか\"},{\"end_ms\":6368,\"scene\":1,\"source_line\":22,\"start_ms\":4848,\"text\":\"朱の空に舞う\"},{\"end_ms\":7648,\"scene\":1,\"source_line\":28,\"start_ms\":6468,\"text\":\"狐火へ問う\"},{\"end_ms\":9368,\"scene\":1,\"source_line\":32,\"start_ms\":7648,\"text\":\"忘れぬことは\"}],\"occurrence\":1,\"section\":\"CHORUS\"}],\"shot_positions\":[{\"author_body\":[],\"end_ms\":4958,\"fixed_camera\":\"\",\"fixed_event\":\"\",\"fixed_performance\":\"\",\"shot\":1,\"start_ms\":0},{\"author_body\":[],\"end_ms\":9916,\"fixed_camera\":\"\",\"fixed_event\":\"\",\"fixed_performance\":\"\",\"shot\":2,\"start_ms\":4958}],\"slots\":[{\"position\":{\"author_body\":[],\"end_ms\":4958,\"fixed_camera\":\"\",\"fixed_event\":\"\",\"fixed_performance\":\"\",\"shot\":1,\"start_ms\":0},\"scene\":1,\"scene_number\":1,\"shot\":1,\"slot\":1},{\"position\":{\"author_body\":[],\"end_ms\":9916,\"fixed_camera\":\"\",\"fixed_event\":\"\",\"fixed_performance\":\"\",\"shot\":2,\"start_ms\":4958},\"scene\":1,\"scene_number\":1,\"shot\":2,\"slot\":2}],\"subject_emd\":\"# サブジェクト\\n* 狐耳と狐尻尾のある一人の歌唱者。\\n\",\"task\":\"scene-author-camera\"}",
+      "response": "CAMERA\t1\tZoom In with large amplitude at fast speed\nCAMERA\t2\tArc Shot with large amplitude at fast speed from low diagonal front to over-shoulder\n"
+    }
+  ],
+  "events": [
+    [
+      1,
+      1,
+      "朱の空に舞う描写を背景に、狐火が空中で揺れて光る。"
+    ]
+  ],
+  "performances": [
+    [
+      1,
+      1,
+      "右手を胸の前で軽く揃え、左手を腰に置き、足は前後に開いたポーズ。顔は少し俯き、瞳はやや閉じた状態で、静かな感情を表現する。"
+    ],
+    [
+      1,
+      2,
+      "右手をゆっくりと上げ、左腕を横に広げながら、足は軽く踏み出す。顔はやや上向きになり、瞳は開き、感情が高まり始めた様子を表現する。"
+    ]
+  ],
+  "cameras": [
+    [
+      1,
+      1,
+      "Zoom In with large amplitude at fast speed"
+    ],
+    [
+      1,
+      2,
+      "Arc Shot with large amplitude at fast speed from low diagonal front to over-shoulder"
+    ]
+  ]
+}

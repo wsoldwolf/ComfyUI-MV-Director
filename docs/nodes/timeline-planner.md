@@ -1,20 +1,39 @@
 # Timeline Planner
 
+## 実験用モーション合成
+
+Direction EnhancerのMotionを `anime_scene_composed_mv` にすると、Scene author経路で
+profileの `# モーション補完` をSceneごとに最大一文、Camera計画前に合成する。
+LLM原文は別行で保持し、EMDの `モーション補完` 注釈とINFOログに出所を残す。
+作者の演技・一般Shot本文があるScene、複数人物、Camera未固定で4秒以上のShotがないSceneには追加しない。
+ユーザーが共通Motionを上書きした場合もprofile補完は抑止し、作者自身の補完リストだけを許す。
+任意候補とは異なり機械的追加を許可する指定である。
+操作例・無効化は[TIPS](../tips/mechanical-motion-and-perceived-performance.md)を参照。
+内部DirectionはV4へ更新したため、ComfyUI再起動後Enhancerから作り直す。
+合成は自然な演技を保証しない。静止・移動の意味競合をPythonで消す処理は追加していない。
+
 ## 次期Scene author経路（オプトイン）
 
 Motion profile [anime_scene_author_mv](../../profiles/motion/anime_scene_author_mv.md)を
 選ぶと、従来のVisual Beat→Layout→Action Audit経路とは別に、一Sceneの
 出来事→人物の演技→Cameraの三段で生成します。元TemplateのShot境界と
-継続指定を保持し、人物の最終演技文を撮影担当にそのまま渡します。作者が
+継続指定を保持し、同一Scene内の人物演技文を撮影担当に渡します。継続Sceneへは前Sceneの完成文全文を再投入せず、出来事・身体・Cameraの担当ごとに短い終端状態だけを渡します。8Bが状態を出さなかった場合は空状態とし、過去の動作文へ戻しません。この内部状態はEMDやH3のプロンプトには出力しません。作者が
 `演出`、`演技`、`カメラ`をShotへ書いた場合はその項目を生成しません。
-未指定の項目だけを補います。`# 演出候補`は出来事担当だけに渡す任意の着想で、
-共通H3 promptや後段の担当には配布しません。
+未指定の項目だけを補います。`# 演出候補`は出来事担当と人物演技担当へ直接渡す
+任意の着想です。Cameraや共通H3 promptには候補一覧を配布しません。
+当該Sceneの時刻付き歌詞とは別に、関係するセクションの歌詞を読み取り文脈として
+各担当へ渡します。文脈内の対象全てを現在Sceneへ出す指示ではありません。
+Templateでは元見出しIDが失われるため、連続するセクション名の区間を使います。
+別区間の同名CHORUSや同文歌詞は集約しませんが、隣接する同名見出しは識別できません。
+予算超過時は遠い文脈行から減らして再計測し、当該歌詞・作者指定・候補原文は保持します。
 
 完成済み`# サブジェクト`全文を`template_emd`へ入力すれば、Plannerは構文検証後に
 モデル選択・推論を省略してそのまま返します。入力不正は自動修復しません。
 この経路のCPU契約試験は通過しています。8B短区間は形式上完成したものの、
 身体演技と歌詞対象の発現時刻は[第一次判定](../research/scene-author-pilot-2026-09-23.md)で
 不合格であり、H3比較は未実施です。
+続く[P0〜P2試験](../research/section-performance-p0-p2-2026-09-23.md)でも、
+セクション全文と演技指示の変更による安定した振付改善は確認できていません。
 従来profileの挙動は変更しません。実装順と未検証項目は
 [実行計画](../implementation/scene-choreography-execution-2026-09-23.md)に記録しています。
 

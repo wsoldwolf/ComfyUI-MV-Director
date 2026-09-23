@@ -6,7 +6,7 @@
 
 ## Direction Enhancer
 
-Direction Enhancerは`retention_policy`、人物`concept_emd`、背景`scene_emd`、Style/Motion/Camera profile及び`user_request`を受け取ります。`# 共通プロンプト`の希望は全Scene共通です。`# 演出候補`の箇条書きはPythonが構文だけを分離し、Direction LLMや全Scene共通の`prompt_prefix`には渡さず、同じtyped artifactに原文を保持します。外部profileの構造、固定section及びauthorityはPythonが検証し、LLMは固定されていない`STYLE`、`ENVIRONMENT`、`TIME_LIGHTING`、`MOTION`、`CAMERA`、`OTHER`行だけを返します。欠落slotは局所retryし、Pythonが`MVD_DIRECTION_V3`と人間向けpreviewを構築します。
+Direction Enhancerは`retention_policy`、人物`concept_emd`、背景`scene_emd`、Style/Motion/Camera profile及び`user_request`を受け取ります。`# 共通プロンプト`の希望は全Scene共通です。`# 演出候補`の箇条書きはPythonが構文だけを分離し、Direction LLMや全Scene共通の`prompt_prefix`には渡さず、同じtyped artifactに原文を保持します。外部profileの構造、固定section及びauthorityはPythonが検証し、LLMは固定されていない`STYLE`、`ENVIRONMENT`、`TIME_LIGHTING`、`MOTION`、`CAMERA`、`OTHER`行だけを返します。欠落slotは局所retryし、Pythonが`MVD_DIRECTION_V4`と人間向けpreviewを構築します。
 
 Motion、Camera及びlocked Styleはprofile本文が所有し、LLMへ再生成させません。`scene_emd`は参照背景の構図を複製する入力ではなく、環境、時刻・照明baseline及び背景Pictureの根拠です。明示された利用者DirectionがVision観測より優先します。
 

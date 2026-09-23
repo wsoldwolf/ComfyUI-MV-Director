@@ -110,7 +110,7 @@ ComfyUI-MV-Director/
 
 最初に実装するもの:
 
-- `MVD_OBSERVATIONS_V1`、`MVD_EMD_FRAGMENT_V1`、`MVD_SCENE_EMD_FRAGMENT_V1`、`MVD_REFERENCE_BINDINGS_V1`、`MVD_DIRECTION_V3`、`MVD_TIMELINE_V1`、`MVD_EMD_TEMPLATE_V1`、`MVD_EMD_V1`、`MVD_REQUIRED_REFERENCES_V2`
+- `MVD_OBSERVATIONS_V1`、`MVD_EMD_FRAGMENT_V1`、`MVD_SCENE_EMD_FRAGMENT_V1`、`MVD_REFERENCE_BINDINGS_V1`、`MVD_DIRECTION_V4`、`MVD_TIMELINE_V1`、`MVD_EMD_TEMPLATE_V1`、`MVD_EMD_V1`、`MVD_REQUIRED_REFERENCES_V2`
 - EMD（Easy MarkDown）canonical exampleとinvalid fixture。共通プロンプトとStyle、Motion、Camera、Otherはすべて任意で、存在する本文だけを固定順に持つ
 - 必須の``> `シーン` N``、`# シーン START --> END [継続]`と全`## ショット TIME`の絶対`MM:SS.mmm` fixture、cut/continue JSON写像、`scene_NNNN` ID及びScene相対H3時刻への固定変換fixture
 - Lyric Segmentationが要求msとH3 Timing Profileからraw `length`、delivered frames、plan Scene境界、量子化差分を得るfixture。Compilerが`` `H3長` ``を無変換で写し、`duration_seconds`と`duration_ms`をPlanへ出さないことも固定する

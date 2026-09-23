@@ -1,5 +1,16 @@
 # Direction profile EMD
 
+## 明示モーション合成の比較用profile
+
+[motion/anime_scene_composed_mv.md](motion/anime_scene_composed_mv.md)はScene authorに
+旧版の三種類の全身移動を合成する実験用profile。既定profileではない。
+`# モーション補完` の通常箇条書きを外部EMDに置き、ユーザー入力の同名sectionで
+全置換できる。`* 無効` で停止する。最大12件・各500文字、scene_author専用。
+このsectionは共通promptへ入らない。適用条件と操作例は
+[TIPS](../docs/tips/mechanical-motion-and-perceived-performance.md)、
+実8Bで残る静止・移動の競合は[検証記録](../docs/research/motion-composition-2026-09-23.md)を参照。
+変更後はComfyUIを再起動し、Enhancerから再実行する。
+
 Direction Enhancerの`style_profile`、`motion_profile`、`camera_profile`はPython定数ではなく、このディレクトリのUTF-8 EMDファイルから読み込みます。
 
 | ディレクトリ | 必須subsection | 用途 |

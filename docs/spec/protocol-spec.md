@@ -4,6 +4,31 @@
 作成日: 2026-09-16<br>
 状態: Phase 0実装基準
 
+### 開発版追記：明示モーション合成
+
+`MVD_DIRECTION_V4` は任意 `motion_templates` を追加した内部artifactである。
+省略はMotion profileから継承、空配列は明示無効、非空配列はユーザーによる全候補置換。
+最大12件、各1〜500文字の単一行。V3のJSONをV4として読み替えない。
+Enhancer再実行で作り直す。ComfyUI socket名は変更せず、公開release/tagもここでは変更しない。
+
+`# モーション補完` はユーザー入力から構文的に分離し、Direction LLM及び共通描画文へ渡さない。
+`# 演出候補` の任意選択とは異なり、全自動Sceneでの機械的合成を許可する。
+Motion profileの同名sectionも計画用metadataであり共通prompt本文ではない。
+ユーザーが共通Motionを上書きした場合、profile補完は抑止する。ユーザー自身の補完リストは使用できる。
+
+Scene author要求の任意 `scheduled_motion_composition` はshot/source/template/textを持ち、
+PERFORMANCE生成前に決まる。Cameraの `accepted_performances` には原文と補完全文を渡す。
+Context回復時にも双方を保持する。LLMの行protocolは変更しない。
+`PlannerContent.motion_compositions` は `[scene,shot,source,template,text]` の配列を保持し、
+actionsはLLM原文のまま保存する。EMDでは二つの演技行として出力する。
+
+初期実装の適格条件は、単一人物、作者演技・一般Shot本文なし、Camera未固定の4秒以上Shot。
+最長Shotを一つ選び、同尺なら先頭を採る。候補は `(scene_number-1) % 候補数` で巡回する。
+意味品質の判定・語彙不足の補正ではない。条件外はINFOを残して合成しない。
+既定profileは変えず、`anime_scene_composed_mv` 又はScene authorとユーザー明示リストで有効化する。
+Planner versionは `v83-explicit-motion-composition`、Enhancer versionは `v26-explicit-motion-composition`。
+profile本文と補完metadata、ユーザー設定がcache identityへ入る。
+
 ## 1. 適用範囲
 
 本書はPython module間及びComfyUI custom socketで渡すversioned artifactと、LLMからPythonへ返す行protocolを定義する。EMDは人間が編集する文書形式なので、文法は`emd-spec.md`を正本とする。
@@ -27,9 +52,9 @@ V1は後方互換を要求しない。未知schema、旧`CL...` schema又はvers
 | `MVD_EMD_FRAGMENT_V1` | `EMDTextArtifact` | Subjectだけの編集可能EMD |
 | `MVD_SCENE_EMD_FRAGMENT_V1` | `EMDTextArtifact` | Scene環境だけの編集可能EMD |
 | `MVD_REFERENCE_BINDINGS_V1` | `ReferenceBindingsArtifact` | IMAGEとPictureの物理束縛 |
-| `MVD_DIRECTION_V3` | `DirectionArtifact` | 六方向、profile ID、保持方針とprovenance |
+| `MVD_DIRECTION_V4` | `DirectionArtifact` | 六方向、profile ID、保持方針とprovenance |
 
-`MVD_DIRECTION_V3`の任意`motion_policy_profile_id`は、作者が共通Motion本文を
+`MVD_DIRECTION_V4`の任意`motion_policy_profile_id`は、作者が共通Motion本文を
 上書きして`motion_profile_id=passthrough`となっても、明示選択した
 Motion profileのPlanner方式を保持する。これは描画用の共通本文を再挿入する
 指示ではない。旧artifactでこの任意項目が無ければ従来の`motion_profile_id`を使う。
@@ -50,7 +75,7 @@ Motion profileのPlanner方式を保持する。これは描画用の共通本�
 
 ```json
 {
-  "schema": "MVD_DIRECTION_V3",
+  "schema": "MVD_DIRECTION_V4",
   "style_direction": ["..."],
   "environment_direction": ["..."],
   "time_lighting_direction": ["..."],
@@ -496,5 +521,11 @@ backendのtoken事前検査では`fit_context_budget`を使い、安全余白を
 推論の`max_tokens`と進捗ログは調整後の値を使い、予算調整、分割、履歴削減をINFOへ残す。
 LLM task、EMD・行protocol及び監査の意味修復上限は変更せず、cache分離のため
 algorithm versionを`mvd-timeline-planner-v58`へ更新する。
+
+Scene author v82では内部要求に`section_lyric_context`を追加する。当該Sceneの
+`original_lyrics`とは別の読み取り文脈で、連続section名の区間・出現回・原文行位置を保持する。
+予算超過時はslot分割の前にScene外の遠い行を半分ずつ除き、`coverage=partial`と
+`omitted_lines`を記録して再計測する。原文の自然文補完、現Scene歌詞の削除、
+作者固定文や候補の削除は行わない。出力の行protocolとEMDの時刻意味は変えない。
 
 field追加、値域追加、時刻意味の変更又は未知key受理はversion変更である。V1 parserへ互換分岐を積み上げない。表示文、tooltip又はdebug出力だけの変更はprotocol versionを変更しない。

@@ -23,6 +23,19 @@ Direction profileの任意`render_prompt`は、Motion/Cameraの詳細な計画�
 計画に使用し、レンダラはprofile所有本文に完全一致する項目だけを指定の描画文へ投影する。
 作者の追加文と採用ActionはAS ISで保持する。詳細は[profile仕様](../../profiles/README.md)を参照。
 
+開発用Scene author経路では、明示された `# モーション補完` だけを限定的な合成例外とする。
+原LLM行を書き換えず、別の ``* `演技` 本文`` 行を追加する。補完はCompilerではなく
+PlannerがCamera生成前に確定する。作者が演技又は一般Shot本文を書いたSceneは補完しない。
+出所を示す次の注釈をShot本文領域で受け付ける。注釈は表示用で、Compiler promptには含めない。
+
+```text
+> `モーション補完` source=profile:anime_scene_composed_mv template=1 sha256=<本文のSHA-256小文字64桁>
+```
+
+sourceは `user` 又は `profile:<profile_id>`、templateは1ベースの候補番号。
+これは手書きの演技・演出を生成後に意味修正する一般的な許可ではない。
+入力記法と適用条件は[TIPS](../tips/mechanical-motion-and-perceived-performance.md)を参照。
+
 Compilerは翻訳元をEMD fieldで区切り、共通文と局所Shotを同じ翻訳batchへ混在させない。
 field ID・原文hashをINFO、採用結果との対応を成功キャッシュの`translation_trace`へ記録する。
 これは出典分離であって、LLMの意味判断を機械的に訂正する処理ではない。
@@ -259,7 +272,10 @@ Compilerは本文を英訳し、構造を使って局所的な優先順位を解
 Motion profileの`performance_mode=scene_author`を選んだPlanner経路では、
 元TemplateのShot境界・Sceneの継続指定を保ち、作者が書いた用途別項目は固定する。
 未指定の出来事、人物演技、撮影だけをScene単位で順に生成する。演出候補は出来事
-担当に限る任意の着想で、必須条件ではない。作者の固定本文は後続担当へ渡すが、
+担当と人物演技担当へ原文のまま渡す任意の着想で、必須条件ではない。
+セクションの連続区間に属する原歌詞を読み取り文脈として渡すが、当該Sceneの
+歌詞時刻を変更せず、区間全体を描写する義務も作らない。元見出しIDのないTemplate
+では隣接同名見出しを区別できない。作者の固定本文は後続担当へ渡すが、
 Pythonは意味を推測して文章を書き直さない。完成済み`# サブジェクト`から始まる
 全文EMDをPlannerの`template_emd`へ入れた場合は、検証後にLLMとprofile生成を
 通さずそのまま返せる。通常はCompilerへ直接入力してもよい。

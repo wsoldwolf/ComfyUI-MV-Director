@@ -2,6 +2,10 @@
 
 | 文書 | 内容 |
 |---|---|
+| [全編EMD 00002：演技の持ち越し・補完の累積と次の改修計画](scene-composition-full-sequence-review-2026-09-23.md) | 34 Shotと採用キャッシュを照合。31 Shotの同一基礎演技、補完のLLM原文への混入、歌詞対象の欠落を分析し、担当別の終端状態と連続Scene比較によるP0〜P3を計画 |
+| [明示モーション合成の実装・8B検証](motion-composition-2026-09-23.md) | 原文保持と外部template合成、作者優先、541件回帰、実効seed固定を含む24呼出し。残る静止・移動競合を記録 |
+| [旧8B動作生成の再現実験](legacy-action-replay-2026-09-23.md) | 旧prompt・人物入力・非thinking経路で32回比較。歌詞単位と尺を分けて評価し、旧Pythonの全身motion補完も追跡。単純移植を見送り、作者の身体フレーズ候補を使う次の判断を記録 |
+| [セクション文脈と演技指示：P0〜P2実行結果](section-performance-p0-p2-2026-09-23.md) | 入力経路・候補伝達を実装し526件回帰。四条件8回、別seed4回、共同設計2回を比較したが振付改善は未達。P3保留と当時の実prompt再現の優先度を記録 |
 | [第一次判定の再分析：8Bへ演技意図と歌詞文脈を戻す](scene-author-8b-input-recovery-plan-2026-09-23.md) | 旧8Bのprompt 13ファイルをmetadata hashと照合。局所歌詞の分断、演技候補の伝達、外部出来事への従属を分析し、prompt×セクション全文の8回比較と段階的な改善計画を提案 |
 | [Scene author経路：実装と8B短区間の第一次判定](scene-author-pilot-2026-09-23.md) | 作者EMD優先、三段Scene経路、構造grammar、実8B Scene 5・9の成功と創作上の未達を証跡付きで整理。既定昇格とH3比較を保留した理由 |
 | [8B振付生成の再設計：原文保持と短い統合経路](scene-choreography-architecture-redesign-2026-09-23.md) | Motion入力の欠落と旧8Bの直接採用経路を追跡。Scene単位の原文保持・撮影計画・限定監査に加え、ユーザーEMD優先の共通解析、部分手書き・補完、Compilerまでの優先解決を図付きで提案 |

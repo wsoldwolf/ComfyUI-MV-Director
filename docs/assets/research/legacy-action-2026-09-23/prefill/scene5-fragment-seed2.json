@@ -1,0 +1,119 @@
+{
+  "case": "scene5-fragment",
+  "payload": {
+    "protocol": "clmv-lyric-action-line-v1",
+    "planning_constraints": {
+      "subject_identity": [
+        "CLMPPIC1Xを外観参照としてのみ使用する成人の狐巫女をCLMPSUB1Xとする。長い淡い金髪、縦幅が狭く細長い狐眼、目頭より目尻が明確に高い強めの吊り目、上下の瞼に一部を隠された金橙色の虹彩、細い縦長の瞳孔、髪と同じ淡い金色で小さく短く太い楕円状の丸眉を持つ。丸眉は左右に一つずつあり、それぞれの長さを片目の横幅の約三分の一とし、両端に角を作らない。頭頂部の左右に一対だけある大きな狐耳、赤い組紐の髪飾り、白と深紅を基調とする巫女風衣装、分離した長い振袖、深紅のプリーツ袴スカート、白い脚衣及び赤白の履物を持つ。前髪は参照画像と同じ配置を保ち、左右の丸眉を部分的に覆ってよい。腰の後方には髪と同系色の淡い金色の狐尻尾が正確に一本だけ生えており、尻尾の先端部分だけが明瞭な白色である。"
+      ],
+      "retention_constraints": [
+        "CLMPSUB1X 完全に保持: CLMPPIC1Xの人物の顔、縦幅が狭く細長い狐眼、目頭より目尻が明確に高い吊り目、上下の瞼に一部を隠された金橙色の虹彩、細い縦長の瞳孔、髪と同じ淡い金色で小さく短く太い楕円状の丸眉、長い淡い金髪、狐耳、体格、衣装、髪飾り及び識別可能な特徴を全Sceneで維持する。歌唱、笑顔、驚き及び顔の向きによって目を大きく見開かず、目の縦幅を広げず、虹彩全体を円形に露出させず、丸目又は垂れ目へ変化させない。丸眉を長い線、細い線、横長のカプセル形、弓形、鋭い眉山、黒色又は茶色へ変化させず、片目の横幅の約三分の一である短く太い楕円形と淡い金色を維持する。前髪によって丸眉が部分的に隠れることは許容するが、両眉を完全に消失させず、見える部分の淡い金色、太さ及び丸い輪郭を維持する。狐耳は頭頂部の左右に一対だけ配置し、人間の耳、追加の狐耳及び角を生成しない。狐尻尾は腰の後方に自然に接続した一本だけとし、増殖、分岐、消失、短縮又は別種の尾への変化を行わず、淡い金色と白い先端の境界を維持する。頭部、顔、首及び胴体は各一つ、腕、脚及び手は左右一対、各手の指は親指を含む正確な五本とし、身体、衣装、髪、耳及び尻尾を融合、欠損、複製又は変形させない。"
+      ]
+    },
+    "reference_legend": {
+      "CLMPPIC1X": "<Picture 1>",
+      "CLMPSUB1X": "<Subject 1>"
+    },
+    "requested_scene_ids": [
+      6
+    ],
+    "requested_scene_count": 1,
+    "scenes": [
+      {
+        "scene_id": 6,
+        "duration_ms": 9208.0,
+        "lyric_lines": [
+          {
+            "index": 1,
+            "section": "[Verse]",
+            "kind": "verse",
+            "text": "口にする"
+          },
+          {
+            "index": 2,
+            "section": "[Verse]",
+            "kind": "verse",
+            "text": "見送ることに"
+          },
+          {
+            "index": 3,
+            "section": "[Verse]",
+            "kind": "verse",
+            "text": "慣れたはずなのに"
+          },
+          {
+            "index": 4,
+            "section": "[Verse]",
+            "kind": "verse",
+            "text": "胸の古傷は"
+          },
+          {
+            "index": 5,
+            "section": "[Verse]",
+            "kind": "verse",
+            "text": "増えてゆく"
+          },
+          {
+            "index": 6,
+            "section": "[Pre-Chorus]",
+            "kind": "pre_chorus",
+            "text": "命とは"
+          }
+        ],
+        "allowed_response_modes": [
+          "direct_subject_action",
+          "direct_object_action",
+          "spatial_metaphor"
+        ],
+        "semantic_grounding_order": [
+          "choose the earliest complete source predicate",
+          "identify its actor, physical head verb, and concrete target",
+          "make the target recognizable before contact",
+          "execute that exact verb instead of a visually convenient substitute",
+          "show the completed result on the same target after release"
+        ],
+        "style_separation": "This stage has intentionally omitted global medium, background, motif, and camera directions. Do not invent them or use them as the action. Resolve only the source lyric's literal visible predicate."
+      }
+    ]
+  },
+  "seed": 2,
+  "effective_config": {
+    "chat_format": "",
+    "max_tokens": 512,
+    "temperature": 0.1,
+    "top_p": 0.9,
+    "repetition_penalty": 1.05,
+    "gpu_layers": -1,
+    "n_batch": 256,
+    "n_ctx": 16384,
+    "flash_attn": true,
+    "kv_cache_type": "q8_0",
+    "op_offload": true,
+    "keep_model_loaded": false,
+    "seed": 2
+  },
+  "transport": "legacy-prefill",
+  "usage": {
+    "prompt_tokens": 2232,
+    "completion_tokens": 111,
+    "total_tokens": 2343
+  },
+  "response": "LYRIC_SCENE\t6\nLYRIC_RESPONSE\t1\tdirect_subject_action\nCOMPOSITION_REQUIREMENT\t口を動かす\nACTION\t1\tCLMPSUB1Xが淡い金色の丸眉を軽く上げながら口を開く\nACTION\t2\tCLMPSUB1Xが唇を左右に広げて笑みを浮かべる\nVISIBLE_RESULT\t口元に金色の光が広がり、唇の端が少し上がった形になる\nEND_LYRIC_SCENE",
+  "finish_reasons": [
+    "stop"
+  ],
+  "stream_chunks": null,
+  "raw_prompt_tokens": 2192,
+  "tokens_estimated": false,
+  "elapsed_seconds": 0.9159787999960827,
+  "framing": {
+    "expected_open": true,
+    "expected_end": true,
+    "action_count": 2,
+    "action_columns_valid": true,
+    "action_indices": [
+      "1",
+      "2"
+    ]
+  }
+}

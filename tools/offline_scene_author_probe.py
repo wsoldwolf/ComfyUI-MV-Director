@@ -20,6 +20,7 @@ from core.inference import LlamaCppLifecycle, LlamaRuntimeConfig
 from core.planner import plan_timeline
 from nodes.node_timeline_planner.node import _LlamaPlannerBackend, _system_prompts
 from tools.offline_short_scene_planner import template_from_scene
+from tools.offline_section_performance_probe import FixedSeedBackend, RecordingLifecycle
 
 
 def main() -> int:
@@ -29,6 +30,10 @@ def main() -> int:
     parser.add_argument("--scene", type=int, choices=(5, 9), required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--seed", type=int, default=1)
+    parser.add_argument("--motion-profile", default="anime_scene_author_mv",
+                        choices=("anime_scene_author_mv", "anime_scene_composed_mv"))
+    parser.add_argument("--disable-motion-composition", action="store_true")
+    parser.add_argument("--fixed-call-seed", action="store_true")
     args = parser.parse_args()
     fixture = json.loads(args.fixture.read_text(encoding="utf-8"))
     scene = next(row for row in fixture["scenes"] if row["scene_number"] == args.scene)
@@ -40,14 +45,17 @@ def main() -> int:
     )
     direction = DirectionArtifact(
         style_direction=(STYLE_PROFILES["anime_emotional_mv"],),
-        motion_direction=(MOTION_PROFILES["anime_scene_author_mv"],),
+        motion_direction=(MOTION_PROFILES[args.motion_profile],),
         camera_direction=(CAMERA_PROFILES["anime_emotional_mv"],),
         style_profile_id="anime_emotional_mv",
-        motion_profile_id="anime_scene_author_mv",
+        motion_profile_id=args.motion_profile,
+        motion_templates=() if args.disable_motion_composition else None,
         camera_profile_id="anime_emotional_mv",
     )
-    lifecycle = LlamaCppLifecycle()
-    backend = _LlamaPlannerBackend(lifecycle)
+    lifecycle = RecordingLifecycle()
+    backend = (FixedSeedBackend if args.fixed_call_seed else _LlamaPlannerBackend)(lifecycle)
+    if args.output.exists() and any(args.output.iterdir()):
+        raise ValueError("Use a fresh evidence directory")
     args.output.mkdir(parents=True, exist_ok=True)
     (args.output / "template.md").write_text(template, encoding="utf-8")
     try:
@@ -69,6 +77,10 @@ def main() -> int:
             "source_scene": args.scene,
             "local_time_rebased": True,
             "seed": args.seed,
+            "fixed_call_seed": args.fixed_call_seed,
+            "motion_profile": args.motion_profile,
+            "motion_composition_disabled": args.disable_motion_composition,
+            "motion_compositions": list(result.content.motion_compositions) if result.content else [],
             "model": args.model.name,
             "complete": result.complete,
             "missing": [list(item) for item in result.missing],

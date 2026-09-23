@@ -13,6 +13,7 @@ MOTION_PERFORMANCE_MODES = _CATALOG.motion_performance_mode
 MOTION_BODY_ACCENT_POLICIES = _CATALOG.motion_body_accent_policy
 MOTION_CHOREOGRAPHY_POLICIES = _CATALOG.motion_choreography_policy
 MOTION_CHOREOGRAPHY_PHRASES = _CATALOG.motion_choreography_phrases
+MOTION_TEMPLATES = _CATALOG.motion_templates
 CAMERA_PROFILES = _CATALOG.camera
 LOCKED_STYLE_PROFILES = _CATALOG.locked_style
 STYLE_RETENTION_POLICIES = _CATALOG.style_retention
@@ -43,6 +44,7 @@ def planner_profile_metadata(profile_id: str, motion_profile_id: str = "") -> di
             "motion": RENDER_PROMPTS.get("motion", {}).get(motion_profile_id, ""),
         },
         "performance_mode": MOTION_PERFORMANCE_MODES.get(motion_profile_id, "event_based"),
+        "motion_templates": list(MOTION_TEMPLATES.get(motion_profile_id, ())),
         "body_accent_policy": MOTION_BODY_ACCENT_POLICIES.get(motion_profile_id, "off"),
         "choreography_policy": MOTION_CHOREOGRAPHY_POLICIES.get(motion_profile_id, "off"),
         "choreography_phrases": [

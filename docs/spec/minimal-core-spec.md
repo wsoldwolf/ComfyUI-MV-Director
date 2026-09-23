@@ -28,7 +28,7 @@
 | ノード | 主な入力 | 主な出力 | 責務 |
 |---|---|---|---|
 | `MV Director - Image to Subject EMD` | IMAGE、`subject_hint`、`additional_instruction`、観察・hint・binding制御、Vision model | `MVD_EMD_FRAGMENT_V1`、`MVD_SCENE_EMD_FRAGMENT_V1`、任意の`MVD_REFERENCE_BINDINGS_V1`、IMAGE pass-through、debug observations、読み取り専用Picture表示 | subject-onlyでは人物・物体概念、scene-onlyでは環境専用Scene EMDを決定的にrenderする |
-| `MV Director - Direction Enhancer` | 任意の概念EMD、任意のScene EMD、短い希望、演出profile又はDirection EMDパススルー | `MVD_DIRECTION_V3`、人間向けpreview | profile又はユーザー直書き方針から動作する。raw observationsは受けない |
+| `MV Director - Direction Enhancer` | 任意の概念EMD、任意のScene EMD、短い希望、演出profile又はDirection EMDパススルー | `MVD_DIRECTION_V4`、人間向けpreview | profile又はユーザー直書き方針から動作する。raw observationsは受けない |
 | `MV Director - Timeline Planner` | 任意の概念EMD、任意のScene EMD、Template EMD、任意のdirection artifact、lip-sync mode、GGUFとllama.cpp調整値 | `MVD_EMD_V1`、EMD文字列、status | 確定済み時間枠へ概念とScene設定を構造統合し、歌詞解釈、人物動作、カメラ及び機械的なlip-sync directiveを展開する |
 | `MV Director - EMD Compiler` | 完全Ref2VA EMD文字列、H3 timing profile、翻訳mode、選択GGUFとruntime設定 | Context Loop Ref2VA Plan JSON、必要参照一覧、固定artifact | EMD構造を保持し、選択したGGUFでH3 promptへ出す自由文だけを英訳してRef2VA六セクションへ直列化する |
 
@@ -382,11 +382,11 @@ Image to Subject EMDはScene、Shot、歌詞、音響、カメラ又は物語展
 
 ### 6.2 出力
 
-`MVD_DIRECTION_V3`はPythonが行recordと機械的パススルーを合成して構築する内部artifactである。LLMへこのJSONを生成させず、Enhancerは同じ内容を人間が確認できる`direction_emd_preview` STRINGも返す。Plannerはartifact socketを直接受け取り、preview文字列を再parseしない。少なくとも次を持つ。
+`MVD_DIRECTION_V4`はPythonが行recordと機械的パススルーを合成して構築する内部artifactである。LLMへこのJSONを生成させず、Enhancerは同じ内容を人間が確認できる`direction_emd_preview` STRINGも返す。Plannerはartifact socketを直接受け取り、preview文字列を再parseしない。少なくとも次を持つ。
 
 ```json
 {
-  "schema": "MVD_DIRECTION_V3",
+  "schema": "MVD_DIRECTION_V4",
   "style_direction": [],
   "environment_direction": [],
   "time_lighting_direction": [],
@@ -589,7 +589,7 @@ Sceneはplan上の`[start_ms, end_ms)`を半開区間で隙間なく一回だけ
 |---:|---|---|---|---|---|
 | 1 | `template_emd` | `STRING` forceInput | 必須 | なし | Lyric Segmentationの時間・歌詞annotation付きTemplate EMD |
 | 2 | `concept_emd` | `STRING` forceInput | 任意 | 空 | 一個のSubject EMD断片。Pictureなしも可 |
-| 3 | `direction` | `MV_DIRECTOR_DIRECTION` | 任意 | 空の六方向 | Enhancerの`MVD_DIRECTION_V3`。ユーザー編集対象ではない |
+| 3 | `direction` | `MV_DIRECTOR_DIRECTION` | 任意 | 空の六方向 | Enhancerの`MVD_DIRECTION_V4`。ユーザー編集対象ではない |
 | 4 | `lip_sync_mode` | STRING COMBO | 必須widget／外部接続可 | `lyrics` | `off` / `context_loop` / `audio_reference` / `lyrics` |
 | 5 | `lip_sync_target` | `STRING` | 必須widget／外部接続可 | `サブジェクト1` | 口形対象の派生内部ID |
 | 6 | `lip_sync_audio_slot` | `INT` 1..3 | 必須widget／外部接続可 | 1 | Audio参照時の`音声N` |

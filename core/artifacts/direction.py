@@ -1,4 +1,4 @@
-"""MVD_DIRECTION_V3."""
+"""MVD_DIRECTION_V4: explicit author motion composition override."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from .base import (
 from .errors import ArtifactValidationError
 
 
-SCHEMA = "MVD_DIRECTION_V3"
+SCHEMA = "MVD_DIRECTION_V4"
 _HASH_RE = re.compile(r"[0-9a-f]{64}\Z")
 _RECORD_KINDS = {"input", "output", "discard"}
 _SOURCES = {"user", "vision", "profile", "generated"}
@@ -167,12 +167,20 @@ class DirectionArtifact:
     retention_policy: str = "compiler_default"
     retention_lines: tuple[str, ...] = ()
     staging_candidates: tuple[str, ...] = ()
+    motion_templates: tuple[str, ...] | None = None
     provenance: tuple[ProvenanceRecord, ...] = ()
     schema: str = SCHEMA
 
     def validate(self) -> None:
         if self.schema != SCHEMA:
             raise ArtifactValidationError(SCHEMA, "schema", "schema mismatch")
+        if self.motion_templates is not None:
+            if not isinstance(self.motion_templates, tuple) or len(self.motion_templates) > 12:
+                raise ArtifactValidationError(SCHEMA, "motion_templates", "must be a tuple of at most 12 items")
+            for item in self.motion_templates:
+                require_string(item, schema=SCHEMA, path="motion_templates[]")
+                if not item.strip() or len(item) > 500 or any(ord(c) < 32 for c in item):
+                    raise ArtifactValidationError(SCHEMA, "motion_templates", "invalid single-line template")
         for field_name in (
             "style_direction",
             "environment_direction",
@@ -249,6 +257,8 @@ class DirectionArtifact:
             "retention_lines": list(self.retention_lines),
             **({"staging_candidates": list(self.staging_candidates)}
                if self.staging_candidates else {}),
+            **({"motion_templates": list(self.motion_templates)}
+               if self.motion_templates is not None else {}),
             "provenance": [record.to_dict() for record in self.provenance],
         }
 
@@ -276,7 +286,7 @@ class DirectionArtifact:
                 "retention_lines",
                 "provenance",
             },
-            optional={"staging_candidates", "motion_policy_profile_id"},
+            optional={"staging_candidates", "motion_policy_profile_id", "motion_templates"},
         )
         if value["schema"] != SCHEMA:
             raise ArtifactValidationError(SCHEMA, "schema", "schema mismatch")
@@ -313,6 +323,8 @@ class DirectionArtifact:
             retention_policy=value["retention_policy"],
             retention_lines=directions["retention_lines"],
             staging_candidates=directions["staging_candidates"],
+            motion_templates=(tuple(require_sequence(value["motion_templates"], schema=SCHEMA, path="motion_templates"))
+                              if "motion_templates" in value else None),
             provenance=tuple(
                 ProvenanceRecord.from_dict(item) for item in provenance_values
             ),

@@ -15,6 +15,7 @@ from ..artifacts import (
     sha256_text,
 )
 from ..emd import parse_scene_emd_fragment, render_scene_emd_fragment
+from ..emd.motion_templates import split_motion_templates
 from ..inference import LlamaRuntimeConfig
 from ..protocols import LLMRecord, LLMRecordIssue, parse_llm_records
 from .profiles import (
@@ -26,7 +27,7 @@ from .profiles import (
 from .passthrough import DirectionPassthrough, parse_direction_passthrough
 
 
-DIRECTION_PROMPT_VERSION = "mvd-direction-enhancer-v25-user-emd-priority"
+DIRECTION_PROMPT_VERSION = "mvd-direction-enhancer-v26-explicit-motion-composition"
 PASSTHROUGH_PROFILE = "passthrough"
 RETENTION_POLICIES = ("profile", "compiler_default", "passthrough")
 _MAX_STAGING_CANDIDATES = 12
@@ -61,6 +62,10 @@ def split_staging_directives(user_request: str) -> tuple[str, tuple[str, ...]]:
     Python does not select a lyric, object, action, or preferred candidate.
     """
 
+    try:
+        user_request, _ = split_motion_templates(user_request)
+    except ValueError as exc:
+        raise DirectionEnhancerError(str(exc)) from exc
     lines: list[str] = []
     candidates: list[str] = []
     in_staging_section = False
@@ -158,6 +163,10 @@ class DirectionEnhancerInput:
         if self.retention_policy not in RETENTION_POLICIES:
             raise DirectionEnhancerError("unknown retention_policy")
         split_staging_directives(self.normalized_user_request)
+        if split_motion_templates(self.normalized_user_request)[1]:
+            from .profiles import MOTION_PERFORMANCE_MODES
+            if MOTION_PERFORMANCE_MODES.get(self.motion_profile) != "scene_author":
+                raise DirectionEnhancerError("モーション補完 requires a scene_author motion profile")
         concept = self.normalized_concept_emd
         if concept:
             headings = [line for line in concept.split("\n") if line.startswith("# ")]
@@ -735,6 +744,7 @@ def enhance_direction(
         retention_policy=value.retention_policy,
         retention_lines=passthrough.retention,
         staging_candidates=value.staging_candidates,
+        motion_templates=split_motion_templates(value.normalized_user_request)[1],
         provenance=tuple(provenance),
     )
     direction.validate()

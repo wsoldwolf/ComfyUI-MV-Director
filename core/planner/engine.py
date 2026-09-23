@@ -56,7 +56,7 @@ from .template import (
 )
 
 
-PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v81"
+PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v84-scene-terminal-state"
 _ACTION_AUDIT_REPAIR_ATTEMPTS = 1
 _LOGGER = logging.getLogger("mv_director.nodes")
 TASKS = (
@@ -183,6 +183,8 @@ class PlannerContent:
     scene_spine_skipped_scenes: tuple[int, ...] = ()
     events: tuple[tuple[int, int, str], ...] = ()
     typed_output: bool = False
+    motion_compositions: tuple[tuple[int, int, str, int, str], ...] = ()
+    terminal_states: tuple[tuple[int, str, str, str], ...] = ()
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -214,6 +216,8 @@ class PlannerContent:
             "scene_spine_skipped_scenes": list(self.scene_spine_skipped_scenes),
             "events": [list(value) for value in self.events],
             "typed_output": self.typed_output,
+            "motion_compositions": [list(value) for value in self.motion_compositions],
+            "terminal_states": [list(value) for value in self.terminal_states],
         }
 
     @classmethod
@@ -274,6 +278,12 @@ class PlannerContent:
                 for row in value.get("events", ())
             ),
             typed_output=bool(value.get("typed_output", False)),
+            motion_compositions=tuple(
+                (int(r[0]), int(r[1]), str(r[2]), int(r[3]), str(r[4]))
+                for r in value.get("motion_compositions", ())),
+            terminal_states=tuple(
+                (int(r[0]), str(r[1]), str(r[2]), str(r[3]))
+                for r in value.get("terminal_states", ())),
         )
 
 
@@ -6038,6 +6048,8 @@ def render_planner_content(
         cameras={(scene, shot): text for scene, shot, text in content.cameras},
         events={(scene, shot): text for scene, shot, text in content.events},
         typed_output=content.typed_output,
+        motion_compositions={(s, shot): (source, index, text)
+                             for s, shot, source, index, text in content.motion_compositions},
         lip_sync_mode=lip_sync_mode,
         lip_sync_target=lip_sync_target,
         lip_sync_audio_slot=lip_sync_audio_slot,

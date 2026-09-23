@@ -1,0 +1,228 @@
+{
+  "scene": 9,
+  "variant": "D",
+  "system_prompt": "あなたは歌唱MVの振付家である。original_lyricsは今回演じる時刻付き歌詞、section_lyric_contextは意味と感情の流れを理解するための前後を含む原歌詞である。文脈内の全ての出来事をこのSceneへ詰め込む指示ではない。人物が何を感じ、相手や空間へ何を伝えようとしているかを読み、一つのSceneを一続きの身体フレーズとして演じさせる。感情のため、動き出す契機、主動作、反動又は解放、異なる終わりの姿をつなぐ。支持や体幹の変化から腕・頭部・表情が連動する動きを尺と歌詞の強度に合わせて選ぶ。全部位を毎Shotで動かす必要はなく、静けさと明瞭なアクセントを対比させてよい。\nscene_motionと作者の条件を守る。staging_candidates_optionalは任意の着想であり、現在の歌詞と演技に合う候補だけを選び又は発展させてよい。外部出来事担当の不採用は身体候補の不採用を意味しない。accepted_eventは対象側の状況で、人物演技の全文指示ではない。対象を指すだけの説明にせず身体表現と同時に発展させてよい。出来事なしでも身体演技は成立する。event_source=authorの演出と開始Shotは固定する。LLMの出来事も選択済みの状況として扱うが、その文言を人物動作へ逐語展開しない。\n全Shotの位置、作者固定のfixed_performances、previous_accepted_terminalを同時に読む。Scene全体を思い描いてから、未固定Shotだけをその続きとして順に書く。次Shotは前Shotの終点から進み、同じ準備や開腕を再開しない。固定Shotは変更しない。人物の自転をカメラ旋回の代用にしない。撮影、画角、Zoom、Arc、カメラ動作は人物演技本文へ書かない。\nslotsにある各slotに対し一行ずつ、PERFORMANCE<TAB>slot番号<TAB>日本語本文。説明、見出し、Markdown、余分な行を出さない。本文にタブや改行を入れない。\n",
+  "payload": {
+    "accepted_event": "人物の周囲の空間に複数の狐火が現れる。",
+    "accepted_event_shot": 2,
+    "continuation": false,
+    "event_source": "author",
+    "fixed_performances": {},
+    "original_lyrics": [
+      {
+        "lyrics": [
+          {
+            "section": "CHORUS",
+            "text": "永遠と呼べるなら"
+          },
+          {
+            "section": "CHORUS",
+            "text": "この手を離すことも"
+          },
+          {
+            "section": "CHORUS",
+            "text": "愛なのだろうか"
+          },
+          {
+            "section": "CHORUS",
+            "text": "朱の空に舞う"
+          }
+        ],
+        "shot": 1
+      },
+      {
+        "lyrics": [
+          {
+            "section": "CHORUS",
+            "text": "狐火へ問う"
+          },
+          {
+            "section": "CHORUS",
+            "text": "忘れぬことは"
+          }
+        ],
+        "shot": 2
+      }
+    ],
+    "previous_accepted_terminal": {},
+    "protocol": "MVD_LLM_RECORDS_V1",
+    "scene_descriptions": [],
+    "scene_emd": "",
+    "scene_end_ms": 9916,
+    "scene_motion": [
+      "手描きセルアニメーションとして二コマ打ち又は三コマ打ちを使う。人物の支持、重心、体幹、腕及び表情はShot間で連続し、重要なアクセントを明瞭なキーポーズで示す。 歌詞に合う身体演技を見せる。対象物の変化と人物の演技を区別し、Shotに指定された出来事、演技及び撮影を同じ時間軸で行う。カメラの旋回を人物の全身回転に置き換えない。"
+    ],
+    "scene_number": 1,
+    "scene_other": [],
+    "scene_start_ms": 0,
+    "section_lyric_context": [
+      {
+        "boundary_source": "original_heading",
+        "coverage": "full_source_section",
+        "lines": [
+          {
+            "scene": 0,
+            "source_line": 23,
+            "text": "千年鳥居を"
+          },
+          {
+            "scene": 0,
+            "source_line": 23,
+            "text": "くぐるそなたよ"
+          },
+          {
+            "scene": 0,
+            "source_line": 24,
+            "text": "なぜその瞳は"
+          },
+          {
+            "scene": 0,
+            "source_line": 24,
+            "text": "あの日と似ている"
+          },
+          {
+            "scene": 0,
+            "source_line": 25,
+            "text": "わらわの明日は"
+          },
+          {
+            "scene": 0,
+            "source_line": 25,
+            "text": "果てなく続き"
+          },
+          {
+            "scene": 0,
+            "source_line": 26,
+            "text": "そなたの明日は"
+          },
+          {
+            "scene": 0,
+            "source_line": 26,
+            "text": "夕陽より短い"
+          },
+          {
+            "scene": 0,
+            "source_line": 28,
+            "text": "されど一瞬を"
+          },
+          {
+            "scene": 1,
+            "source_line": 28,
+            "text": "永遠と呼べるなら"
+          },
+          {
+            "scene": 1,
+            "source_line": 29,
+            "text": "この手を離すことも"
+          },
+          {
+            "scene": 1,
+            "source_line": 29,
+            "text": "愛なのだろうか"
+          },
+          {
+            "scene": 1,
+            "source_line": 30,
+            "text": "朱の空に舞う"
+          },
+          {
+            "scene": 1,
+            "source_line": 30,
+            "text": "狐火へ問う"
+          },
+          {
+            "scene": 1,
+            "source_line": 31,
+            "text": "忘れぬことは"
+          },
+          {
+            "scene": 0,
+            "source_line": 31,
+            "text": "救いか"
+          },
+          {
+            "scene": 0,
+            "source_line": 31,
+            "text": "罰か"
+          }
+        ],
+        "occurrence": 1,
+        "section": "CHORUS"
+      }
+    ],
+    "shot_positions": [
+      {
+        "author_body": [],
+        "end_ms": 4958,
+        "fixed_camera": "",
+        "fixed_event": "",
+        "fixed_performance": "",
+        "shot": 1,
+        "start_ms": 0
+      },
+      {
+        "author_body": [],
+        "end_ms": 9916,
+        "fixed_camera": "",
+        "fixed_event": "",
+        "fixed_performance": "",
+        "shot": 2,
+        "start_ms": 4958
+      }
+    ],
+    "slots": [
+      {
+        "position": {
+          "author_body": [],
+          "end_ms": 4958,
+          "fixed_camera": "",
+          "fixed_event": "",
+          "fixed_performance": "",
+          "shot": 1,
+          "start_ms": 0
+        },
+        "scene": 1,
+        "shot": 1,
+        "slot": 1
+      },
+      {
+        "position": {
+          "author_body": [],
+          "end_ms": 9916,
+          "fixed_camera": "",
+          "fixed_event": "",
+          "fixed_performance": "",
+          "shot": 2,
+          "start_ms": 4958
+        },
+        "scene": 1,
+        "shot": 2,
+        "slot": 2
+      }
+    ],
+    "staging_candidates_optional": [],
+    "subject_emd": "# サブジェクト\n* 狐耳と狐尻尾のある一人の歌唱者。\n",
+    "task": "scene-author-performance"
+  },
+  "system_sha256": "9109d866c163454924206c6b0e667a82e138fe92fb0ca5dafce480929e685828",
+  "payload_sha256": "ba507bfdbf021cad3db52e79f8b8fd4018b5794b054d1be10a69e9061f494aa2",
+  "prompt_tokens": 1369,
+  "tokens_estimated": false,
+  "effective_config": {
+    "chat_format": "",
+    "max_tokens": 1536,
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "repetition_penalty": 1.05,
+    "gpu_layers": -1,
+    "n_batch": 512,
+    "n_ctx": 16384,
+    "flash_attn": true,
+    "kv_cache_type": "q8_0",
+    "op_offload": true,
+    "keep_model_loaded": false,
+    "seed": 1
+  },
+  "elapsed_seconds": 14.405758400000195,
+  "response": "PERFORMANCE\t1\t右手を胸の高さで軽く振り上げ、左手を腰に添えて立ち、背筋を伸ばして前傾姿勢。右足を前へ踏み出し、左足を後ろへ引く。右腕を上から下へ振る。左腕を横に広げて、右手を胸の高さで振り上げる。右足を前へ踏み出す。左足を後ろへ引く。右腕を上から下へ振る。左腕を横に広げる。右足を前へ踏み出す。左足を後ろへ引く。右腕を上から下へ振る。左腕を横に広げる。右足を前へ踏み出す。左足を後ろへ引く。右腕を上から下へ振る。左腕を横に広げる。右足を前へ踏み出す。左足を後ろへ引く。右腕を上から下へ振る。左腕を横に広げる。\nPERFORMANCE\t2\t右手を胸の高さで軽く振り上げ、左手を腰に添えて立ち、背筋を伸ばして前傾姿勢。右足を前へ踏み出し、左足を後ろへ引く。右腕を上から下へ振る。左腕を横に広げて、右手を胸の高さで振り上げる。右足を前へ踏み出す。左足を後ろへ引く。右腕を上から下へ振る。左腕を横に広げる。右足を前へ踏み出す。左足を後ろへ引く。右腕を上から下へ振る。左腕を横に広げる。右足を前へ踏み出す。左足を後ろへ引く。右腕を上から下へ振る。左腕を横に広げる。\n"
+}

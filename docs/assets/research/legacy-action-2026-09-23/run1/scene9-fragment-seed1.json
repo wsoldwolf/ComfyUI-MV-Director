@@ -1,0 +1,113 @@
+{
+  "case": "scene9-fragment",
+  "payload": {
+    "protocol": "clmv-lyric-action-line-v1",
+    "planning_constraints": {
+      "subject_identity": [
+        "CLMPPIC1Xを外観参照としてのみ使用する成人の狐巫女をCLMPSUB1Xとする。長い淡い金髪、縦幅が狭く細長い狐眼、目頭より目尻が明確に高い強めの吊り目、上下の瞼に一部を隠された金橙色の虹彩、細い縦長の瞳孔、髪と同じ淡い金色で小さく短く太い楕円状の丸眉を持つ。丸眉は左右に一つずつあり、それぞれの長さを片目の横幅の約三分の一とし、両端に角を作らない。頭頂部の左右に一対だけある大きな狐耳、赤い組紐の髪飾り、白と深紅を基調とする巫女風衣装、分離した長い振袖、深紅のプリーツ袴スカート、白い脚衣及び赤白の履物を持つ。前髪は参照画像と同じ配置を保ち、左右の丸眉を部分的に覆ってよい。腰の後方には髪と同系色の淡い金色の狐尻尾が正確に一本だけ生えており、尻尾の先端部分だけが明瞭な白色である。"
+      ],
+      "retention_constraints": [
+        "CLMPSUB1X 完全に保持: CLMPPIC1Xの人物の顔、縦幅が狭く細長い狐眼、目頭より目尻が明確に高い吊り目、上下の瞼に一部を隠された金橙色の虹彩、細い縦長の瞳孔、髪と同じ淡い金色で小さく短く太い楕円状の丸眉、長い淡い金髪、狐耳、体格、衣装、髪飾り及び識別可能な特徴を全Sceneで維持する。歌唱、笑顔、驚き及び顔の向きによって目を大きく見開かず、目の縦幅を広げず、虹彩全体を円形に露出させず、丸目又は垂れ目へ変化させない。丸眉を長い線、細い線、横長のカプセル形、弓形、鋭い眉山、黒色又は茶色へ変化させず、片目の横幅の約三分の一である短く太い楕円形と淡い金色を維持する。前髪によって丸眉が部分的に隠れることは許容するが、両眉を完全に消失させず、見える部分の淡い金色、太さ及び丸い輪郭を維持する。狐耳は頭頂部の左右に一対だけ配置し、人間の耳、追加の狐耳及び角を生成しない。狐尻尾は腰の後方に自然に接続した一本だけとし、増殖、分岐、消失、短縮又は別種の尾への変化を行わず、淡い金色と白い先端の境界を維持する。頭部、顔、首及び胴体は各一つ、腕、脚及び手は左右一対、各手の指は親指を含む正確な五本とし、身体、衣装、髪、耳及び尻尾を融合、欠損、複製又は変形させない。"
+      ]
+    },
+    "reference_legend": {
+      "CLMPPIC1X": "<Picture 1>",
+      "CLMPSUB1X": "<Subject 1>"
+    },
+    "requested_scene_ids": [
+      9
+    ],
+    "requested_scene_count": 1,
+    "scenes": [
+      {
+        "scene_id": 9,
+        "duration_ms": 9916.0,
+        "lyric_lines": [
+          {
+            "index": 1,
+            "section": "[Chorus]",
+            "kind": "chorus",
+            "text": "永遠と呼べるなら"
+          },
+          {
+            "index": 2,
+            "section": "[Chorus]",
+            "kind": "chorus",
+            "text": "この手を離すことも"
+          },
+          {
+            "index": 3,
+            "section": "[Chorus]",
+            "kind": "chorus",
+            "text": "愛なのだろうか"
+          },
+          {
+            "index": 4,
+            "section": "[Chorus]",
+            "kind": "chorus",
+            "text": "朱の空に舞う"
+          },
+          {
+            "index": 5,
+            "section": "[Chorus]",
+            "kind": "chorus",
+            "text": "狐火へ問う"
+          },
+          {
+            "index": 6,
+            "section": "[Chorus]",
+            "kind": "chorus",
+            "text": "忘れぬことは"
+          }
+        ],
+        "allowed_response_modes": [
+          "direct_subject_action",
+          "direct_object_action",
+          "spatial_metaphor"
+        ],
+        "semantic_grounding_order": [
+          "choose the earliest complete source predicate",
+          "identify its actor, physical head verb, and concrete target",
+          "make the target recognizable before contact",
+          "execute that exact verb instead of a visually convenient substitute",
+          "show the completed result on the same target after release"
+        ],
+        "style_separation": "This stage has intentionally omitted global medium, background, motif, and camera directions. Do not invent them or use them as the action. Resolve only the source lyric's literal visible predicate."
+      }
+    ]
+  },
+  "seed": 1,
+  "effective_config": {
+    "chat_format": "",
+    "max_tokens": 512,
+    "temperature": 0.1,
+    "top_p": 0.9,
+    "repetition_penalty": 1.05,
+    "gpu_layers": -1,
+    "n_batch": 256,
+    "n_ctx": 16384,
+    "flash_attn": true,
+    "kv_cache_type": "q8_0",
+    "op_offload": true,
+    "keep_model_loaded": false,
+    "seed": 1
+  },
+  "response": "<think>\nOkay, let's tackle this. The user provided a detailed setup for a music video planner, specifically focusing on lyric-action decomposition. The goal is to generate the correct JSON structure for each scene based on the given constraints.\n\nFirst, I need to parse the input. The planning_constraints mention a fox spirit maiden with specific features like long golden hair, fox ears, and a red and deep red outfit. The retention_constraints ensure these elements are maintained across scenes. The reference_legend has CLMPPIC1X as the picture and CLMPSUB1X as the subject.\n\nThe requested_scene_ids is [9], so I need to process scene 9. The lyric lines for this scene are from the chorus, with lines 1 to 6. The task is to pick the earliest complete predicate that fits the action modes: direct_subject_action, direct_object_action, or spatial_metaphor.\n\nLooking at the lyric lines, line 4 says \"朱の空に舞う\" which translates to \"Dance in the vermilion sky.\" The verb here is \"舞う\" (dance), and the target is \"朱の空\" (vermilion sky). Since the subject is the fox maiden, she's the actor. The action would involve her dancing in the sky. \n\nThe COMPOSITION_REQUIREMENT needs to describe this action. The ACTION lines should detail the steps: maybe starting with raising her arms, then moving her legs, and finally extending her tail. The VISIBLE_RESULT would show her fully dancing in the sky with her tail trailing.\n\nI need to ensure that all elements from the planning_constraints are respected, like keeping her features intact and not altering her appearance. Also, avoid any typography or captions, just the physical actions. \n\nCheck if the chosen line is the earliest complete predicate. Line 4 seems suitable as it's a clear action. The direct_subject_action uses CLMPSUB1X, which is allowed. The style separation note says to focus on the literal predicate without adding extra elements like camera directions.\n\nSo, structuring the output with the correct fields, ensuring tabs between columns and proper Japanese terms. Make sure each line is concise and matches the required format.\n</think>\n\nLYRIC_SCENE\t9\nLYRIC_RESPONSE\t4\tdirect_subject_action\nCOMPOSITION_REQUIREMENT\t<Subject 1>が朱の空を舞う姿を描く\nACTION\t1\t<Subject 1>は両腕を広げて上昇する\nACTION\t2\t<",
+  "finish_reasons": [
+    "length"
+  ],
+  "stream_chunks": 512,
+  "raw_prompt_tokens": 2209,
+  "tokens_estimated": false,
+  "elapsed_seconds": 3.132754299993394,
+  "framing": {
+    "expected_open": false,
+    "expected_end": false,
+    "action_count": 2,
+    "action_columns_valid": true,
+    "action_indices": [
+      "1",
+      "2"
+    ]
+  }
+}

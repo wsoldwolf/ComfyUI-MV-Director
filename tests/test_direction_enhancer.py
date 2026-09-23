@@ -703,6 +703,7 @@ class DirectionEnhancerTests(unittest.TestCase):
                 "cinema_mv", "anime_story_mv",
                 "anime_emotional_mv", "anime_choreography_mv",
                 "anime_scene_phrase_mv", "anime_scene_author_mv",
+                "anime_scene_composed_mv",
             },
         )
         self.assertEqual(

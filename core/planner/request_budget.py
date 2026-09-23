@@ -8,6 +8,7 @@ from typing import Any
 
 from ..artifacts import canonical_json
 from ..inference import ContextBudgetError, LlamaRuntimeConfig
+from .section_context import reduce_section_context
 
 
 _LOGGER = logging.getLogger("mv_director.nodes")
@@ -45,6 +46,19 @@ def complete_with_context_recovery(
         request = json.loads(payload)
         slots = request.get("slots", [])
         retry = request.get("retry", "no")
+        # Keep Scene-wide performance generation together before splitting slots.
+        # Only distant reading context is expendable, never active lyrics or prose.
+        reduced = reduce_section_context(request)
+        if reduced is not None:
+            _LOGGER.info(
+                "[MV Director - Timeline Planner] section reading context reduced; "
+                "task=%s; scene=%s; reason=%s", task, request.get("scene_number"), exc,
+            )
+            return complete_with_context_recovery(
+                backend, task=task, system_prompt=system_prompt,
+                payload=canonical_json(reduced), config=config,
+                interrupt_callback=interrupt_callback,
+            )
         if len(slots) > 1:
             midpoint = len(slots) // 2
             _LOGGER.info(

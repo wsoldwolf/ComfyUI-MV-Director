@@ -1,7 +1,8 @@
 """Opt-in Scene-local authorship path with explicit user-owned fields.
 
 The three LLM passes author event, performance, then camera in that order.
-No semantic natural-language repair or generated fallback is performed.
+No semantic natural-language repair is performed. Explicit motion templates
+may be composed separately, preserving the LLM-authored text.
 """
 
 from __future__ import annotations
@@ -15,12 +16,32 @@ from ..artifacts import DirectionArtifact
 from ..emd.ast import Scene, Shot
 from ..inference import LlamaRuntimeConfig
 from .template import PlannerTemplate
+from .section_context import section_context_by_scene
+from .motion_composition import select_motion_composition
 
 
 _LOGGER = logging.getLogger("mv_director.nodes")
 _EVENT_ASSIGNMENT = re.compile(
     r"SHOT=([1-9][0-9]*)(?:｜|[ \t\u3000]+)(.+)\Z"
 )
+_END_STATE_SUFFIX = re.compile(
+    r"END_STATE(?:\s*[=:：]\s*|[ \u3000]+)([^\t\n]+)\Z"
+)
+_MAX_END_STATE_LENGTH = 240
+
+
+def _split_terminal_state(value: str) -> tuple[str, str]:
+    """Separate transport metadata without changing the authored prose."""
+    matched = _END_STATE_SUFFIX.search(value)
+    if matched:
+        prefix = value[:matched.start()]
+        state = matched.group(1).strip()
+        if (prefix and prefix[-1] in "｜|。．. \u3000" and state
+                and len(state) <= _MAX_END_STATE_LENGTH):
+            prose = prefix.rstrip("｜| \u3000")
+            if prose:
+                return prose, state
+    return value, ""
 
 
 def build_scene_author_grammar(
@@ -67,7 +88,11 @@ def _lyrics(scene: Scene) -> list[dict[str, object]]:
         {
             "shot": index,
             "lyrics": [
-                {"section": lyric.section or "", "text": lyric.text}
+                {
+                    "section": lyric.section or "", "text": lyric.text,
+                    "source_line": lyric.line_number,
+                    "start_ms": lyric.start_ms, "end_ms": lyric.end_ms,
+                }
                 for lyric in shot.lyric_annotations
             ],
         }
@@ -118,14 +143,28 @@ def generate_scene_author_content(
     events: list[tuple[int, int, str]] = []
     actions: list[tuple[int, int, str]] = []
     cameras: list[tuple[int, int, str]] = []
+    motion_compositions: list[tuple[int, int, str, int, str]] = []
+    terminal_states: list[tuple[int, str, str, str]] = []
     issue_count = 0
     retried_scenes: set[int] = set()
     recovered_count = 0
     previous_terminal: dict[str, str] = {}
+    section_contexts = section_context_by_scene(template)
     for scene in template.scenes:
         if interrupt_callback is not None:
             interrupt_callback()
         positions = _shot_positions(scene)
+        composition, composition_skip = select_motion_composition(
+            scene, positions, direction, concept_emd)
+        if composition:
+            _LOGGER.info(
+                "[MV Director - Timeline Planner] motion composition scheduled; "
+                "scene=%d; shot=%d; source=%s; template=%d",
+                *composition[:4],
+            )
+        elif composition_skip != "disabled":
+            _LOGGER.info("[MV Director - Timeline Planner] motion composition skipped; scene=%d; reason=%s",
+                         scene.scene_number, composition_skip)
         shared = {
             "scene_number": scene.scene_number,
             "scene_start_ms": scene.start_ms,
@@ -133,11 +172,11 @@ def generate_scene_author_content(
             "continuation": scene.continuation,
             "scene_descriptions": list(scene.descriptions),
             "original_lyrics": _lyrics(scene),
+            "section_lyric_context": section_contexts[scene.scene_number],
+            "scene_environment": list(direction.environment_direction),
+            "scene_time_lighting": list(direction.time_lighting_direction),
             "subject_emd": concept_emd,
             "scene_emd": scene_emd,
-            "previous_accepted_terminal": (
-                previous_terminal if scene.continuation else {}
-            ),
             "shot_positions": positions,
         }
         # An explicit event in any Shot owns the Scene's event selection.
@@ -167,6 +206,9 @@ def generate_scene_author_content(
                         "scene_other": list(direction.other_direction),
                         "staging_candidates_optional": list(direction.staging_candidates),
                         "event_position_retry": attempt > 0,
+                        "previous_scene_state": (
+                            previous_terminal.get("event", "") if scene.continuation else ""
+                        ),
                     },
                     system_prompt=prompts["event"],
                     runtime_config=runtime_config,
@@ -177,7 +219,8 @@ def generate_scene_author_content(
                 recovered_count += recovered
                 if missing:
                     return None, tuple(missing)
-                matched = _EVENT_ASSIGNMENT.fullmatch(result[(1,)])
+                event_prose, event_state = _split_terminal_state(result[(1,)])
+                matched = _EVENT_ASSIGNMENT.fullmatch(event_prose)
                 if matched and int(matched.group(1)) <= len(scene.shots):
                     event_shot = int(matched.group(1))
                     scene_event = matched.group(2)
@@ -192,6 +235,7 @@ def generate_scene_author_content(
             else:
                 return None, (("EVENT_POSITION", scene.scene_number, 1),)
         shared["accepted_event"] = scene_event
+        shared["event_source"] = "author" if fixed_events else "llm"
         shared["accepted_event_shot"] = (
             event_shot if not fixed_events else min(fixed_events)
         )
@@ -206,6 +250,11 @@ def generate_scene_author_content(
             if index not in fixed_actions
         ]
         action_texts = dict(fixed_actions)
+        if composition:
+            shared["scheduled_motion_composition"] = {
+                "shot": composition[1], "source": composition[2],
+                "template": composition[3], "text": composition[4],
+            }
         if pending_actions:
             result, issues, retries, missing, recovered = _request_entities(
                 backend,
@@ -223,10 +272,14 @@ def generate_scene_author_content(
                 shared={
                     **shared,
                     "scene_motion": list(direction.motion_direction),
+                    "staging_candidates_optional": list(direction.staging_candidates),
                     "scene_other": list(direction.other_direction),
                     "fixed_performances": {
                         str(index): value for index, value in fixed_actions.items()
                     },
+                    "previous_scene_state": (
+                        previous_terminal.get("performance", "") if scene.continuation else ""
+                    ),
                 },
                 system_prompt=prompts["performance"],
                 runtime_config=runtime_config,
@@ -237,11 +290,19 @@ def generate_scene_author_content(
             recovered_count += recovered
             if missing:
                 return None, tuple(missing)
-            action_texts.update({index: result[(index,)] for index in pending_actions})
+            action_states: dict[int, str] = {}
+            for index in pending_actions:
+                action_texts[index], action_states[index] = _split_terminal_state(
+                    result[(index,)]
+                )
             actions.extend(
                 (scene.scene_number, index, action_texts[index])
                 for index in pending_actions
             )
+        if composition:
+            motion_compositions.append(composition)
+            target = composition[1]
+            action_texts[target] = action_texts[target] + " " + composition[4]
         shared["accepted_performances"] = {
             str(index): value for index, value in action_texts.items()
         }
@@ -277,6 +338,9 @@ def generate_scene_author_content(
                     "fixed_cameras": {
                         str(index): value for index, value in fixed_cameras.items()
                     },
+                    "previous_scene_state": (
+                        previous_terminal.get("camera", "") if scene.continuation else ""
+                    ),
                 },
                 system_prompt=prompts["camera"],
                 runtime_config=runtime_config,
@@ -287,23 +351,34 @@ def generate_scene_author_content(
             recovered_count += recovered
             if missing:
                 return None, tuple(missing)
-            camera_texts.update({index: result[(index,)] for index in pending_cameras})
+            camera_states: dict[int, str] = {}
+            for index in pending_cameras:
+                camera_texts[index], camera_states[index] = _split_terminal_state(
+                    result[(index,)]
+                )
             cameras.extend(
                 (scene.scene_number, index, camera_texts[index])
                 for index in pending_cameras
             )
         last = len(scene.shots)
         previous_terminal = {
-            "event": scene_event,
-            "performance": action_texts.get(last, ""),
-            "camera": camera_texts.get(last, ""),
+            "event": event_state if not fixed_events else "",
+            "performance": action_states.get(last, "") if pending_actions else "",
+            "camera": camera_states.get(last, "") if pending_cameras else "",
         }
+        terminal_states.append((
+            scene.scene_number,
+            previous_terminal["event"],
+            previous_terminal["performance"],
+            previous_terminal["camera"],
+        ))
         _LOGGER.info(
             "[MV Director - Timeline Planner] Scene authorship completed; "
-            "scene=%d; shots=%d; authored_fields=%d",
+            "scene=%d; shots=%d; authored_fields=%d; terminal_state=%s",
             scene.scene_number,
             last,
             len(fixed_events) + len(fixed_actions) + len(fixed_cameras),
+            ",".join(key for key, value in previous_terminal.items() if value) or "none",
         )
     return PlannerContent(
         visual_beats=(),
@@ -318,4 +393,6 @@ def generate_scene_author_content(
         protocol_recovered_count=recovered_count,
         events=tuple(events),
         typed_output=True,
+        motion_compositions=tuple(motion_compositions),
+        terminal_states=tuple(terminal_states),
     ), ()

@@ -1,0 +1,225 @@
+{
+  "scene": 9,
+  "system_prompt": "あなたは歌唱MVの振付と撮影を一緒に設計する。原歌詞とセクションの文脈から人物の感情を読み、一つのScene全体の連続した演技を考える。歌詞の名詞を指さす説明ではなく、予備動作から主動作、反動又は解放、姿勢の立て直しへ進む身体表現を設計する。支持・体幹から腕・顔へ連動する動きを選び、明瞭に異なる終わりの姿へ至る。静けさと強いアクセントを使い分ける。各Shotを最初から演じ直さない。accepted_eventは外部の状況で、身体演技の全文指示ではない。作者固定の演出位置・時刻・演技は守る。セクション全文は理解の文脈であり、その全対象をこのSceneに登場させない。\n構図、時間順の演技、カメラ経路を同時に思い描いて、各ShotにPERFORMANCEとCAMERAを一行ずつ出す。PERFORMANCEは自然な日本語で複数の時間順動作を述べる。CAMERAはその身体の変化を実際に見せる画角、始点、経路、終点を述べる。人物の自転ではなくカメラが回り込んでよい。身体を見せる時間から両目と口を含む表情へ寄ってよい。Cameraが人物の演技を隠さないようにする。\n出力順はShot1のPERFORMANCE、CAMERA、Shot2のPERFORMANCE、CAMERA。各行はTYPE<TAB>slot番号<TAB>本文。出力はこの四行だけ。",
+  "payload": {
+    "accepted_event": "人物の周囲の空間に複数の狐火が現れる。",
+    "accepted_event_shot": 2,
+    "continuation": false,
+    "event_source": "author",
+    "fixed_performances": {},
+    "original_lyrics": [
+      {
+        "lyrics": [
+          {
+            "section": "CHORUS",
+            "text": "永遠と呼べるなら"
+          },
+          {
+            "section": "CHORUS",
+            "text": "この手を離すことも"
+          },
+          {
+            "section": "CHORUS",
+            "text": "愛なのだろうか"
+          },
+          {
+            "section": "CHORUS",
+            "text": "朱の空に舞う"
+          }
+        ],
+        "shot": 1
+      },
+      {
+        "lyrics": [
+          {
+            "section": "CHORUS",
+            "text": "狐火へ問う"
+          },
+          {
+            "section": "CHORUS",
+            "text": "忘れぬことは"
+          }
+        ],
+        "shot": 2
+      }
+    ],
+    "previous_accepted_terminal": {},
+    "protocol": "MVD_LLM_RECORDS_V1",
+    "scene_descriptions": [],
+    "scene_emd": "",
+    "scene_end_ms": 9916,
+    "scene_motion": [
+      "手描きセルアニメーションとして二コマ打ち又は三コマ打ちを使う。人物の支持、重心、体幹、腕及び表情はShot間で連続し、重要なアクセントを明瞭なキーポーズで示す。 歌詞に合う身体演技を見せる。対象物の変化と人物の演技を区別し、Shotに指定された出来事、演技及び撮影を同じ時間軸で行う。カメラの旋回を人物の全身回転に置き換えない。"
+    ],
+    "scene_number": 1,
+    "scene_other": [],
+    "scene_start_ms": 0,
+    "section_lyric_context": [
+      {
+        "boundary_source": "original_heading",
+        "coverage": "full_source_section",
+        "lines": [
+          {
+            "scene": 0,
+            "source_line": 23,
+            "text": "千年鳥居を"
+          },
+          {
+            "scene": 0,
+            "source_line": 23,
+            "text": "くぐるそなたよ"
+          },
+          {
+            "scene": 0,
+            "source_line": 24,
+            "text": "なぜその瞳は"
+          },
+          {
+            "scene": 0,
+            "source_line": 24,
+            "text": "あの日と似ている"
+          },
+          {
+            "scene": 0,
+            "source_line": 25,
+            "text": "わらわの明日は"
+          },
+          {
+            "scene": 0,
+            "source_line": 25,
+            "text": "果てなく続き"
+          },
+          {
+            "scene": 0,
+            "source_line": 26,
+            "text": "そなたの明日は"
+          },
+          {
+            "scene": 0,
+            "source_line": 26,
+            "text": "夕陽より短い"
+          },
+          {
+            "scene": 0,
+            "source_line": 28,
+            "text": "されど一瞬を"
+          },
+          {
+            "scene": 1,
+            "source_line": 28,
+            "text": "永遠と呼べるなら"
+          },
+          {
+            "scene": 1,
+            "source_line": 29,
+            "text": "この手を離すことも"
+          },
+          {
+            "scene": 1,
+            "source_line": 29,
+            "text": "愛なのだろうか"
+          },
+          {
+            "scene": 1,
+            "source_line": 30,
+            "text": "朱の空に舞う"
+          },
+          {
+            "scene": 1,
+            "source_line": 30,
+            "text": "狐火へ問う"
+          },
+          {
+            "scene": 1,
+            "source_line": 31,
+            "text": "忘れぬことは"
+          },
+          {
+            "scene": 0,
+            "source_line": 31,
+            "text": "救いか"
+          },
+          {
+            "scene": 0,
+            "source_line": 31,
+            "text": "罰か"
+          }
+        ],
+        "occurrence": 1,
+        "section": "CHORUS"
+      }
+    ],
+    "shot_positions": [
+      {
+        "author_body": [],
+        "end_ms": 4958,
+        "fixed_camera": "",
+        "fixed_event": "",
+        "fixed_performance": "",
+        "shot": 1,
+        "start_ms": 0
+      },
+      {
+        "author_body": [],
+        "end_ms": 9916,
+        "fixed_camera": "",
+        "fixed_event": "",
+        "fixed_performance": "",
+        "shot": 2,
+        "start_ms": 4958
+      }
+    ],
+    "slots": [
+      {
+        "position": {
+          "author_body": [],
+          "end_ms": 4958,
+          "fixed_camera": "",
+          "fixed_event": "",
+          "fixed_performance": "",
+          "shot": 1,
+          "start_ms": 0
+        },
+        "scene": 1,
+        "shot": 1,
+        "slot": 1
+      },
+      {
+        "position": {
+          "author_body": [],
+          "end_ms": 9916,
+          "fixed_camera": "",
+          "fixed_event": "",
+          "fixed_performance": "",
+          "shot": 2,
+          "start_ms": 4958
+        },
+        "scene": 1,
+        "shot": 2,
+        "slot": 2
+      }
+    ],
+    "staging_candidates_optional": [],
+    "subject_emd": "# サブジェクト\n* 狐耳と狐尻尾のある一人の歌唱者。\n",
+    "task": "scene-author-performance"
+  },
+  "effective_config": {
+    "chat_format": "",
+    "max_tokens": 1536,
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "repetition_penalty": 1.05,
+    "gpu_layers": -1,
+    "n_batch": 512,
+    "n_ctx": 16384,
+    "flash_attn": true,
+    "kv_cache_type": "q8_0",
+    "op_offload": true,
+    "keep_model_loaded": false,
+    "seed": 2
+  },
+  "prompt_tokens": 1450,
+  "elapsed_seconds": 5.7608952000009594,
+  "response": "PERFORMANCE\t1\t手を胸の前で重ね、ゆっくりと上げながら目を閉じる。そのあと、右手を顔の横に置き、左手を腰に添える。最後に両手を広げ、上向きに振る。\nCAMERA\t1\t正面からカメラが近づき、人物の顔と手の動きを捉える。その後、カメラが右肩方向へ移動し、手の位置を追う。\nPERFORMANCE\t2\t右手を胸の前でゆっくり回す。左手は腰に添えたまま、足を軽く揺らしながら体を左右に傾ける。\nCAMERA\t2\tカメラが人物の右肩から回り込み、右手の動きと足の揺れを同時に捉える。その後、カメラが左肩方向へ移動し、体の傾きを追う。\n",
+  "scope": "exploratory_joint_prompt_and_output_change_not_isolated_causal_test"
+}

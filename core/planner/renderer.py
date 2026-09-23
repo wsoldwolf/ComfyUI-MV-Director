@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import logging
+import hashlib
 from typing import Mapping
 
 from ..artifacts import DirectionArtifact, EMDTextArtifact
@@ -41,6 +42,7 @@ def render_completed_emd(
     cameras: Mapping[tuple[int, int], str],
     events: Mapping[tuple[int, int], str] | None = None,
     typed_output: bool = False,
+    motion_compositions: Mapping[tuple[int, int], tuple[str, int, str]] | None = None,
     lip_sync_mode: str,
     lip_sync_target: str,
     lip_sync_audio_slot: int,
@@ -129,6 +131,12 @@ def render_completed_emd(
                     body.append(f"`演出` {event}")
                 if action and "演技" not in fixed_kinds:
                     body.append(f"`演技` {action}")
+                    composition = (motion_compositions or {}).get((scene.scene_number, shot_index))
+                    if composition:
+                        source, index, supplement = composition
+                        digest = hashlib.sha256(supplement.encode("utf-8")).hexdigest()
+                        lines.append(f"> `モーション補完` source={source} template={index} sha256={digest}")
+                        body.append(f"`演技` {supplement}")
                 if camera and "カメラ" not in fixed_kinds:
                     body.append(f"`カメラ` {camera}")
                 action = ""

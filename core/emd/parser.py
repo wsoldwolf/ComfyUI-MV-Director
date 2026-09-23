@@ -59,6 +59,10 @@ _RETENTION_RE = re.compile(
 _RESERVED_LIST_RE = re.compile(r"\* `[^`]+`(?:\s|\Z)")
 _D_TAG_RE = re.compile(r"</?d(?:\[[^\]\r\n]+\])?>")
 _COMMON_SECTIONS = COMMON_HEADINGS
+_MOTION_COMPOSITION_RE = re.compile(
+    r"> `モーション補完` source=(?:user|profile:[a-z][a-z0-9_]*) "
+    r"template=[1-9][0-9]* sha256=[0-9a-f]{64}\Z"
+)
 
 
 def parse_time_ms(value: str, *, line_number: int = 0) -> int:
@@ -405,6 +409,9 @@ class _Parser:
                 typed_directives: list[ShotDirective] = []
                 lyric_sync: list[tuple[str, str]] = []
                 while (body_line := self.current()) is not None:
+                    if _MOTION_COMPOSITION_RE.fullmatch(body_line.text):
+                        self.take()
+                        continue
                     lyric_match = _LYRIC_LIP_RE.fullmatch(body_line.text)
                     if lyric_match:
                         lyric_sync.append((lyric_match.group(1), lyric_match.group(2)))

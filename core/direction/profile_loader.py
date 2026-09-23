@@ -8,6 +8,7 @@ import re
 
 from ..artifacts import normalize_newlines
 from ..emd.common import CommonPromptError, parse_common_prompt_fragment
+from ..emd.motion_templates import split_motion_templates
 
 
 PROFILE_ROOT = Path(__file__).resolve().parents[2] / "profiles"
@@ -62,6 +63,7 @@ class DirectionProfile:
     choreography_policy: str = "off"
     render_prompt: str = ""
     choreography_phrases: tuple[tuple[str, str], ...] = ()
+    motion_templates: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -82,6 +84,7 @@ class DirectionProfileCatalog:
     motion_choreography_policy: dict[str, str]
     motion_choreography_phrases: dict[str, tuple[tuple[str, str], ...]]
     render_prompts: dict[str, dict[str, str]]
+    motion_templates: dict[str, tuple[str, ...]]
 
 
 def _fail(path: Path, message: str) -> DirectionProfileError:
@@ -155,6 +158,12 @@ def load_direction_profile(path: Path, kind: str) -> DirectionProfile:
     except (OSError, UnicodeError) as exc:
         raise _fail(path, f"cannot read UTF-8 profile: {exc}") from exc
     source = normalize_newlines(source)
+    try:
+        source, motion_templates = split_motion_templates(source)
+    except ValueError as exc:
+        raise _fail(path, str(exc)) from exc
+    if motion_templates is not None and kind != "motion":
+        raise _fail(path, "モーション補完 is supported only by motion profiles")
     if "\x00" in source:
         raise _fail(path, "NUL is not allowed")
     if "```" in source:
@@ -252,6 +261,8 @@ def load_direction_profile(path: Path, kind: str) -> DirectionProfile:
     if lyric_interpretation not in _LYRIC_INTERPRETATIONS:
         raise _fail(path, "lyric_interpretation must be literal or bounded")
     performance_mode = metadata.get("performance_mode", "event_based")
+    if motion_templates and performance_mode != "scene_author":
+        raise _fail(path, "モーション補完 requires performance_mode=scene_author")
     if performance_mode not in _PERFORMANCE_MODES:
         raise _fail(path, "performance_mode must be event_based, dance_phrase, or scene_author")
     body_accent_policy = metadata.get("body_accent_policy", "off")
@@ -291,6 +302,7 @@ def load_direction_profile(path: Path, kind: str) -> DirectionProfile:
         choreography_policy=choreography_policy,
         render_prompt=metadata.get("render_prompt", ""),
         choreography_phrases=tuple(choreography_phrases),
+        motion_templates=motion_templates or (),
     )
 
 
@@ -312,6 +324,8 @@ def load_direction_profiles(root: Path = PROFILE_ROOT) -> DirectionProfileCatalo
 
     styles = grouped["style"]
     return DirectionProfileCatalog(
+        motion_templates={key: value.motion_templates for key, value in grouped["motion"].items()
+                          if value.motion_templates},
         render_prompts={kind: {key: value.render_prompt for key, value in definitions.items()
                               if value.render_prompt}
                         for kind, definitions in grouped.items()},
