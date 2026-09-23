@@ -2,9 +2,8 @@
 
 The video graphs deliberately start from the pinned Context Loop Ref2V Basic
 workflow.  This preserves its recursive sampling, checkpoint, review, and
-assembly wiring while replacing only the authoring and audio-policy edges
-owned by MV Director.  MV Director currently recommends the FL2VA diffusion
-checkpoint for its character-motion and camera-work behavior.
+assembly wiring while replacing its stock diffusion loader with the MiniMax
+H3 Hybrid Loader: FL2VA base plus selected Ref2VA modulation blocks.
 """
 
 from __future__ import annotations
@@ -28,9 +27,15 @@ from core.h3_contract import (
 
 CONTRACT_ID = "context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9"
 VIDEO_DENOISING_STEPS = 8
-H3_DIFFUSION_MODEL = (
+H3_BASE_MODEL = (
     "MiniMaxH3\\minimax_h3_fl2va_pruned_int8_convrot.safetensors"
 )
+H3_OVERLAY_MODEL = (
+    "MiniMaxH3\\minimax_h3_ref2va_pruned_int8_convrot.safetensors"
+)
+H3_OVERLAY_PRESET = "block_range_adaln"
+H3_BLOCK_RANGE_START = 30
+H3_BLOCK_RANGE_END = 49
 H3_TEXT_ENCODER = (
     "MiniMaxH3\\qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors"
 )
@@ -1042,11 +1047,10 @@ def _decorate_video_workflow(
     spec = MODES[mode]
     _remove_nodes(workflow, {31, 50, 51, 52, 53, 54, 55, 56, 57, 58})
     layout: dict[int, tuple[list[float], list[float], int, str, str]] = {
-        1: ([1910, 160], [580, 130], 3, "#223", "#335"),
-        2: ([1920, 350], [570, 150], 2, "#223", "#335"),
+        2: ([1910, 490], [570, 150], 17, "#223", "#335"),
         3: ([3790, 160], [360, 108], 4, "#223", "#335"),
-        4: ([1920, 560], [570, 100], 1, "#223", "#335"),
-        5: ([1925.5882185973674, 721.4706187338029], [560, 100], 0, "#223", "#335"),
+        4: ([1910, 700], [570, 100], 18, "#223", "#335"),
+        5: ([1920, 860], [560, 100], 19, "#223", "#335"),
         7: ([1380, 500], [360, 256], 31, "#223", "#335"),
         8: ([2600, 160], [460, 400], 32, "#223", "#335"),
         10: ([3240, 1090], [360, 132], 33, "#223", "#335"),
@@ -1061,7 +1065,7 @@ def _decorate_video_workflow(
         19: ([4260, 160], [420, 250], 41, "#223", "#335"),
         20: ([4260, 510], [460, 220], 42, "#223", "#335"),
         21: ([4963.076666985372, 1382.7972561496085], [440, 360], 45, "#223", "#335"),
-        22: ([1930, 1060], [360, 108], 23, "#232", "#353"),
+        22: ([1920, 1200], [360, 108], 24, "#232", "#353"),
         23: ([4980.839160839156, 1103.6362782725091], [420, 220], 44, "#223", "#335"),
         24: ([240, 190], [1000, 1090], 29, "#223", "#335"),
         26: ([-780, 570], [350, 340], 5, "#232", "#353"),
@@ -1074,11 +1078,12 @@ def _decorate_video_workflow(
         37: ([-240, 1430], [420, 300], 22, "#233", "#355"),
         38: ([830, 1450], [380, 220], 27, "#223", "#335"),
         39: ([-780, 100], [350, 180], 6, "#232", "#353"),
-        44: ([1930, 890], [560, 90], 21, "#223", "#335"),
+        44: ([1920, 1030], [560, 90], 22, "#223", "#335"),
         45: ([-780, 960], [350, 360], 9, "#232", "#353"),
         47: ([-780, 350], [360, 160], 13, "#232", "#353"),
         48: ([291.09965407461857, 1448.9001519166202], [420, 250], 24, "#233", "#355"),
         49: ([-235.7552796705333, 855.0127906997371], [400, 330], 18, "#232", "#353"),
+        59: ([1920, 170], [580, 250], 20, "#223", "#335"),
     }
     if mode == "context_loop":
         layout[40] = ([-260, 430], [400, 260], 26, "#223", "#335")
@@ -1308,13 +1313,12 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
     # The compact workflow uses the modern Plan directly.  The legacy prompt
     # editor, recovery manifest loader, recovery assembler, and detached text
     # encoder are intentionally absent from the distributable graph.
-    _remove_nodes(workflow, {6, 9, 25, 27})
+    _remove_nodes(workflow, {1, 6, 9, 25, 27})
     _disconnect_input(workflow, 22, "model")
     workflow["last_node_id"] = max(int(node["id"]) for node in workflow["nodes"])
     workflow["last_link_id"] = max(int(link[0]) for link in workflow["links"])
     _connect(workflow, 24, 0, 29, "plan", "H3_CHAIN_PLAN")
 
-    _node_by_id(workflow, 1)["widgets_values"] = [H3_DIFFUSION_MODEL, "default"]
     _node_by_id(workflow, 2)["widgets_values"] = [
         H3_TEXT_ENCODER,
         "minimax",
@@ -1437,6 +1441,30 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
             widgets=[TURBO_LORA_NAME, 1.0],
         ),
         _node(
+            59,
+            "MiniMaxH3HybridLoader",
+            (1920, 170),
+            (580, 250),
+            "MiniMax H3 Hybrid Loader",
+            inputs=[
+                _widget_input("base_model", "COMBO"),
+                _widget_input("overlay_model", "COMBO"),
+                _widget_input("overlay_preset", "COMBO"),
+                {**_widget_input("block_range_start", "INT"), "shape": 7},
+                {**_widget_input("block_range_end", "INT"), "shape": 7},
+                {**_widget_input("final_adaln_from_overlay", "BOOLEAN"), "shape": 7},
+                {**_widget_input("custom_overlays", "STRING"), "shape": 7},
+                {**_widget_input("custom_base", "STRING"), "shape": 7},
+                {**_widget_input("weight_dtype", "COMBO"), "shape": 7},
+            ],
+            outputs=[_output("model", "MODEL")],
+            widgets=[
+                H3_BASE_MODEL, H3_OVERLAY_MODEL, H3_OVERLAY_PRESET,
+                H3_BLOCK_RANGE_START, H3_BLOCK_RANGE_END,
+                False, "", "", "default",
+            ],
+        ),
+        _node(
             45,
             "LoadImage",
             (2431.488682584539, 1797.7764759658048),
@@ -1479,7 +1507,7 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
             ]
         )
     workflow["nodes"].extend(additions)
-    workflow["last_node_id"] = 49
+    workflow["last_node_id"] = 59
 
     _connect(workflow, 32, 0, 37, "audio_a", "AUDIO")
     _connect(workflow, 33, 0, 37, "audio_b", "AUDIO")
@@ -1515,7 +1543,7 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
     _connect(workflow, 48, 0, 24, "plan_json_input", "STRING")
     _connect(workflow, 39, 0, 37, "plan_json", "STRING")
     _connect(workflow, 45, 0, 11, "ref_images.ref_image_1", "IMAGE")
-    _connect(workflow, 1, 0, 44, "model", "MODEL")
+    _connect(workflow, 59, 0, 44, "model", "MODEL")
     _connect(workflow, 44, 0, 22, "model", "MODEL")
     _connect(workflow, 47, 0, 24, "width", "INT")
     _connect(workflow, 47, 1, 24, "height", "INT")

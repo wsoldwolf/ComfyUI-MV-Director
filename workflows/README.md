@@ -36,9 +36,10 @@
 - `bgm_millennium_torii_vocal.mp3`: 整列・口形駆動用vocal stem
 - `bgm_millennium_torii_lyrics.txt`: plain lyrics（Plan/Compiler WFとAudio Reference動画WF）
 - Vision GGUF、Text GGUF、ローカルWhisper `.pt`（Plan/Compiler WFとAudio Reference動画WF）
-- MiniMax H3 FL2VA diffusion model、text encoder、video VAE、audio VAE、Turbo LoRA
+- MiniMax H3 FL2VA（base）及びRef2VA（overlay）diffusion model、text encoder、video VAE、audio VAE、Turbo LoRA
+- [ComfyUI_MinimaxH3HybridLoader](https://github.com/scottmudge/ComfyUI_MinimaxH3HybridLoader)カスタムノード
 
-本プロジェクトでは、キャラクターモーションとカメラワークの検証結果から、現時点の動画生成既定モデルとしてFL2VAを推奨する。各ファイルの取得元、配置先及びSHA-256は[導入マニュアル](../docs/installation.md#02_video_context_loopjsonの既定h3モデル)を参照する。
+動画WFは`MiniMaxH3HybridLoader`でFL2VAをベースにRef2VAのAdaLN block 30–49を重ね、その出力にTurbo LoRAを適用する。モデル、カスタムノードの導入手順、取得元及びSHA-256は[導入マニュアル](../docs/installation.md#動画workflowの既定h3-hybrid-loader)を参照する。
 
 同梱検証素材を既定値にしているが、ComfyUIの`input`へ存在しない場合は各Loadノードで選択し直す。Context Loop方式とLyrics方式の動画WFは、コンパイル済みPlanから最終frame尺と歌詞directiveを得るためLyric Segmentationを再実行しない。Audio Reference方式だけは元音声のScene区間をPlan位置へ並べ直すため、Plan/Compiler側と同じ歌詞、vocal、Whisper及びtiming profileでLyric Segmentationを実行し、成功cacheを再利用する。
 

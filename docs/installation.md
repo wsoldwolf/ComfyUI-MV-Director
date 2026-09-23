@@ -45,6 +45,17 @@ mklink /J "C:\Software\ComfyUI\custom_nodes\ComfyUI-MV-Director" "E:\ComfyUI\pro
 
 既存の実ディレクトリやjunctionを上書きしないでください。
 
+動画生成workflowの`MiniMaxH3HybridLoader`を動かすには、別のカスタムノード
+[ComfyUI_MinimaxH3HybridLoader](https://github.com/scottmudge/ComfyUI_MinimaxH3HybridLoader)
+も必要です。`cmd.exe`でComfyUIの`custom_nodes`へcloneし、ComfyUIを再起動してください。
+
+```bat
+cd /d C:\Software\ComfyUI\custom_nodes
+git clone https://github.com/scottmudge/ComfyUI_MinimaxH3HybridLoader.git
+```
+
+既にclone済みなら重複して実行しないでください。ノード検索で`MiniMax H3 Hybrid Loader`が表示されることを確認します。
+
 ## 3. `llama-cpp-python` CUDA wheelを作る
 
 現環境のComfyUIはPython 3.13です。公式CUDA wheelのPython対応範囲と一致しない場合があるため、Vision対応を含むwheelをComfyUIのvenv用にsource buildします。
@@ -172,15 +183,16 @@ certutil -hashfile "C:\Software\ComfyUI\models\LLM\GGUF\Qwen3-VL-4B-Instruct\Qwe
 | `qwen3-8b-abliterated-Q4_K_M.gguf` | `8625e48da4c4be9bcba2414fd8cad4095ff3a538d5b0111c2b26b5f6209538b9` |
 | `medium.pt` | `345ae4da62f9b3d59415adc60127b97c714f32e89e936602e85993674d08dcb1` |
 
-### `02_video_context_loop.json`の既定H3モデル
+### 動画workflowの既定H3 Hybrid Loader
 
-配布workflowの動画生成側（`02_video_context_loop.json`、`04_video_audio_reference.json`、`06_video_lyrics.json`）は、現在FL2VA checkpointを既定値としています。本プロジェクトの検証ではRef2VAよりもキャラクターモーションとカメラワークが改善する傾向が見られたため、現時点ではFL2VAを推奨します。これは本プロジェクトの制作条件に基づく推奨であり、MiniMax H3全用途に対する一般的な優劣を示すものではありません。
+配布workflowの動画生成側（`02_video_context_loop.json`、`04_video_audio_reference.json`、`06_video_lyrics.json`）は`MiniMaxH3HybridLoader`を使用します。FL2VAをベースに、Ref2VAの一部のAdaLN変調重みをオーバーレイします。これはFL2VAの画質・動きとRef2VAの参照条件付けを併用するための構成で、[Hybrid Loader作者の説明](https://github.com/scottmudge/ComfyUI_MinimaxH3HybridLoader)もこの組合せを提案しています。本workflowはユーザーが`02_video_context_loop.json`で設定した`block_range_adaln`、開始block `30`、終了block `49`、`final_adaln_from_overlay=false`をそのまま既定値とします。作者の別の推奨値は開始block `25`ですが、本workflowの検証設定とは区別してください。
 
-全ファイルの配布元は[Comfy-Org/MiniMax-H3](https://huggingface.co/Comfy-Org/MiniMax-H3)です。次の直接リンクから取得し、表の配置先へ保存してください。Turbo LoRAは、現行workflowで検証している`ref2v_turbo_4step_v0.1`をFL2VA checkpointへ適用する構成です。
+モデルファイルの配布元は[Comfy-Org/MiniMax-H3](https://huggingface.co/Comfy-Org/MiniMax-H3)です。FL2VAとRef2VAの両方をダウンロードし、表の配置先へ保存してください。Turbo LoRAはHybrid Loaderの出力へ適用します。
 
 | 用途 | workflowで選択されるファイル | ComfyUIモデルルートからの配置先 | 取得元 |
 | --- | --- | --- | --- |
 | FL2VA diffusion model | `minimax_h3_fl2va_pruned_int8_convrot.safetensors` | `diffusion_models\MiniMaxH3\` | [ダウンロード](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors?download=true) |
+| Ref2VA overlay model | `minimax_h3_ref2va_pruned_int8_convrot.safetensors` | `diffusion_models\MiniMaxH3\` | [ダウンロード](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors?download=true) |
 | Text Encoder (TE) | `qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors` | `text_encoders\MiniMaxH3\` | [ダウンロード](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors?download=true) |
 | Video VAE | `minimax_h3_video_vae_fp16.safetensors` | `vae\MiniMaxH3\` | [ダウンロード](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_fp16.safetensors?download=true) |
 | Audio VAE | `minimax_h3_audio_vae_fp32.safetensors` | `vae\MiniMaxH3\` | [ダウンロード](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors?download=true) |
@@ -195,6 +207,7 @@ certutil -hashfile "C:\Software\ComfyUI\models\diffusion_models\MiniMaxH3\minima
 | ファイル | SHA-256 |
 | --- | --- |
 | `minimax_h3_fl2va_pruned_int8_convrot.safetensors` | `e889202c41dafb67b10d67b97f0d8541508036a6090af23425a5c2615d03c47a` |
+| `minimax_h3_ref2va_pruned_int8_convrot.safetensors` | `9255f52b6677845ad238f20dfaafa94727053694127ab7f255c048f0f9365779` |
 | `qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors` | `35a88d51044231fe332301d7a62aa81e3f2cba62febeb446e2c1e3e0ef76f2c6` |
 | `minimax_h3_video_vae_fp16.safetensors` | `7c1f131492e7eddacaac9069a61b81bdd39de5cc96561e677c5eab1cdce5e522` |
 | `minimax_h3_audio_vae_fp32.safetensors` | `8e505d95dd1561d47abd43d4238fd40d9bb1ae9e147ed0a4cba778d76ae4db48` |
@@ -211,5 +224,7 @@ ComfyUIを再起動し、ノード検索で`MV Director`を確認します。11�
 3. Image to Subject EMDでVision GGUF pairが選べる。
 4. Enhancer、Planner、CompilerでText GGUFが選べる。
 5. 実行logに各ノード名付きの`started`と`completed`が一度ずつ出る。
+
+次に動画workflowを開き、`MiniMax H3 Hybrid Loader`が未定義ノードにならず、FL2VAが`base_model`、Ref2VAが`overlay_model`、presetが`block_range_adaln`、block範囲が`30`～`49`であることを確認してください。Hybrid Loaderの`MODEL`出力はTurbo LoRAへ接続されています。
 
 見つからない場合は[トラブルシューティング](troubleshooting.md)を参照してください。

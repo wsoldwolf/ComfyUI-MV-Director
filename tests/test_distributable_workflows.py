@@ -9,8 +9,11 @@ from core.utilities import decode_embedded_text
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / "workflows"
 CONTRACT_ID = "context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9"
-H3_DIFFUSION_MODEL = (
+H3_BASE_MODEL = (
     "MiniMaxH3\\minimax_h3_fl2va_pruned_int8_convrot.safetensors"
+)
+H3_OVERLAY_MODEL = (
+    "MiniMaxH3\\minimax_h3_ref2va_pruned_int8_convrot.safetensors"
 )
 H3_TEXT_ENCODER = (
     "MiniMaxH3\\qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors"
@@ -299,6 +302,15 @@ class DistributableWorkflowTests(unittest.TestCase):
             "https://github.com/openai/whisper",
             documented,
         )
+        self.assertIn(
+            "git clone https://github.com/scottmudge/ComfyUI_MinimaxH3HybridLoader.git",
+            documented,
+        )
+        self.assertIn("minimax_h3_ref2va_pruned_int8_convrot.safetensors", documented)
+        self.assertIn(
+            "9255f52b6677845ad238f20dfaafa94727053694127ab7f255c048f0f9365779",
+            documented,
+        )
 
     def test_development_workflows_are_not_distributed(self) -> None:
         development = WORKFLOWS / "development"
@@ -423,16 +435,21 @@ class DistributableWorkflowTests(unittest.TestCase):
             self.assertEqual(len(shifts), 1)
             sigma_shift = shifts[0]
             attention = only_type(workflow, "ModelAttentionBackend")
-            unet = only_type(workflow, "UNETLoader")
+            hybrid = only_type(workflow, "MiniMaxH3HybridLoader")
+            self.assertFalse(any(node["type"] == "UNETLoader" for node in workflow["nodes"]))
             text_encoder = only_type(workflow, "CLIPLoader")
             video_vae = titled_node(workflow, "Video VAE")
             audio_vae = titled_node(workflow, "Audio VAE")
             review = only_type(workflow, "MiniMaxH3ChainReview")
             resolution = only_type(workflow, "ResolutionSelector")
             self.assertEqual(
-                input_link(workflow, lora, "model")[1:3], [unet["id"], 0]
+                input_link(workflow, lora, "model")[1:3], [hybrid["id"], 0]
             )
-            self.assertEqual(unet["widgets_values"][0], H3_DIFFUSION_MODEL)
+            self.assertEqual(hybrid["widgets_values"], [
+                H3_BASE_MODEL, H3_OVERLAY_MODEL, "block_range_adaln",
+                30, 49, False, "", "", "default",
+            ])
+            self.assertEqual(hybrid["pos"], [1920, 170])
             self.assertEqual(text_encoder["widgets_values"][0], H3_TEXT_ENCODER)
             self.assertEqual(
                 video_vae["widgets_values"][0],
