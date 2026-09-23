@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2060" height="1120" viewBox="0 0 2060 1120" role="img" aria-labelledby="title desc">
+<title id="title">Scene振付の再設計：診断・局所修正（提案）</title>
+<desc id="desc">構造検証は必須、意味診断は任意。Sceneの原文と計画を保存して構造を検証する。意味診断の指摘は関係する担当へ一回だけ戻し、revisionと依存する計画を更新する。品質のみで再生成を続けない。</desc>
+<defs>
+<marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#3977b8"/></marker>
+<marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#248458"/></marker>
+<marker id="arrow-grey" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#64748b"/></marker>
+<marker id="arrow-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#7950a8"/></marker>
+<marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#b7791f"/></marker>
+<style>text{font-family:"Yu Gothic UI",Meiryo,"Noto Sans JP",sans-serif} .edge-label{paint-order:stroke;stroke:#f8fafc;stroke-width:10;stroke-linejoin:round}</style>
+</defs>
+<rect width="2060" height="1120" fill="#f8fafc"/>
+<text x="1030" y="57" text-anchor="middle" font-size="38" font-weight="700" fill="#172333">Scene振付の再設計 ─ 診断・局所修正</text>
+<text x="1030" y="100" text-anchor="middle" font-size="24" font-weight="400" fill="#475569">提案・未実装  /  必須の構造検証と、必要時だけの意味診断を分ける</text>
+<rect x="140" y="143" width="26" height="22" rx="4" fill="#f2eafe" stroke="#7950a8" stroke-width="2"/>
+<text x="179" y="161" text-anchor="start" font-size="22" font-weight="400" fill="#475569">保存済みの原文・計画</text>
+<rect x="710" y="143" width="26" height="22" rx="4" fill="#eaf8ef" stroke="#3a8b58" stroke-width="2"/>
+<text x="749" y="161" text-anchor="start" font-size="22" font-weight="400" fill="#475569">必須の構造検証</text>
+<rect x="1300" y="143" width="26" height="22" rx="4" fill="#e7f1ff" stroke="#3977b8" stroke-width="2"/>
+<text x="1339" y="161" text-anchor="start" font-size="22" font-weight="400" fill="#475569">任意のLLM診断・修正</text>
+<rect x="100" y="245" width="430" height="200" rx="16" fill="#f2eafe" stroke="#7950a8" stroke-width="2.5"/>
+<text x="315.0" y="288" text-anchor="middle" font-size="28" font-weight="700" fill="#25364a">Sceneの候補一式</text>
+<text x="315.0" y="329" text-anchor="middle" font-size="23" font-weight="400" fill="#25364a">出来事 E・演技 B・撮影計画</text>
+<text x="315.0" y="366" text-anchor="middle" font-size="23" font-weight="400" fill="#25364a">同じrevisionの組として保存</text>
+<text x="315.0" y="403" text-anchor="middle" font-size="23" font-weight="400" fill="#25364a">過去の採用候補も保持する</text>
+<rect x="730" y="245" width="530" height="200" rx="16" fill="#eaf8ef" stroke="#3a8b58" stroke-width="2.5"/>
+<text x="995.0" y="288" text-anchor="middle" font-size="28" font-weight="700" fill="#25364a">構造検証</text>
+<text x="995.0" y="329" text-anchor="middle" font-size="23" font-weight="400" fill="#25364a">参照ID・時刻・原文保持・revision</text>
+<text x="995.0" y="366" text-anchor="middle" font-size="23" font-weight="400" fill="#25364a">不成立：そのSceneを停止・保存</text>
+<text x="995.0" y="403" text-anchor="middle" font-size="23" font-weight="400" fill="#25364a">成立：採用へ進む</text>
+<rect x="1470" y="245" width="470" height="200" rx="16" fill="#263547" stroke="#152232" stroke-width="2.5"/>
+<text x="1705.0" y="288" text-anchor="middle" font-size="28" font-weight="700" fill="#ffffff">採用・次Sceneへ</text>
+<text x="1705.0" y="329" text-anchor="middle" font-size="23" font-weight="400" fill="#ffffff">構造上の完成を確認</text>
+<text x="1705.0" y="366" text-anchor="middle" font-size="23" font-weight="400" fill="#ffffff">品質の懸念は理由付きで記録</text>
+<text x="1705.0" y="403" text-anchor="middle" font-size="23" font-weight="400" fill="#ffffff">完成映像の品質とは別に扱う</text>
+<path d="M530,345 L730,345" fill="none" stroke="#64748b" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-grey)"/>
+<path d="M1260,345 L1470,345" fill="none" stroke="#248458" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-green)"/>
+<text class="edge-label" x="1365" y="319" text-anchor="middle" font-size="22" font-weight="600" fill="#248458">構造成立</text>
+<rect x="650" y="620" width="610" height="210" rx="16" fill="#e7f1ff" stroke="#3977b8" stroke-width="2.5"/>
+<text x="955.0" y="663" text-anchor="middle" font-size="28" font-weight="700" fill="#25364a">意味診断LLM（必要なSceneのみ）</text>
+<text x="955.0" y="704" text-anchor="middle" font-size="23" font-weight="400" fill="#25364a">関連する原文・作者指示を比較</text>
+<text x="955.0" y="739" text-anchor="middle" font-size="23" font-weight="400" fill="#25364a">不足・衝突の箇所を短く指摘</text>
+<text x="955.0" y="774" text-anchor="middle" font-size="23" font-weight="400" fill="#25364a">PASSだけを品質保証には使わない</text>
+<text x="955.0" y="809" text-anchor="middle" font-size="23" font-weight="400" fill="#25364a">演技の豊かさ・比喩は参考評価</text>
+<path d="M315,445 L315,725 L650,725" fill="none" stroke="#b7791f" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="10 9" marker-end="url(#arrow-orange)"/>
+<text class="edge-label" x="315" y="543" text-anchor="middle" font-size="23" font-weight="600" fill="#b7791f">任意の診断</text>
+<rect x="1470" y="620" width="470" height="210" rx="16" fill="#e7f1ff" stroke="#3977b8" stroke-width="2.5"/>
+<text x="1705.0" y="663" text-anchor="middle" font-size="28" font-weight="700" fill="#25364a">関係する担当へ一回修正</text>
+<text x="1705.0" y="704" text-anchor="middle" font-size="23" font-weight="400" fill="#25364a">出来事の問題 → A</text>
+<text x="1705.0" y="739" text-anchor="middle" font-size="23" font-weight="400" fill="#25364a">身体演技の不足 → B</text>
+<text x="1705.0" y="774" text-anchor="middle" font-size="23" font-weight="400" fill="#25364a">画角・尺の問題 → C</text>
+<text x="1705.0" y="809" text-anchor="middle" font-size="23" font-weight="400" fill="#25364a">作者の確定本文は変更しない</text>
+<path d="M1260,725 L1470,725" fill="none" stroke="#b7791f" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="10 9" marker-end="url(#arrow-orange)"/>
+<text class="edge-label" x="1365" y="696" text-anchor="middle" font-size="21" font-weight="600" fill="#b7791f">修正する場合</text>
+<path d="M1705,830 L1705,910 L55,910 L55,345 L100,345" fill="none" stroke="#b7791f" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="10 9" marker-end="url(#arrow-orange)"/>
+<text class="edge-label" x="965" y="895" text-anchor="middle" font-size="24" font-weight="600" fill="#b7791f">revision更新 → 変更に依存する計画だけ再生成 → 構造検証へ</text>
+<text x="1030" y="1000" text-anchor="middle" font-size="25" font-weight="600" fill="#475569">意味修正はSceneあたり一回を初期値にする。品質指摘だけで全曲の再生成を繰り返さない。</text>
+<text x="1030" y="1048" text-anchor="middle" font-size="23" font-weight="400" fill="#475569">構造有効で懸念が残る場合は quality_degraded と理由を保存。8Bの意味判定は参考情報。</text>
+<text x="1030" y="1090" text-anchor="middle" font-size="23" font-weight="400" fill="#475569">変更に依存する生成計画は失効。作者が固定したCamera等は保持して再検証する。</text>
+</svg>

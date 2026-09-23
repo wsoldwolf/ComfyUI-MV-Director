@@ -7,6 +7,7 @@ from pathlib import Path
 import re
 
 from ..artifacts import normalize_newlines
+from ..emd.common import CommonPromptError, parse_common_prompt_fragment
 
 
 PROFILE_ROOT = Path(__file__).resolve().parents[2] / "profiles"
@@ -23,10 +24,10 @@ _CAMERA_META_KEYS = frozenset(
     {"planner_policy", "arc_roll_policy", "arc_tilt_policy", "lyric_cue_mode", "priority_lyric_cues", "lyric_interpretation", "render_prompt"}
 )
 _META_KEYS = _STYLE_META_KEYS | _CAMERA_META_KEYS | _MOTION_META_KEYS
-_PERFORMANCE_MODES = frozenset({"event_based", "dance_phrase"})
+_PERFORMANCE_MODES = frozenset({"event_based", "dance_phrase", "scene_author"})
 _BODY_ACCENT_POLICIES = frozenset({
     "off", "sparse_chorus", "sparse_chorus_prechorus",
-    "sparse_chorus_prechorus_verse_contact",
+    "sparse_chorus_prechorus_verse_contact", "scene_phrase",
 })
 _CHOREOGRAPHY_POLICIES = frozenset({"off", "scene_choice"})
 _ARC_ROLL_POLICIES = frozenset({"off", "selective_arc"})
@@ -173,15 +174,21 @@ def load_direction_profile(path: Path, kind: str) -> DirectionProfile:
     if position >= len(lines) or lines[position] != expected_heading:
         raise _fail(path, f"line {position + 1}: expected {expected_heading!r}")
     position += 1
-    body: list[str] = []
+    body_lines: list[str] = []
     while position < len(lines) and lines[position] != "# 振付候補":
         line = lines[position]
         if not line.startswith("* ") or not line[2:].strip():
             raise _fail(path, f"line {position + 1}: expected a nonempty list item")
-        body.append(line[2:].strip())
+        body_lines.append(line)
         position += 1
-    if not body:
-        raise _fail(path, f"{expected_heading} requires at least one list item")
+    try:
+        common = parse_common_prompt_fragment(
+            "\n".join(("# 共通プロンプト", expected_heading, *body_lines)),
+            allowed_headings=frozenset({_KIND_HEADINGS[kind]}),
+        )
+    except CommonPromptError as exc:
+        raise _fail(path, str(exc)) from exc
+    body = common[0].body
     choreography_phrases: list[tuple[str, str]] = []
     if position < len(lines):
         if kind != "motion":
@@ -246,10 +253,10 @@ def load_direction_profile(path: Path, kind: str) -> DirectionProfile:
         raise _fail(path, "lyric_interpretation must be literal or bounded")
     performance_mode = metadata.get("performance_mode", "event_based")
     if performance_mode not in _PERFORMANCE_MODES:
-        raise _fail(path, "performance_mode must be event_based or dance_phrase")
+        raise _fail(path, "performance_mode must be event_based, dance_phrase, or scene_author")
     body_accent_policy = metadata.get("body_accent_policy", "off")
     if body_accent_policy not in _BODY_ACCENT_POLICIES:
-        raise _fail(path, "body_accent_policy must be off, sparse_chorus, sparse_chorus_prechorus, or sparse_chorus_prechorus_verse_contact")
+        raise _fail(path, "body_accent_policy must be off, sparse_chorus, sparse_chorus_prechorus, sparse_chorus_prechorus_verse_contact, or scene_phrase")
     if body_accent_policy != "off" and performance_mode != "dance_phrase":
         raise _fail(path, "body_accent_policy requires dance_phrase")
     choreography_policy = metadata.get("choreography_policy", "off")

@@ -13,6 +13,7 @@ from typing import Any
 
 try:
     from ...core.direction.profiles import planner_profile_metadata
+    from ...core.emd import parse_emd
     from ...core.artifacts import DirectionArtifact, EMDTextArtifact, normalize_newlines, sha256_text
     from ...core.inference import (
         LlamaCppLifecycle,
@@ -38,8 +39,10 @@ try:
         parse_template_emd,
         render_planner_content,
     )
+    from ...core.planner.scene_author import build_scene_author_grammar
 except ImportError:  # Standalone repository tests.
     from core.direction.profiles import planner_profile_metadata
+    from core.emd import parse_emd
     from core.artifacts import DirectionArtifact, EMDTextArtifact, normalize_newlines, sha256_text
     from core.inference import (
         LlamaCppLifecycle,
@@ -65,6 +68,7 @@ except ImportError:  # Standalone repository tests.
         parse_template_emd,
         render_planner_content,
     )
+    from core.planner.scene_author import build_scene_author_grammar
 
 from ..common import gguf_model_choices, resolve_comfy_gguf_model
 from ..common.node_progress import advance_progress, configure_progress as configure_node_progress
@@ -84,11 +88,15 @@ _PROMPT_FILES = {
     "song-direction": "timeline_planner_song_direction_system_prompt.txt",
     "shot-layout": "timeline_planner_shot_layout_system_prompt.txt",
     "scene-spine": "timeline_planner_scene_spine_system_prompt.txt",
+    "scene-spine-body": "timeline_planner_scene_spine_body_system_prompt.txt",
     "choreography-choice": "timeline_planner_choreography_choice_system_prompt.txt",
     "actions": "timeline_planner_actions_system_prompt.txt",
     "actions-dance-phrase": "timeline_planner_actions_dance_phrase_system_prompt.txt",
     "action-audit": "timeline_planner_action_audit_system_prompt.txt",
     "cameras": "timeline_planner_cameras_system_prompt.txt",
+    "scene-author-event": "timeline_planner_scene_author_event_system_prompt.txt",
+    "scene-author-performance": "timeline_planner_scene_author_performance_system_prompt.txt",
+    "scene-author-camera": "timeline_planner_scene_author_camera_system_prompt.txt",
 }
 
 
@@ -146,9 +154,21 @@ class _LlamaPlannerBackend:
         digest = hashlib.sha256(material).digest()
         return int.from_bytes(digest[:8], "big") % 2_147_483_647 + 1
 
-    def configure_progress(self, scene_count: int, scenes_per_batch: int) -> None:
+    def configure_progress(
+        self, scene_count: int, scenes_per_batch: int, *,
+        scene_author: bool = False,
+        scene_author_counts: dict[str, int] | None = None,
+    ) -> None:
         scene_batches = max(1, (scene_count + scenes_per_batch - 1) // scenes_per_batch)
-        self._expected_primary_calls = {
+        self._expected_primary_calls = (
+            scene_author_counts
+            if scene_author_counts is not None
+            else {
+                "scene-author-event": scene_count,
+                "scene-author-performance": scene_count,
+                "scene-author-camera": scene_count,
+            }
+        ) if scene_author else {
             "staging-selection": scene_count,
             "visual-beats": scene_batches,
             "song-direction": 1,
@@ -214,6 +234,26 @@ class _LlamaPlannerBackend:
         model_payload = f"/no_think\n{payload}"
         grammar_kwargs: dict[str, str] = {}
         finite_camera = False
+        scene_author_stage = task in {
+            "scene-author-event", "scene-author-performance",
+            "scene-author-camera",
+        }
+        if scene_author_stage:
+            request = json.loads(payload)
+            grammar_kwargs["grammar"] = build_scene_author_grammar(
+                task, request["slots"],
+            )
+            output_cap = {
+                "scene-author-event": 512,
+                "scene-author-performance": 1536,
+                "scene-author-camera": 1024,
+            }[task]
+            config = replace(config, max_tokens=min(config.max_tokens, output_cap))
+            _LOGGER.info(
+                "[MV Director - Timeline Planner] output constraint=scene_author_v1; "
+                "task=%s; slots=%d",
+                task, len(request["slots"]),
+            )
         if task == "lyric-cues":
             request = json.loads(payload)
             grammar_kwargs["grammar"] = build_discovery_grammar(request["slots"])
@@ -226,6 +266,11 @@ class _LlamaPlannerBackend:
                     request.get("visual_beat_grounding", {}).get("contact") == "許可"
                 ),
                 track_external_effect=bool(request.get("track_external_effect")),
+                body_phrase_only=(
+                    request.get("body_phrase_policy") == "scene_phrase"
+                    and request.get("visual_beat_grounding", {}).get("target")
+                    in {"なし", "none", "", None}
+                ),
             )
             _LOGGER.info(
                 "[MV Director - Timeline Planner] output constraint=%s; "
@@ -291,7 +336,7 @@ class _LlamaPlannerBackend:
         # minimum reservation should scale with the number of requested lines,
         # not with a user-configured ceiling intended for longer Planner tasks.
         # Keep the conservative floor for free-text and other request types.
-        if finite_camera:
+        if finite_camera or scene_author_stage:
             minimum_output = min(config.max_tokens, max(512, 384 * slot_count))
         else:
             minimum_output = min(config.max_tokens, max(
@@ -484,6 +529,15 @@ class MVDirectorTimelinePlanner:
                 raise ValueError("unknown lip_sync_mode")
             if chat_format not in CHAT_FORMATS:
                 raise ValueError("unknown chat_format")
+            if normalize_newlines(template_emd).lstrip().startswith("# サブジェクト\n"):
+                parse_emd(template_emd)
+                emd = EMDTextArtifact.create("MVD_EMD_V1", normalize_newlines(template_emd))
+                status = "complete=yes; source=author_emd; model=skipped"
+                _LOGGER.info(
+                    "[MV Director - Timeline Planner] full author EMD accepted; "
+                    "LLM and profile generation skipped"
+                )
+                return emd.text, emd, status
             selected_direction = direction or DirectionArtifact()
             selected_direction.validate()
             template = parse_template_emd(template_emd)
@@ -505,6 +559,55 @@ class MVDirectorTimelinePlanner:
                 seed=seed,
             )
             config.validate()
+            scene_author_mode = planner_profile_metadata(
+                selected_direction.camera_profile_id,
+                selected_direction.motion_policy_profile_id
+                or selected_direction.motion_profile_id,
+            )["performance_mode"] == "scene_author"
+            author_counts = {
+                "scene-author-event": sum(
+                    not any(
+                        directive.kind == "演出"
+                        for shot in item.shots for directive in shot.directives
+                    )
+                    for item in template.scenes
+                ),
+                "scene-author-performance": sum(
+                    any(
+                        not any(d.kind == "演技" for d in shot.directives)
+                        for shot in item.shots
+                    )
+                    for item in template.scenes
+                ),
+                "scene-author-camera": sum(
+                    any(
+                        not any(d.kind == "カメラ" for d in shot.directives)
+                        for shot in item.shots
+                    )
+                    for item in template.scenes
+                ),
+            } if scene_author_mode else None
+            if scene_author_mode and author_counts is not None and not any(author_counts.values()):
+                content, missing = generate_planner_content(
+                    self._backend,
+                    template=template, concept_emd=concept, scene_emd=scene,
+                    direction=selected_direction,
+                    lip_sync_mode=lip_sync_mode,
+                    lip_sync_target=lip_sync_target,
+                    scenes_per_batch=scenes_per_batch,
+                    system_prompts=_system_prompts(),
+                    runtime_config=config,
+                    interrupt_callback=_interrupt,
+                )
+                if content is None or missing:
+                    raise RuntimeError("fully authored Scene unexpectedly needs generation")
+                emd = render_planner_content(
+                    content=content, concept_emd=concept, scene_emd=scene,
+                    template=template, direction=selected_direction,
+                    lip_sync_mode=lip_sync_mode, lip_sync_target=lip_sync_target,
+                    lip_sync_audio_slot=lip_sync_audio_slot,
+                )
+                return emd.text, emd, "complete=yes; source=author_shots; model=skipped"
             selection = model_name_override.strip() or model_name
             model = resolve_comfy_gguf_model(selection)
             prompts = _system_prompts()
@@ -536,7 +639,11 @@ class MVDirectorTimelinePlanner:
             cache = _cache()
             cached = cache.get(key) if cache_mode == "reuse" and cache else None
             self._backend.reset_trace()
-            self._backend.configure_progress(len(template.scenes), scenes_per_batch)
+            self._backend.configure_progress(
+                len(template.scenes), scenes_per_batch,
+                scene_author=scene_author_mode,
+                scene_author_counts=author_counts,
+            )
             cache_status = "hit" if cached else (
                 "miss" if cache_mode == "reuse" else cache_mode
             )
@@ -615,11 +722,15 @@ class MVDirectorTimelinePlanner:
                         "was missing after bounded retries; continued with "
                         "per-scene visual beats and Direction Artifact"
                     )
-                planned_shot_count = sum(
-                    len(starts) for _, starts in content.shot_layouts
+                planned_shot_count = (
+                    sum(len(scene.shots) for scene in template.scenes)
+                    if content.typed_output
+                    else sum(len(starts) for _, starts in content.shot_layouts)
                 )
-                continued_scene_count = sum(
-                    1 for _, value in content.scene_continuations if value
+                continued_scene_count = (
+                    sum(scene.continuation for scene in template.scenes)
+                    if content.typed_output
+                    else sum(1 for _, value in content.scene_continuations if value)
                 )
                 fallback_label = (
                     "none"

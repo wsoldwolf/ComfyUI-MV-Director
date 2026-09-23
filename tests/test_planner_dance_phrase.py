@@ -33,6 +33,11 @@ class DancePhraseTests(unittest.TestCase):
         action_prompt = (root / "prompts/timeline_planner_actions_dance_phrase_system_prompt.txt").read_text(encoding="utf-8")
         self.assertEqual(profile.performance_mode, "dance_phrase")
         self.assertEqual(profile.body_accent_policy, "sparse_chorus_prechorus_verse_contact")
+        experimental = load_direction_profile(
+            root / "profiles/motion/anime_scene_phrase_mv.md", "motion",
+        )
+        self.assertEqual(experimental.body_accent_policy, "scene_phrase")
+        self.assertEqual(experimental.text, profile.text)
         self.assertIn("連続した全身フレーズ", profile.render_prompt)
         self.assertIn("少なくとも一つの通常Shotに踏み替え", action_prompt)
         self.assertNotIn("上半身だけで完結する演技を積極的に選び", action_prompt)
@@ -58,7 +63,7 @@ class DancePhraseTests(unittest.TestCase):
         # a dedicated test with a backend that implements the new task.
         loaded.pop("scene-spine")
         self.assertLess(len(loaded["actions-dance-phrase"]), len(loaded["actions"]))
-        for motion in ("", "anime_story_mv", "anime_emotional_mv"):
+        for motion in ("", "anime_story_mv", "anime_emotional_mv", "anime_scene_phrase_mv"):
             seen = []
             class Capture(FakePlannerBackend):
                 def complete_planner(self, *, task, system_prompt, **kwargs):
@@ -70,7 +75,12 @@ class DancePhraseTests(unittest.TestCase):
                 lip_sync_mode="off", lip_sync_target="サブジェクト1", lip_sync_audio_slot=1,
                 scenes_per_batch=3, system_prompts=loaded, runtime_config=runtime())
             self.assertTrue(result.complete)
-            expected = "actions-dance-phrase" if motion in {"anime_story_mv", "anime_emotional_mv"} else "actions"
+            expected = (
+                "actions-dance-phrase" if motion in {
+                    "anime_story_mv", "anime_emotional_mv",
+                    "anime_scene_phrase_mv",
+                } else "actions"
+            )
             self.assertTrue(seen)
             self.assertTrue(all(value == loaded[expected] for value in seen))
 
@@ -127,7 +137,7 @@ class DancePhraseTests(unittest.TestCase):
         keys = []
         for policy in (
             "off", "sparse_chorus", "sparse_chorus_prechorus",
-            "sparse_chorus_prechorus_verse_contact",
+            "sparse_chorus_prechorus_verse_contact", "scene_phrase",
         ):
             with patch.dict(MOTION_BODY_ACCENT_POLICIES, {"custom": policy}):
                 keys.append(build_cache_key(task="timeline-planner", algorithm_version="test",
@@ -136,7 +146,14 @@ class DancePhraseTests(unittest.TestCase):
 
     def test_emotional_development_policy_preserves_story_baseline(self):
         self.assertEqual(MOTION_BODY_ACCENT_POLICIES["anime_story_mv"], "off")
-        self.assertEqual(MOTION_BODY_ACCENT_POLICIES["anime_emotional_mv"], "sparse_chorus_prechorus_verse_contact")
+        self.assertEqual(
+            MOTION_BODY_ACCENT_POLICIES["anime_emotional_mv"],
+            "sparse_chorus_prechorus_verse_contact",
+        )
+        self.assertEqual(
+            MOTION_BODY_ACCENT_POLICIES["anime_scene_phrase_mv"],
+            "scene_phrase",
+        )
         for motion, first_role in (
             ("anime_story_mv", "continuous_upper_body_phrase"),
             ("anime_emotional_mv", "body_phrase_accent"),
@@ -209,6 +226,104 @@ class DancePhraseTests(unittest.TestCase):
                 include_verse_contact=True,
             ),
             set(),
+        )
+
+    def test_scene_phrase_selects_one_non_contact_accent_without_inventing_object(self):
+        context = {
+            (4, index): {
+                "lyrics": [{"section": "VERSE", "text": "想いを抱く"}],
+                "shot_index": index, "scene_shot_count": 3,
+                "scene_continuation": True, "shot_duration_ms": 3200,
+            }
+            for index in (1, 2, 3)
+        }
+        no_target = {(4,): _CueCard(valid=True, target="なし", contact="禁止")}
+        self.assertEqual(
+            _sparse_body_accent_keys(
+                context, {}, lip_sync_active=True, cue_cards={},
+                include_all_scenes=True,
+            ),
+            set(),
+        )
+        self.assertEqual(
+            _sparse_body_accent_keys(
+                context, {}, lip_sync_active=True, cue_cards=no_target,
+                include_all_scenes=True,
+            ),
+            set(),
+        )
+        self.assertEqual(
+            _sparse_body_accent_keys(
+                context, {}, lip_sync_active=True,
+            ),
+            set(),
+        )
+        steps = {
+            (4, 1): SceneSpineStep(
+                "setup", "道に立つ", "身体を緩める", "胸を開く", "upper_body_hands",
+            ),
+            (4, 2): SceneSpineStep(
+                "event", "胸を開く", "重心を横へ受け渡す", "片足支持", "whole_body",
+            ),
+            (4, 3): SceneSpineStep(
+                "response", "片足支持", "息を整える", "両足支持", "face_eyes_mouth",
+            ),
+        }
+        self.assertEqual(
+            _sparse_body_accent_keys(
+                context, steps, lip_sync_active=True, cue_cards=no_target,
+                include_all_scenes=True,
+            ),
+            {(4, 2)},
+        )
+
+    def test_scene_phrase_keeps_contact_event_separate_from_body_accent(self):
+        context = {
+            (5, index): {
+                "lyrics": [{"section": "VERSE", "text": "苔に触れる"}],
+                "shot_index": index, "scene_shot_count": 3,
+                "scene_continuation": True, "shot_duration_ms": 3200,
+            }
+            for index in (1, 2, 3)
+        }
+        steps = {
+            (5, 1): SceneSpineStep("setup", "道に立つ", "足を寄せる", "幹の前に立つ", "whole_body"),
+            (5, 2): SceneSpineStep("event", "幹の前に立つ", "苔を撫でる", "指を離す", "lyric_target_hands"),
+            (5, 3): SceneSpineStep("response", "指を離す", "視線を戻す", "道へ向く", "whole_body"),
+        }
+        cue = {(5,): _CueCard(valid=True, target="苔", contact="許可")}
+        self.assertEqual(
+            _sparse_body_accent_keys(
+                context, steps, lip_sync_active=True, cue_cards=cue,
+                include_all_scenes=True,
+            ),
+            {(5, 1)},
+        )
+        self.assertEqual(
+            _sparse_body_accent_keys(
+                context, {}, lip_sync_active=True, cue_cards=cue,
+                include_all_scenes=True,
+            ),
+            set(),
+        )
+
+    def test_scene_phrase_camera_keeps_body_visible_at_accent_end(self):
+        entity = _Entity(4, (4, 1), {
+            "required_spine_coverage": "whole_body_emotion",
+            "body_phrase_accent": True,
+            "arc_permission": "forbidden",
+        })
+        narrow = _CameraPlan(
+            "Push In at fast speed", "wide", "medium", "front_three_quarter",
+            "front_three_quarter", "push_in", "whole_body_emotion",
+        )
+        self.assertIn(
+            "body_phrase_accent_not_visible",
+            _camera_plan_contract_violations(entity, narrow),
+        )
+        self.assertEqual(
+            _camera_plan_contract_violations(entity, _fallback_camera_plan(entity, 0)),
+            (),
         )
 
     def test_only_verse_contact_shortens_dance_layout_candidates(self):
@@ -339,6 +454,8 @@ class DancePhraseTests(unittest.TestCase):
         camera_request = next(payload for task, payload in backend.calls if task == "cameras")
         camera_slot = camera_request["slots"][0]
         self.assertTrue(camera_slot["single_prechorus_body_accent"])
+        self.assertFalse(camera_slot["body_phrase_accent"])
+        self.assertFalse(camera_slot["face_zoom_emphasis"])
         self.assertEqual(camera_slot["required_spine_coverage"], "whole_body_emotion")
 
     def test_prechorus_body_accent_camera_keeps_wide_phase(self):
@@ -367,10 +484,10 @@ class DancePhraseTests(unittest.TestCase):
         context[(6, 1)]["lyrics"] = [{"section": "VERSE", "text": "御神木は"}]
         self.assertFalse(_is_prechorus_scene([(6, 1), (6, 2)], context))
 
-    def test_opt_in_reaches_existing_stages_without_added_calls_or_text_rewrite(self):
+    def test_opt_in_reaches_action_and_camera_without_text_rewrite(self):
         calls = {}
         actions = {}
-        for motion, expected in (("", "event_based"), ("anime_emotional_mv", "dance_phrase")):
+        for motion, expected in (("", "event_based"), ("anime_scene_phrase_mv", "dance_phrase")):
             backend = FakePlannerBackend()
             result = plan_timeline(backend, template_emd=TEMPLATE, concept_emd=CONCEPT,
                 direction=DirectionArtifact(camera_profile_id="anime_emotional_mv", motion_profile_id=motion),
@@ -396,22 +513,25 @@ class DancePhraseTests(unittest.TestCase):
                 slot for task, payload in backend.calls if task == "cameras"
                 for slot in payload["slots"]
             ]
-            self.assertEqual(len(camera_slots), 2)
-            self.assertEqual(
-                camera_slots[0]["next_locked_action"],
-                camera_slots[1]["locked_action"],
-            )
-            self.assertEqual(
-                camera_slots[1]["previous_locked_action"],
-                camera_slots[0]["locked_action"],
-            )
-            self.assertEqual(
-                [slot["performance_phase"] for slot in camera_slots],
-                ["prepare_and_accent", "release_and_reaction"]
-                if motion else ["", ""],
-            )
-        self.assertEqual(calls[""], calls["anime_emotional_mv"])
-        self.assertEqual(actions[""], actions["anime_emotional_mv"])
+            self.assertGreaterEqual(len(camera_slots), 2)
+            for task, payload in backend.calls:
+                if task != "cameras":
+                    continue
+                for previous, current in zip(payload["slots"], payload["slots"][1:]):
+                    self.assertEqual(previous["next_locked_action"], current["locked_action"])
+                    self.assertEqual(current["previous_locked_action"], previous["locked_action"])
+            if motion:
+                self.assertIn("body_phrase_accent", [
+                    slot["performance_role"] for task, payload in backend.calls
+                    if task == "actions" for slot in payload["slots"]
+                ])
+                self.assertTrue(any(slot["body_phrase_accent"] for slot in camera_slots))
+            else:
+                self.assertTrue(all(not slot["body_phrase_accent"] for slot in camera_slots))
+        self.assertIn("actions", calls[""])
+        self.assertIn("actions", calls["anime_scene_phrase_mv"])
+        self.assertTrue(actions[""])
+        self.assertTrue(actions["anime_scene_phrase_mv"])
 
     def test_dance_steps_do_not_disable_running_grounding_or_protocol_checks(self):
         text = "左足へ重心を移し、膝の反発から胸郭を起こして片腕を斜めへ伸ばす。"

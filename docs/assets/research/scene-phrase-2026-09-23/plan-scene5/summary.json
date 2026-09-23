@@ -1,0 +1,54 @@
+{
+  "source_emd": "C:/Software/ComfyUI/output/mv_director/context_loop_emd_00001.md",
+  "source_scene": 5,
+  "local_time_rebased": true,
+  "seed": 1,
+  "complete": true,
+  "missing": [],
+  "task_calls": {
+    "lyric-cues": 1,
+    "visual-beats": 1,
+    "song-direction": 1,
+    "shot-layout": 1,
+    "scene-spine": 1,
+    "actions": 3,
+    "action-audit": 2,
+    "cameras": 2
+  },
+  "actions": [
+    [
+      1,
+      1,
+      "対象位置:増えと胸の古傷；人物位置:胸の古傷の近くで、胸を左右に傾けながら右手を胸へ向かって軽く触れる"
+    ],
+    [
+      1,
+      2,
+      "胸の古傷が増えてゆくにつれて、右手を胸の古傷に向かってゆっくり下げる"
+    ]
+  ],
+  "cameras": [
+    [
+      1,
+      1,
+      "Truck Right at fast speed. Start with a medium-wide shot from a front three-quarter viewpoint; end with a medium shot from a side viewpoint. Translate the entire camera laterally to the right. Keep the lyric-selected target or external phenomenon visible in its stated location or path while the performer's face, weight shift, torso, and both arms remain readable together."
+    ],
+    [
+      1,
+      2,
+      "Arc Shot with large amplitude at fast speed. Start with a medium shot from a side viewpoint; end with a full-body shot from a rear three-quarter viewpoint. Travel on a 60-to-120-degree right arc for 70-to-90 percent of the shot with strong parallax; during the middle third, blend in Roll Clockwise with small amplitude around the lens axis, visibly cant the frame by about 10 degrees, then smoothly return the horizon to level before the shot ends while the rightward orbit continues. Keep the lyric-selected target or external phenomenon visible in its stated location or path while the performer's face, weight shift, torso, and both arms remain readable together."
+    ]
+  ],
+  "scene_spine_steps": [
+    [
+      1,
+      1,
+      "PHASE=setup｜FROM=無｜ADVANCE=胸を左右に傾け、右手を胸へ向かって軽く触れる｜TO=胸を左右に傾け、右手を胸へ向かって軽く触れる｜SHOW=lyric_target_body｜EFFECT_TO=現象:外部自律；位置:対象位置:増えと胸の古傷；方向:左から右へ；段階:初期"
+    ],
+    [
+      1,
+      2,
+      "PHASE=event｜FROM=胸を左右に傾け、右手を胸へ向かって軽く触れる｜ADVANCE=胸の古傷が増えてゆく｜TO=胸を戻し、右手を下げる｜SHOW=lyric_target_body｜EFFECT_TO=現象:外部自律；位置:対象位置:増えと胸の古傷；方向:左から右へ；段階:進行中"
+    ]
+  ]
+}

@@ -16,9 +16,11 @@ from .ast import (
     Scene,
     SceneSetting,
     Shot,
+    ShotDirective,
     Subject,
 )
 from .errors import EMDParseError
+from .common import COMMON_HEADINGS, split_shot_directive
 from .scene_fragment import SceneEMDFragmentError, parse_scene_emd_fragment
 
 
@@ -56,14 +58,7 @@ _RETENTION_RE = re.compile(
 )
 _RESERVED_LIST_RE = re.compile(r"\* `[^`]+`(?:\s|\Z)")
 _D_TAG_RE = re.compile(r"</?d(?:\[[^\]\r\n]+\])?>")
-_COMMON_SECTIONS = (
-    "スタイル",
-    "環境",
-    "時間・照明",
-    "モーション",
-    "カメラ",
-    "その他",
-)
+_COMMON_SECTIONS = COMMON_HEADINGS
 
 
 def parse_time_ms(value: str, *, line_number: int = 0) -> int:
@@ -407,6 +402,7 @@ class _Parser:
                     shot_match.group(1), line_number=shot_line.number
                 )
                 body: list[str] = []
+                typed_directives: list[ShotDirective] = []
                 lyric_sync: list[tuple[str, str]] = []
                 while (body_line := self.current()) is not None:
                     lyric_match = _LYRIC_LIP_RE.fullmatch(body_line.text)
@@ -415,15 +411,24 @@ class _Parser:
                         self.take()
                         continue
                     if body_line.text.startswith("* "):
+                        text = body_line.text[2:]
+                        typed = split_shot_directive(text)
                         if (
                             _RESERVED_LIST_RE.match(body_line.text)
                             and not _SHOT_CONCEPT_START_RE.match(body_line.text)
+                            and typed is None
                         ):
                             raise EMDParseError(
                                 body_line.number, "unknown Shot reserved directive"
                             )
-                        text = body_line.text[2:]
-                        _validate_dialogue_markup(text, body_line.number)
+                        _validate_dialogue_markup(
+                            typed[1] if typed is not None else text,
+                            body_line.number,
+                        )
+                        if typed is not None:
+                            typed_directives.append(
+                                ShotDirective(typed[0], typed[1], body_line.number)
+                            )
                         body.append(text)
                         self.take()
                         continue
@@ -437,6 +442,7 @@ class _Parser:
                         lyric_annotations=tuple(pending_annotations),
                         lyric_lip_sync=tuple(lyric_sync),
                         line_number=shot_line.number,
+                        directives=tuple(typed_directives),
                     )
                 )
                 pending_annotations = []

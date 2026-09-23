@@ -36,7 +36,13 @@ Directionは`# 演出候補`の各箇条書きを共通指示から分離し、�
 
 profileには`reference_anime`、`anime_story_mv`、`anime_emotional_mv`、`reference_cinematic`、`illust_to_photoreal`、`reference_painterly`等があります。Motion/Cameraにも`anime_story_mv`及び`anime_emotional_mv`があります。profile本文は[`profiles/style`、`profiles/motion`、`profiles/camera`](../../profiles/README.md)の外部EMDから起動時に読み込み、ファイル名をnode comboのIDとして自動列挙します。利用者はPythonを編集せず独自profileを追加できます。追加・変更後はComfyUIを再起動してください。
 
-選択したMotion及びCamera profileは、それぞれ完成Directionの`## モーション`及び`## カメラ`を機械的に所有します。これらのrecordはLLMへ要求せず、外部profile EMD本文をそのまま採用します。locked Styleも同様です。LLMには未固定Style及び環境・時間・照明・その他の統合判断だけを担当させるため、profile本文の欠落や言い換えを理由に停止しません。ユーザーが本文を直接管理する場合だけ、対応comboを`passthrough`にして外部Direction EMDを入力します。
+選択したMotion及びCamera profileは、明示的なユーザー本文がない場合、
+それぞれ完成Directionの`## モーション`及び`## カメラ`を機械的に所有します。
+ユーザーは既存`user_request`に`# 共通プロンプト`のsubsectionを記述して、
+選択profileの該当本文だけを上書きできます。profile本文はLLMへ再要求せず、
+上書き時は破棄としてprovenanceに残します。Motionの本文を上書きした場合も、
+選択profileのPlanner方式は別の`motion_policy_profile_id`へ保持します。
+全本文を直接管理する場合は`passthrough` comboと外部Direction EMDも利用できます。
 
 Camera profileは非表示metadata `planner_policy`を任意に宣言できます。これは同じprofile選択からTimeline Plannerの構造最適化も切り替えるためのもので、UI socketは増えません。`anime_emotional_mv`は同名policyを宣言し、感情演技、継続Scene、長尺Arc及び顔Zoomの配分を変更します。生成済みAction又はCamera本文を書き換えないため、AS IS原則は維持されます。
 

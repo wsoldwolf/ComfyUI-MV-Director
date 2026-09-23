@@ -1,0 +1,45 @@
+{
+  "source_emd": "C:/Software/ComfyUI/output/mv_director/context_loop_emd_00001.md",
+  "source_scene": 5,
+  "local_time_rebased": true,
+  "seed": 1,
+  "model": "qwen3-8b-abliterated-Q4_K_M.gguf",
+  "complete": true,
+  "missing": [],
+  "task_calls": {
+    "scene-author-event": 1,
+    "scene-author-performance": 1,
+    "scene-author-camera": 1
+  },
+  "events": [
+    [
+      1,
+      1,
+      "狐耳が揺れながら胸の古傷を指す手の動きに、カメラが顔へZoom Inする。"
+    ]
+  ],
+  "performances": [
+    [
+      1,
+      1,
+      "顔へZoom Inする際、頭肩構図から始め、両目、両眉、鼻、口全体及び顔輪郭を全行程で同時に残し、目又は口だけへ切り詰めない。顔拡大への移行はShotの35%から5初始め、短い表情accentだけを読ませ、同じscaleを長時間保持しない。閉眼、半開き、伏し目又は再び目を開く演技も構図内で読めるようにし、常に全開の目を要求しない。"
+    ],
+    [
+      1,
+      2,
+      "胸の古傷を指す手の動きに合わせ、カメラが顔へZoom Inする。顔へのZoom Inは頭肩構図から始め、両目、両眉、鼻、口全体及び顔輪廓を全行程で同時に残し、目又は口だけへ切り詰めない。顔拡大への移行はShotの35%から55%で完了し、短い表情accentだけを読ませ、同じscaleを長時間保持しない。閉眼、半開き、伏し目又は再び目を開く演技も構図内で読めるようにし、常に全開の目を要求しない。"
+    ]
+  ],
+  "cameras": [
+    [
+      1,
+      1,
+      "Zoom In with large amplitude at fast speed from head-shoulder composition to face focus, keeping both eyes, eyebrows, nose, mouth and facial contour visible throughout the transition, completing the zoom-in by 55% of the shot, allowing short expression accents without maintaining the same scale for long periods, enabling closed eyes, half-open eyes, downcast eyes or reopening eyes within the composition, without requiring constant wide-open eyes"
+    ],
+    [
+      1,
+      2,
+      "Arc Shot with large amplitude at fast speed from low diagonal front to side view, creating strong depth difference between foreground, middle ground and background, transitioning to a final view of the back third-fourth position, maintaining the arc direction without sudden reversal, ensuring smooth continuation from the previous scene's ending composition"
+    ]
+  ]
+}

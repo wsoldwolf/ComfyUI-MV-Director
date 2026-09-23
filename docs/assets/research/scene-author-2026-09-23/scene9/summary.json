@@ -1,0 +1,45 @@
+{
+  "source_emd": "C:/Software/ComfyUI/output/mv_director/context_loop_emd_00001.md",
+  "source_scene": 9,
+  "local_time_rebased": true,
+  "seed": 1,
+  "model": "qwen3-8b-abliterated-Q4_K_M.gguf",
+  "complete": true,
+  "missing": [],
+  "task_calls": {
+    "scene-author-event": 1,
+    "scene-author-performance": 1,
+    "scene-author-camera": 1
+  },
+  "events": [
+    [
+      1,
+      1,
+      "狐耳が揺れるのをカメラがズームインし、朱色の空に浮かぶ赤い炎とその動きを追う。"
+    ]
+  ],
+  "performances": [
+    [
+      1,
+      1,
+      "姿勢の始点は自然な立ち位置。重心を左足に置き、体幹をやや前傾させ、右手を腰に添える。狐耳が揺れるのをカメラがズームインするタイミングで、左手を顔の横に上げ、目をやや開きながら上向きを見つめる。口はやや開き、感情に応じて自然な笑みを浮かべる。身体は静かな動きで、狐火の動きに合わせてやさしく首を傾ける。終点では右手を顔の横に保ち、左手を腰に添え、目をやや閉じた状態で、狐火の動きに追う。"
+    ],
+    [
+      1,
+      2,
+      "姿勢の始点は前 shot の終点と連続し、右手を顔の横に保ち、左手を腰に添える。カメラがズームインするタイミングで、右手を顔の上部へ上げ、目をやや閉じながら上向きを見つめる。口はやや開き、感情に応じて自然な笑みを浮かべる。身体は静かな動きで、狐火の動きに合わせてやさしく首を傾ける。終点では右手を顔の横に保ち、左手を腰に添え、目をやや閉じた状態で、狐拍子に合わせて自然な息遣いをする。"
+    ]
+  ],
+  "cameras": [
+    [
+      1,
+      1,
+      "Arc Shot with large amplitude at fast speed from lower front left to upper back right, covering the head and shoulder structure, with a strong depth difference between foreground and background"
+    ],
+    [
+      1,
+      2,
+      "Zoom In on the face from the head and shoulder structure, keeping both eyes, eyebrows, nose, mouth, and facial contour visible throughout the movement, completing the zoom-in by 55% of the shot"
+    ]
+  ]
+}

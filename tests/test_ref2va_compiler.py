@@ -59,6 +59,42 @@ class CameraDirectiveMutatingTranslator:
 
 
 class Ref2VACompilerTests(unittest.TestCase):
+    def test_local_authored_camera_replaces_global_camera_for_one_shot(self) -> None:
+        source = (
+            "# サブジェクト\n* 人物。\n"
+            "# 共通プロンプト\n"
+            "## モーション\n* 全身が滑らかに動く。\n"
+            "## カメラ\n* Static Shotを基調とする。\n"
+            "> `シーン` 1\n"
+            "# シーン 00:00.000 --> 00:10.125\n"
+            "* `H3長` 243\n"
+            "## ショット 00:00.000\n"
+            "* `演技` 人物が胸郭を開いて一歩踏み出す。\n"
+            "* `カメラ` Arc Shot at fast speed.\n"
+            "## ショット 00:05.000\n"
+            "* 人物が振り返る。\n"
+        )
+        result = compile_ref2va(source, EchoTranslator())
+        self.assertNotIn("EN:Static Shotを基調とする。", result.plan.get("prompt_prefix", []))
+        self.assertNotIn("EN:全身が滑らかに動く。", result.plan.get("prompt_prefix", []))
+        prompt = "\n".join(result.plan["shots"][0]["prompt"])
+        first = next(
+            item for item in result.plan["shots"][0]["prompt"]
+            if item.startswith("[Shot 1]")
+        )
+        second = next(
+            item for item in result.plan["shots"][0]["prompt"]
+            if item.startswith("[Shot 2]")
+        )
+        self.assertIn("Arc Shot at fast speed.", first)
+        self.assertNotIn("Static Shot", first)
+        self.assertNotIn("全身が滑らかに動く。", first)
+        self.assertIn("Static Shot", second)
+        self.assertIn("基調とする。", second)
+        self.assertIn("EN:全身が滑らかに動く。", second)
+        self.assertNotIn("`演技`", prompt)
+        self.assertNotIn("`カメラ`", prompt)
+
     def test_translation_progress_counts_completed_fields(self) -> None:
         source = (FIXTURES / "canonical_ref2va.emd").read_text(encoding="utf-8")
         updates = []

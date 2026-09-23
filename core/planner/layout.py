@@ -182,6 +182,7 @@ def apply_shot_layouts(
             raise TimelinePlannerError("Shot layout creates a Shot shorter than 1500 ms")
 
         bodies: list[list[str]] = [[] for _ in starts]
+        directives: list[list[object]] = [[] for _ in starts]
         lyrics: list[list[object]] = [[] for _ in starts]
         line_numbers = [scene.line_number for _ in starts]
         for original in scene.shots:
@@ -190,6 +191,7 @@ def apply_shot_layouts(
             bodies[destination].extend(
                 value for value in original.body if value != "未計画"
             )
+            directives[destination].extend(original.directives)
             lyrics[destination].extend(original.lyric_annotations)
         shots = tuple(
             Shot(
@@ -198,6 +200,7 @@ def apply_shot_layouts(
                 lyric_annotations=tuple(lyrics[index]),
                 lyric_lip_sync=(),
                 line_number=line_numbers[index],
+                directives=tuple(directives[index]),
             )
             for index, start in enumerate(starts)
         )
@@ -321,6 +324,7 @@ def apply_scene_continuations(
                 lyric_annotations=shot.lyric_annotations,
                 lyric_lip_sync=shot.lyric_lip_sync,
                 line_number=shot.line_number,
+                directives=shot.directives,
             )
             for shot_index, shot in enumerate(scene.shots)
         )

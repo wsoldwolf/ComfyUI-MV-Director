@@ -8,6 +8,28 @@ FIXTURES = Path(__file__).parent / "fixtures" / "emd"
 
 
 class EMDParserTests(unittest.TestCase):
+    def test_typed_shot_fields_keep_author_prose_and_kind(self) -> None:
+        source = (
+            "# サブジェクト\n* 人物。\n"
+            "> `シーン` 1\n"
+            "# シーン 00:00.000 --> 00:01.000\n"
+            "* `H3長` 22\n"
+            "## ショット 00:00.000\n"
+            "* `演技` 人物が肩を落とし、視線を上げる。\n"
+            "* `演出` 火の粒が宙へ広がる。\n"
+            "* `カメラ` Arc Shot at fast speed.\n"
+        )
+        shot = parse_emd(source).scenes[0].shots[0]
+        self.assertEqual(
+            [(item.kind, item.text) for item in shot.directives],
+            [
+                ("演技", "人物が肩を落とし、視線を上げる。"),
+                ("演出", "火の粒が宙へ広がる。"),
+                ("カメラ", "Arc Shot at fast speed."),
+            ],
+        )
+        self.assertEqual(shot.body[0], "`演技` 人物が肩を落とし、視線を上げる。")
+
     def test_canonical_ref2va_document(self) -> None:
         document = parse_emd(
             (FIXTURES / "canonical_ref2va.emd").read_text(encoding="utf-8")

@@ -92,6 +92,13 @@ class SceneSpineTests(unittest.TestCase):
         non_contact = build_scene_spine_grammar([1, 2], allow_target_hands=False)
         self.assertNotIn('"lyric_target_hands"', non_contact)
         self.assertNotIn('"lyric_target_body"', non_contact)
+        body_only = build_scene_spine_grammar(
+            [1, 2], allow_target_hands=False, body_phrase_only=True,
+        )
+        self.assertNotIn('"lyric_target"', body_only)
+        self.assertNotIn('"lyric_target_hands"', body_only)
+        self.assertIn('show-0-1 ::= "whole_body"', body_only)
+        self.assertIn('show-1-2 ::= "whole_body"', body_only)
         effect_grammar = build_scene_spine_grammar(
             [1], allow_target_hands=False, track_external_effect=True
         )

@@ -13,7 +13,7 @@ from ..artifacts.references import (
     RequiredReference,
     RequiredReferencesArtifact,
 )
-from ..emd import EMDDocument, parse_emd
+from ..emd import EMDDocument, parse_emd, shot_prose
 from ..emd.ast import AudioDirective, Scene, Shot, Subject
 from ..h3_contract import (
     DEFAULT_H3_TIMING_PROFILE,
@@ -90,7 +90,10 @@ class _TranslationTable:
                 add(f"scene.{scene_index}.description.{index}", text)
             for shot_index, shot in enumerate(scene.shots):
                 for index, text in enumerate(shot.body):
-                    add(f"scene.{scene_index}.shot.{shot_index}.body.{index}", text)
+                    add(
+                        f"scene.{scene_index}.shot.{shot_index}.body.{index}",
+                        shot_prose(text),
+                    )
 
         protected = [protect_unit(text, self.document.subjects) for text in units]
         translated_fragments: dict[int, dict[int, str]] = {}
@@ -306,6 +309,7 @@ def _scene_prompt(
     scene: Scene,
     scene_index: int,
     translations: _TranslationTable,
+    scoped_common_sections: frozenset[str] = frozenset(),
 ) -> tuple[list[str], dict[str, str]]:
     subject_lines: list[str] = []
     for subject_index, subject in enumerate(document.subjects):
@@ -325,11 +329,22 @@ def _scene_prompt(
     shot_lines: list[str] = []
     for shot_index, shot in enumerate(scene.shots):
         marker = _shot_marker(scene, shot, shot_index)
+        fixed = {directive.kind for directive in shot.directives}
+        inherited = [
+            translations.get(f"common.{section}.{index}")
+            for section, values in document.common_prompt
+            if section in scoped_common_sections
+            and not (
+                (section == "モーション" and "演技" in fixed)
+                or (section == "カメラ" and "カメラ" in fixed)
+            )
+            for index in range(len(values))
+        ]
         bodies = [
             translations.get(f"scene.{scene_index}.shot.{shot_index}.body.{index}")
             for index in range(len(shot.body))
         ]
-        parts = list(bodies)
+        parts = [*inherited, *bodies]
         for concept_id, lyric in shot.lyric_lip_sync:
             target = _target_ref(document, concept_id)
             parts.append(
@@ -441,6 +456,17 @@ def compile_ref2va(
     translations.build()
 
     plan: dict[str, Any] = {"defaults": {"steps": steps}, "shots": []}
+    typed_kinds = {
+        directive.kind
+        for scene in document.scenes
+        for shot in scene.shots
+        for directive in shot.directives
+    }
+    scoped_common_sections = frozenset(
+        section
+        for section, kind in (("モーション", "演技"), ("カメラ", "カメラ"))
+        if kind in typed_kinds
+    )
     prefix = [
         translations.get(f"scene_setting.environment.{index}")
         for index in range(
@@ -460,13 +486,14 @@ def compile_ref2va(
     prefix.extend(
         translations.get(f"common.{section}.{index}")
         for section, values in document.common_prompt
+        if section not in scoped_common_sections
         for index in range(len(values))
     )
     if prefix:
         plan["prompt_prefix"] = prefix
     for index, scene in enumerate(document.scenes):
         prompt, audio_fields = _scene_prompt(
-            document, scene, index, translations
+            document, scene, index, translations, scoped_common_sections
         )
         continuation = index > 0 and scene.continuation
         scene_plan: dict[str, Any] = {

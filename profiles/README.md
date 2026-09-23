@@ -72,7 +72,13 @@ Direction→Plannerの計画用入力として従来どおり使い、EMDへ出�
 * 重心から体幹、腕、表情へつながる演技を、準備・アクセント・解放として描く。
 ```
 
-`performance_mode`は`event_based`（省略時）又は`dance_phrase`です。
+`performance_mode`は`event_based`（省略時）、`dance_phrase`又は
+`scene_author`です。`scene_author`は次期の実験用経路で、Sceneごとに
+出来事→人物演技→Cameraを順に生成します。既定profileは変更しません。
+対応profileは[anime_scene_author_mv](motion/anime_scene_author_mv.md)です。
+共通`## モーション`をユーザーが書き換えても、選択したMotionのPlanner方式は
+`motion_policy_profile_id`として保持します。本文はユーザーが所有し、profileの
+自然文を重ねません。
 `anime_choreography_mv`は全編比較用の選択可能なMotionであり、既定の`anime_emotional_mv`には適用しません。以前の`scene_palette`とprofile内の`# 振付候補`の一括投入は廃止しました。ユーザー固有の動き又は出来事の候補は、Direction Enhancerの`user_request`に`# 演出候補`として記述します。Motion profileに関係なくPlannerがSceneの歌詞から候補一件又は不採用を選びます。旧`scene_choice`は既存の任意profile用として残りますが、通常の演出候補には不要です。
 `anime_emotional_mv`と、現在その内容を複製した`anime_story_mv`のMotionは`dance_phrase`を選びます。選択したMotionの
 metadataだけで切り替え、UI項目は追加しません。Cameraだけをemotionalにしても

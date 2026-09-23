@@ -56,7 +56,7 @@ from .template import (
 )
 
 
-PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v80"
+PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v81"
 _ACTION_AUDIT_REPAIR_ATTEMPTS = 1
 _LOGGER = logging.getLogger("mv_director.nodes")
 TASKS = (
@@ -181,6 +181,8 @@ class PlannerContent:
     song_direction_fallback: bool = False
     scene_spine_steps: tuple[tuple[int, int, str], ...] = ()
     scene_spine_skipped_scenes: tuple[int, ...] = ()
+    events: tuple[tuple[int, int, str], ...] = ()
+    typed_output: bool = False
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -210,6 +212,8 @@ class PlannerContent:
             "song_direction_fallback": self.song_direction_fallback,
             "scene_spine_steps": [list(value) for value in self.scene_spine_steps],
             "scene_spine_skipped_scenes": list(self.scene_spine_skipped_scenes),
+            "events": [list(value) for value in self.events],
+            "typed_output": self.typed_output,
         }
 
     @classmethod
@@ -265,6 +269,11 @@ class PlannerContent:
             scene_spine_skipped_scenes=tuple(
                 int(scene) for scene in value.get("scene_spine_skipped_scenes", ())
             ),
+            events=tuple(
+                (int(row[0]), int(row[1]), str(row[2]))
+                for row in value.get("events", ())
+            ),
+            typed_output=bool(value.get("typed_output", False)),
         )
 
 
@@ -469,6 +478,12 @@ def build_camera_plan_grammar(slots: list[Mapping[str, object]]) -> str:
             if slot.get("arc_roll_emphasis") else
             _CAMERA_PLAN_SCALES
         )
+        if slot.get("body_phrase_accent"):
+            body_scales = {"wide", "medium_wide", "full_body"}
+            if slot.get("face_arc_transition") == "arc_into_next_face_cut":
+                start_scales &= body_scales
+            else:
+                end_scales &= body_scales
         rules.append(
             f"camera-start-scale-{number} ::= "
             + " | ".join(map(quote, sorted(start_scales)))
@@ -756,6 +771,15 @@ def _camera_plan_contract_violations(
         plan.start_scale, plan.end_scale
     } & {"wide", "medium_wide", "full_body", "medium"}:
         violations.append("spine_body_accent_not_visible")
+    if entity.value.get("body_phrase_accent"):
+        body_scales = {"wide", "medium_wide", "full_body"}
+        scale = (
+            plan.start_scale
+            if entity.value.get("face_arc_transition") == "arc_into_next_face_cut"
+            else plan.end_scale
+        )
+        if scale not in body_scales:
+            violations.append("body_phrase_accent_not_visible")
     if entity.value.get("single_prechorus_body_accent") and not {
         plan.start_scale, plan.end_scale
     } & {"wide", "medium_wide", "full_body"}:
@@ -961,7 +985,8 @@ def _fallback_camera_plan(entity: _Entity, ordinal: int) -> _CameraPlan:
         )
         generic_scales = (
             ("full_body", "full_body")
-            if required_coverage == "whole_body_emotion" else
+            if required_coverage == "whole_body_emotion"
+            or entity.value.get("body_phrase_accent") else
             ("wide", "medium_wide")
             if required_coverage == "environment_relation" else
             ("medium", "upper_body")
@@ -991,19 +1016,21 @@ def _fallback_camera_plan(entity: _Entity, ordinal: int) -> _CameraPlan:
     if required_coverage in {
         "lyric_target", "lyric_target_and_hands", "lyric_target_and_body"
     }:
+        body_accent = bool(entity.value.get("body_phrase_accent"))
         if entity.value.get("arc_permission") == "required":
             options = tuple(
                 _CameraPlan(
                     "Arc Shot with large amplitude at fast speed",
-                    "medium_wide", "medium", "low_front_three_quarter", "side",
+                    "medium_wide", "full_body" if body_accent else "medium",
+                    "low_front_three_quarter", "side",
                     path, str(required_coverage),
                 )
                 for path in ("arc_left_60_120_70_90", "arc_right_60_120_70_90")
             )
         else:
             options = (
-                _CameraPlan("Push In at fast speed", "wide", "medium", "front_three_quarter", "front_three_quarter", "push_in", str(required_coverage)),
-                _CameraPlan("Truck Right at fast speed", "medium_wide", "medium", "front_three_quarter", "side", "truck_right", str(required_coverage)),
+                _CameraPlan("Push In at fast speed", "wide", "medium_wide" if body_accent else "medium", "front_three_quarter", "front_three_quarter", "push_in", str(required_coverage)),
+                _CameraPlan("Truck Right at fast speed", "medium_wide", "full_body" if body_accent else "medium", "front_three_quarter", "side", "truck_right", str(required_coverage)),
             )
         return _choose_fallback_camera_option(entity, ordinal, options)
     if required_coverage == "face_eyes_mouth":
@@ -1028,10 +1055,16 @@ def _fallback_camera_plan(entity: _Entity, ordinal: int) -> _CameraPlan:
 
     relation = str(entity.value.get("face_arc_transition", ""))
     if relation == "arc_into_next_face_cut":
+        coverage = (
+            str(required_coverage)
+            if entity.value.get("body_phrase_accent")
+            and required_coverage in {"whole_body_emotion", "whole_body_hands"}
+            else "face_eyes_mouth"
+        )
         options = (
-            _CameraPlan("Arc Shot with large amplitude at fast speed", "full_body", "head_and_shoulders", "low_front_three_quarter", "front_three_quarter", "arc_left_60_120_70_90", "face_eyes_mouth"),
-            _CameraPlan("Arc Shot with large amplitude at fast speed", "medium_wide", "face_closeup", "rear_three_quarter", "front", "arc_right_60_120_70_90", "face_eyes_mouth"),
-            _CameraPlan("Arc Shot with large amplitude at fast speed", "full_body", "head_and_shoulders", "side", "front_three_quarter", "arc_right_60_120_70_90", "face_eyes_mouth"),
+            _CameraPlan("Arc Shot with large amplitude at fast speed", "full_body", "head_and_shoulders", "low_front_three_quarter", "front_three_quarter", "arc_left_60_120_70_90", coverage),
+            _CameraPlan("Arc Shot with large amplitude at fast speed", "medium_wide", "head_and_shoulders" if entity.value.get("body_phrase_accent") else "face_closeup", "rear_three_quarter", "front", "arc_right_60_120_70_90", coverage),
+            _CameraPlan("Arc Shot with large amplitude at fast speed", "full_body", "head_and_shoulders", "side", "front_three_quarter", "arc_right_60_120_70_90", coverage),
         )
         return _choose_fallback_camera_option(entity, ordinal, options)
     if relation == "arc_out_of_previous_face_cut":
@@ -1040,6 +1073,22 @@ def _fallback_camera_plan(entity: _Entity, ordinal: int) -> _CameraPlan:
             _CameraPlan("Arc Shot with large amplitude at fast speed", "face_closeup", "medium_wide", "front", "rear_three_quarter", "arc_left_60_120_70_90", "whole_body_emotion"),
             _CameraPlan("Arc Shot with large amplitude at fast speed", "head_and_shoulders", "wide", "side", "front_three_quarter", "arc_left_60_120_70_90", "environment_relation"),
         )
+        return _choose_fallback_camera_option(entity, ordinal, options)
+    if entity.value.get("body_phrase_accent"):
+        if entity.value.get("arc_permission") == "required":
+            options = tuple(
+                _CameraPlan(
+                    "Arc Shot with large amplitude at fast speed",
+                    "medium_wide", "full_body", "low_front_three_quarter",
+                    "side", path, "whole_body_emotion",
+                )
+                for path in ("arc_left_60_120_70_90", "arc_right_60_120_70_90")
+            )
+        else:
+            options = (
+                _CameraPlan("Truck Right at fast speed", "medium_wide", "medium_wide", "side", "side", "truck_right", "whole_body_emotion"),
+                _CameraPlan("Pull Out at fast speed", "medium", "medium_wide", "front_three_quarter", "front_three_quarter", "pull_out", "whole_body_emotion"),
+            )
         return _choose_fallback_camera_option(entity, ordinal, options)
     if entity.value.get("arc_permission") == "required":
         if (
@@ -2429,6 +2478,7 @@ def _anime_emotional_mv_camera_emphasis(
         if entity.value.get("required_spine_coverage")
         not in {"lyric_target", "lyric_target_and_hands", "lyric_target_and_body"}
         and not entity.value.get("single_prechorus_body_accent")
+        and not entity.value.get("body_phrase_accent")
     }
     face_target = max(0, min(face_target, len(face_eligible)))
     face_indices: list[int] = []
@@ -2874,8 +2924,9 @@ def _sparse_body_accent_keys(
     cue_cards: Mapping[tuple[int, ...], _CueCard] | None = None,
     include_prechorus_single: bool = False,
     include_verse_contact: bool = False,
+    include_all_scenes: bool = False,
 ) -> set[tuple[int, int]]:
-    """Reserve one eligible accent per chorus or long single-Shot pre-chorus."""
+    """Reserve one eligible accent per selected Scene, never rewrite Action."""
 
     by_scene: dict[int, list[tuple[int, int]]] = {}
     for key in sorted(shot_context):
@@ -2906,7 +2957,28 @@ def _sparse_body_accent_keys(
             and _verse_contact_cue(sections, effect_card)
             and all(key in scene_spine_steps for key in keys)
         )
-        if not sections.intersection({"CHORUS", "FINAL_CHORUS"}) and not prechorus_single and not verse_contact:
+        if not sections.intersection({"CHORUS", "FINAL_CHORUS"}) and not prechorus_single and not verse_contact and not include_all_scenes:
+            continue
+        if include_all_scenes and not (effect_card and effect_card.valid):
+            # The opt-in policy needs an accepted Scene cue before reserving
+            # a body phrase; otherwise keep the existing Action role.
+            continue
+        contact_scene = bool(
+            effect_card and effect_card.valid and effect_card.contact == "許可"
+        )
+        body_only_scene = bool(
+            include_all_scenes and effect_card and effect_card.valid
+            and effect_card.target in _CUE_NONE_VALUES
+        )
+        if body_only_scene and not all(key in scene_spine_steps for key in keys):
+            # Without an accepted Scene progression the body-only policy has
+            # no authored phrase to expose; retain the legacy Action roles.
+            continue
+        if include_all_scenes and contact_scene and (
+            len(keys) == 1 or not all(key in scene_spine_steps for key in keys)
+        ):
+            # A contact needs its own visible event; do not invent a second
+            # body event if the LLM did not supply a complete Scene progression.
             continue
         external_effect = bool(
             effect_card and effect_card.valid
@@ -2921,14 +2993,28 @@ def _sparse_body_accent_keys(
             and spine.phase == "event"
             and spine.show in {"lyric_target_body", "lyric_target"}
         ]
-        candidates = effect_events + [key for key in keys if key not in effect_events]
+        body_events = [
+            key for key in keys
+            if body_only_scene
+            and not contact_scene
+            and not external_effect
+            and (spine := scene_spine_steps.get(key)) is not None
+            and spine.phase == "event"
+            and spine.show == "whole_body"
+        ]
+        priority_events = effect_events + body_events
+        candidates = priority_events + [
+            key for key in keys if key not in priority_events
+        ]
         for key in candidates:
             if _performance_role(
                 shot_context[key], lip_sync_active=lip_sync_active
             ) == "face_and_upper_body_accent":
                 continue
             spine = scene_spine_steps.get(key)
-            if verse_contact and (spine is None or spine.phase == "event"):
+            if (verse_contact or include_all_scenes and contact_scene) and (
+                spine is None or spine.phase == "event"
+            ):
                 continue
             if spine is not None and spine.show not in {
                 "whole_body", "upper_body_hands", "lyric_target_body"
@@ -2968,7 +3054,9 @@ def _layout_min_duration_ms(
         if annotation.section
     }
     if (
-        body_accent_policy == "sparse_chorus_prechorus_verse_contact"
+        body_accent_policy in {
+            "sparse_chorus_prechorus_verse_contact", "scene_phrase"
+        }
         and _verse_contact_cue(sections, cue_card)
     ):
         return 3000
@@ -3362,13 +3450,26 @@ def generate_planner_content(
         not set(TASKS).issubset(prompt_keys)
         or prompt_keys - set(TASKS) - {
             "visual-beats-bounded", "actions-bounded", "actions-dance-phrase",
-            "lyric-cues", "scene-spine", "choreography-choice"
+            "lyric-cues", "scene-spine", "scene-spine-body",
+            "choreography-choice", "scene-author-event",
+            "scene-author-performance", "scene-author-camera"
         }
         or any(not value.strip() for value in system_prompts.values())
     ):
         raise TimelinePlannerError("all six Planner system prompts are required")
     direction.validate()
     runtime_config.validate()
+    if MOTION_PERFORMANCE_MODES.get(
+        direction.motion_policy_profile_id or direction.motion_profile_id
+    ) == "scene_author":
+        from .scene_author import generate_scene_author_content
+
+        return generate_scene_author_content(
+            backend, template=template, concept_emd=concept_emd,
+            scene_emd=scene_emd, direction=direction,
+            system_prompts=system_prompts, runtime_config=runtime_config,
+            interrupt_callback=interrupt_callback,
+        )
     protector, _protected_concept, scene_context, shot_context, directions = _protected_context(
         template, concept_emd, scene_emd, direction
     )
@@ -4497,7 +4598,12 @@ def generate_planner_content(
             )
             if len(scene.shots) < 2 and not track_external_effect:
                 continue
-            if card is None or not card.valid or card.target in _CUE_NONE_VALUES:
+            if card is None or not card.valid:
+                continue
+            if (
+                card.target in _CUE_NONE_VALUES
+                and body_accent_policy != "scene_phrase"
+            ):
                 continue
             spine_entities = [
                 _Entity(scene.scene_number, key, {
@@ -4526,6 +4632,16 @@ def generate_planner_content(
                     scene.scene_number,
                 )
                 continue
+            body_phrase_only = (
+                body_accent_policy == "scene_phrase"
+                and card.target in _CUE_NONE_VALUES
+            )
+            if body_phrase_only and all(
+                entity.value["editorial_role"] == "face_performance_cut"
+                for entity in spine_entities
+            ):
+                scene_spine_skipped.append(scene.scene_number)
+                continue
             shared_spine = {
                 "scene_number": scene.scene_number,
                 "scene_start_ms": scene.start_ms,
@@ -4539,6 +4655,7 @@ def generate_planner_content(
                     for key in keys for line in shot_context[key]["author_body"]
                 )),
                 "visual_beat_grounding": card.to_dict(),
+                "body_phrase_policy": body_accent_policy,
                 "track_external_effect": track_external_effect,
                 "spine_event_kind": (
                     "physical_contact" if card.contact == "許可"
@@ -4581,10 +4698,15 @@ def generate_planner_content(
                         if attempt else {}
                     )},
                     system_prompt=(
-                        system_prompts["scene-spine"]
-                        + "\nselected_choreography_phraseがある場合、その身体経路を着想として歌詞と固定Shotへ具体化してよい。より適切な独自の身体経路を考案してもよい。候補本文の始点姿勢へ毎Scene戻らず、継続時はentry_body_stateから始める。候補の全文を写さず、接触・場所・対象はvisual_beat_groundingだけを根拠にする。\n"
-                        if scene.scene_number in scene_choreography
-                        else system_prompts["scene-spine"]
+                        (
+                            system_prompts.get(
+                                "scene-spine-body", system_prompts["scene-spine"]
+                            ) if body_phrase_only else system_prompts["scene-spine"]
+                        )
+                        + (
+                            "\nselected_choreography_phraseがある場合、その身体経路を着想として歌詞と固定Shotへ具体化してよい。より適切な独自の身体経路を考案してもよい。候補本文の始点姿勢へ毎Scene戻らず、継続時はentry_body_stateから始める。候補の全文を写さず、接触・場所・対象はvisual_beat_groundingだけを根拠にする。\n"
+                            if scene.scene_number in scene_choreography else ""
+                        )
                     ),
                     runtime_config=spine_config,
                     interrupt_callback=interrupt_callback,
@@ -4603,6 +4725,18 @@ def generate_planner_content(
                     validate_contact_coverage(
                         steps, contact_allowed=card.contact == "許可"
                     )
+                    if body_phrase_only and (
+                        steps[next(index for index, step in enumerate(steps)
+                                   if step.phase == "event")].show != "whole_body"
+                        or any(
+                            step.show in {
+                                "lyric_target", "lyric_target_hands",
+                                "lyric_target_body",
+                            }
+                            for step in steps
+                        )
+                    ):
+                        raise ValueError("body-only Scene must show its body accent")
                     if any(
                         entity.value["editorial_role"] == "face_performance_cut"
                         and step.show != "face_eyes_mouth"
@@ -4638,10 +4772,11 @@ def generate_planner_content(
                 "sparse_chorus_prechorus_verse_contact",
             },
             include_verse_contact=body_accent_policy == "sparse_chorus_prechorus_verse_contact",
+            include_all_scenes=body_accent_policy == "scene_phrase",
         )
         if body_accent_policy in {
             "sparse_chorus", "sparse_chorus_prechorus",
-            "sparse_chorus_prechorus_verse_contact",
+            "sparse_chorus_prechorus_verse_contact", "scene_phrase",
         } else set()
     )
     _LOGGER.info(
@@ -5311,9 +5446,17 @@ def generate_planner_content(
                 and key in body_accent_keys
                 and _is_prechorus_scene(action_keys, shot_context)
             )
+            scene_body_accent = (
+                body_accent_policy == "scene_phrase"
+                and key in body_accent_keys
+            )
             prechorus_body_coverage = (
                 ("lyric_target_and_body" if has_grounded_cue else "whole_body_emotion")
                 if single_prechorus_body_accent else ""
+            )
+            scene_body_coverage = (
+                ("lyric_target_and_body" if has_grounded_cue else "whole_body_emotion")
+                if scene_body_accent else ""
             )
             required_effect_coverage = (
                 "lyric_target_and_body"
@@ -5321,6 +5464,12 @@ def generate_planner_content(
                 and key in scene_spine_steps
                 and scene_spine_steps[key].show == "lyric_target"
                 else ""
+            )
+            required_camera_coverage = (
+                prechorus_body_coverage or scene_body_coverage
+                or required_effect_coverage
+                or (scene_spine_steps[key].required_coverage
+                    if key in scene_spine_steps else "")
             )
             shot_count = len(action_keys)
             context = {
@@ -5337,17 +5486,14 @@ def generate_planner_content(
                     if key in scene_spine_steps else {}
                 ),
                 "single_prechorus_body_accent": single_prechorus_body_accent,
+                "body_phrase_accent": scene_body_accent,
                 "entry_effect_state": _continuation_effect_state(
                     previous_scene_numbers[key[0]],
                     continuation=bool(shot_context[key]["scene_continuation"]) and key[-1] == 1,
                     last_shot_by_scene=scene_shot_counts,
                     scene_spine_steps=scene_spine_steps,
                 ),
-                "required_spine_coverage": (
-                    prechorus_body_coverage or required_effect_coverage
-                    or (scene_spine_steps[key].required_coverage
-                        if key in scene_spine_steps else "")
-                ),
+                "required_spine_coverage": required_camera_coverage,
                 "previous_locked_action": (
                     action_values[previous_action_key]
                     if previous_action_key is not None
@@ -5390,8 +5536,7 @@ def generate_planner_content(
                 ),
                 "face_arc_transition": (
                     face_arc_transitions.get(key, "")
-                    if key not in scene_spine_steps
-                    or scene_spine_steps[key].required_coverage not in {
+                    if required_camera_coverage not in {
                         "lyric_target", "lyric_target_and_hands",
                         "lyric_target_and_body", "face_eyes_mouth"
                     } else ""
@@ -5873,14 +6018,17 @@ def render_planner_content(
     lip_sync_audio_slot: int,
     scene_emd: str = "",
 ) -> EMDTextArtifact:
-    planned_template = apply_shot_layouts(
-        template,
-        {scene: starts for scene, starts in content.shot_layouts},
-    )
-    planned_template = apply_scene_continuations(
-        planned_template,
-        {scene: value for scene, value in content.scene_continuations},
-    )
+    if content.typed_output:
+        planned_template = template
+    else:
+        planned_template = apply_shot_layouts(
+            template,
+            {scene: starts for scene, starts in content.shot_layouts},
+        )
+        planned_template = apply_scene_continuations(
+            planned_template,
+            {scene: value for scene, value in content.scene_continuations},
+        )
     return render_completed_emd(
         concept_emd=concept_emd,
         scene_emd=scene_emd,
@@ -5888,6 +6036,8 @@ def render_planner_content(
         direction=direction,
         actions={(scene, shot): text for scene, shot, text in content.actions},
         cameras={(scene, shot): text for scene, shot, text in content.cameras},
+        events={(scene, shot): text for scene, shot, text in content.events},
+        typed_output=content.typed_output,
         lip_sync_mode=lip_sync_mode,
         lip_sync_target=lip_sync_target,
         lip_sync_audio_slot=lip_sync_audio_slot,

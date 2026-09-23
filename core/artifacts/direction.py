@@ -162,6 +162,7 @@ class DirectionArtifact:
     other_direction: tuple[str, ...] = ()
     style_profile_id: str = ""
     motion_profile_id: str = ""
+    motion_policy_profile_id: str = ""
     camera_profile_id: str = ""
     retention_policy: str = "compiler_default"
     retention_lines: tuple[str, ...] = ()
@@ -192,6 +193,7 @@ class DirectionArtifact:
         for field_name in (
             "style_profile_id",
             "motion_profile_id",
+            "motion_policy_profile_id",
             "camera_profile_id",
         ):
             value = getattr(self, field_name)
@@ -238,6 +240,10 @@ class DirectionArtifact:
             "other_direction": list(self.other_direction),
             "style_profile_id": self.style_profile_id,
             "motion_profile_id": self.motion_profile_id,
+            **(
+                {"motion_policy_profile_id": self.motion_policy_profile_id}
+                if self.motion_policy_profile_id else {}
+            ),
             "camera_profile_id": self.camera_profile_id,
             "retention_policy": self.retention_policy,
             "retention_lines": list(self.retention_lines),
@@ -270,7 +276,7 @@ class DirectionArtifact:
                 "retention_lines",
                 "provenance",
             },
-            optional={"staging_candidates"},
+            optional={"staging_candidates", "motion_policy_profile_id"},
         )
         if value["schema"] != SCHEMA:
             raise ArtifactValidationError(SCHEMA, "schema", "schema mismatch")
@@ -302,6 +308,7 @@ class DirectionArtifact:
             other_direction=directions["other_direction"],
             style_profile_id=value["style_profile_id"],
             motion_profile_id=value["motion_profile_id"],
+            motion_policy_profile_id=value.get("motion_policy_profile_id", ""),
             camera_profile_id=value["camera_profile_id"],
             retention_policy=value["retention_policy"],
             retention_lines=directions["retention_lines"],

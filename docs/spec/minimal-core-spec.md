@@ -151,9 +151,11 @@ ACTION<TAB>2<TAB>人物は立ち止まり、上げた手を胸元へ静かに戻
 
 組み込みの初期セットは次の通りとする。本文はPython定数へ埋め込まず、repository直下の`profiles/style/*.md`、`profiles/motion/*.md`、`profiles/camera/*.md`からUTF-8 EMDとして起動時に読み込む。拡張子を除く小文字英数字・underscoreのファイル名をprofile IDとし、`passthrough`は予約する。各文書は`# 共通プロンプト`と種別に一致する一つの`## スタイル`、`## モーション`又は`## カメラ`を持ち、一個以上のlist itemを文書順に空白一個で結合してprofile本文とする。別section、空item、code fence、NUL、未知metadata及びディレクトリとsubsectionの不一致は起動時エラーとする。ファイル変更はComfyUI再起動後に反映する。
 
-Style、Motion、Camera文書は`# 共通プロンプト`の前に任意の`# プロファイル`を持てる。Styleは``locked true|false``、``retention TEXT``、``scene_reinforcement TEXT``、Motionは``performance_mode event_based|dance_phrase``、``body_accent_policy off|sparse_chorus|sparse_chorus_prechorus``、既存の任意profile用``choreography_policy off|scene_choice``と``render_prompt TEXT``、Cameraは``planner_policy POLICY_ID``、``lyric_cue_mode MODE``、``lyric_interpretation MODE``と``render_prompt TEXT``などの種別に応じたmetadataを持つ。`retention`は`` `fully_preserved` ``又は`` `partially_preserved` ``から始める。metadataはUI socketを増やさず、実装済みのPlanner構造最適化をprofile選択と同時に切り替える。生成済み自然文の意味的な置換又は修復には使わない。
+Style、Motion、Camera文書は`# 共通プロンプト`の前に任意の`# プロファイル`を持てる。Styleは``locked true|false``、``retention TEXT``、``scene_reinforcement TEXT``、Motionは``performance_mode event_based|dance_phrase|scene_author``、``body_accent_policy off|sparse_chorus|sparse_chorus_prechorus|sparse_chorus_prechorus_verse_contact|scene_phrase``、既存の任意profile用``choreography_policy off|scene_choice``と``render_prompt TEXT``、Cameraは``planner_policy POLICY_ID``、``lyric_cue_mode MODE``、``lyric_interpretation MODE``と``render_prompt TEXT``などの種別に応じたmetadataを持つ。`retention`は`` `fully_preserved` ``又は`` `partially_preserved` ``から始める。metadataはUI socketを増やさず、実装済みのPlanner構造最適化をprofile選択と同時に切り替える。生成済み自然文の意味的な置換又は修復には使わない。
 
 Cameraの追加metadata ``arc_roll_policy off|selective_arc`` は有限Camera計画のArc＋Rollを切り替える。`selective_arc`は`planner_policy=anime_emotional_mv`を必要とし、Planner cache keyへ含める。
+
+Motionの`body_accent_policy`は`off`、`sparse_chorus`、`sparse_chorus_prechorus`、`sparse_chorus_prechorus_verse_contact`、`scene_phrase`を受け付ける。`scene_phrase`は実験用の明示opt-inであり、各Sceneに最大一つの身体accentを予約する。Cueが対象なしなら、Scene Spineのeventを人物自身の身体転換点として計画し、対象名を新設せず`SHOW=whole_body`で撮る。対象への接触がある場合は接触eventを別に保ち、その前後の適格なShotへ身体accentを割り当てる。Cameraはaccent Shotの開始又は終了で全身画角を確保し、顔への引渡しと歌詞対象coverageが矛盾する場合は顔引渡しを割り当てない。Pythonは自然文の振付を合成・修復しない。
 
 | 軸 | profile | H3へ伝える肯定的な核 |
 |---|---|---|
@@ -168,7 +170,8 @@ Cameraの追加metadata ``arc_roll_policy off|selective_arc`` は有限Camera計
 | 動作 | `limited_animation` | 大きく読めるキーポーズとポーズ間の移行を使い、身体と口形のタイミングを別々に保つ |
 | 動作 | `cinema_mv` | 従来のセルアニメ2コマ・3コマ打ち、短いポーズ保持、ポーズ・トゥ・ポーズ及び自然な収束を使う穏やかな映画的MV演技 |
 | 動作 | `anime_story_mv` | `dance_phrase`の比較用基準。Motion本文は`anime_emotional_mv`と同じだが、`body_accent_policy=off`のため従来の上半身role割当を保つ |
-| 動作 | `anime_emotional_mv` | 開発用。`dance_phrase`に`body_accent_policy=sparse_chorus_prechorus`を重ね、サビ／最終サビに加え、長尺・単一Shotの適格なPRE-CHORUSでも最大一Shotに支持脚・骨盤・体幹・腕の連動した身体accentを要求する。その他のShotは元のroleを保つ。現在Sceneの元歌詞又は作者指示だけで対象を活性化し、外部effectは人物から独立させる |
+| 動作 | `anime_emotional_mv` | 現行運用基準。`dance_phrase`と`body_accent_policy=sparse_chorus_prechorus_verse_contact`を用い、サビ、適格な長尺PRE-CHORUS及び歌詞由来の接触を伴うVerseへScene単位の身体accentを配る。歌詞対象と外部effectは別の出来事として保持する |
+| 動作 | `anime_scene_phrase_mv` | P0–P2の実験用Motion profile。本文は`anime_emotional_mv`と同一で、metadataのみ`body_accent_policy=scene_phrase`とする。対象のないSceneもScene Spineへ渡し、一回の身体eventにCameraの全身coverageを要求する。実8Bで完成Actionへの転送は未達であり、既定WFへは適用しない |
 | カメラ | `readable_depth`（既定） | 顔、全身動作、接触点を読める距離を保ち、安定した構図、緩やかな接近・後退・横移動を使い分ける |
 | カメラ | `cinematic_depth` | 開始視点、被写体の側面を通る経路、終了視点、前景・中景・遠景の視差を明示する |
 | カメラ | `rhythmic_mv` | 楽曲強度に合わせて移動量と構図保持を変え、Scene間で角度、高さ、距離、移動方向を展開する |

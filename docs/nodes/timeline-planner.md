@@ -1,5 +1,23 @@
 # Timeline Planner
 
+## 次期Scene author経路（オプトイン）
+
+Motion profile [anime_scene_author_mv](../../profiles/motion/anime_scene_author_mv.md)を
+選ぶと、従来のVisual Beat→Layout→Action Audit経路とは別に、一Sceneの
+出来事→人物の演技→Cameraの三段で生成します。元TemplateのShot境界と
+継続指定を保持し、人物の最終演技文を撮影担当にそのまま渡します。作者が
+`演出`、`演技`、`カメラ`をShotへ書いた場合はその項目を生成しません。
+未指定の項目だけを補います。`# 演出候補`は出来事担当だけに渡す任意の着想で、
+共通H3 promptや後段の担当には配布しません。
+
+完成済み`# サブジェクト`全文を`template_emd`へ入力すれば、Plannerは構文検証後に
+モデル選択・推論を省略してそのまま返します。入力不正は自動修復しません。
+この経路のCPU契約試験は通過しています。8B短区間は形式上完成したものの、
+身体演技と歌詞対象の発現時刻は[第一次判定](../research/scene-author-pilot-2026-09-23.md)で
+不合格であり、H3比較は未実施です。
+従来profileの挙動は変更しません。実装順と未検証項目は
+[実行計画](../implementation/scene-choreography-execution-2026-09-23.md)に記録しています。
+
 現行Planner v80は、歌詞Cue発見の後、Directionに保持された`# 演出候補`からScene単位で出来事候補を選び、必要なら別の身体候補も選びます。Visual Beat、Song Direction、Shot Layoutの後、有効Cueを持つ`dance_phrase` SceneではScene spineがShot間の一回の出来事を計画します。外部現象を扱う場合は単一Shotも対象となり、人物の終端姿勢とは別に現象の`EFFECT_TO`を継続Sceneへ渡します。Actionの身体accentと現象の動きは、Cameraの`lyric_target_and_body` coverageで同時に可視化できます。開発用`anime_emotional_mv`では長尺・単一ShotのPRE-CHORUSにも選択的に一回の身体accentを割り当てます。いずれも歌詞や候補の意味をPythonが補作する機能ではなく、実際のH3映像での成立は別途確認が必要です。
 
 以下のv48～v60等の記述は導入時の経緯と、その後も残る個別契約を説明します。最新の全体順序と責務は[Direction / Planner処理フロー](../architecture/direction-planner-flow.md)を参照してください。
@@ -53,6 +71,8 @@ Lyric Segmentationが確定したScene/Shot枠へ、歌詞解釈、人物動作�
 対象付き候補のanchorは、候補本文と現在Sceneの歌詞の両方に同じ対象名がある場合だけ採用します。身体演技だけの候補はVisual Beatの空間配置へ渡さず、Scene SpineとActionの演技候補へ渡します。bounded profileのVisual Beatは九fieldを維持したまま、`配置=対象位置:...；人物位置:...`として対象の支持面と人物の足場を分けます。選択済みanchorは`対象位置`側へ完全一致で残し、人物位置はLLMが現在のSceneに合わせて記します。Pythonは自然文を修復せず、構造と対象の出典だけを検証します。
 
 既定の`max_tokens=4096`、`temperature=0.1`、`n_ctx=16384`等は[GGUF共通設定](gguf-settings.md)を参照してください。
+
+人物振付のScene一括実験はMotion profile `anime_scene_phrase_mv`を選んだ時だけ有効です。対象のないSceneでは専用の短いScene Spine promptで一度の身体転換点を作り、CameraはそのShotを全身画角で撮ります。対象への接触・外部effectは別の出来事として残し、生成済みAction本文をPythonで書き換えません。現時点の8B短区間試験ではScene Spine単独の改善は見られましたが、完成EMDのActionでは維持できていないため、既定`anime_emotional_mv`からの切替を推奨する段階ではありません。検証記録は[Scene身体フレーズP0–P3](../research/scene-phrase-p0-p3-2026-09-23.md)を参照してください。
 
 ## コンテキスト超過時の自動調整
 

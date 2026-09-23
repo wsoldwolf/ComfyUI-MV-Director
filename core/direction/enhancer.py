@@ -26,7 +26,7 @@ from .profiles import (
 from .passthrough import DirectionPassthrough, parse_direction_passthrough
 
 
-DIRECTION_PROMPT_VERSION = "mvd-direction-enhancer-v24"
+DIRECTION_PROMPT_VERSION = "mvd-direction-enhancer-v25-user-emd-priority"
 PASSTHROUGH_PROFILE = "passthrough"
 RETENTION_POLICIES = ("profile", "compiler_default", "passthrough")
 _MAX_STAGING_CANDIDATES = 12
@@ -182,10 +182,6 @@ class DirectionEnhancerInput:
                 raise DirectionEnhancerError(
                     f"{name}_profile=passthrough requires ## {_PASSTHROUGH_HEADING[name]}"
                 )
-            if values and not enabled:
-                raise DirectionEnhancerError(
-                    f"## {_PASSTHROUGH_HEADING[name]} requires {name}_profile=passthrough"
-                )
         if self.retention_policy == "passthrough" and not passthrough.retention:
             raise DirectionEnhancerError(
                 "retention_policy=passthrough requires # 保持分析"
@@ -224,15 +220,49 @@ class DirectionEnhancerInput:
 
     @property
     def passthrough(self) -> DirectionPassthrough:
-        return parse_direction_passthrough(
+        from_socket = parse_direction_passthrough(
             self.normalized_direction_emd_passthrough,
             concept_emd=self.normalized_concept_emd,
         )
+        from_request = self.user_common
+        fields = (
+            "style", "environment", "time_lighting",
+            "motion", "camera", "other",
+        )
+        overlapping = [
+            field for field in fields
+            if getattr(from_socket, field) and getattr(from_request, field)
+        ]
+        if overlapping:
+            raise DirectionEnhancerError(
+                "same user EMD subsection is defined in user_request and "
+                "direction_emd_passthrough: " + ",".join(overlapping)
+            )
+        return DirectionPassthrough(
+            retention=from_socket.retention,
+            **{
+                field: getattr(from_request, field) or getattr(from_socket, field)
+                for field in fields
+            },
+        )
+
+    @property
+    def user_common(self) -> DirectionPassthrough:
+        text = self.user_direction_text
+        if not text.startswith("# 共通プロンプト\n## "):
+            return DirectionPassthrough()
+        return parse_direction_passthrough(text)
+
+    def effective_profile(self, kind: str) -> str:
+        if getattr(self.passthrough, kind):
+            return PASSTHROUGH_PROFILE
+        return getattr(self, f"{kind}_profile")
 
     @property
     def requested_record_types(self) -> tuple[str, ...]:
         if (
-            self.style_profile != PASSTHROUGH_PROFILE
+            not self.passthrough.style
+            and self.style_profile != PASSTHROUGH_PROFILE
             and self.style_profile not in LOCKED_STYLE_PROFILES
         ):
             return ("STYLE",)
@@ -241,12 +271,8 @@ class DirectionEnhancerInput:
     @property
     def requires_inference(self) -> bool:
         return any(
-            profile != PASSTHROUGH_PROFILE
-            for profile in (
-                self.style_profile,
-                self.motion_profile,
-                self.camera_profile,
-            )
+            self.effective_profile(kind) != PASSTHROUGH_PROFILE
+            for kind in ("style", "motion", "camera")
         )
 
 
@@ -296,18 +322,18 @@ def build_direction_payload(value: DirectionEnhancerInput) -> str:
             ),
         }
     profiles = payload["profiles"]
-    if value.style_profile != PASSTHROUGH_PROFILE:
+    if value.effective_profile("style") != PASSTHROUGH_PROFILE:
         profiles["style"] = {
             "id": value.style_profile,
             "text": STYLE_PROFILES[value.style_profile],
             "locked": value.style_profile in LOCKED_STYLE_PROFILES,
         }
-    if value.motion_profile != PASSTHROUGH_PROFILE:
+    if value.effective_profile("motion") != PASSTHROUGH_PROFILE:
         profiles["motion"] = {
             "id": value.motion_profile,
             "text": MOTION_PROFILES[value.motion_profile],
         }
-    if value.camera_profile != PASSTHROUGH_PROFILE:
+    if value.effective_profile("camera") != PASSTHROUGH_PROFILE:
         profiles["camera"] = {
             "id": value.camera_profile,
             "text": CAMERA_PROFILES[value.camera_profile],
@@ -569,6 +595,31 @@ def enhance_direction(
         values[field].append(text)
     provenance = _input_provenance(value)
     provenance.extend(_discard_provenance(all_issues))
+    for kind, field in (
+        ("style", "style_direction"),
+        ("motion", "motion_direction"),
+        ("camera", "camera_direction"),
+    ):
+        profile_id = getattr(value, f"{kind}_profile")
+        if profile_id != PASSTHROUGH_PROFILE and getattr(passthrough, kind):
+            source = {
+                "style": STYLE_PROFILES,
+                "motion": MOTION_PROFILES,
+                "camera": CAMERA_PROFILES,
+            }[kind][profile_id]
+            provenance.append(
+                ProvenanceRecord(
+                    record_id=f"drop_profile_{kind}",
+                    record_kind="discard",
+                    source="profile",
+                    source_ref=profile_id,
+                    source_position=0,
+                    target=None,
+                    disposition="discarded",
+                    reason="profile_overridden",
+                    sha256=sha256_text(source),
+                )
+            )
     output_counts = {field: 0 for field in values}
     for field, passthrough_values in (
         ("style_direction", passthrough.style),
@@ -578,6 +629,12 @@ def enhance_direction(
         ("camera_direction", passthrough.camera),
         ("other_direction", passthrough.other),
     ):
+        kind = field.removesuffix("_direction")
+        source_ref = (
+            "user_request"
+            if getattr(value.user_common, kind)
+            else "direction_emd_passthrough"
+        )
         for index, text in enumerate(passthrough_values):
             output_counts[field] += 1
             provenance.append(
@@ -585,7 +642,7 @@ def enhance_direction(
                     record_id=f"out_{field}_{output_counts[field]:04d}",
                     record_kind="output",
                     source="user",
-                    source_ref="direction_emd_passthrough",
+                    source_ref=source_ref,
                     source_position=index,
                     target=f"{field}[{index}]",
                     disposition="accepted",
@@ -667,9 +724,14 @@ def enhance_direction(
         motion_direction=tuple(values["motion_direction"]),
         camera_direction=tuple(values["camera_direction"]),
         other_direction=tuple(values["other_direction"]),
-        style_profile_id=value.style_profile,
-        motion_profile_id=value.motion_profile,
-        camera_profile_id=value.camera_profile,
+        style_profile_id=value.effective_profile("style"),
+        motion_profile_id=value.effective_profile("motion"),
+        motion_policy_profile_id=(
+            value.motion_profile
+            if passthrough.motion and value.motion_profile != PASSTHROUGH_PROFILE
+            else ""
+        ),
+        camera_profile_id=value.effective_profile("camera"),
         retention_policy=value.retention_policy,
         retention_lines=passthrough.retention,
         staging_candidates=value.staging_candidates,

@@ -31,6 +31,7 @@ _COVERAGE = {
 def build_scene_spine_grammar(
     slots: list[int] | list[Mapping[str, object]], *, allow_target_hands: bool = True,
     track_external_effect: bool = False,
+    body_phrase_only: bool = False,
 ) -> str:
     """Constrain one event, contact coverage, and transport, not authored prose."""
 
@@ -55,6 +56,12 @@ def build_scene_spine_grammar(
             allowed = set(_SHOW)
             if not track_external_effect:
                 allowed.discard("lyric_target_body")
+            if body_phrase_only:
+                allowed.difference_update({
+                    "lyric_target", "lyric_target_hands", "lyric_target_body",
+                })
+                if index == event_index:
+                    allowed &= {"whole_body"}
             if allow_target_hands:
                 allowed = (
                     {"lyric_target_hands"} if index == event_index

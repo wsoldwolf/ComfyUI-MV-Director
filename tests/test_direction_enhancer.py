@@ -485,6 +485,88 @@ class DirectionEnhancerTests(unittest.TestCase):
         self.assertNotIn("style", payload["profiles"])
         self.assertEqual(result.direction.style_direction, ("手書きの固定文。",))
 
+    def test_user_common_motion_overrides_selected_profile_without_other_changes(self) -> None:
+        backend = FakeDirectionBackend("")
+        value = DirectionEnhancerInput(
+            user_request=(
+                "# 共通プロンプト\n"
+                "## モーション\n"
+                "* 人物は歌詞の転調で重心を右へ移し、両腕を交差させる。\n"
+                "# 演出候補\n"
+                "* 花が風に流れる。\n"
+            ),
+        )
+        result = enhance_direction(
+            backend,
+            value=value,
+            system_prompt="fixed",
+            runtime_config=LlamaRuntimeConfig(),
+        )
+        self.assertEqual(
+            result.direction.motion_direction,
+            ("人物は歌詞の転調で重心を右へ移し、両腕を交差させる。",),
+        )
+        self.assertEqual(result.direction.motion_profile_id, PASSTHROUGH_PROFILE)
+        self.assertEqual(result.direction.style_profile_id, "anime_emotional_mv")
+        self.assertEqual(result.direction.camera_profile_id, "anime_emotional_mv")
+        self.assertEqual(result.direction.staging_candidates, ("花が風に流れる。",))
+        payload = json.loads(backend.calls[0]["payload"])
+        self.assertNotIn("motion", payload["profiles"])
+        self.assertEqual(payload["profiles"]["camera"]["id"], "anime_emotional_mv")
+        self.assertIn(
+            ("profile", "profile_overridden"),
+            {(item.source, item.reason) for item in result.direction.provenance},
+        )
+        self.assertNotIn("花が風に流れる。", result.direction_emd_preview)
+
+    def test_authored_profile_fields_need_no_model_even_when_presets_selected(self) -> None:
+        node = NODE_CLASS_MAPPINGS["MVDirectorDirectionEnhancer"]()
+        source = (
+            "# 共通プロンプト\n"
+            "## スタイル\n* 手書きの画風。\n"
+            "## モーション\n* 手書きの振付。\n"
+            "## カメラ\n* 手書きの撮影。\n"
+        )
+        with patch(
+            "nodes.node_direction_enhancer.node.resolve_comfy_gguf_model",
+            side_effect=AssertionError("the author owns all selected profile fields"),
+        ):
+            direction, _preview, status = node.enhance(
+                user_request=source,
+                style_profile="anime_emotional_mv",
+                motion_profile="anime_emotional_mv",
+                camera_profile="anime_emotional_mv",
+                model_name="missing.gguf",
+                chat_format="",
+                max_tokens=768,
+                temperature=0.2,
+                top_p=0.9,
+                repetition_penalty=1.05,
+                gpu_layers=-1,
+                n_batch=512,
+                n_ctx=16384,
+                flash_attn=True,
+                kv_cache_type="q8_0",
+                op_offload=True,
+                keep_model_loaded=True,
+                seed=1,
+                cache_mode="reuse",
+                retention_policy="compiler_default",
+            )
+        self.assertEqual(direction.motion_direction, ("手書きの振付。",))
+        self.assertEqual(direction.camera_direction, ("手書きの撮影。",))
+        self.assertIn("model=not_loaded", status)
+
+    def test_two_user_sources_must_not_silently_choose_one_camera(self) -> None:
+        value = DirectionEnhancerInput(
+            user_request="# 共通プロンプト\n## カメラ\n* Arc Shot。",
+            direction_emd_passthrough=(
+                "# 共通プロンプト\n## カメラ\n* Static Shot。"
+            ),
+        )
+        with self.assertRaisesRegex(DirectionEnhancerError, "same user EMD subsection"):
+            value.validate()
+
     def test_node_all_passthrough_never_resolves_a_model(self) -> None:
         node = NODE_CLASS_MAPPINGS["MVDirectorDirectionEnhancer"]()
         source = """# 共通プロンプト
@@ -620,6 +702,7 @@ class DirectionEnhancerTests(unittest.TestCase):
                 "natural_performance", "expressive_mv", "limited_animation",
                 "cinema_mv", "anime_story_mv",
                 "anime_emotional_mv", "anime_choreography_mv",
+                "anime_scene_phrase_mv", "anime_scene_author_mv",
             },
         )
         self.assertEqual(

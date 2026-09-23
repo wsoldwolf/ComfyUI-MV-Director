@@ -48,12 +48,20 @@ class AudioDirective:
 
 
 @dataclass(frozen=True, slots=True)
+class ShotDirective:
+    kind: str
+    text: str
+    line_number: int
+
+
+@dataclass(frozen=True, slots=True)
 class Shot:
     start_ms: int
     body: tuple[str, ...]
     lyric_annotations: tuple[LyricAnnotation, ...]
     lyric_lip_sync: tuple[tuple[str, str], ...]
     line_number: int
+    directives: tuple[ShotDirective, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

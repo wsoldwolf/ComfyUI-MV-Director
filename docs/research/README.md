@@ -2,6 +2,12 @@
 
 | 文書 | 内容 |
 |---|---|
+| [第一次判定の再分析：8Bへ演技意図と歌詞文脈を戻す](scene-author-8b-input-recovery-plan-2026-09-23.md) | 旧8Bのprompt 13ファイルをmetadata hashと照合。局所歌詞の分断、演技候補の伝達、外部出来事への従属を分析し、prompt×セクション全文の8回比較と段階的な改善計画を提案 |
+| [Scene author経路：実装と8B短区間の第一次判定](scene-author-pilot-2026-09-23.md) | 作者EMD優先、三段Scene経路、構造grammar、実8B Scene 5・9の成功と創作上の未達を証跡付きで整理。既定昇格とH3比較を保留した理由 |
+| [8B振付生成の再設計：原文保持と短い統合経路](scene-choreography-architecture-redesign-2026-09-23.md) | Motion入力の欠落と旧8Bの直接採用経路を追跡。Scene単位の原文保持・撮影計画・限定監査に加え、ユーザーEMD優先の共通解析、部分手書き・補完、Compilerまでの優先解決を図付きで提案 |
+| [Scene身体フレーズ P0–P3：実装と品質ゲート](scene-phrase-p0-p3-2026-09-23.md) | Opt-in profile、502件回帰、8B六応答及び実Planner二Sceneを比較。完成Actionで未達のためH3実行を保留した判断を記録 |
+| [9月23日完成動画：人物の振付・身体演技不足](emd-video-2026-09-23-body-performance-gap.md) | 30 Shotと完成動画の身体動作を照合。前半20 Shotの脚・重心指示欠落、全身画角不足、疎なaccent割当を分析し、Scene身体フレーズとCamera coverageの改善計画を記録 |
+| [9月23日完成動画：苔→花の継続と身体演技](emd-video-2026-09-23-continuity-performance-plan.md) | EMD・Plan・動画を照合し、継続中の構図急変と身体演技不足を分析。空間・振付・歌詞時刻の改善計画 |
 | [9月23日完成動画：苔・花の尺と振付不足](emd-2026-09-23-moss-flower-choreography-review.md) | 約23秒続く植物への片手接触、Verseで全身accentが選ばれない条件、4秒Shot下限、歌詞開始より早い接触を整理し、限定改修と検証条件を記録 |
 | [Scene内進行・全身演技・外部effectの統合改修](planner-scene-spine-motion-effect-integration-2026-09-22.md) | P0〜P2、上半身偏重の是正、狐火欠落のPlanner→Compiler追跡、v64の型保持・可視展開転送と未検証事項を整理 |
 | [Scene内進行：P0〜P2実装と8B評価](scene-event-spine-p0-p2-2026-09-21.md) | Scene一括の進行とCamera coverageを実装。二seedの8B評価、残る意味上の接触反復、P3用PlanとScene 9の選定 |

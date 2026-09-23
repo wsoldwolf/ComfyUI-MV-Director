@@ -6,9 +6,13 @@ import re
 from dataclasses import dataclass
 
 from ..artifacts import normalize_newlines
+from ..emd.common import (
+    COMMON_HEADINGS,
+    CommonPromptError,
+    parse_common_prompt_fragment,
+)
 
 
-_COMMON = ("スタイル", "環境", "時間・照明", "モーション", "カメラ", "その他")
 _FIELD = {
     "スタイル": "style",
     "環境": "environment",
@@ -90,37 +94,13 @@ def parse_direction_passthrough(
             raise DirectionPassthroughError("# 保持分析 must not be empty")
 
     if position < len(lines):
-        if lines[position] != "# 共通プロンプト":
-            raise DirectionPassthroughError(
-                f"line {position + 1}: expected '# 共通プロンプト'"
-            )
-        position += 1
-        previous = -1
-        while position < len(lines):
-            heading = lines[position]
-            if not heading.startswith("## ") or heading[3:] not in _COMMON:
-                raise DirectionPassthroughError(
-                    f"line {position + 1}: invalid common prompt subsection"
-                )
-            name = heading[3:]
-            order = _COMMON.index(name)
-            if order <= previous:
-                raise DirectionPassthroughError(
-                    f"line {position + 1}: common prompt subsection order is invalid"
-                )
-            previous = order
-            position += 1
-            values = sections[_FIELD[name]]
-            while position < len(lines) and lines[position].startswith("* "):
-                body = lines[position][2:]
-                if not body or body.startswith("`"):
-                    raise DirectionPassthroughError(
-                        f"line {position + 1}: invalid passthrough direction"
-                    )
-                values.append(body)
-                position += 1
-            if not values:
-                raise DirectionPassthroughError(f"## {name} must not be empty")
+        try:
+            parsed = parse_common_prompt_fragment("\n".join(lines[position:]))
+        except CommonPromptError as exc:
+            raise DirectionPassthroughError(str(exc)) from exc
+        for item in parsed:
+            sections[_FIELD[item.heading]].extend(item.body)
+        position = len(lines)
 
     if position != len(lines):
         raise DirectionPassthroughError(f"line {position + 1}: unexpected content")

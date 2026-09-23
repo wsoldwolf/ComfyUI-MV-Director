@@ -39,6 +39,8 @@ def render_completed_emd(
     direction: DirectionArtifact,
     actions: Mapping[tuple[int, int], str],
     cameras: Mapping[tuple[int, int], str],
+    events: Mapping[tuple[int, int], str] | None = None,
+    typed_output: bool = False,
     lip_sync_mode: str,
     lip_sync_target: str,
     lip_sync_audio_slot: int,
@@ -90,6 +92,7 @@ def render_completed_emd(
                 lines.extend(f"* {value}" for value in values)
 
     cleaned_generated_lines = 0
+    event_values = events or {}
     for scene in template.scenes:
         continuation = " 継続" if scene.continuation else ""
         lines.extend(
@@ -117,8 +120,19 @@ def render_completed_emd(
             lines.append(f"## ショット {format_emd_time(shot.start_ms)}")
             author_body = [value for value in shot.body if value != "未計画"]
             body = [*author_body]
+            fixed_kinds = {directive.kind for directive in shot.directives}
+            event = event_values.get((scene.scene_number, shot_index), "").strip()
             action = actions.get((scene.scene_number, shot_index), "").strip()
             camera = cameras.get((scene.scene_number, shot_index), "").strip()
+            if typed_output:
+                if event and "演出" not in fixed_kinds:
+                    body.append(f"`演出` {event}")
+                if action and "演技" not in fixed_kinds:
+                    body.append(f"`演技` {action}")
+                if camera and "カメラ" not in fixed_kinds:
+                    body.append(f"`カメラ` {camera}")
+                action = ""
+                camera = ""
             cleaned_action = strip_generated_line_continuation(action)
             cleaned_camera = strip_generated_line_continuation(camera)
             cleaned_generated_lines += int(cleaned_action != action) + int(cleaned_camera != camera)

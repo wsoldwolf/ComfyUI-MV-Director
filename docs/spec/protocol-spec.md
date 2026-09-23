@@ -28,6 +28,11 @@ V1は後方互換を要求しない。未知schema、旧`CL...` schema又はvers
 | `MVD_SCENE_EMD_FRAGMENT_V1` | `EMDTextArtifact` | Scene環境だけの編集可能EMD |
 | `MVD_REFERENCE_BINDINGS_V1` | `ReferenceBindingsArtifact` | IMAGEとPictureの物理束縛 |
 | `MVD_DIRECTION_V3` | `DirectionArtifact` | 六方向、profile ID、保持方針とprovenance |
+
+`MVD_DIRECTION_V3`の任意`motion_policy_profile_id`は、作者が共通Motion本文を
+上書きして`motion_profile_id=passthrough`となっても、明示選択した
+Motion profileのPlanner方式を保持する。これは描画用の共通本文を再挿入する
+指示ではない。旧artifactでこの任意項目が無ければ従来の`motion_profile_id`を使う。
 | `MVD_TIMELINE_V1` | `TimelineArtifact` | source音声、歌詞、Scene、Shot |
 | `MVD_EMD_TEMPLATE_V1` | `EMDTextArtifact` | 時間枠と歌詞annotation |
 | `MVD_EMD_V1` | `EMDTextArtifact` | 完成EMD |
