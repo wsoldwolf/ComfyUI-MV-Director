@@ -33,6 +33,17 @@ that plan. Preserve it through the important change, including the hands and
 lyric target together for lyric_target_and_hands. Do not turn these internal
 labels into prose or invent another action. If no spine is present, retain
 the ordinary locked-action coverage contract.
+For lyric_target_and_body, keep the selected target at its established location
+or the external phenomenon along its spatial path while the performer's face,
+weight shift, torso and both arms remain readable in the same frame. Do not
+crop either to a face close-up or an isolated target. When scene_spine_step
+exists, use its ADVANCE and effect_to as the visible movement and
+entry_effect_state as the previous Scene's position. For a stationary target,
+do not invent an effect trajectory or contact. Film the locked action's actual
+direction of travel, not an arbitrary orbit that loses the target.
+When single_prechorus_body_accent is true, keep a wide, medium_wide or full_body
+view through the main weight/torso/arm accent and let the camera reach its
+ending view as that phrase settles. Camera motion does not replace acting.
 Do not append a standalone backslash or Markdown line-continuation marker to the generated text.
 The first field of every output line is the fixed ASCII word CAMERA. The second field is the supplied numeric slot. The third field is a concise Japanese camera direction. Separate the three fields with one literal U+0009 TAB character.
 When a slot has `camera_protocol=finite_v1`, the third field is not free prose.

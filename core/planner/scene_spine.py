@@ -12,10 +12,11 @@ from typing import Mapping
 
 
 _FIELDS = ("PHASE", "FROM", "ADVANCE", "TO", "SHOW")
+_EFFECT_FIELD = "EFFECT_TO"
 _PHASES = frozenset({"setup", "event", "response"})
 _SHOW = frozenset({
     "lyric_target_hands", "lyric_target", "face_eyes_mouth",
-    "upper_body_hands", "whole_body",
+    "upper_body_hands", "whole_body", "lyric_target_body",
 })
 _COVERAGE = {
     "lyric_target_hands": "lyric_target_and_hands",
@@ -23,11 +24,13 @@ _COVERAGE = {
     "face_eyes_mouth": "face_eyes_mouth",
     "upper_body_hands": "upper_body_hands",
     "whole_body": "whole_body_emotion",
+    "lyric_target_body": "lyric_target_and_body",
 }
 
 
 def build_scene_spine_grammar(
-    slots: list[int] | list[Mapping[str, object]], *, allow_target_hands: bool = True
+    slots: list[int] | list[Mapping[str, object]], *, allow_target_hands: bool = True,
+    track_external_effect: bool = False,
 ) -> str:
     """Constrain one event, contact coverage, and transport, not authored prose."""
 
@@ -50,6 +53,8 @@ def build_scene_spine_grammar(
                 "event" if index == event_index else "response"
             )
             allowed = set(_SHOW)
+            if not track_external_effect:
+                allowed.discard("lyric_target_body")
             if allow_target_hands:
                 allowed = (
                     {"lyric_target_hands"} if index == event_index
@@ -71,6 +76,7 @@ def build_scene_spine_grammar(
                 + quote("｜ADVANCE=") + " cell "
                 + quote("｜TO=") + " cell "
                 + quote("｜SHOW=") + f" {show_rule}"
+                + (quote("｜EFFECT_TO=") + " cell" if track_external_effect else "")
             )
         else:
             path_rule = f"path-{event_index}"
@@ -94,29 +100,34 @@ class SceneSpineStep:
     advance: str
     to_state: str
     show: str
+    effect_to: str = ""
 
     @property
     def required_coverage(self) -> str:
         return _COVERAGE[self.show]
 
     def to_dict(self) -> dict[str, str]:
-        return {
+        result = {
             "phase": self.phase,
             "from": self.from_state,
             "advance": self.advance,
             "to": self.to_state,
             "show": self.show,
         }
+        if self.effect_to:
+            result["effect_to"] = self.effect_to
+        return result
 
 
 def parse_scene_spine_step(text: str) -> SceneSpineStep:
-    """Parse a five-field line without changing its authored values."""
+    """Parse transport fields without changing the LLM-authored prose."""
 
     parts = text.strip().split("｜")
-    if len(parts) != len(_FIELDS):
-        raise ValueError("Scene spine requires five fields")
+    if len(parts) not in {len(_FIELDS), len(_FIELDS) + 1}:
+        raise ValueError("Scene spine requires five or six fields")
     values: list[str] = []
-    for name, part in zip(_FIELDS, parts):
+    names = (*_FIELDS, _EFFECT_FIELD) if len(parts) == len(_FIELDS) + 1 else _FIELDS
+    for name, part in zip(names, parts):
         label, separator, value = part.partition("=")
         if not separator or label.strip() != name or not value.strip():
             raise ValueError(f"Scene spine field {name} is missing or out of order")
@@ -131,8 +142,8 @@ def parse_scene_spine_step(text: str) -> SceneSpineStep:
 def validate_scene_spine(steps: tuple[SceneSpineStep, ...]) -> None:
     """One Scene event must advance once, then only react to its result."""
 
-    if len(steps) < 2:
-        raise ValueError("Scene spine requires multiple Shots")
+    if not steps:
+        raise ValueError("Scene spine requires at least one Shot")
     phases = [step.phase for step in steps]
     if phases.count("event") != 1:
         raise ValueError("Scene spine requires exactly one event Shot")

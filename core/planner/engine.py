@@ -55,7 +55,7 @@ from .template import (
 )
 
 
-PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v79"
+PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v80"
 _ACTION_AUDIT_REPAIR_ATTEMPTS = 1
 _LOGGER = logging.getLogger("mv_director.nodes")
 TASKS = (
@@ -392,6 +392,7 @@ _CAMERA_PLAN_COVERAGE = frozenset(
         "environment_relation",
         "lyric_target",
         "lyric_target_and_hands",
+        "lyric_target_and_body",
         "whole_body_emotion",
         "whole_body_hands",
         "upper_body_hands",
@@ -554,6 +555,22 @@ def _continuation_body_state(
         return previous_spine.to_state
     previous_card = cue_cards.get((previous_scene_number,))
     return previous_card.final_state if previous_card is not None else ""
+
+
+def _continuation_effect_state(
+    previous_scene_number: int | None,
+    *,
+    continuation: bool,
+    last_shot_by_scene: Mapping[int, int],
+    scene_spine_steps: Mapping[tuple[int, int], SceneSpineStep],
+) -> str:
+    """Carry only an LLM-authored external-effect endpoint across CONTINUE."""
+
+    if not continuation or previous_scene_number is None:
+        return ""
+    last_shot = last_shot_by_scene.get(previous_scene_number)
+    previous_spine = scene_spine_steps.get((previous_scene_number, last_shot))
+    return previous_spine.effect_to if previous_spine is not None else ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -729,9 +746,19 @@ def _camera_plan_contract_violations(
         )
     ):
         violations.append("required_spine_coverage")
-    if required_spine_coverage in {"lyric_target", "lyric_target_and_hands"}:
+    if required_spine_coverage in {
+        "lyric_target", "lyric_target_and_hands", "lyric_target_and_body"
+    }:
         if {plan.start_scale, plan.end_scale} & {"face_closeup", "head_and_shoulders"}:
             violations.append("spine_target_occluded")
+    if required_spine_coverage == "lyric_target_and_body" and not {
+        plan.start_scale, plan.end_scale
+    } & {"wide", "medium_wide", "full_body", "medium"}:
+        violations.append("spine_body_accent_not_visible")
+    if entity.value.get("single_prechorus_body_accent") and not {
+        plan.start_scale, plan.end_scale
+    } & {"wide", "medium_wide", "full_body"}:
+        violations.append("prechorus_body_accent_not_visible")
     if required_spine_coverage in {"whole_body_emotion", "whole_body_hands"}:
         if not {plan.start_scale, plan.end_scale} & {
             "wide", "medium_wide", "full_body"
@@ -815,6 +842,7 @@ _CAMERA_COVERAGE_TEXT = {
     "environment_relation": "Keep the subject-to-environment spatial relationship readable",
     "lyric_target": "Keep the lyric-selected target or external phenomenon visible in its spatial setting",
     "lyric_target_and_hands": "Keep the lyric-selected target and the interacting hands visible together",
+    "lyric_target_and_body": "Keep the lyric-selected target or external phenomenon visible in its stated location or path while the performer's face, weight shift, torso, and both arms remain readable together",
     "whole_body_emotion": "Keep the complete whole-body emotional silhouette readable without isolating the feet",
     "whole_body_hands": "Finish with the complete whole-body silhouette while keeping the face, arms, and hands readable together; do not isolate the feet",
     "upper_body_hands": "Keep the face, shoulders, arms, and hands readable together",
@@ -879,7 +907,13 @@ def _choose_fallback_camera_option(
         if not _camera_plan_contract_violations(entity, option)
     )
     if not allowed:
-        raise ValueError("no camera fallback satisfies the structural contract")
+        reasons = (
+            ",".join(_camera_plan_contract_violations(entity, options[0]))
+            if options else "no_options"
+        )
+        raise ValueError(
+            "no camera fallback satisfies the structural contract: " + reasons
+        )
     return allowed[_fallback_choice_index(entity, ordinal, len(allowed))]
 
 
@@ -953,7 +987,9 @@ def _fallback_camera_plan(entity: _Entity, ordinal: int) -> _CameraPlan:
             for path in sorted(_ARC_ROLL_PATHS)
         )
         return _choose_fallback_camera_option(entity, ordinal, options)
-    if required_coverage in {"lyric_target", "lyric_target_and_hands"}:
+    if required_coverage in {
+        "lyric_target", "lyric_target_and_hands", "lyric_target_and_body"
+    }:
         if entity.value.get("arc_permission") == "required":
             options = tuple(
                 _CameraPlan(
@@ -2329,6 +2365,7 @@ def _select_arc_roll(
         "expressive_result": 3,
         "lyric_target": 4,
         "lyric_target_and_hands": 5,
+        "lyric_target_and_body": 1,
     }
     for entity in entities:
         value = entity.value
@@ -2343,7 +2380,7 @@ def _select_arc_roll(
             or (transition and not face_out)
             or required_coverage == "face_eyes_mouth"
             or (face_out and required_coverage in {
-                "lyric_target", "lyric_target_and_hands"
+                "lyric_target", "lyric_target_and_hands", "lyric_target_and_body"
             })
         ):
             continue
@@ -2389,7 +2426,8 @@ def _anime_emotional_mv_camera_emphasis(
     face_eligible = {
         index for index, entity in enumerate(entities)
         if entity.value.get("required_spine_coverage")
-        not in {"lyric_target", "lyric_target_and_hands"}
+        not in {"lyric_target", "lyric_target_and_hands", "lyric_target_and_body"}
+        and not entity.value.get("single_prechorus_body_accent")
     }
     face_target = max(0, min(face_target, len(face_eligible)))
     face_indices: list[int] = []
@@ -2451,7 +2489,7 @@ def _anime_emotional_mv_camera_emphasis(
             if candidate in face_indices or candidate in arc_indices:
                 continue
             if entities[candidate].value.get("required_spine_coverage") in {
-                "lyric_target", "lyric_target_and_hands"
+                "lyric_target", "lyric_target_and_hands", "lyric_target_and_body"
             }:
                 continue
             arc_indices.add(candidate)
@@ -2832,8 +2870,10 @@ def _sparse_body_accent_keys(
     scene_spine_steps: Mapping[tuple[int, int], SceneSpineStep],
     *,
     lip_sync_active: bool,
+    cue_cards: Mapping[tuple[int, ...], _CueCard] | None = None,
+    include_prechorus_single: bool = False,
 ) -> set[tuple[int, int]]:
-    """Reserve at most one non-face performance Shot per chorus Scene."""
+    """Reserve one eligible accent per chorus or long single-Shot pre-chorus."""
 
     by_scene: dict[int, list[tuple[int, int]]] = {}
     for key in sorted(shot_context):
@@ -2846,21 +2886,64 @@ def _sparse_body_accent_keys(
             for lyric in shot_context[key].get("lyrics", [])
             if isinstance(lyric, Mapping)
         }
-        if not sections.intersection({"CHORUS", "FINAL_CHORUS"}):
+        effect_card = (cue_cards or {}).get((keys[0][0],))
+        prechorus_single = (
+            include_prechorus_single
+            and _is_prechorus_scene(keys, shot_context)
+            and len(keys) == 1
+            and int(shot_context[keys[0]].get("shot_duration_ms", 0)) >= 6000
+            and not (
+                effect_card and effect_card.valid
+                and effect_card.contact == "許可"
+                and keys[0] not in scene_spine_steps
+            )
+        )
+        if not sections.intersection({"CHORUS", "FINAL_CHORUS"}) and not prechorus_single:
             continue
-        for key in keys:
+        external_effect = bool(
+            effect_card and effect_card.valid
+            and effect_card.phenomenon in {"外部自律", "身体操作"}
+        )
+        # The phenomenon's one event, not its setup or repeated response, is
+        # the first eligible place for the sparse physical accent.
+        effect_events = [
+            key for key in keys
+            if external_effect
+            and (spine := scene_spine_steps.get(key)) is not None
+            and spine.phase == "event"
+            and spine.show in {"lyric_target_body", "lyric_target"}
+        ]
+        candidates = effect_events + [key for key in keys if key not in effect_events]
+        for key in candidates:
             if _performance_role(
                 shot_context[key], lip_sync_active=lip_sync_active
             ) == "face_and_upper_body_accent":
                 continue
             spine = scene_spine_steps.get(key)
             if spine is not None and spine.show not in {
-                "whole_body", "upper_body_hands"
+                "whole_body", "upper_body_hands", "lyric_target_body"
             }:
-                continue
+                if not (
+                    prechorus_single and spine.show == "lyric_target_hands"
+                    or (external_effect or prechorus_single)
+                    and spine.show == "lyric_target"
+                ):
+                    continue
             selected.add(key)
             break
     return selected
+
+
+def _is_prechorus_scene(
+    keys: Sequence[tuple[int, int]],
+    shot_context: Mapping[tuple[int, int], Mapping[str, object]],
+) -> bool:
+    return {
+        str(lyric.get("section", "")).upper()
+        for key in keys
+        for lyric in shot_context[key].get("lyrics", [])
+        if isinstance(lyric, Mapping)
+    } == {"PRE-CHORUS"}
 
 
 def _camera_editorial_role(
@@ -4356,7 +4439,11 @@ def generate_planner_content(
                         "scene=%d; legacy Action path retained",
                         scene.scene_number,
                     )
-            if len(scene.shots) < 2:
+            track_external_effect = bool(
+                card and card.valid
+                and card.phenomenon in {"外部自律", "身体操作"}
+            )
+            if len(scene.shots) < 2 and not track_external_effect:
                 continue
             if card is None or not card.valid or card.target in _CUE_NONE_VALUES:
                 continue
@@ -4400,6 +4487,7 @@ def generate_planner_content(
                     for key in keys for line in shot_context[key]["author_body"]
                 )),
                 "visual_beat_grounding": card.to_dict(),
+                "track_external_effect": track_external_effect,
                 "spine_event_kind": (
                     "physical_contact" if card.contact == "許可"
                     else "non_contact_change"
@@ -4410,6 +4498,12 @@ def generate_planner_content(
                     continuation=scene.continuation,
                     last_shot_by_scene=scene_shot_counts,
                     cue_cards=cue_cards,
+                    scene_spine_steps=scene_spine_steps,
+                ),
+                "entry_effect_state": _continuation_effect_state(
+                    previous_scene_numbers[scene.scene_number],
+                    continuation=scene.continuation,
+                    last_shot_by_scene=scene_shot_counts,
                     scene_spine_steps=scene_spine_steps,
                 ),
                 **({
@@ -4452,6 +4546,8 @@ def generate_planner_content(
                 try:
                     steps = tuple(parse_scene_spine_step(raw[key]) for key in keys)
                     validate_scene_spine(steps)
+                    if track_external_effect and any(not step.effect_to for step in steps):
+                        raise ValueError("external effect endpoint is missing")
                     validate_contact_coverage(
                         steps, contact_allowed=card.contact == "許可"
                     )
@@ -4483,9 +4579,11 @@ def generate_planner_content(
     action_values: dict[tuple[int, ...], str] = {}
     body_accent_keys = (
         _sparse_body_accent_keys(
-            shot_context, scene_spine_steps, lip_sync_active=lip_sync_mode != "off"
+            shot_context, scene_spine_steps, lip_sync_active=lip_sync_mode != "off",
+            cue_cards=cue_cards,
+            include_prechorus_single=body_accent_policy == "sparse_chorus_prechorus",
         )
-        if body_accent_policy == "sparse_chorus" else set()
+        if body_accent_policy in {"sparse_chorus", "sparse_chorus_prechorus"} else set()
     )
     _LOGGER.info(
         "[MV Director - Timeline Planner] body accents; policy=%s; slots=%s",
@@ -4526,6 +4624,10 @@ def generate_planner_content(
                 context["scene_spine_step"] = scene_spine_steps[key].to_dict()
                 context["scene_spine_previous_end"] = (
                     scene_spine_steps[(key[0], key[1] - 1)].to_state
+                    if (key[0], key[1] - 1) in scene_spine_steps else ""
+                )
+                context["scene_spine_previous_effect_end"] = (
+                    scene_spine_steps[(key[0], key[1] - 1)].effect_to
                     if (key[0], key[1] - 1) in scene_spine_steps else ""
                 )
             priority_cues = required_cue_scopes.get(key[0], ())
@@ -4585,6 +4687,12 @@ def generate_planner_content(
                     continuation=bool(context["scene_continuation"]) and key[-1] == 1,
                     last_shot_by_scene=scene_shot_counts,
                     cue_cards=cue_cards,
+                    scene_spine_steps=scene_spine_steps,
+                )
+                context["entry_effect_state"] = _continuation_effect_state(
+                    previous_scene_numbers[key[0]],
+                    continuation=bool(context["scene_continuation"]) and key[-1] == 1,
+                    last_shot_by_scene=scene_shot_counts,
                     scene_spine_steps=scene_spine_steps,
                 )
                 if key in body_accent_keys:
@@ -5136,6 +5244,22 @@ def generate_planner_content(
             has_grounded_cue = (
                 cue_card.valid and cue_card.target not in _CUE_NONE_VALUES
             )
+            single_prechorus_body_accent = (
+                body_accent_policy == "sparse_chorus_prechorus"
+                and key in body_accent_keys
+                and _is_prechorus_scene(action_keys, shot_context)
+            )
+            prechorus_body_coverage = (
+                ("lyric_target_and_body" if has_grounded_cue else "whole_body_emotion")
+                if single_prechorus_body_accent else ""
+            )
+            required_effect_coverage = (
+                "lyric_target_and_body"
+                if key in body_accent_keys
+                and key in scene_spine_steps
+                and scene_spine_steps[key].show == "lyric_target"
+                else ""
+            )
             shot_count = len(action_keys)
             context = {
                 **shot_context[key],
@@ -5150,9 +5274,17 @@ def generate_planner_content(
                     scene_spine_steps[key].to_dict()
                     if key in scene_spine_steps else {}
                 ),
+                "single_prechorus_body_accent": single_prechorus_body_accent,
+                "entry_effect_state": _continuation_effect_state(
+                    previous_scene_numbers[key[0]],
+                    continuation=bool(shot_context[key]["scene_continuation"]) and key[-1] == 1,
+                    last_shot_by_scene=scene_shot_counts,
+                    scene_spine_steps=scene_spine_steps,
+                ),
                 "required_spine_coverage": (
-                    scene_spine_steps[key].required_coverage
-                    if key in scene_spine_steps else ""
+                    prechorus_body_coverage or required_effect_coverage
+                    or (scene_spine_steps[key].required_coverage
+                        if key in scene_spine_steps else "")
                 ),
                 "previous_locked_action": (
                     action_values[previous_action_key]
@@ -5198,7 +5330,8 @@ def generate_planner_content(
                     face_arc_transitions.get(key, "")
                     if key not in scene_spine_steps
                     or scene_spine_steps[key].required_coverage not in {
-                        "lyric_target", "lyric_target_and_hands", "face_eyes_mouth"
+                        "lyric_target", "lyric_target_and_hands",
+                        "lyric_target_and_body", "face_eyes_mouth"
                     } else ""
                 ),
             }

@@ -8,6 +8,8 @@ Plan / Compiler段階は、人物と背景の認識、歌詞時刻、Direction�
 
 Video段階では同じPlan JSONを再利用し、前段の演出設計や歌詞対応を動かさずに再Queueできます。Video workflowに独立した「動画seed A/B」という入力はありません。必要な変更は、実在する`Scene Seed`、sampler、denoising steps、Review又はScene Debug Splitterの各ノード上で行います。
 
+配布Video workflowはMiniMax H3 Hybrid LoaderでFL2VAをベースにRef2VAの一部を重ね、Turbo LoRA、Attention Backend、Sigma Shiftへ渡します。これはVideo段階のモデル設定であり、保存済みPlanのScene構成やAction/Cameraを再推論しません。例外としてAudio Reference方式のVideo workflowは、Scene単位の参照音声をPlan位置へ再配置するためLyric Segmentationをもう一度実行します。Context Loop方式とLyrics方式のVideo workflowにはこの再整列はありません。
+
 ## 重い処理を繰り返さない
 
 統合workflowでは、後段の動画生成、Review、Scene連結又は保存処理が停止した時でも、Queue方法やcache状態によって次の前段処理を再実行しやすくなります。
@@ -18,7 +20,7 @@ Video段階では同じPlan JSONを再利用し、前段の演出設計や歌詞
 - Lyric Cue、Visual Beat、Song Direction、Shot Layout、Action、Action Audit、CameraのPlanner呼び出し
 - Compilerの日本語prompt翻訳
 
-これらを先に完了してPlan JSONへ固定すれば、後段だけを再実行できます。LLM、Vision、WhisperとH3を同じ実行に抱えないため、モデルのload/unload、VRAM、待ち時間及び停止原因も切り分けやすくなります。特に限られたVRAMを想定する本プロジェクトでは、統合による利便性より再開可能性を優先します。
+これらを先に完了してPlan JSONへ固定すれば、通常は後段だけを再実行できます。Audio Reference方式では上述の歌詞再整列だけがVideo側に残りますが、Vision、Direction、Planner及びCompilerは再実行しません。モデルのload/unload、VRAM、待ち時間及び停止原因も切り分けやすくなります。特に限られたVRAMを想定する本プロジェクトでは、統合による利便性より再開可能性を優先します。
 
 ## どこから再実行するか
 

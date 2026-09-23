@@ -402,6 +402,16 @@ Planner v79以降、bounded Visual Beatの九field内の`配置`は
 従来の一節だけの`配置`は過去の生成結果を読むためにparserが受理するが、新規bounded
 生成では二節を出す。自然文のPython書換えは行わない。
 
+Planner v79の条件付きScene spineは、通常の`PHASE｜FROM｜ADVANCE｜TO｜SHOW`に加え、
+外部現象を追跡するSceneだけ`EFFECT_TO`を末尾へ要求する。`TO`は人物の終端、
+`EFFECT_TO`は現象の位置・方向・進行段階の終端であり、どちらもLLM記述を保持する。
+外部現象では単一Shot Sceneにも一回の`event`を計画できる。`CONTINUE`時は前Sceneの
+採用済み`EFFECT_TO`を次Sceneの`entry_effect_state`へ渡し、ActionとCameraへ伝える。
+Cameraの`lyric_target_and_body`は現象の経路と人物の顔・重心・体幹・両腕を同時に
+見せる有限coverageである。Pythonはfield順、eventの一回性、候補の可視範囲及び
+必須fieldだけを検証し、現象の位置や演技の自然文を補作しない。この内部protocolは
+完成EMDに`EFFECT_TO`行を追加するものではなく、実映像の成立を保証しない。
+
 ### Planner v55：生成Shot文の不要な行継続記号
 
 ユーザーの明示要求により、生成ACTION/CAMERAのTEXT末尾で、ASCII空白・TAB・全角空白

@@ -1,5 +1,9 @@
 # Timeline Planner
 
+現行Planner v80は、歌詞Cue発見の後、Directionに保持された`# 演出候補`からScene単位で出来事候補を選び、必要なら別の身体候補も選びます。Visual Beat、Song Direction、Shot Layoutの後、有効Cueを持つ`dance_phrase` SceneではScene spineがShot間の一回の出来事を計画します。外部現象を扱う場合は単一Shotも対象となり、人物の終端姿勢とは別に現象の`EFFECT_TO`を継続Sceneへ渡します。Actionの身体accentと現象の動きは、Cameraの`lyric_target_and_body` coverageで同時に可視化できます。開発用`anime_emotional_mv`では長尺・単一ShotのPRE-CHORUSにも選択的に一回の身体accentを割り当てます。いずれも歌詞や候補の意味をPythonが補作する機能ではなく、実際のH3映像での成立は別途確認が必要です。
+
+以下のv48～v60等の記述は導入時の経緯と、その後も残る個別契約を説明します。最新の全体順序と責務は[Direction / Planner処理フロー](../architecture/direction-planner-flow.md)を参照してください。
+
 v60ではMotionの`performance_mode=dance_phrase`に演技phase・前Cue終端の受け渡しと4秒以上の
 内部境界候補を追加しました。emotionalの有限Cameraでは前終端から画角・視点を接続します。
 有限値の構造処理は、下記の自由文Cameraに関するAS IS説明とは区別してください。

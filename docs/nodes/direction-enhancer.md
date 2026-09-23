@@ -28,7 +28,7 @@ Subject EMD、Scene EMD、ユーザー希望、三つのprofileを統合し、MV
 * 歌詞に合う場面では、片側への荷重から胸郭と腕を連動させ、歌唱口が見える瞬間にアクセントを置く。
 ```
 
-Directionは`# 演出候補`の各箇条書きを共通指示から分離し、原文のままtyped artifactへ保持します。Direction LLM、`direction_emd_preview`、完成EMD及びH3の全Scene共通`prompt_prefix`へは入れません。PlannerはSceneごとの短いLLM選択で歌詞との適合を判断し、選んだ一件だけをVisual Beatへ渡します。対象・配置を含む候補が選ばれた場合、その場所と支持物をCue Card及び接触Shotへ伝え、同じ具体的出来事の候補を後続Sceneへ再配布しません。候補の記載は発生を保証しません。候補件数と採用SceneはINFOログで確認できます。Plannerへの専用入力ソケットや特別なMotion profile指定は不要です。
+Directionは`# 演出候補`の各箇条書きを共通指示から分離し、原文のままtyped artifactへ保持します。Direction LLM、`direction_emd_preview`、完成EMD及びH3の全Scene共通`prompt_prefix`へは入れません。PlannerはSceneごとの短いLLM選択で歌詞との適合を判断し、出来事候補一件又は不採用を選びます。対象・配置を伴う出来事候補を選んだ場合は、別の身体演技候補一件も選べます。出来事の場所と支持物はCue Card及び接触Shotへ伝え、同じ具体的出来事の候補を後続Sceneへ再配布しません。身体演技だけの候補は再選択できます。候補の記載は発生を保証しません。候補件数と採用SceneはINFOログで確認できます。Plannerへの専用入力ソケットや特別なMotion profile指定は不要です。
 
 `anime_choreography_mv`は身体演技の共通方針だけを提供します。以前の`scene_palette`による振付候補の一括投入は廃止しました。必要な身体フレーズは`# 演出候補`へ記述し、PlannerにScene単位で採否を決めさせてください。
 

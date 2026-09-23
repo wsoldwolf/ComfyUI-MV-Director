@@ -223,10 +223,13 @@ class _LlamaPlannerBackend:
                 allow_target_hands=(
                     request.get("visual_beat_grounding", {}).get("contact") == "許可"
                 ),
+                track_external_effect=bool(request.get("track_external_effect")),
             )
             _LOGGER.info(
-                "[MV Director - Timeline Planner] output constraint=scene_spine_v1; "
+                "[MV Director - Timeline Planner] output constraint=%s; "
                 "scene=%s; shots=%d",
+                "scene_spine_v2_effect" if request.get("track_external_effect")
+                else "scene_spine_v1",
                 request.get("scene_number"), len(request["slots"]),
             )
         if task == "choreography-choice":

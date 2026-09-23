@@ -150,7 +150,7 @@ Shot、保持分析及びlip-syncでSubjectを参照する場合は、派生ID `
 
 ### 計画入力だけで使う演出候補ディレクティブ
 
-Direction Enhancerの既存`user_request`には、`# 演出候補`セクションの箇条書きを任意に記述できる。最大12行、各本文500文字までとし、行の順序と自然文を保持する。これは**完成`MVD_EMD_V1`には存在しない計画入力専用section**である。Directionがユーザー入力から構文だけを抽出してtyped artifactへ保持し、通常の共通プロンプトへ混ぜない。PlannerはSceneごとのLLM選択で候補一件又は不採用を決め、そのSceneのVisual Beatだけへ渡す。具体的な対象と配置を選んだ場合はLLMが記した空間関係をCue Cardの`配置`に保持し、接触Shotでも同じ関係を要求する。具体的な出来事に使用した候補は後続Sceneへ再配布しない。候補の採用・変形・不採用はいずれも有効であり、Pythonは対象や動詞を辞書で選ばない。候補の原文はCompiler及びH3の全Scene共通`prompt_prefix`へ渡らない。別のPlanner入力ソケットは設けない。
+Direction Enhancerの既存`user_request`には、`# 演出候補`セクションの箇条書きを任意に記述できる。最大12行、各本文500文字までとし、行の順序と自然文を保持する。これは**完成`MVD_EMD_V1`には存在しない計画入力専用section**である。Directionがユーザー入力から構文だけを抽出してtyped artifactへ保持し、通常の共通プロンプトへ混ぜない。PlannerはSceneごとのLLM選択で出来事候補一件又は不採用を決め、具体的な出来事候補を採用した場合は別の身体演技候補一件を選べる。対象と配置を伴う候補はVisual Beatへ、身体候補はScene spineとActionへ着想として渡す。LLMが記した空間関係はCue Cardの`配置`に保持し、接触Shotでも同じ関係を要求する。具体的な出来事に使用した候補は後続Sceneへ再配布しないが、身体演技だけの候補は再選択できる。候補の採用・変形・不採用はいずれも有効であり、Pythonは対象や動詞を辞書で選ばない。候補の原文はCompiler及びH3の全Scene共通`prompt_prefix`へ渡らない。別のPlanner入力ソケットは設けない。
 
 ```markdown
 # 共通プロンプト
