@@ -1,0 +1,373 @@
+{
+  "source": "E:\\ComfyUI\\projects\\ComfyUI-MV-Director\\docs\\assets\\research\\scene-event-performance-dual-probe-2026-09-22\\evidence.json",
+  "matrix": "E:\\ComfyUI\\projects\\ComfyUI-MV-Director\\docs\\assets\\research\\scene-event-performance-audit-matrix-2026-09-22\\evidence.json",
+  "model": "E:\\ComfyUI\\models\\LLM\\GGUF\\Qwen3-8B-Abliterated\\qwen3-8b-abliterated-Q4_K_M.gguf",
+  "runtime": {
+    "chat_format": "",
+    "max_tokens": 4096,
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "repetition_penalty": 1.05,
+    "gpu_layers": -1,
+    "n_batch": 512,
+    "n_ctx": 16384,
+    "flash_attn": true,
+    "kv_cache_type": "q8_0",
+    "op_offload": true,
+    "keep_model_loaded": false,
+    "seed": 42
+  },
+  "repair_rule": "これは同じSceneの一回だけの再要求。前のEVENT/BODY二行は採用されなかった。監査でFAILとなった項目を直し、歌詞の出来事と身体経路を両立させた完全な二行を新たに書く。\nTARGET_ACTION=FAILならTARGET以外の足音・石畳等を出来事の主役にしない。CONTACT_POINT=FAILなら接触点がTARGETの実際の部位であることを確認する。歌詞に接触が必要でない社のSceneではMODE=observeにしてCONTACT_POINT=なしを選べる。\nEXTERNAL_EFFECT=FAILなら狐火はMODE=autonomous、CONTACT_POINT=なしで、狐火自身の出現・空間経路・環境への結果をEVENTに書く。人物はそれを見て反応し、発生・保持・操作しない。\nSYNC=FAILならBODYのアクセントをEVENTの同じ瞬間へ結び付ける。候補の動きを繰り返すだけで対象を失わない。出力は元のEVENT/BODY二行だけ。",
+  "runs": [
+    {
+      "seed": 42,
+      "scene": 11,
+      "failures": [
+        "CONTACT_POINT"
+      ],
+      "payload": {
+        "scene_number": 11,
+        "lyrics": [
+          {
+            "section": "SHORT_BRIDGE",
+            "text": "自由なのか"
+          },
+          {
+            "section": "SHORT_BRIDGE",
+            "text": "それでも新しい足音が"
+          },
+          {
+            "section": "SHORT_BRIDGE",
+            "text": "またこの社へ続くなら"
+          }
+        ],
+        "author_body": [],
+        "discovered_cues": [
+          {
+            "evidence": "またこの社へ続くなら",
+            "kind": "place",
+            "target": "社"
+          }
+        ],
+        "scene_context": {
+          "authority": "Observed baseline only. Explicit Direction and user instructions override time, lighting, weather, season, and staging. The Picture is environment evidence, never a performer or composition template.",
+          "background_picture": "<Picture 2>",
+          "environment": [
+            "夜の森の中の神社境内",
+            "鳥居",
+            "石灯籠",
+            "石畳の道",
+            "紅葉した木々",
+            "神社の建物"
+          ],
+          "time_lighting": [
+            "夜、曇り",
+            "暗い夜空と灯りの照らし出された石畳の道"
+          ]
+        },
+        "direction_motion": [
+          "二コマ打ち又は三コマ打ちのセルアニメとして、読めるキーポーズ、加速、短い停止、余韻を作る。Sceneごとに身体の流れを考え、その準備・アクセント・解放をShotへ時間順に分配する。振付候補が合わない場合は独自の流れを考案する。各Shotで同じ開始姿勢へ戻らない。 身体演技は支持と重心、骨盤と胸郭、左右で異なる腕の経路、目と口の反応を一連の出来事として結ぶ。全身Shotに見える支持と体幹の変化を置き、顔Shotでは既に進んだフレーズの顔と上半身の結果を見せる。歌詞の感情とCamera coverageに合う可視部分だけを使い、候補の全文を毎Shotに詰め込まない。 参照画像の立ち姿、前傾、開腕、手を腰へ戻す動き、歩行及び同じ左右反転を反復しない。人物の全身旋回やピルエットを追加せず、視点の回り込みはカメラで表す。接地位置と体の向きを保ち、個々の足指や履物を演技の主題にしない。 歌詞又は作者が選んだ対象への接触・配置・変化を優先し、候補の比喩から小道具、場所、接触相手を増やさない。外部effectは人物の手に持たせず、独立した現象として扱う。静かなSceneは小さな動きと意図ある停止を選び、毎回大きなダンスにしない。"
+        ],
+        "motion_templates": [
+          "始点は両足で安定し、片手は体側、もう片手は肘を曲げて低く置く。片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける。低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る。差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める。物を持つ・渡す動作は歌詞に明示された時だけ。",
+          "始点は膝を伸ばし切らず胸郭を正面に保つ。後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せ、一拍のアクセント後、肩と肘を緩めて前足支持で終える。移動を伴う歩行や人物の全身回転にはしない。"
+        ],
+        "previous_rejected_plan": "EVENT\t11\tEVIDENCE=またこの社へ続くなら｜TARGET=社｜MODE=contact｜ANCHOR=足音｜CONTACT_POINT=石畳の道｜CHANGE=足音が石畳の道を踏みしめる｜RESULT=石畳の道に足音が響く\nBODY\t11\tSTART=両足で安定｜PATH=片手体側・もう片手肘曲げ低く置く→片側荷重・骨盤斜めへ胸郭進む→低い手を視線先へ弧状差し出す｜ACCENT=差し出した手を開いたまま一拍止め｜END=両足支持で静かに収める｜SYNC=足音が石畳の道を踏みしめる瞬間、視線は足音の先へ向け、右手を弧状に差し出し、左手は反対方向へ開く\n",
+        "audit_failures": [
+          "CONTACT_POINT"
+        ]
+      },
+      "response": "EVENT\t11\tEVIDENCE=またこの社へ続くなら｜TARGET=社｜MODE=observe｜ANCHOR=足音｜CONTACT_POINT=なし｜CHANGE=足音が石畳の道を踏みしめる｜RESULT=石畳の道に足音が響く\nBODY\t11\tSTART=両足で安定｜PATH=片手体側・もう片た肘曲げ低く置く→片側荷重・骨盤斜めへ胸郭進む→低い手を視線先へ弧状差し出す｜ACCENT=差し出した手を開いたまま一拍止め｜END=両足支持で静かに収める｜SYNC=足音が石畳の道を踏みしめる瞬間、視線は足音の先へ向け、右手を弧状に差し出し、左手は反対方向へ開く\n",
+      "parsed": {
+        "valid": true,
+        "issues": [],
+        "missing": [],
+        "event": {
+          "EVIDENCE": "またこの社へ続くなら",
+          "TARGET": "社",
+          "MODE": "observe",
+          "ANCHOR": "足音",
+          "CONTACT_POINT": "なし",
+          "CHANGE": "足音が石畳の道を踏みしめる",
+          "RESULT": "石畳の道に足音が響く"
+        },
+        "body": {
+          "START": "両足で安定",
+          "PATH": "片手体側・もう片た肘曲げ低く置く→片側荷重・骨盤斜めへ胸郭進む→低い手を視線先へ弧状差し出す",
+          "ACCENT": "差し出した手を開いたまま一拍止め",
+          "END": "両足支持で静かに収める",
+          "SYNC": "足音が石畳の道を踏みしめる瞬間、視線は足音の先へ向け、右手を弧状に差し出し、左手は反対方向へ開く"
+        }
+      },
+      "prompt_tokens": 1730,
+      "elapsed_seconds": 6.117,
+      "matrix_audit": {
+        "response": "CHECK\t1\tTARGET_ACTION=PASS｜CONTACT_POINT=PASS｜EXTERNAL_EFFECT=PASS｜SYNC=PASS",
+        "parsed": {
+          "valid": true,
+          "flags": {
+            "TARGET_ACTION": "PASS",
+            "CONTACT_POINT": "PASS",
+            "EXTERNAL_EFFECT": "PASS",
+            "SYNC": "PASS"
+          }
+        },
+        "prompt_tokens": 575,
+        "elapsed_seconds": 0.551
+      }
+    },
+    {
+      "seed": 42,
+      "scene": 14,
+      "failures": [
+        "CONTACT_POINT",
+        "EXTERNAL_EFFECT"
+      ],
+      "payload": {
+        "scene_number": 14,
+        "lyrics": [
+          {
+            "section": "FINAL_CHORUS",
+            "text": "狐火は祈り"
+          },
+          {
+            "section": "FINAL_CHORUS",
+            "text": "忘れぬことを"
+          },
+          {
+            "section": "FINAL_CHORUS",
+            "text": "救いと呼ぼう"
+          },
+          {
+            "section": "END",
+            "text": "またひとつの春が"
+          }
+        ],
+        "author_body": [],
+        "discovered_cues": [
+          {
+            "evidence": "狐火は祈り",
+            "kind": "effect",
+            "target": "狐火"
+          }
+        ],
+        "scene_context": {
+          "authority": "Observed baseline only. Explicit Direction and user instructions override time, lighting, weather, season, and staging. The Picture is environment evidence, never a performer or composition template.",
+          "background_picture": "<Picture 2>",
+          "environment": [
+            "夜の森の中の神社境内",
+            "鳥居",
+            "石灯籠",
+            "石畳の道",
+            "紅葉した木々",
+            "神社の建物"
+          ],
+          "time_lighting": [
+            "夜、曇り",
+            "暗い夜空と灯りの照らし出された石畳の道"
+          ]
+        },
+        "direction_motion": [
+          "二コマ打ち又は三コマ打ちのセルアニメとして、読めるキーポーズ、加速、短い停止、余韻を作る。Sceneごとに身体の流れを考え、その準備・アクセント・解放をShotへ時間順に分配する。振付候補が合わない場合は独自の流れを考案する。各Shotで同じ開始姿勢へ戻らない。 身体演技は支持と重心、骨盤と胸郭、左右で異なる腕の経路、目と口の反応を一連の出来事として結ぶ。全身Shotに見える支持と体幹の変化を置き、顔Shotでは既に進んだフレーズの顔と上半身の結果を見せる。歌詞の感情とCamera coverageに合う可視部分だけを使い、候補の全文を毎Shotに詰め込まない。 参照画像の立ち姿、前傾、開腕、手を腰へ戻す動き、歩行及び同じ左右反転を反復しない。人物の全身旋回やピルエットを追加せず、視点の回り込みはカメラで表す。接地位置と体の向きを保ち、個々の足指や履物を演技の主題にしない。 歌詞又は作者が選んだ対象への接触・配置・変化を優先し、候補の比喩から小道具、場所、接触相手を増やさない。外部effectは人物の手に持たせず、独立した現象として扱う。静かなSceneは小さな動きと意図ある停止を選び、毎回大きなダンスにしない。"
+        ],
+        "motion_templates": [
+          "始点は両足で安定し、片手は体側、もう片手は肘を曲げて低く置く。片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける。低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る。差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める。物を持つ・渡す動作は歌詞に明示された時だけ。",
+          "始点は膝を伸ばし切らず胸郭を正面に保つ。後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せ、一拍のアクセント後、肩と肘を緩めて前足支持で終える。移動を伴う歩行や人物の全身回転にはしない。"
+        ],
+        "previous_rejected_plan": "EVENT\t14\tEVIDENCE=狐火｜TARGET=狐火｜MODE=contact｜ANCHOR=狐火｜CONTACT_POINT=神社の建物｜CHANGE=狐火が神社の建物に触れる｜RESULT=狐火が神社の建物に沿って流れる\nBODY\t14\tSTART=両足で安定｜PATH=片手を体側、もう片手を肘を曲げて低く置く→片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける｜ACCENT=低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る｜END=差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める｜SYNC=狐火が神社の建物に触れる瞬間、右手を斜め前に伸ばし、顔を少し右へ向け、視線を狐火に合わせる\n",
+        "audit_failures": [
+          "CONTACT_POINT",
+          "EXTERNAL_EFFECT"
+        ]
+      },
+      "response": "EVENT\t14\tEVIDENCE=狐火｜TARGET=狐火｜MODE=autonomous｜ANCHOR=狐火｜CONTACT_POINT=なし｜CHANGE=狐火が神社の建物の上空を漂う｜RESULT=狐火が神社の建物の上空を漂い、紅葉した木々の間を通り抜ける\\nBODY\\t14\\tSTART=両足で安定＋片手を体側、もう片たを肘を曲げて低く置く＋胸郭を正面に保つ＋膝を伸ばし切らず＋片腕を体の横から斜め前へ通す＋もう一方は低い位置で反対方向へ開く＋顔を上げて歌唱口を見せ＋一拍のアクセント後、肩と肘を緩めて前足支持で終える＋物を持つ・渡す動作は歌詞に明示された時だけ＋移動を伴う歩行や人物の全身回転にはしない＋始点は膝を伸ばし切らず胸郭を正面に保つ＋後ろ足から前足へ短く荷重を移し＋骨盤が先行して胸郭が遅れて起きる＋片腕は体の横から斜め前へ通し＋もう一方は低い位置で反対方向へ開く＋顔を上げて歌唱口を見せ＋一拍のアクセント後、肩と肘を緩めて前足支持で終える＋物を持つ・渡す動作は歌詞に明示された時だけ＋移動を伴う歩行や人物の全身回転にはしない＋始点は両足で安定＋片手を体側、もう片手を肘を曲げて低く置く＋胸郭を正面に保つ＋膝を伸ばし切らず＋片腕を体の横から斜め前へ通す＋もう一方は低い位置で反対方向へ開く＋顔を上げて歌唱口を見せ＋一拍のアクセント後、肩と肘を緩めて前足支持で終える＋物を持つ・渡す動作は歌詞に明示された時だけ＋移動を伴う歩行や人物の全身回転にはしない＋始点は膝を伸ばし切らず胸郭を正面に保つ＋後ろ足から前足へ短く荷重を移し＋骨盤が先行して胸郭が遅れて起きる＋片腕は体の横から斜め前へ通し＋もう一方は低い位置で反対方向へ開く＋顔を上げて歌唱口を見せ＋一拍のアクセント後、肩と肘を緩めて前足支持で終える＋物を持つ・渡す動作は歌詞に明示された時だけ＋移動を伴う歩行や人物の全身回転にはしない＋始点は両足で安定＋片手を体側、もう片手を肘を曲げて低く置く＋胸郭を正面に保つ＋膝を伸ばし切らず＋片腕を体の横から斜め前へ通す＋もう一方は低い位置で反対方向へ開く＋顔を上げて歌唱口を見せ＋一拍のアクセント後、肩と肘を緩めて前足支持で終える＋物を持つ・渡す動作は歌詞に明示された時だけ＋移動を伴う歩行や人物の全身回転にはしない＋始点は膝を伸ば",
+      "parsed": {
+        "valid": false,
+        "issues": [],
+        "missing": [
+          [
+            "BODY",
+            14
+          ]
+        ]
+      },
+      "prompt_tokens": 1786,
+      "elapsed_seconds": 24.478
+    },
+    {
+      "seed": 43,
+      "scene": 11,
+      "failures": [
+        "CONTACT_POINT"
+      ],
+      "payload": {
+        "scene_number": 11,
+        "lyrics": [
+          {
+            "section": "SHORT_BRIDGE",
+            "text": "自由なのか"
+          },
+          {
+            "section": "SHORT_BRIDGE",
+            "text": "それでも新しい足音が"
+          },
+          {
+            "section": "SHORT_BRIDGE",
+            "text": "またこの社へ続くなら"
+          }
+        ],
+        "author_body": [],
+        "discovered_cues": [
+          {
+            "evidence": "またこの社へ続くなら",
+            "kind": "place",
+            "target": "社"
+          }
+        ],
+        "scene_context": {
+          "authority": "Observed baseline only. Explicit Direction and user instructions override time, lighting, weather, season, and staging. The Picture is environment evidence, never a performer or composition template.",
+          "background_picture": "<Picture 2>",
+          "environment": [
+            "夜の森の中の神社境内",
+            "鳥居",
+            "石灯籠",
+            "石畳の道",
+            "紅葉した木々",
+            "神社の建物"
+          ],
+          "time_lighting": [
+            "夜、曇り",
+            "暗い夜空と灯りの照らし出された石畳の道"
+          ]
+        },
+        "direction_motion": [
+          "二コマ打ち又は三コマ打ちのセルアニメとして、読めるキーポーズ、加速、短い停止、余韻を作る。Sceneごとに身体の流れを考え、その準備・アクセント・解放をShotへ時間順に分配する。振付候補が合わない場合は独自の流れを考案する。各Shotで同じ開始姿勢へ戻らない。 身体演技は支持と重心、骨盤と胸郭、左右で異なる腕の経路、目と口の反応を一連の出来事として結ぶ。全身Shotに見える支持と体幹の変化を置き、顔Shotでは既に進んだフレーズの顔と上半身の結果を見せる。歌詞の感情とCamera coverageに合う可視部分だけを使い、候補の全文を毎Shotに詰め込まない。 参照画像の立ち姿、前傾、開腕、手を腰へ戻す動き、歩行及び同じ左右反転を反復しない。人物の全身旋回やピルエットを追加せず、視点の回り込みはカメラで表す。接地位置と体の向きを保ち、個々の足指や履物を演技の主題にしない。 歌詞又は作者が選んだ対象への接触・配置・変化を優先し、候補の比喩から小道具、場所、接触相手を増やさない。外部effectは人物の手に持たせず、独立した現象として扱う。静かなSceneは小さな動きと意図ある停止を選び、毎回大きなダンスにしない。"
+        ],
+        "motion_templates": [
+          "始点は両足で安定し、片手は体側、もう片手は肘を曲げて低く置く。片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける。低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る。差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める。物を持つ・渡す動作は歌詞に明示された時だけ。",
+          "始点は膝を伸ばし切らず胸郭を正面に保つ。後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せ、一拍のアクセント後、肩と肘を緩めて前足支持で終える。移動を伴う歩行や人物の全身回転にはしない。"
+        ],
+        "previous_rejected_plan": "EVENT\t11\tEVIDENCE=またこの社へ続くなら｜TARGET=社｜MODE=contact｜ANCHOR=足音｜CONTACT_POINT=石畳｜CHANGE=足音が石畳を踏みしめる｜RESULT=石畳の上に足音が響く\nBODY\t11\tSTART=両足で安定｜PATH=片手体側・もう片手肘曲げ低く置く→片側荷重・骨盤斜めへ胸郭進む→低い手を視線先へ弧状差し出す→反対腕肘緩めて釣り合い→手を開いたまま一拍止め｜ACCENT=足音が石畳を踏みしめる瞬間｜END=両足支持で静かに収める｜SYNC=足音のタイミングで視線を石畳へ向け、手を差し出す方向へ動かす\n",
+        "audit_failures": [
+          "CONTACT_POINT"
+        ]
+      },
+      "response": "EVENT\t11\tEVIDENCE=またこの社へ続くなら｜TARGET=社｜MODE=observe｜ANCHOR=足音｜CONTACT_POINT=なし｜CHANGE=足音が社の境内を伝う｜RESULT=社の境内に足音が響く\nBODY\t11\tSTART=両足で安定｜PATH=膝を伸ばさず胸郭正面→後ろ足から前足へ荷重移し・骨盤先行胸郭遅れて起きる→片腕体横から斜め前へ通す→もう一方は低い位置で反対方向へ開く→顔上げ歌唱口見せる→一拍アクセント後肩肘緩めて前足支持終える｜ACCENT=足音が境内を伝う瞬間｜END=前足支持で終了｜SYNC=足初始のタイミングで視線を足音の進行方向へ向け、手を斜め前へ動かす\n",
+      "parsed": {
+        "valid": true,
+        "issues": [],
+        "missing": [],
+        "event": {
+          "EVIDENCE": "またこの社へ続くなら",
+          "TARGET": "社",
+          "MODE": "observe",
+          "ANCHOR": "足音",
+          "CONTACT_POINT": "なし",
+          "CHANGE": "足音が社の境内を伝う",
+          "RESULT": "社の境内に足音が響く"
+        },
+        "body": {
+          "START": "両足で安定",
+          "PATH": "膝を伸ばさず胸郭正面→後ろ足から前足へ荷重移し・骨盤先行胸郭遅れて起きる→片腕体横から斜め前へ通す→もう一方は低い位置で反対方向へ開く→顔上げ歌唱口見せる→一拍アクセント後肩肘緩めて前足支持終える",
+          "ACCENT": "足音が境内を伝う瞬間",
+          "END": "前足支持で終了",
+          "SYNC": "足初始のタイミングで視線を足音の進行方向へ向け、手を斜め前へ動かす"
+        }
+      },
+      "prompt_tokens": 1729,
+      "elapsed_seconds": 6.011,
+      "matrix_audit": {
+        "response": "CHECK\t1\tTARGET_ACTION=PASS｜CONTACT_POINT=PASS｜EXTERNAL_EFFECT=PASS｜SYNC=PASS",
+        "parsed": {
+          "valid": true,
+          "flags": {
+            "TARGET_ACTION": "PASS",
+            "CONTACT_POINT": "PASS",
+            "EXTERNAL_EFFECT": "PASS",
+            "SYNC": "PASS"
+          }
+        },
+        "prompt_tokens": 582,
+        "elapsed_seconds": 0.473
+      }
+    },
+    {
+      "seed": 43,
+      "scene": 14,
+      "failures": [
+        "CONTACT_POINT",
+        "EXTERNAL_EFFECT"
+      ],
+      "payload": {
+        "scene_number": 14,
+        "lyrics": [
+          {
+            "section": "FINAL_CHORUS",
+            "text": "狐火は祈り"
+          },
+          {
+            "section": "FINAL_CHORUS",
+            "text": "忘れぬことを"
+          },
+          {
+            "section": "FINAL_CHORUS",
+            "text": "救いと呼ぼう"
+          },
+          {
+            "section": "END",
+            "text": "またひとつの春が"
+          }
+        ],
+        "author_body": [],
+        "discovered_cues": [
+          {
+            "evidence": "狐火は祈り",
+            "kind": "effect",
+            "target": "狐火"
+          }
+        ],
+        "scene_context": {
+          "authority": "Observed baseline only. Explicit Direction and user instructions override time, lighting, weather, season, and staging. The Picture is environment evidence, never a performer or composition template.",
+          "background_picture": "<Picture 2>",
+          "environment": [
+            "夜の森の中の神社境内",
+            "鳥居",
+            "石灯籠",
+            "石畳の道",
+            "紅葉した木々",
+            "神社の建物"
+          ],
+          "time_lighting": [
+            "夜、曇り",
+            "暗い夜空と灯りの照らし出された石畳の道"
+          ]
+        },
+        "direction_motion": [
+          "二コマ打ち又は三コマ打ちのセルアニメとして、読めるキーポーズ、加速、短い停止、余韻を作る。Sceneごとに身体の流れを考え、その準備・アクセント・解放をShotへ時間順に分配する。振付候補が合わない場合は独自の流れを考案する。各Shotで同じ開始姿勢へ戻らない。 身体演技は支持と重心、骨盤と胸郭、左右で異なる腕の経路、目と口の反応を一連の出来事として結ぶ。全身Shotに見える支持と体幹の変化を置き、顔Shotでは既に進んだフレーズの顔と上半身の結果を見せる。歌詞の感情とCamera coverageに合う可視部分だけを使い、候補の全文を毎Shotに詰め込まない。 参照画像の立ち姿、前傾、開腕、手を腰へ戻す動き、歩行及び同じ左右反転を反復しない。人物の全身旋回やピルエットを追加せず、視点の回り込みはカメラで表す。接地位置と体の向きを保ち、個々の足指や履物を演技の主題にしない。 歌詞又は作者が選んだ対象への接触・配置・変化を優先し、候補の比喩から小道具、場所、接触相手を増やさない。外部effectは人物の手に持たせず、独立した現象として扱う。静かなSceneは小さな動きと意図ある停止を選び、毎回大きなダンスにしない。"
+        ],
+        "motion_templates": [
+          "始点は両足で安定し、片手は体側、もう片手は肘を曲げて低く置く。片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける。低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る。差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める。物を持つ・渡す動作は歌詞に明示された時だけ。",
+          "始点は膝を伸ばし切らず胸郭を正面に保つ。後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せ、一拍のアクセント後、肩と肘を緩めて前足支持で終える。移動を伴う歩行や人物の全身回転にはしない。"
+        ],
+        "previous_rejected_plan": "EVENT\t14\tEVIDENCE=狐火｜TARGET=狐火｜MODE=contact｜ANCHOR=狐火｜CONTACT_POINT=神社の建物｜CHANGE=狐火が神社の建物に触れる｜RESULT=狐火が神社の建物に沿って流れる\nBODY\t14\tSTART=両足で安定｜PATH=片手を体側、もう片手を肘を曲げて低く置く→片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける｜ACCENT=低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る｜END=差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める｜SYNC=狐火が神社の建物に触れる瞬間、右手を斜め前に伸ばし、左腕は体側へ下げる。目は狐火の動きに追う\n",
+        "audit_failures": [
+          "CONTACT_POINT",
+          "EXTERNAL_EFFECT"
+        ]
+      },
+      "response": "EVENT\t14\tEVIDENCE=狐火｜TARGET=狐火｜MODE=autonomous｜ANCHOR=狐火｜CONTACT_POINT=なし｜CHANGE=狐火が神社の建物の上空を漂う｜RESULT=狐火が神社の建物の上空を漂い、紅葉した木々に沿って流れる\\nBODY\\t14\\tSTART=両足で安定＋片手を体側、もう片たを肘を曲げて低く置く＋片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける＋低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る＋差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める＋片手を体側に戻す＋片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける＋低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る＋差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める＋片手を体側に戻す＋片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける＋低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る＋差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める＋片手を体側に戻す＋片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける＋低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る＋差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める＋片手を体側に戻す＋片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける＋低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る＋差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める＋片手を体側に戻す＋片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける＋低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る＋差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める＋片手を体側に戻す＋片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける＋低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取",
+      "parsed": {
+        "valid": false,
+        "issues": [],
+        "missing": [
+          [
+            "BODY",
+            14
+          ]
+        ]
+      },
+      "prompt_tokens": 1788,
+      "elapsed_seconds": 23.961
+    }
+  ]
+}

@@ -1,0 +1,2953 @@
+{
+  "source_sha256": "20c82d32785eabc9e3f414fb12642248c163eb1a862d22db847fc2ae0b8748da",
+  "templates_sha256": "e5776993eeb05919b32ac50867cc591344850a8e627145dcfc1ac421c892fe1f",
+  "cue_prompt_sha256": "46d0d0bfe377c50722ca6fc86f6510bfe89e512eed6a664840b99cc2e012615a",
+  "spine_prompt_sha256": "99c029871cc4045253f58699b37bcbe7e2563f9d18582a096fdc7bdf4f7083b8",
+  "model": "E:\\ComfyUI\\models\\LLM\\GGUF\\Qwen3-8B-Abliterated\\qwen3-8b-abliterated-Q4_K_M.gguf",
+  "runtime": {
+    "chat_format": "",
+    "max_tokens": 4096,
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "repetition_penalty": 1.05,
+    "gpu_layers": -1,
+    "n_batch": 512,
+    "n_ctx": 16384,
+    "flash_attn": true,
+    "kv_cache_type": "q8_0",
+    "op_offload": true,
+    "keep_model_loaded": false,
+    "seed": 42
+  },
+  "seeds": [
+    42,
+    43
+  ],
+  "scenes": [
+    11,
+    14
+  ],
+  "rule": "\nmotion_templatesはユーザーが提示した身体経路の任意候補である。現在slotの歌詞、Directionのmotion、候補を同時に読み、対象・根拠・配置・可視展開を先に決めてから、身体主導と終端へSceneに合う一続きの動きを書く。候補は選択、融合、改変、不使用のいずれも可能。候補を新しい場所・小道具・接触対象・外部現象の根拠にしない。接触を選んだら可視展開に実際の到達と接触を残し、外部自律の現象は人物から独立させる。候補全文を写さず、全slotで同じ身体経路を繰り返さない。出力形式は変えない。\n",
+  "templates": [
+    "始点は両足で安定し、片手は体側、もう片手は肘を曲げて低く置く。片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける。低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る。差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める。物を持つ・渡す動作は歌詞に明示された時だけ。",
+    "始点は膝を伸ばし切らず胸郭を正面に保つ。後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せ、一拍のアクセント後、肩と肘を緩めて前足支持で終える。移動を伴う歩行や人物の全身回転にはしない。"
+  ],
+  "runs": [
+    {
+      "seed": 42,
+      "scene_number": 11,
+      "variant": "baseline",
+      "task": "visual-beats",
+      "payload": {
+        "direction": {
+          "motion": [
+            "二コマ打ち又は三コマ打ちのセルアニメとして、読めるキーポーズ、加速、短い停止、余韻を作る。Sceneごとに身体の流れを考え、その準備・アクセント・解放をShotへ時間順に分配する。振付候補が合わない場合は独自の流れを考案する。各Shotで同じ開始姿勢へ戻らない。 身体演技は支持と重心、骨盤と胸郭、左右で異なる腕の経路、目と口の反応を一連の出来事として結ぶ。全身Shotに見える支持と体幹の変化を置き、顔Shotでは既に進んだフレーズの顔と上半身の結果を見せる。歌詞の感情とCamera coverageに合う可視部分だけを使い、候補の全文を毎Shotに詰め込まない。 参照画像の立ち姿、前傾、開腕、手を腰へ戻す動き、歩行及び同じ左右反転を反復しない。人物の全身旋回やピルエットを追加せず、視点の回り込みはカメラで表す。接地位置と体の向きを保ち、個々の足指や履物を演技の主題にしない。 歌詞又は作者が選んだ対象への接触・配置・変化を優先し、候補の比喩から小道具、場所、接触相手を増やさない。外部effectは人物の手に持たせず、独立した現象として扱う。静かなSceneは小さな動きと意図ある停止を選び、毎回大きなダンスにしない。"
+          ],
+          "other": [],
+          "style": [
+            "参照画像から人物の識別要素、髪型、髪色、瞳色、衣装、配色、装飾及び身体的特徴だけを保持する。参照画像のポーズ、手足の配置、視線、画角、視点、切り抜き、左右分割又は複数パネル構成、背景、線質、塗り、陰影及びブラシ表現は継承せず、各Shotで指定された一人の人物と感情を伴う身体演技を映画的な手描きセルアニメーションとして再設計する。各Shotの先頭frameからShot固有の身体姿勢、視線、手足配置、blocking、画角、視点、camera高及び距離を使用し、参照画像そのもの又は参照構図を静止画、開始画面、plate、poster、inset、背景として表示せず、参照ポーズからの変形又は遷移も行わない。各Sceneで指定された環境、時刻及び照明だけを完成映像の世界として使用し、参照画像内の白背景、無地背景、昼光、撮影用backdrop又はpanel固有の背景と照明を描画へ持ち込まない。指定されたScene環境を人物の背後と周囲を含む画面全体へ連続させる。画面全体を一つの連続した単一カメラ画像として使用し、画角及び視点の変更は時間方向のカメラ移動又はscene cutで表す。同一frame内へ複数視点、左右並列像、内部境界、inset又はpicture-in-pictureを同時配置しない。整理された強弱のある輪郭線、明瞭な色面、制御されたセル影、背景と統合された撮影処理及びアニメ映画的な照明で描く。人物の髪、体毛、動物耳、耳内部、尾、皮膚及び衣装は通常は非発光素材として扱う。完成EMDのShotが意図的な発光演出を明示する場合はその範囲を尊重する。それ以外ではこれらを光源、発光体又は強い透過光として描かず、局所的なglow、bloom、発光halo及び白飛びを生じさせない。月光、逆光及び実在する環境光は穏やかな反射光としてだけ表現し、耳内部の露出を周囲の毛並みから不自然に上げない。 歌詞中の傷、古傷、痛み、血又は心の損傷を、歌詞文字列だけで身体の損傷へ直結させない。人物設定又は完成EMDのShotが可視の状態として明示する場合は、その意図的な演出を尊重する。Shotで明示されない傷跡、切創、痣、出血、包帯、病変、染み、刺青状の印、裂けた皮膚又は破れた衣装は追加しない。歌詞の感情は視線、頭部、肩、胴体、手、対象との距離及び終端ポーズの変化でも表現する。 人物が足袋を着用する場合、滑らかで不透明な白いsplit-toe足袋として描き、つま先は親指側と残り四趾側の二つの連続した布形状だけにまとめる。黒い木下駄は足袋の外側へ正しく装着し、鼻緒だけを指定色で描く。作者又は歌詞が足元を明示しない限り、履物又は地面を接写の主題にしない。"
+          ],
+          "time_lighting": [
+            "夜、曇り。暗い夜空と灯りの照らし出された石畳の道"
+          ]
+        },
+        "planner_policy_contract": {
+          "all_later_continue_allowed": true,
+          "arc_density": "approximately_half_of_eligible_non_face_slots",
+          "arc_energy": "large_amplitude_fast_70_90_percent",
+          "body_accent_policy": "sparse_chorus",
+          "camera_phrase": "balanced_energetic_long_arc_short_face_pivot",
+          "choreography_policy": "scene_palette",
+          "cue_card_schema": "v2_spatial_anchor_visible_development",
+          "emotional_amplitude": "exaggerated_readable_full_body",
+          "environment_inventory_is_not_action_source": true,
+          "external_effect_mode": "autonomous_unless_current_lyric_operates_it",
+          "eye_expression_mode": "vary_eyelids_with_lyric_phase",
+          "face_zoom_frequency": "sparse_section_or_emotional_pivot",
+          "generic_locomotion_is_support_only": true,
+          "grounded_cue_development": "anchor_then_event_then_optional_subject_response",
+          "incidental_fixed_fixture_interaction": "forbidden",
+          "later_scene_continue_minimum_ratio": "3/4",
+          "lower_body_role": "scene_level_weight_transfer_not_required_per_shot_no_body_spins",
+          "lyric_cue_mode": "automatic",
+          "lyric_interpretation": "bounded",
+          "lyric_target_consumption": "one_scene_then_requires_new_trigger",
+          "lyric_trigger_scope": "current_scene_original_lyrics_only",
+          "noun_only_lyric_visualization": "same_scene_autonomous_visual_predicate",
+          "performance_mode": "dance_phrase",
+          "policy_id": "anime_emotional_mv",
+          "pose_contrast": "preparation_accent_release_across_scene_not_per_shot",
+          "priority_cue_scene_arc": "establish_relation_reaction_release_without_later_leakage",
+          "priority_cue_scope": "exact_current_scene_source_only",
+          "priority_lyric_cues": "entity_local_only",
+          "whole_body_emotion_mode": "one_connected_full_body_expression_phrase"
+        },
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "scene_context": {
+          "authority": "Observed baseline only. Explicit Direction and user instructions override time, lighting, weather, season, and staging. The Picture is environment evidence, never a performer or composition template.",
+          "background_picture": "<Picture 2>",
+          "environment": [
+            "夜の森の中の神社境内",
+            "鳥居",
+            "石灯籠",
+            "石畳の道",
+            "紅葉した木々",
+            "神社の建物"
+          ],
+          "time_lighting": [
+            "夜、曇り",
+            "暗い夜空と灯りの照らし出された石畳の道"
+          ]
+        },
+        "scene_context_usage": "spatial_support_only_never_activates_an_action_target",
+        "slots": [
+          {
+            "author_body": [],
+            "discovered_cues": [],
+            "has_resolved_lyrics": true,
+            "lyric_reading_context": {
+              "after": [
+                "自由なのか",
+                "それでも新しい足音が"
+              ],
+              "before": [
+                "狐火へ問う",
+                "忘れぬことは"
+              ]
+            },
+            "lyrics": [
+              {
+                "section": "CHORUS",
+                "text": "救いか"
+              },
+              {
+                "section": "CHORUS",
+                "text": "罰か"
+              },
+              {
+                "section": "SHORT_BRIDGE",
+                "text": "終わりがあるから"
+              },
+              {
+                "section": "SHORT_BRIDGE",
+                "text": "今日を選べる"
+              },
+              {
+                "section": "SHORT_BRIDGE",
+                "text": "終われぬ命は"
+              }
+            ],
+            "priority_lyric_cues": [],
+            "scene_number": 10,
+            "slot": 1,
+            "timeline_position": "middle",
+            "total_scene_count": 16
+          },
+          {
+            "author_body": [],
+            "discovered_cues": [
+              {
+                "evidence": "またこの社へ続くなら",
+                "kind": "place",
+                "target": "社"
+              }
+            ],
+            "has_resolved_lyrics": true,
+            "lyric_reading_context": {
+              "after": [
+                "千年鳥居を",
+                "くぐるそなたよ"
+              ],
+              "before": [
+                "今日を選べる",
+                "終われぬ命は"
+              ]
+            },
+            "lyrics": [
+              {
+                "section": "SHORT_BRIDGE",
+                "text": "自由なのか"
+              },
+              {
+                "section": "SHORT_BRIDGE",
+                "text": "それでも新しい足音が"
+              },
+              {
+                "section": "SHORT_BRIDGE",
+                "text": "またこの社へ続くなら"
+              }
+            ],
+            "priority_lyric_cues": [],
+            "scene_number": 11,
+            "slot": 2,
+            "timeline_position": "middle",
+            "total_scene_count": 16
+          },
+          {
+            "author_body": [],
+            "discovered_cues": [
+              {
+                "evidence": "千年鳥居を",
+                "kind": "place",
+                "target": "鳥居"
+              }
+            ],
+            "has_resolved_lyrics": true,
+            "lyric_reading_context": {
+              "after": [
+                "共に歩めるなら",
+                "別れの定めさえ"
+              ],
+              "before": [
+                "それでも新しい足音が",
+                "またこの社へ続くなら"
+              ]
+            },
+            "lyrics": [
+              {
+                "section": "FINAL_CHORUS",
+                "text": "千年鳥居を"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "くぐるそなたよ"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "今この刹那を"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "わらわに預けよ"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "異なる時を"
+              }
+            ],
+            "priority_lyric_cues": [],
+            "scene_number": 12,
+            "slot": 3,
+            "timeline_position": "middle",
+            "total_scene_count": 16
+          }
+        ],
+        "subject_roster": [
+          {
+            "concept_id": "サブジェクト1",
+            "subject_ref": "<Subject 1>"
+          }
+        ],
+        "task": "visual-beats"
+      },
+      "response": "BEAT\t1\t対象=なし｜根拠=なし｜感情=ためらい｜接触=禁止｜現象=なし｜配置=なし｜可視展開=なし｜身体主導=肩を左右に揺らし、胸郭を前後に動かす｜終端=肩を静止、胸郭を前傾\nBEAT\t2\t対象=社｜根拠=またこの社へ続くなら｜感情=働きかけ｜接触=許可｜現象=身体操作｜配置=社の石畳｜可視展開=人物が石畳に足を置く｜身体主導=右肩を前へ、左胸郭を後ろへ動かす｜終端=右肩を戻し、左胸郭を前へ\nBEAT\t3\t対象=鳥居｜根拠=千年鳥居を｜感情=解放｜接触=許可｜現象=身体操作｜配置=鳥居の下｜可視展開=人物が鳥居の下を通る｜身体主導=右肩を前へ、左胸郭を後ろへ動かす｜終端=右肩を戻し、左胸郭を前へ\n",
+      "parsed": {
+        "issues": [],
+        "missing": [],
+        "cards": {
+          "10": {
+            "slot": 1,
+            "text": "対象=なし｜根拠=なし｜感情=ためらい｜接触=禁止｜現象=なし｜配置=なし｜可視展開=なし｜身体主導=肩を左右に揺らし、胸郭を前後に動かす｜終端=肩を静止、胸郭を前傾",
+            "card": {
+              "valid": true,
+              "emotion": "ためらい",
+              "evidence": "なし",
+              "target": "なし",
+              "contact": "禁止",
+              "phenomenon": "なし",
+              "spatial_anchor": "なし",
+              "visible_development": "なし",
+              "body_driver": "肩を左右に揺らし、胸郭を前後に動かす",
+              "final_state": "肩を静止、胸郭を前傾",
+              "violations": []
+            }
+          },
+          "11": {
+            "slot": 2,
+            "text": "対象=社｜根拠=またこの社へ続くなら｜感情=働きかけ｜接触=許可｜現象=身体操作｜配置=社の石畳｜可視展開=人物が石畳に足を置く｜身体主導=右肩を前へ、左胸郭を後ろへ動かす｜終端=右肩を戻し、左胸郭を前へ",
+            "card": {
+              "valid": true,
+              "emotion": "働きかけ",
+              "evidence": "またこの社へ続くなら",
+              "target": "社",
+              "contact": "許可",
+              "phenomenon": "身体操作",
+              "spatial_anchor": "社の石畳",
+              "visible_development": "人物が石畳に足を置く",
+              "body_driver": "右肩を前へ、左胸郭を後ろへ動かす",
+              "final_state": "右肩を戻し、左胸郭を前へ",
+              "violations": []
+            }
+          },
+          "12": {
+            "slot": 3,
+            "text": "対象=鳥居｜根拠=千年鳥居を｜感情=解放｜接触=許可｜現象=身体操作｜配置=鳥居の下｜可視展開=人物が鳥居の下を通る｜身体主導=右肩を前へ、左胸郭を後ろへ動かす｜終端=右肩を戻し、左胸郭を前へ",
+            "card": {
+              "valid": true,
+              "emotion": "解放",
+              "evidence": "千年鳥居を",
+              "target": "鳥居",
+              "contact": "許可",
+              "phenomenon": "身体操作",
+              "spatial_anchor": "鳥居の下",
+              "visible_development": "人物が鳥居の下を通る",
+              "body_driver": "右肩を前へ、左胸郭を後ろへ動かす",
+              "final_state": "右肩を戻し、左胸郭を前へ",
+              "violations": []
+            }
+          }
+        },
+        "valid": true
+      },
+      "elapsed_seconds": 7.251
+    },
+    {
+      "seed": 42,
+      "scene_number": 11,
+      "variant": "baseline",
+      "task": "scene-spine",
+      "payload": {
+        "author_body": [],
+        "choreography_palette": [
+          {
+            "body_path": "始点は両足で安定し、片手は体側、もう片手は肘を曲げて低く置く。片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける。低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る。差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める。物を持つ・渡す動作は歌詞に明示された時だけ。",
+            "id": "passing_memory"
+          },
+          {
+            "body_path": "始点は膝を伸ばし切らず胸郭を正面に保つ。後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せ、一拍のアクセント後、肩と肘を緩めて前足支持で終える。移動を伴う歩行や人物の全身回転にはしない。",
+            "id": "resolve_diagonal"
+          },
+          {
+            "body_path": "始点は両足を地面に置き、両腕を体側の異なる高さに置く。短く膝を緩めて重心を落とし、胸郭をわずかに畳み、片腕だけを胴の前へ横断させる。目を伏せた後、支持を戻しながら横断した腕を外側へほどき、胸郭を開いて視線を結ぶ。終点は開始より直立し、両腕は開き切らず異なる高さで静止する。",
+            "id": "hesitation_recovery"
+          },
+          {
+            "body_path": "始点は両足支持で腕を低く置く。短い膝の弾みで重心を一度下げ、片足へ受け渡して骨盤を横へ送る。胸郭の遅れに合わせて片腕を横から斜め上へ、反対の腕を腰より低く逆方向へ通す。顔と歌唱口が見える瞬間にアクセントを合わせ、両腕を体側へ落とし切らず、支持足を保って余韻で終える。跳躍や全身回転はしない。",
+            "id": "joy_rebound"
+          },
+          {
+            "body_path": "始点は片足に軽く荷重し、肩と腕を緩める。支持は変えず胸郭だけを小さく斜めへ向け、片肘を体側から前へほどく。半開きの目から短く閉眼し、歌詞の変化で視線を戻す。手は顔を隠さず肩より下で止め、胸郭を正面へ戻しながら同じ支持のまま終える。静かな歌詞用で、大きな踏み替えを要求しない。",
+            "id": "quiet_refrain"
+          }
+        ],
+        "entry_body_state": "肩は右に傾き、胸郭は左に動いた状態で目線は左へ向けたまま手首は右へ回した姿勢",
+        "lyric_lines": [
+          "自由なのか",
+          "それでも新しい足音が",
+          "またこの社へ続くなら"
+        ],
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "scene_continuation": true,
+        "scene_number": 11,
+        "slots": [
+          {
+            "editorial_role": "continuity_bridge",
+            "scene_number": 11,
+            "shot_count": 2,
+            "shot_duration_ms": 4709,
+            "shot_index": 1,
+            "slot": 1
+          },
+          {
+            "editorial_role": "upper_body_performance_coverage",
+            "scene_number": 11,
+            "shot_count": 2,
+            "shot_duration_ms": 5208,
+            "shot_index": 2,
+            "slot": 2
+          }
+        ],
+        "spine_event_kind": "physical_contact",
+        "task": "scene-spine",
+        "visual_beat_grounding": {
+          "valid": true,
+          "emotion": "働きかけ",
+          "evidence": "またこの社へ続くなら",
+          "target": "社",
+          "contact": "許可",
+          "phenomenon": "身体操作",
+          "spatial_anchor": "社の石畳",
+          "visible_development": "人物が石畳に足を置く",
+          "body_driver": "右肩を前へ、左胸郭を後ろへ動かす",
+          "final_state": "右肩を戻し、左胸郭を前へ",
+          "violations": []
+        },
+        "visual_beat": "対象=社｜根拠=またこの社へ続くなら｜感情=働きかけ｜接触=許可｜現象=身体操作｜配置=社の石畳｜可視展開=人物が石畳に足を置く｜身体主導=右肩を前へ、左胸郭を後ろへ動かす｜終端=右肩を戻し、左胸郭を前へ"
+      },
+      "response": "SPINE\t1\tPHASE=event｜FROM=肩は右に傾き、胸郭は左に動いた状態で目線は左へ向けたまま手首は右へ回した姿勢｜ADVANCE=右肩を前へ、左胸郭を後ろへ動かす｜TO=右肩を前へ、左胸郭を後ろへ動かした姿勢｜SHOW=lyric_target_hands\nSPINE\t2\tPHASE=response｜FROM=右肩を前へ、左胸郭を後ろへ動かした姿勢｜ADVANCE=右肩を戻し、左胸郭を前へ｜TO=肩は右に傾き、胸郭は左に動いた状態で目線は左へ向けたまま手首は右へ回した姿勢｜SHOW=face_eyes_mouth\n",
+      "parsed": {
+        "issues": [],
+        "missing": [],
+        "texts": {
+          "1": "PHASE=event｜FROM=肩は右に傾き、胸郭は左に動いた状態で目線は左へ向けたまま手首は右へ回した姿勢｜ADVANCE=右肩を前へ、左胸郭を後ろへ動かす｜TO=右肩を前へ、左胸郭を後ろへ動かした姿勢｜SHOW=lyric_target_hands",
+          "2": "PHASE=response｜FROM=右肩を前へ、左胸郭を後ろへ動かした姿勢｜ADVANCE=右肩を戻し、左胸郭を前へ｜TO=肩は右に傾き、胸郭は左に動いた状態で目線は左へ向けたまま手首は右へ回した姿勢｜SHOW=face_eyes_mouth"
+        },
+        "valid": true,
+        "steps": [
+          {
+            "phase": "event",
+            "from": "肩は右に傾き、胸郭は左に動いた状態で目線は左へ向けたまま手首は右へ回した姿勢",
+            "advance": "右肩を前へ、左胸郭を後ろへ動かす",
+            "to": "右肩を前へ、左胸郭を後ろへ動かした姿勢",
+            "show": "lyric_target_hands"
+          },
+          {
+            "phase": "response",
+            "from": "右肩を前へ、左胸郭を後ろへ動かした姿勢",
+            "advance": "右肩を戻し、左胸郭を前へ",
+            "to": "肩は右に傾き、胸郭は左に動いた状態で目線は左へ向けたまま手首は右へ回した姿勢",
+            "show": "face_eyes_mouth"
+          }
+        ]
+      },
+      "elapsed_seconds": 5.518
+    },
+    {
+      "seed": 42,
+      "scene_number": 11,
+      "variant": "pre_cue_templates",
+      "task": "visual-beats",
+      "payload": {
+        "direction": {
+          "motion": [
+            "二コマ打ち又は三コマ打ちのセルアニメとして、読めるキーポーズ、加速、短い停止、余韻を作る。Sceneごとに身体の流れを考え、その準備・アクセント・解放をShotへ時間順に分配する。振付候補が合わない場合は独自の流れを考案する。各Shotで同じ開始姿勢へ戻らない。 身体演技は支持と重心、骨盤と胸郭、左右で異なる腕の経路、目と口の反応を一連の出来事として結ぶ。全身Shotに見える支持と体幹の変化を置き、顔Shotでは既に進んだフレーズの顔と上半身の結果を見せる。歌詞の感情とCamera coverageに合う可視部分だけを使い、候補の全文を毎Shotに詰め込まない。 参照画像の立ち姿、前傾、開腕、手を腰へ戻す動き、歩行及び同じ左右反転を反復しない。人物の全身旋回やピルエットを追加せず、視点の回り込みはカメラで表す。接地位置と体の向きを保ち、個々の足指や履物を演技の主題にしない。 歌詞又は作者が選んだ対象への接触・配置・変化を優先し、候補の比喩から小道具、場所、接触相手を増やさない。外部effectは人物の手に持たせず、独立した現象として扱う。静かなSceneは小さな動きと意図ある停止を選び、毎回大きなダンスにしない。"
+          ],
+          "other": [],
+          "style": [
+            "参照画像から人物の識別要素、髪型、髪色、瞳色、衣装、配色、装飾及び身体的特徴だけを保持する。参照画像のポーズ、手足の配置、視線、画角、視点、切り抜き、左右分割又は複数パネル構成、背景、線質、塗り、陰影及びブラシ表現は継承せず、各Shotで指定された一人の人物と感情を伴う身体演技を映画的な手描きセルアニメーションとして再設計する。各Shotの先頭frameからShot固有の身体姿勢、視線、手足配置、blocking、画角、視点、camera高及び距離を使用し、参照画像そのもの又は参照構図を静止画、開始画面、plate、poster、inset、背景として表示せず、参照ポーズからの変形又は遷移も行わない。各Sceneで指定された環境、時刻及び照明だけを完成映像の世界として使用し、参照画像内の白背景、無地背景、昼光、撮影用backdrop又はpanel固有の背景と照明を描画へ持ち込まない。指定されたScene環境を人物の背後と周囲を含む画面全体へ連続させる。画面全体を一つの連続した単一カメラ画像として使用し、画角及び視点の変更は時間方向のカメラ移動又はscene cutで表す。同一frame内へ複数視点、左右並列像、内部境界、inset又はpicture-in-pictureを同時配置しない。整理された強弱のある輪郭線、明瞭な色面、制御されたセル影、背景と統合された撮影処理及びアニメ映画的な照明で描く。人物の髪、体毛、動物耳、耳内部、尾、皮膚及び衣装は通常は非発光素材として扱う。完成EMDのShotが意図的な発光演出を明示する場合はその範囲を尊重する。それ以外ではこれらを光源、発光体又は強い透過光として描かず、局所的なglow、bloom、発光halo及び白飛びを生じさせない。月光、逆光及び実在する環境光は穏やかな反射光としてだけ表現し、耳内部の露出を周囲の毛並みから不自然に上げない。 歌詞中の傷、古傷、痛み、血又は心の損傷を、歌詞文字列だけで身体の損傷へ直結させない。人物設定又は完成EMDのShotが可視の状態として明示する場合は、その意図的な演出を尊重する。Shotで明示されない傷跡、切創、痣、出血、包帯、病変、染み、刺青状の印、裂けた皮膚又は破れた衣装は追加しない。歌詞の感情は視線、頭部、肩、胴体、手、対象との距離及び終端ポーズの変化でも表現する。 人物が足袋を着用する場合、滑らかで不透明な白いsplit-toe足袋として描き、つま先は親指側と残り四趾側の二つの連続した布形状だけにまとめる。黒い木下駄は足袋の外側へ正しく装着し、鼻緒だけを指定色で描く。作者又は歌詞が足元を明示しない限り、履物又は地面を接写の主題にしない。"
+          ],
+          "time_lighting": [
+            "夜、曇り。暗い夜空と灯りの照らし出された石畳の道"
+          ]
+        },
+        "planner_policy_contract": {
+          "all_later_continue_allowed": true,
+          "arc_density": "approximately_half_of_eligible_non_face_slots",
+          "arc_energy": "large_amplitude_fast_70_90_percent",
+          "body_accent_policy": "sparse_chorus",
+          "camera_phrase": "balanced_energetic_long_arc_short_face_pivot",
+          "choreography_policy": "scene_palette",
+          "cue_card_schema": "v2_spatial_anchor_visible_development",
+          "emotional_amplitude": "exaggerated_readable_full_body",
+          "environment_inventory_is_not_action_source": true,
+          "external_effect_mode": "autonomous_unless_current_lyric_operates_it",
+          "eye_expression_mode": "vary_eyelids_with_lyric_phase",
+          "face_zoom_frequency": "sparse_section_or_emotional_pivot",
+          "generic_locomotion_is_support_only": true,
+          "grounded_cue_development": "anchor_then_event_then_optional_subject_response",
+          "incidental_fixed_fixture_interaction": "forbidden",
+          "later_scene_continue_minimum_ratio": "3/4",
+          "lower_body_role": "scene_level_weight_transfer_not_required_per_shot_no_body_spins",
+          "lyric_cue_mode": "automatic",
+          "lyric_interpretation": "bounded",
+          "lyric_target_consumption": "one_scene_then_requires_new_trigger",
+          "lyric_trigger_scope": "current_scene_original_lyrics_only",
+          "noun_only_lyric_visualization": "same_scene_autonomous_visual_predicate",
+          "performance_mode": "dance_phrase",
+          "policy_id": "anime_emotional_mv",
+          "pose_contrast": "preparation_accent_release_across_scene_not_per_shot",
+          "priority_cue_scene_arc": "establish_relation_reaction_release_without_later_leakage",
+          "priority_cue_scope": "exact_current_scene_source_only",
+          "priority_lyric_cues": "entity_local_only",
+          "whole_body_emotion_mode": "one_connected_full_body_expression_phrase"
+        },
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "scene_context": {
+          "authority": "Observed baseline only. Explicit Direction and user instructions override time, lighting, weather, season, and staging. The Picture is environment evidence, never a performer or composition template.",
+          "background_picture": "<Picture 2>",
+          "environment": [
+            "夜の森の中の神社境内",
+            "鳥居",
+            "石灯籠",
+            "石畳の道",
+            "紅葉した木々",
+            "神社の建物"
+          ],
+          "time_lighting": [
+            "夜、曇り",
+            "暗い夜空と灯りの照らし出された石畳の道"
+          ]
+        },
+        "scene_context_usage": "spatial_support_only_never_activates_an_action_target",
+        "slots": [
+          {
+            "author_body": [],
+            "discovered_cues": [],
+            "has_resolved_lyrics": true,
+            "lyric_reading_context": {
+              "after": [
+                "自由なのか",
+                "それでも新しい足音が"
+              ],
+              "before": [
+                "狐火へ問う",
+                "忘れぬことは"
+              ]
+            },
+            "lyrics": [
+              {
+                "section": "CHORUS",
+                "text": "救いか"
+              },
+              {
+                "section": "CHORUS",
+                "text": "罰か"
+              },
+              {
+                "section": "SHORT_BRIDGE",
+                "text": "終わりがあるから"
+              },
+              {
+                "section": "SHORT_BRIDGE",
+                "text": "今日を選べる"
+              },
+              {
+                "section": "SHORT_BRIDGE",
+                "text": "終われぬ命は"
+              }
+            ],
+            "priority_lyric_cues": [],
+            "scene_number": 10,
+            "slot": 1,
+            "timeline_position": "middle",
+            "total_scene_count": 16
+          },
+          {
+            "author_body": [],
+            "discovered_cues": [
+              {
+                "evidence": "またこの社へ続くなら",
+                "kind": "place",
+                "target": "社"
+              }
+            ],
+            "has_resolved_lyrics": true,
+            "lyric_reading_context": {
+              "after": [
+                "千年鳥居を",
+                "くぐるそなたよ"
+              ],
+              "before": [
+                "今日を選べる",
+                "終われぬ命は"
+              ]
+            },
+            "lyrics": [
+              {
+                "section": "SHORT_BRIDGE",
+                "text": "自由なのか"
+              },
+              {
+                "section": "SHORT_BRIDGE",
+                "text": "それでも新しい足音が"
+              },
+              {
+                "section": "SHORT_BRIDGE",
+                "text": "またこの社へ続くなら"
+              }
+            ],
+            "priority_lyric_cues": [],
+            "scene_number": 11,
+            "slot": 2,
+            "timeline_position": "middle",
+            "total_scene_count": 16
+          },
+          {
+            "author_body": [],
+            "discovered_cues": [
+              {
+                "evidence": "千年鳥居を",
+                "kind": "place",
+                "target": "鳥居"
+              }
+            ],
+            "has_resolved_lyrics": true,
+            "lyric_reading_context": {
+              "after": [
+                "共に歩めるなら",
+                "別れの定めさえ"
+              ],
+              "before": [
+                "それでも新しい足音が",
+                "またこの社へ続くなら"
+              ]
+            },
+            "lyrics": [
+              {
+                "section": "FINAL_CHORUS",
+                "text": "千年鳥居を"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "くぐるそなたよ"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "今この刹那を"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "わらわに預けよ"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "異なる時を"
+              }
+            ],
+            "priority_lyric_cues": [],
+            "scene_number": 12,
+            "slot": 3,
+            "timeline_position": "middle",
+            "total_scene_count": 16
+          }
+        ],
+        "subject_roster": [
+          {
+            "concept_id": "サブジェクト1",
+            "subject_ref": "<Subject 1>"
+          }
+        ],
+        "task": "visual-beats",
+        "motion_templates": [
+          "始点は両足で安定し、片手は体側、もう片手は肘を曲げて低く置く。片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける。低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る。差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める。物を持つ・渡す動作は歌詞に明示された時だけ。",
+          "始点は膝を伸ばし切らず胸郭を正面に保つ。後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せ、一拍のアクセント後、肩と肘を緩めて前足支持で終える。移動を伴う歩行や人物の全身回転にはしない。"
+        ]
+      },
+      "response": "BEAT\t1\t対象=なし｜根拠=なし｜感情=ためらい｜接触=禁止｜現象=なし｜配置=なし｜可視展開=なし｜身体主導=肩を右へ傾け、胸郭を左へ押し出す。目線は右へ向け、口角を下へ下げてためらう｜終端=肩を右に傾けたまま、胸郭を左へ押し出し、目線は右へ向け、口角を下へ下げた状態\nBEAT\t2\t対象=社｜根拠=またこの社へ続くなら｜感情=働きかけ｜接触=許可｜現象=身体操作｜配置=社の鳥居の下｜可視展開=右手で石畳を軽く触り、左手は腰に置きながら前へ進む｜身体主導=右手を前へ伸ばし、肘を曲げて石畳を押す。左肩を前に出し、胸郭を右へ傾ける｜終端=右手を前へ伸ばしたまま、左肩を前に出し、胸郭を右へ傾いた状態\nBEAT\t3\t対象=鳥居｜根拠=千年鳥居を｜感情=解放｜接触=許可｜現象=身体操作｜配置=鳥居の下｜可視展開=右手を鳥居の柱に触れて、左手は腰に置きながら前へ進む｜身体主導=右手を前へ伸ばし、肘を曲げて鳥居の柱を押す。左肩を前に出し、胸郭を右へ傾ける｜終端=右手を前へ伸ばしたまま、左肩を前に出し、胸郭を右へ傾いた状態\n",
+      "parsed": {
+        "issues": [],
+        "missing": [],
+        "cards": {
+          "10": {
+            "slot": 1,
+            "text": "対象=なし｜根拠=なし｜感情=ためらい｜接触=禁止｜現象=なし｜配置=なし｜可視展開=なし｜身体主導=肩を右へ傾け、胸郭を左へ押し出す。目線は右へ向け、口角を下へ下げてためらう｜終端=肩を右に傾けたまま、胸郭を左へ押し出し、目線は右へ向け、口角を下へ下げた状態",
+            "card": {
+              "valid": true,
+              "emotion": "ためらい",
+              "evidence": "なし",
+              "target": "なし",
+              "contact": "禁止",
+              "phenomenon": "なし",
+              "spatial_anchor": "なし",
+              "visible_development": "なし",
+              "body_driver": "肩を右へ傾け、胸郭を左へ押し出す。目線は右へ向け、口角を下へ下げてためらう",
+              "final_state": "肩を右に傾けたまま、胸郭を左へ押し出し、目線は右へ向け、口角を下へ下げた状態",
+              "violations": []
+            }
+          },
+          "11": {
+            "slot": 2,
+            "text": "対象=社｜根拠=またこの社へ続くなら｜感情=働きかけ｜接触=許可｜現象=身体操作｜配置=社の鳥居の下｜可視展開=右手で石畳を軽く触り、左手は腰に置きながら前へ進む｜身体主導=右手を前へ伸ばし、肘を曲げて石畳を押す。左肩を前に出し、胸郭を右へ傾ける｜終端=右手を前へ伸ばしたまま、左肩を前に出し、胸郭を右へ傾いた状態",
+            "card": {
+              "valid": true,
+              "emotion": "働きかけ",
+              "evidence": "またこの社へ続くなら",
+              "target": "社",
+              "contact": "許可",
+              "phenomenon": "身体操作",
+              "spatial_anchor": "社の鳥居の下",
+              "visible_development": "右手で石畳を軽く触り、左手は腰に置きながら前へ進む",
+              "body_driver": "右手を前へ伸ばし、肘を曲げて石畳を押す。左肩を前に出し、胸郭を右へ傾ける",
+              "final_state": "右手を前へ伸ばしたまま、左肩を前に出し、胸郭を右へ傾いた状態",
+              "violations": []
+            }
+          },
+          "12": {
+            "slot": 3,
+            "text": "対象=鳥居｜根拠=千年鳥居を｜感情=解放｜接触=許可｜現象=身体操作｜配置=鳥居の下｜可視展開=右手を鳥居の柱に触れて、左手は腰に置きながら前へ進む｜身体主導=右手を前へ伸ばし、肘を曲げて鳥居の柱を押す。左肩を前に出し、胸郭を右へ傾ける｜終端=右手を前へ伸ばしたまま、左肩を前に出し、胸郭を右へ傾いた状態",
+            "card": {
+              "valid": true,
+              "emotion": "解放",
+              "evidence": "千年鳥居を",
+              "target": "鳥居",
+              "contact": "許可",
+              "phenomenon": "身体操作",
+              "spatial_anchor": "鳥居の下",
+              "visible_development": "右手を鳥居の柱に触れて、左手は腰に置きながら前へ進む",
+              "body_driver": "右手を前へ伸ばし、肘を曲げて鳥居の柱を押す。左肩を前に出し、胸郭を右へ傾ける",
+              "final_state": "右手を前へ伸ばしたまま、左肩を前に出し、胸郭を右へ傾いた状態",
+              "violations": []
+            }
+          }
+        },
+        "valid": true
+      },
+      "elapsed_seconds": 10.898
+    },
+    {
+      "seed": 42,
+      "scene_number": 11,
+      "variant": "pre_cue_templates",
+      "task": "scene-spine",
+      "payload": {
+        "author_body": [],
+        "choreography_palette": [
+          {
+            "body_path": "始点は両足で安定し、片手は体側、もう片手は肘を曲げて低く置く。片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける。低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る。差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める。物を持つ・渡す動作は歌詞に明示された時だけ。",
+            "id": "passing_memory"
+          },
+          {
+            "body_path": "始点は膝を伸ばし切らず胸郭を正面に保つ。後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せ、一拍のアクセント後、肩と肘を緩めて前足支持で終える。移動を伴う歩行や人物の全身回転にはしない。",
+            "id": "resolve_diagonal"
+          },
+          {
+            "body_path": "始点は両足を地面に置き、両腕を体側の異なる高さに置く。短く膝を緩めて重心を落とし、胸郭をわずかに畳み、片腕だけを胴の前へ横断させる。目を伏せた後、支持を戻しながら横断した腕を外側へほどき、胸郭を開いて視線を結ぶ。終点は開始より直立し、両腕は開き切らず異なる高さで静止する。",
+            "id": "hesitation_recovery"
+          },
+          {
+            "body_path": "始点は両足支持で腕を低く置く。短い膝の弾みで重心を一度下げ、片足へ受け渡して骨盤を横へ送る。胸郭の遅れに合わせて片腕を横から斜め上へ、反対の腕を腰より低く逆方向へ通す。顔と歌唱口が見える瞬間にアクセントを合わせ、両腕を体側へ落とし切らず、支持足を保って余韻で終える。跳躍や全身回転はしない。",
+            "id": "joy_rebound"
+          },
+          {
+            "body_path": "始点は片足に軽く荷重し、肩と腕を緩める。支持は変えず胸郭だけを小さく斜めへ向け、片肘を体側から前へほどく。半開きの目から短く閉眼し、歌詞の変化で視線を戻す。手は顔を隠さず肩より下で止め、胸郭を正面へ戻しながら同じ支持のまま終える。静かな歌詞用で、大きな踏み替えを要求しない。",
+            "id": "quiet_refrain"
+          }
+        ],
+        "entry_body_state": "肩は右に傾き、胸郭は左に動いた状態で目線は左へ向けたまま手首は右へ回した姿勢",
+        "lyric_lines": [
+          "自由なのか",
+          "それでも新しい足音が",
+          "またこの社へ続くなら"
+        ],
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "scene_continuation": true,
+        "scene_number": 11,
+        "slots": [
+          {
+            "editorial_role": "continuity_bridge",
+            "scene_number": 11,
+            "shot_count": 2,
+            "shot_duration_ms": 4709,
+            "shot_index": 1,
+            "slot": 1
+          },
+          {
+            "editorial_role": "upper_body_performance_coverage",
+            "scene_number": 11,
+            "shot_count": 2,
+            "shot_duration_ms": 5208,
+            "shot_index": 2,
+            "slot": 2
+          }
+        ],
+        "spine_event_kind": "physical_contact",
+        "task": "scene-spine",
+        "visual_beat_grounding": {
+          "valid": true,
+          "emotion": "働きかけ",
+          "evidence": "またこの社へ続くなら",
+          "target": "社",
+          "contact": "許可",
+          "phenomenon": "身体操作",
+          "spatial_anchor": "社の鳥居の下",
+          "visible_development": "右手で石畳を軽く触り、左手は腰に置きながら前へ進む",
+          "body_driver": "右手を前へ伸ばし、肘を曲げて石畳を押す。左肩を前に出し、胸郭を右へ傾ける",
+          "final_state": "右手を前へ伸ばしたまま、左肩を前に出し、胸郭を右へ傾いた状態",
+          "violations": []
+        },
+        "visual_beat": "対象=社｜根拠=またこの社へ続くなら｜感情=働きかけ｜接触=許可｜現象=身体操作｜配置=社の鳥居の下｜可視展開=右手で石畳を軽く触り、左手は腰に置きながら前へ進む｜身体主導=右手を前へ伸ばし、肘を曲げて石畳を押す。左肩を前に出し、胸郭を右へ傾ける｜終端=右手を前へ伸ばしたまま、左肩を前に出し、胸郭を右へ傾いた状態"
+      },
+      "response": "SPINE\t1\tPHASE=event｜FROM=肩は右に傾き、胸郭は左に動いた状態で目線は左へ向けたまま手首は右へ回した姿勢｜ADVANCE=右手を前へ伸ばし、肘を曲げて石畳を押す。左肩を前に出し、胸郭を右へ傾ける｜TO=右手を前へ伸ばしたまま、左肩を前に出し、胸郭を右へ傾いた状態｜SHOW=lyric_target_hands\nSPINE\t2\tPHASE=response｜FROM=右手を前へ伸ばしたまま、左肩を前に出し、胸郭を右へ傾いた状態｜ADVANCE=右手で石畳を軽く触り、左手は腰に置きながら前へ進む｜TO=右手を前へ伸ばしたまま、左肩を前に出し、胸郭を右へ傾いた状態｜SHOW=lyric_target\n",
+      "parsed": {
+        "issues": [],
+        "missing": [],
+        "texts": {
+          "1": "PHASE=event｜FROM=肩は右に傾き、胸郭は左に動いた状態で目線は左へ向けたまま手首は右へ回した姿勢｜ADVANCE=右手を前へ伸ばし、肘を曲げて石畳を押す。左肩を前に出し、胸郭を右へ傾ける｜TO=右手を前へ伸ばしたまま、左肩を前に出し、胸郭を右へ傾いた状態｜SHOW=lyric_target_hands",
+          "2": "PHASE=response｜FROM=右手を前へ伸ばしたまま、左肩を前に出し、胸郭を右へ傾いた状態｜ADVANCE=右手で石畳を軽く触り、左手は腰に置きながら前へ進む｜TO=右手を前へ伸ばしたまま、左肩を前に出し、胸郭を右へ傾いた状態｜SHOW=lyric_target"
+        },
+        "valid": true,
+        "steps": [
+          {
+            "phase": "event",
+            "from": "肩は右に傾き、胸郭は左に動いた状態で目線は左へ向けたまま手首は右へ回した姿勢",
+            "advance": "右手を前へ伸ばし、肘を曲げて石畳を押す。左肩を前に出し、胸郭を右へ傾ける",
+            "to": "右手を前へ伸ばしたまま、左肩を前に出し、胸郭を右へ傾いた状態",
+            "show": "lyric_target_hands"
+          },
+          {
+            "phase": "response",
+            "from": "右手を前へ伸ばしたまま、左肩を前に出し、胸郭を右へ傾いた状態",
+            "advance": "右手で石畳を軽く触り、左手は腰に置きながら前へ進む",
+            "to": "右手を前へ伸ばしたまま、左肩を前に出し、胸郭を右へ傾いた状態",
+            "show": "lyric_target"
+          }
+        ]
+      },
+      "elapsed_seconds": 6.231
+    },
+    {
+      "seed": 42,
+      "scene_number": 14,
+      "variant": "baseline",
+      "task": "visual-beats",
+      "payload": {
+        "direction": {
+          "motion": [
+            "二コマ打ち又は三コマ打ちのセルアニメとして、読めるキーポーズ、加速、短い停止、余韻を作る。Sceneごとに身体の流れを考え、その準備・アクセント・解放をShotへ時間順に分配する。振付候補が合わない場合は独自の流れを考案する。各Shotで同じ開始姿勢へ戻らない。 身体演技は支持と重心、骨盤と胸郭、左右で異なる腕の経路、目と口の反応を一連の出来事として結ぶ。全身Shotに見える支持と体幹の変化を置き、顔Shotでは既に進んだフレーズの顔と上半身の結果を見せる。歌詞の感情とCamera coverageに合う可視部分だけを使い、候補の全文を毎Shotに詰め込まない。 参照画像の立ち姿、前傾、開腕、手を腰へ戻す動き、歩行及び同じ左右反転を反復しない。人物の全身旋回やピルエットを追加せず、視点の回り込みはカメラで表す。接地位置と体の向きを保ち、個々の足指や履物を演技の主題にしない。 歌詞又は作者が選んだ対象への接触・配置・変化を優先し、候補の比喩から小道具、場所、接触相手を増やさない。外部effectは人物の手に持たせず、独立した現象として扱う。静かなSceneは小さな動きと意図ある停止を選び、毎回大きなダンスにしない。"
+          ],
+          "other": [],
+          "style": [
+            "参照画像から人物の識別要素、髪型、髪色、瞳色、衣装、配色、装飾及び身体的特徴だけを保持する。参照画像のポーズ、手足の配置、視線、画角、視点、切り抜き、左右分割又は複数パネル構成、背景、線質、塗り、陰影及びブラシ表現は継承せず、各Shotで指定された一人の人物と感情を伴う身体演技を映画的な手描きセルアニメーションとして再設計する。各Shotの先頭frameからShot固有の身体姿勢、視線、手足配置、blocking、画角、視点、camera高及び距離を使用し、参照画像そのもの又は参照構図を静止画、開始画面、plate、poster、inset、背景として表示せず、参照ポーズからの変形又は遷移も行わない。各Sceneで指定された環境、時刻及び照明だけを完成映像の世界として使用し、参照画像内の白背景、無地背景、昼光、撮影用backdrop又はpanel固有の背景と照明を描画へ持ち込まない。指定されたScene環境を人物の背後と周囲を含む画面全体へ連続させる。画面全体を一つの連続した単一カメラ画像として使用し、画角及び視点の変更は時間方向のカメラ移動又はscene cutで表す。同一frame内へ複数視点、左右並列像、内部境界、inset又はpicture-in-pictureを同時配置しない。整理された強弱のある輪郭線、明瞭な色面、制御されたセル影、背景と統合された撮影処理及びアニメ映画的な照明で描く。人物の髪、体毛、動物耳、耳内部、尾、皮膚及び衣装は通常は非発光素材として扱う。完成EMDのShotが意図的な発光演出を明示する場合はその範囲を尊重する。それ以外ではこれらを光源、発光体又は強い透過光として描かず、局所的なglow、bloom、発光halo及び白飛びを生じさせない。月光、逆光及び実在する環境光は穏やかな反射光としてだけ表現し、耳内部の露出を周囲の毛並みから不自然に上げない。 歌詞中の傷、古傷、痛み、血又は心の損傷を、歌詞文字列だけで身体の損傷へ直結させない。人物設定又は完成EMDのShotが可視の状態として明示する場合は、その意図的な演出を尊重する。Shotで明示されない傷跡、切創、痣、出血、包帯、病変、染み、刺青状の印、裂けた皮膚又は破れた衣装は追加しない。歌詞の感情は視線、頭部、肩、胴体、手、対象との距離及び終端ポーズの変化でも表現する。 人物が足袋を着用する場合、滑らかで不透明な白いsplit-toe足袋として描き、つま先は親指側と残り四趾側の二つの連続した布形状だけにまとめる。黒い木下駄は足袋の外側へ正しく装着し、鼻緒だけを指定色で描く。作者又は歌詞が足元を明示しない限り、履物又は地面を接写の主題にしない。"
+          ],
+          "time_lighting": [
+            "夜、曇り。暗い夜空と灯りの照らし出された石畳の道"
+          ]
+        },
+        "planner_policy_contract": {
+          "all_later_continue_allowed": true,
+          "arc_density": "approximately_half_of_eligible_non_face_slots",
+          "arc_energy": "large_amplitude_fast_70_90_percent",
+          "body_accent_policy": "sparse_chorus",
+          "camera_phrase": "balanced_energetic_long_arc_short_face_pivot",
+          "choreography_policy": "scene_palette",
+          "cue_card_schema": "v2_spatial_anchor_visible_development",
+          "emotional_amplitude": "exaggerated_readable_full_body",
+          "environment_inventory_is_not_action_source": true,
+          "external_effect_mode": "autonomous_unless_current_lyric_operates_it",
+          "eye_expression_mode": "vary_eyelids_with_lyric_phase",
+          "face_zoom_frequency": "sparse_section_or_emotional_pivot",
+          "generic_locomotion_is_support_only": true,
+          "grounded_cue_development": "anchor_then_event_then_optional_subject_response",
+          "incidental_fixed_fixture_interaction": "forbidden",
+          "later_scene_continue_minimum_ratio": "3/4",
+          "lower_body_role": "scene_level_weight_transfer_not_required_per_shot_no_body_spins",
+          "lyric_cue_mode": "automatic",
+          "lyric_interpretation": "bounded",
+          "lyric_target_consumption": "one_scene_then_requires_new_trigger",
+          "lyric_trigger_scope": "current_scene_original_lyrics_only",
+          "noun_only_lyric_visualization": "same_scene_autonomous_visual_predicate",
+          "performance_mode": "dance_phrase",
+          "policy_id": "anime_emotional_mv",
+          "pose_contrast": "preparation_accent_release_across_scene_not_per_shot",
+          "priority_cue_scene_arc": "establish_relation_reaction_release_without_later_leakage",
+          "priority_cue_scope": "exact_current_scene_source_only",
+          "priority_lyric_cues": "entity_local_only",
+          "whole_body_emotion_mode": "one_connected_full_body_expression_phrase"
+        },
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "scene_context": {
+          "authority": "Observed baseline only. Explicit Direction and user instructions override time, lighting, weather, season, and staging. The Picture is environment evidence, never a performer or composition template.",
+          "background_picture": "<Picture 2>",
+          "environment": [
+            "夜の森の中の神社境内",
+            "鳥居",
+            "石灯籠",
+            "石畳の道",
+            "紅葉した木々",
+            "神社の建物"
+          ],
+          "time_lighting": [
+            "夜、曇り",
+            "暗い夜空と灯りの照らし出された石畳の道"
+          ]
+        },
+        "scene_context_usage": "spatial_support_only_never_activates_an_action_target",
+        "slots": [
+          {
+            "author_body": [],
+            "discovered_cues": [
+              {
+                "evidence": "暮れゆく空へ放つ",
+                "kind": "place",
+                "target": "空"
+              }
+            ],
+            "has_resolved_lyrics": true,
+            "lyric_reading_context": {
+              "after": [
+                "狐火は祈り",
+                "忘れぬことを"
+              ],
+              "before": [
+                "わらわに預けよ",
+                "異なる時を"
+              ]
+            },
+            "lyrics": [
+              {
+                "section": "FINAL_CHORUS",
+                "text": "共に歩めるなら"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "別れの定めさえ"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "愛してみせよう"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "暮れゆく空へ放つ"
+              }
+            ],
+            "priority_lyric_cues": [],
+            "scene_number": 13,
+            "slot": 1,
+            "timeline_position": "closing",
+            "total_scene_count": 16
+          },
+          {
+            "author_body": [],
+            "discovered_cues": [
+              {
+                "evidence": "狐火は祈り",
+                "kind": "effect",
+                "target": "狐火"
+              }
+            ],
+            "has_resolved_lyrics": true,
+            "lyric_reading_context": {
+              "after": [
+                "鳥居をくぐる"
+              ],
+              "before": [
+                "愛してみせよう",
+                "暮れゆく空へ放つ"
+              ]
+            },
+            "lyrics": [
+              {
+                "section": "FINAL_CHORUS",
+                "text": "狐火は祈り"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "忘れぬことを"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "救いと呼ぼう"
+              },
+              {
+                "section": "END",
+                "text": "またひとつの春が"
+              }
+            ],
+            "priority_lyric_cues": [],
+            "scene_number": 14,
+            "slot": 2,
+            "timeline_position": "closing",
+            "total_scene_count": 16
+          },
+          {
+            "author_body": [],
+            "discovered_cues": [
+              {
+                "evidence": "鳥居をくぐる",
+                "kind": "place",
+                "target": "鳥居"
+              }
+            ],
+            "has_resolved_lyrics": true,
+            "lyric_reading_context": {
+              "after": [],
+              "before": [
+                "救いと呼ぼう",
+                "またひとつの春が"
+              ]
+            },
+            "lyrics": [
+              {
+                "section": "END",
+                "text": "鳥居をくぐる"
+              }
+            ],
+            "priority_lyric_cues": [],
+            "scene_number": 15,
+            "slot": 3,
+            "timeline_position": "closing",
+            "total_scene_count": 16
+          }
+        ],
+        "subject_roster": [
+          {
+            "concept_id": "サブジェクト1",
+            "subject_ref": "<Subject 1>"
+          }
+        ],
+        "task": "visual-beats"
+      },
+      "response": "BEAT\t1\t対象=空｜根拠=暮れゆく空へ放つ｜感情=祈り｜接触=禁止｜現象=身体操作｜配置=空の上部｜可視展開=人物が手を空に向け、願い事を呟く｜身体主導=手首を回しながら指先を空に向ける｜終端=手を空に向ける姿勢\nBEAT\t2\t対象=狐火｜根拠=狐火は祈り｜感情=希望｜接触=禁止｜現象=外部自律｜配置=狐火の上部｜可視展開=狐火が空中に浮かび上がる｜身体主導=肩を軽く振る｜終端=狐火が空中に浮かぶ\nBEAT\t3\t対象=鳥居｜根拠=鳥居をくぐる｜感情=感謝｜接触=許可｜現象=身体操作｜配置=鳥居の前｜可視展開=人物が鳥居をくぐる｜身体主導=胸郭を前に倒しながら膝を曲げる｜終端=鳥居をくぐった後の姿勢\n",
+      "parsed": {
+        "issues": [],
+        "missing": [],
+        "cards": {
+          "13": {
+            "slot": 1,
+            "text": "対象=空｜根拠=暮れゆく空へ放つ｜感情=祈り｜接触=禁止｜現象=身体操作｜配置=空の上部｜可視展開=人物が手を空に向け、願い事を呟く｜身体主導=手首を回しながら指先を空に向ける｜終端=手を空に向ける姿勢",
+            "card": {
+              "valid": true,
+              "emotion": "祈り",
+              "evidence": "暮れゆく空へ放つ",
+              "target": "空",
+              "contact": "禁止",
+              "phenomenon": "身体操作",
+              "spatial_anchor": "空の上部",
+              "visible_development": "人物が手を空に向け、願い事を呟く",
+              "body_driver": "手首を回しながら指先を空に向ける",
+              "final_state": "手を空に向ける姿勢",
+              "violations": []
+            }
+          },
+          "14": {
+            "slot": 2,
+            "text": "対象=狐火｜根拠=狐火は祈り｜感情=希望｜接触=禁止｜現象=外部自律｜配置=狐火の上部｜可視展開=狐火が空中に浮かび上がる｜身体主導=肩を軽く振る｜終端=狐火が空中に浮かぶ",
+            "card": {
+              "valid": true,
+              "emotion": "希望",
+              "evidence": "狐火は祈り",
+              "target": "狐火",
+              "contact": "禁止",
+              "phenomenon": "外部自律",
+              "spatial_anchor": "狐火の上部",
+              "visible_development": "狐火が空中に浮かび上がる",
+              "body_driver": "肩を軽く振る",
+              "final_state": "狐火が空中に浮かぶ",
+              "violations": []
+            }
+          },
+          "15": {
+            "slot": 3,
+            "text": "対象=鳥居｜根拠=鳥居をくぐる｜感情=感謝｜接触=許可｜現象=身体操作｜配置=鳥居の前｜可視展開=人物が鳥居をくぐる｜身体主導=胸郭を前に倒しながら膝を曲げる｜終端=鳥居をくぐった後の姿勢",
+            "card": {
+              "valid": true,
+              "emotion": "感謝",
+              "evidence": "鳥居をくぐる",
+              "target": "鳥居",
+              "contact": "許可",
+              "phenomenon": "身体操作",
+              "spatial_anchor": "鳥居の前",
+              "visible_development": "人物が鳥居をくぐる",
+              "body_driver": "胸郭を前に倒しながら膝を曲げる",
+              "final_state": "鳥居をくぐった後の姿勢",
+              "violations": []
+            }
+          }
+        },
+        "valid": true
+      },
+      "elapsed_seconds": 6.446
+    },
+    {
+      "seed": 42,
+      "scene_number": 14,
+      "variant": "baseline",
+      "task": "scene-spine",
+      "payload": {
+        "author_body": [],
+        "choreography_palette": [
+          {
+            "body_path": "始点は両足で安定し、片手は体側、もう片手は肘を曲げて低く置く。片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける。低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る。差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める。物を持つ・渡す動作は歌詞に明示された時だけ。",
+            "id": "passing_memory"
+          },
+          {
+            "body_path": "始点は膝を伸ばし切らず胸郭を正面に保つ。後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せ、一拍のアクセント後、肩と肘を緩めて前足支持で終える。移動を伴う歩行や人物の全身回転にはしない。",
+            "id": "resolve_diagonal"
+          },
+          {
+            "body_path": "始点は両足を地面に置き、両腕を体側の異なる高さに置く。短く膝を緩めて重心を落とし、胸郭をわずかに畳み、片腕だけを胴の前へ横断させる。目を伏せた後、支持を戻しながら横断した腕を外側へほどき、胸郭を開いて視線を結ぶ。終点は開始より直立し、両腕は開き切らず異なる高さで静止する。",
+            "id": "hesitation_recovery"
+          },
+          {
+            "body_path": "始点は両足支持で腕を低く置く。短い膝の弾みで重心を一度下げ、片足へ受け渡して骨盤を横へ送る。胸郭の遅れに合わせて片腕を横から斜め上へ、反対の腕を腰より低く逆方向へ通す。顔と歌唱口が見える瞬間にアクセントを合わせ、両腕を体側へ落とし切らず、支持足を保って余韻で終える。跳躍や全身回転はしない。",
+            "id": "joy_rebound"
+          },
+          {
+            "body_path": "始点は片足に軽く荷重し、肩と腕を緩める。支持は変えず胸郭だけを小さく斜めへ向け、片肘を体側から前へほどく。半開きの目から短く閉眼し、歌詞の変化で視線を戻す。手は顔を隠さず肩より下で止め、胸郭を正面へ戻しながら同じ支持のまま終える。静かな歌詞用で、大きな踏み替えを要求しない。",
+            "id": "quiet_refrain"
+          }
+        ],
+        "entry_body_state": "",
+        "lyric_lines": [
+          "狐火は祈り",
+          "忘れぬことを",
+          "救いと呼ぼう",
+          "またひとつの春が"
+        ],
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "scene_continuation": false,
+        "scene_number": 14,
+        "slots": [
+          {
+            "editorial_role": "new_scene_establishing_edit",
+            "scene_number": 14,
+            "shot_count": 2,
+            "shot_duration_ms": 4334,
+            "shot_index": 1,
+            "slot": 1
+          },
+          {
+            "editorial_role": "face_performance_cut",
+            "scene_number": 14,
+            "shot_count": 2,
+            "shot_duration_ms": 4375,
+            "shot_index": 2,
+            "slot": 2
+          }
+        ],
+        "spine_event_kind": "non_contact_change",
+        "task": "scene-spine",
+        "visual_beat_grounding": {
+          "valid": true,
+          "emotion": "希望",
+          "evidence": "狐火は祈り",
+          "target": "狐火",
+          "contact": "禁止",
+          "phenomenon": "外部自律",
+          "spatial_anchor": "狐火の上部",
+          "visible_development": "狐火が空中に浮かび上がる",
+          "body_driver": "肩を軽く振る",
+          "final_state": "狐火が空中に浮かぶ",
+          "violations": []
+        },
+        "visual_beat": "対象=狐火｜根拠=狐火は祈り｜感情=希望｜接触=禁止｜現象=外部自律｜配置=狐火の上部｜可視展開=狐火が空中に浮かび上がる｜身体主導=肩を軽く振る｜終端=狐火が空中に浮かぶ"
+      },
+      "response": "SPINE\t1\tPHASE=event｜FROM=両足支持で腕を低く置く｜ADVANCE=短い膝の弾みで重心を下げ、片足へ受け渡す｜TO=骨盤が横へ送られ、胸郭は正面に保つ｜SHOW=lyric_target\nSPINE\t2\tPHASE=response｜FROM=骨盤が横へ送られ、胸郭は正面に保つ｜ADVANCE=肩を軽く振る｜TO=狐火が空中に浮かび上がる｜SHOW=face_eyes_mouth\n",
+      "parsed": {
+        "issues": [],
+        "missing": [],
+        "texts": {
+          "1": "PHASE=event｜FROM=両足支持で腕を低く置く｜ADVANCE=短い膝の弾みで重心を下げ、片足へ受け渡す｜TO=骨盤が横へ送られ、胸郭は正面に保つ｜SHOW=lyric_target",
+          "2": "PHASE=response｜FROM=骨盤が横へ送られ、胸郭は正面に保つ｜ADVANCE=肩を軽く振る｜TO=狐火が空中に浮かび上がる｜SHOW=face_eyes_mouth"
+        },
+        "valid": true,
+        "steps": [
+          {
+            "phase": "event",
+            "from": "両足支持で腕を低く置く",
+            "advance": "短い膝の弾みで重心を下げ、片足へ受け渡す",
+            "to": "骨盤が横へ送られ、胸郭は正面に保つ",
+            "show": "lyric_target"
+          },
+          {
+            "phase": "response",
+            "from": "骨盤が横へ送られ、胸郭は正面に保つ",
+            "advance": "肩を軽く振る",
+            "to": "狐火が空中に浮かび上がる",
+            "show": "face_eyes_mouth"
+          }
+        ]
+      },
+      "elapsed_seconds": 3.47
+    },
+    {
+      "seed": 42,
+      "scene_number": 14,
+      "variant": "pre_cue_templates",
+      "task": "visual-beats",
+      "payload": {
+        "direction": {
+          "motion": [
+            "二コマ打ち又は三コマ打ちのセルアニメとして、読めるキーポーズ、加速、短い停止、余韻を作る。Sceneごとに身体の流れを考え、その準備・アクセント・解放をShotへ時間順に分配する。振付候補が合わない場合は独自の流れを考案する。各Shotで同じ開始姿勢へ戻らない。 身体演技は支持と重心、骨盤と胸郭、左右で異なる腕の経路、目と口の反応を一連の出来事として結ぶ。全身Shotに見える支持と体幹の変化を置き、顔Shotでは既に進んだフレーズの顔と上半身の結果を見せる。歌詞の感情とCamera coverageに合う可視部分だけを使い、候補の全文を毎Shotに詰め込まない。 参照画像の立ち姿、前傾、開腕、手を腰へ戻す動き、歩行及び同じ左右反転を反復しない。人物の全身旋回やピルエットを追加せず、視点の回り込みはカメラで表す。接地位置と体の向きを保ち、個々の足指や履物を演技の主題にしない。 歌詞又は作者が選んだ対象への接触・配置・変化を優先し、候補の比喩から小道具、場所、接触相手を増やさない。外部effectは人物の手に持たせず、独立した現象として扱う。静かなSceneは小さな動きと意図ある停止を選び、毎回大きなダンスにしない。"
+          ],
+          "other": [],
+          "style": [
+            "参照画像から人物の識別要素、髪型、髪色、瞳色、衣装、配色、装飾及び身体的特徴だけを保持する。参照画像のポーズ、手足の配置、視線、画角、視点、切り抜き、左右分割又は複数パネル構成、背景、線質、塗り、陰影及びブラシ表現は継承せず、各Shotで指定された一人の人物と感情を伴う身体演技を映画的な手描きセルアニメーションとして再設計する。各Shotの先頭frameからShot固有の身体姿勢、視線、手足配置、blocking、画角、視点、camera高及び距離を使用し、参照画像そのもの又は参照構図を静止画、開始画面、plate、poster、inset、背景として表示せず、参照ポーズからの変形又は遷移も行わない。各Sceneで指定された環境、時刻及び照明だけを完成映像の世界として使用し、参照画像内の白背景、無地背景、昼光、撮影用backdrop又はpanel固有の背景と照明を描画へ持ち込まない。指定されたScene環境を人物の背後と周囲を含む画面全体へ連続させる。画面全体を一つの連続した単一カメラ画像として使用し、画角及び視点の変更は時間方向のカメラ移動又はscene cutで表す。同一frame内へ複数視点、左右並列像、内部境界、inset又はpicture-in-pictureを同時配置しない。整理された強弱のある輪郭線、明瞭な色面、制御されたセル影、背景と統合された撮影処理及びアニメ映画的な照明で描く。人物の髪、体毛、動物耳、耳内部、尾、皮膚及び衣装は通常は非発光素材として扱う。完成EMDのShotが意図的な発光演出を明示する場合はその範囲を尊重する。それ以外ではこれらを光源、発光体又は強い透過光として描かず、局所的なglow、bloom、発光halo及び白飛びを生じさせない。月光、逆光及び実在する環境光は穏やかな反射光としてだけ表現し、耳内部の露出を周囲の毛並みから不自然に上げない。 歌詞中の傷、古傷、痛み、血又は心の損傷を、歌詞文字列だけで身体の損傷へ直結させない。人物設定又は完成EMDのShotが可視の状態として明示する場合は、その意図的な演出を尊重する。Shotで明示されない傷跡、切創、痣、出血、包帯、病変、染み、刺青状の印、裂けた皮膚又は破れた衣装は追加しない。歌詞の感情は視線、頭部、肩、胴体、手、対象との距離及び終端ポーズの変化でも表現する。 人物が足袋を着用する場合、滑らかで不透明な白いsplit-toe足袋として描き、つま先は親指側と残り四趾側の二つの連続した布形状だけにまとめる。黒い木下駄は足袋の外側へ正しく装着し、鼻緒だけを指定色で描く。作者又は歌詞が足元を明示しない限り、履物又は地面を接写の主題にしない。"
+          ],
+          "time_lighting": [
+            "夜、曇り。暗い夜空と灯りの照らし出された石畳の道"
+          ]
+        },
+        "planner_policy_contract": {
+          "all_later_continue_allowed": true,
+          "arc_density": "approximately_half_of_eligible_non_face_slots",
+          "arc_energy": "large_amplitude_fast_70_90_percent",
+          "body_accent_policy": "sparse_chorus",
+          "camera_phrase": "balanced_energetic_long_arc_short_face_pivot",
+          "choreography_policy": "scene_palette",
+          "cue_card_schema": "v2_spatial_anchor_visible_development",
+          "emotional_amplitude": "exaggerated_readable_full_body",
+          "environment_inventory_is_not_action_source": true,
+          "external_effect_mode": "autonomous_unless_current_lyric_operates_it",
+          "eye_expression_mode": "vary_eyelids_with_lyric_phase",
+          "face_zoom_frequency": "sparse_section_or_emotional_pivot",
+          "generic_locomotion_is_support_only": true,
+          "grounded_cue_development": "anchor_then_event_then_optional_subject_response",
+          "incidental_fixed_fixture_interaction": "forbidden",
+          "later_scene_continue_minimum_ratio": "3/4",
+          "lower_body_role": "scene_level_weight_transfer_not_required_per_shot_no_body_spins",
+          "lyric_cue_mode": "automatic",
+          "lyric_interpretation": "bounded",
+          "lyric_target_consumption": "one_scene_then_requires_new_trigger",
+          "lyric_trigger_scope": "current_scene_original_lyrics_only",
+          "noun_only_lyric_visualization": "same_scene_autonomous_visual_predicate",
+          "performance_mode": "dance_phrase",
+          "policy_id": "anime_emotional_mv",
+          "pose_contrast": "preparation_accent_release_across_scene_not_per_shot",
+          "priority_cue_scene_arc": "establish_relation_reaction_release_without_later_leakage",
+          "priority_cue_scope": "exact_current_scene_source_only",
+          "priority_lyric_cues": "entity_local_only",
+          "whole_body_emotion_mode": "one_connected_full_body_expression_phrase"
+        },
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "scene_context": {
+          "authority": "Observed baseline only. Explicit Direction and user instructions override time, lighting, weather, season, and staging. The Picture is environment evidence, never a performer or composition template.",
+          "background_picture": "<Picture 2>",
+          "environment": [
+            "夜の森の中の神社境内",
+            "鳥居",
+            "石灯籠",
+            "石畳の道",
+            "紅葉した木々",
+            "神社の建物"
+          ],
+          "time_lighting": [
+            "夜、曇り",
+            "暗い夜空と灯りの照らし出された石畳の道"
+          ]
+        },
+        "scene_context_usage": "spatial_support_only_never_activates_an_action_target",
+        "slots": [
+          {
+            "author_body": [],
+            "discovered_cues": [
+              {
+                "evidence": "暮れゆく空へ放つ",
+                "kind": "place",
+                "target": "空"
+              }
+            ],
+            "has_resolved_lyrics": true,
+            "lyric_reading_context": {
+              "after": [
+                "狐火は祈り",
+                "忘れぬことを"
+              ],
+              "before": [
+                "わらわに預けよ",
+                "異なる時を"
+              ]
+            },
+            "lyrics": [
+              {
+                "section": "FINAL_CHORUS",
+                "text": "共に歩めるなら"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "別れの定めさえ"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "愛してみせよう"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "暮れゆく空へ放つ"
+              }
+            ],
+            "priority_lyric_cues": [],
+            "scene_number": 13,
+            "slot": 1,
+            "timeline_position": "closing",
+            "total_scene_count": 16
+          },
+          {
+            "author_body": [],
+            "discovered_cues": [
+              {
+                "evidence": "狐火は祈り",
+                "kind": "effect",
+                "target": "狐火"
+              }
+            ],
+            "has_resolved_lyrics": true,
+            "lyric_reading_context": {
+              "after": [
+                "鳥居をくぐる"
+              ],
+              "before": [
+                "愛してみせよう",
+                "暮れゆく空へ放つ"
+              ]
+            },
+            "lyrics": [
+              {
+                "section": "FINAL_CHORUS",
+                "text": "狐火は祈り"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "忘れぬことを"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "救いと呼ぼう"
+              },
+              {
+                "section": "END",
+                "text": "またひとつの春が"
+              }
+            ],
+            "priority_lyric_cues": [],
+            "scene_number": 14,
+            "slot": 2,
+            "timeline_position": "closing",
+            "total_scene_count": 16
+          },
+          {
+            "author_body": [],
+            "discovered_cues": [
+              {
+                "evidence": "鳥居をくぐる",
+                "kind": "place",
+                "target": "鳥居"
+              }
+            ],
+            "has_resolved_lyrics": true,
+            "lyric_reading_context": {
+              "after": [],
+              "before": [
+                "救いと呼ぼう",
+                "またひとつの春が"
+              ]
+            },
+            "lyrics": [
+              {
+                "section": "END",
+                "text": "鳥居をくぐる"
+              }
+            ],
+            "priority_lyric_cues": [],
+            "scene_number": 15,
+            "slot": 3,
+            "timeline_position": "closing",
+            "total_scene_count": 16
+          }
+        ],
+        "subject_roster": [
+          {
+            "concept_id": "サブジェクト1",
+            "subject_ref": "<Subject 1>"
+          }
+        ],
+        "task": "visual-beats",
+        "motion_templates": [
+          "始点は両足で安定し、片手は体側、もう片手は肘を曲げて低く置く。片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける。低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る。差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める。物を持つ・渡す動作は歌詞に明示された時だけ。",
+          "始点は膝を伸ばし切らず胸郭を正面に保つ。後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せ、一拍のアクセント後、肩と肘を緩めて前足支持で終える。移動を伴う歩行や人物の全身回転にはしない。"
+        ]
+      },
+      "response": "BEAT\t1\t対象=空｜根拠=暮れゆく空へ放つ｜感情=祈り｜接触=禁止｜現象=身体操作｜配置=空の上部｜可視展開=人物が両手を上げて空へ向け、指先で光を描く｜身体主導=右肩を前に出し左肘を後ろへ引く、目線は上向き｜終端=両手を下げる\nBEAT\t2\t対象=狐火｜根拠=狐火は祈り｜感情=願い｜接触=禁止｜現象=外部自律｜配置=狐火の上部｜可視展開=狐火が空に浮かび上がる｜身体主導=右肩を前に出し左肘を後ろへ引く、目線は上向き｜終端=両手を下げる\nBEAT\t3\t対象=鳥居｜根拠=鳥居をくぐる｜感情=通過｜接触=許可｜現象=身体操作｜配置=鳥居の前部｜可視展開=人物が鳥居をくぐる｜身体主導=右肩を前に出し左肘を後ろへ引く、目線は上向き｜終端=両手を下げる\n",
+      "parsed": {
+        "issues": [],
+        "missing": [],
+        "cards": {
+          "13": {
+            "slot": 1,
+            "text": "対象=空｜根拠=暮れゆく空へ放つ｜感情=祈り｜接触=禁止｜現象=身体操作｜配置=空の上部｜可視展開=人物が両手を上げて空へ向け、指先で光を描く｜身体主導=右肩を前に出し左肘を後ろへ引く、目線は上向き｜終端=両手を下げる",
+            "card": {
+              "valid": true,
+              "emotion": "祈り",
+              "evidence": "暮れゆく空へ放つ",
+              "target": "空",
+              "contact": "禁止",
+              "phenomenon": "身体操作",
+              "spatial_anchor": "空の上部",
+              "visible_development": "人物が両手を上げて空へ向け、指先で光を描く",
+              "body_driver": "右肩を前に出し左肘を後ろへ引く、目線は上向き",
+              "final_state": "両手を下げる",
+              "violations": []
+            }
+          },
+          "14": {
+            "slot": 2,
+            "text": "対象=狐火｜根拠=狐火は祈り｜感情=願い｜接触=禁止｜現象=外部自律｜配置=狐火の上部｜可視展開=狐火が空に浮かび上がる｜身体主導=右肩を前に出し左肘を後ろへ引く、目線は上向き｜終端=両手を下げる",
+            "card": {
+              "valid": true,
+              "emotion": "願い",
+              "evidence": "狐火は祈り",
+              "target": "狐火",
+              "contact": "禁止",
+              "phenomenon": "外部自律",
+              "spatial_anchor": "狐火の上部",
+              "visible_development": "狐火が空に浮かび上がる",
+              "body_driver": "右肩を前に出し左肘を後ろへ引く、目線は上向き",
+              "final_state": "両手を下げる",
+              "violations": []
+            }
+          },
+          "15": {
+            "slot": 3,
+            "text": "対象=鳥居｜根拠=鳥居をくぐる｜感情=通過｜接触=許可｜現象=身体操作｜配置=鳥居の前部｜可視展開=人物が鳥居をくぐる｜身体主導=右肩を前に出し左肘を後ろへ引く、目線は上向き｜終端=両手を下げる",
+            "card": {
+              "valid": true,
+              "emotion": "通過",
+              "evidence": "鳥居をくぐる",
+              "target": "鳥居",
+              "contact": "許可",
+              "phenomenon": "身体操作",
+              "spatial_anchor": "鳥居の前部",
+              "visible_development": "人物が鳥居をくぐる",
+              "body_driver": "右肩を前に出し左肘を後ろへ引く、目線は上向き",
+              "final_state": "両手を下げる",
+              "violations": []
+            }
+          }
+        },
+        "valid": true
+      },
+      "elapsed_seconds": 7.754
+    },
+    {
+      "seed": 42,
+      "scene_number": 14,
+      "variant": "pre_cue_templates",
+      "task": "scene-spine",
+      "payload": {
+        "author_body": [],
+        "choreography_palette": [
+          {
+            "body_path": "始点は両足で安定し、片手は体側、もう片手は肘を曲げて低く置く。片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける。低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る。差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める。物を持つ・渡す動作は歌詞に明示された時だけ。",
+            "id": "passing_memory"
+          },
+          {
+            "body_path": "始点は膝を伸ばし切らず胸郭を正面に保つ。後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せ、一拍のアクセント後、肩と肘を緩めて前足支持で終える。移動を伴う歩行や人物の全身回転にはしない。",
+            "id": "resolve_diagonal"
+          },
+          {
+            "body_path": "始点は両足を地面に置き、両腕を体側の異なる高さに置く。短く膝を緩めて重心を落とし、胸郭をわずかに畳み、片腕だけを胴の前へ横断させる。目を伏せた後、支持を戻しながら横断した腕を外側へほどき、胸郭を開いて視線を結ぶ。終点は開始より直立し、両腕は開き切らず異なる高さで静止する。",
+            "id": "hesitation_recovery"
+          },
+          {
+            "body_path": "始点は両足支持で腕を低く置く。短い膝の弾みで重心を一度下げ、片足へ受け渡して骨盤を横へ送る。胸郭の遅れに合わせて片腕を横から斜め上へ、反対の腕を腰より低く逆方向へ通す。顔と歌唱口が見える瞬間にアクセントを合わせ、両腕を体側へ落とし切らず、支持足を保って余韻で終える。跳躍や全身回転はしない。",
+            "id": "joy_rebound"
+          },
+          {
+            "body_path": "始点は片足に軽く荷重し、肩と腕を緩める。支持は変えず胸郭だけを小さく斜めへ向け、片肘を体側から前へほどく。半開きの目から短く閉眼し、歌詞の変化で視線を戻す。手は顔を隠さず肩より下で止め、胸郭を正面へ戻しながら同じ支持のまま終える。静かな歌詞用で、大きな踏み替えを要求しない。",
+            "id": "quiet_refrain"
+          }
+        ],
+        "entry_body_state": "",
+        "lyric_lines": [
+          "狐火は祈り",
+          "忘れぬことを",
+          "救いと呼ぼう",
+          "またひとつの春が"
+        ],
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "scene_continuation": false,
+        "scene_number": 14,
+        "slots": [
+          {
+            "editorial_role": "new_scene_establishing_edit",
+            "scene_number": 14,
+            "shot_count": 2,
+            "shot_duration_ms": 4334,
+            "shot_index": 1,
+            "slot": 1
+          },
+          {
+            "editorial_role": "face_performance_cut",
+            "scene_number": 14,
+            "shot_count": 2,
+            "shot_duration_ms": 4375,
+            "shot_index": 2,
+            "slot": 2
+          }
+        ],
+        "spine_event_kind": "non_contact_change",
+        "task": "scene-spine",
+        "visual_beat_grounding": {
+          "valid": true,
+          "emotion": "願い",
+          "evidence": "狐火は祈り",
+          "target": "狐火",
+          "contact": "禁止",
+          "phenomenon": "外部自律",
+          "spatial_anchor": "狐火の上部",
+          "visible_development": "狐火が空に浮かび上がる",
+          "body_driver": "右肩を前に出し左肘を後ろへ引く、目線は上向き",
+          "final_state": "両手を下げる",
+          "violations": []
+        },
+        "visual_beat": "対象=狐火｜根拠=狐火は祈り｜感情=願い｜接触=禁止｜現象=外部自律｜配置=狐火の上部｜可視展開=狐火が空に浮かび上がる｜身体主導=右肩を前に出し左肘を後ろへ引く、目線は上向き｜終端=両手を下げる"
+      },
+      "response": "SPINE\t1\tPHASE=event｜FROM=両足支持で腕を低く置く｜ADVANCE=短い膝の弾みで重心を下げ、片足へ受け渡して骨盤を横へ送る｜TO=胸郭が斜めへ向け、片腕を横から斜め上へ、反対の腕を腰より低く逆方向へ通す｜SHOW=face_eyes_mouth\nSPINE\t2\tPHASE=response｜FROM=胸郭が斜めへ向け、片腕を横から斜‐め上へ、反対の腕を腰より低く逆方向へ通す｜ADVANCE=顔と歌唱口が見える瞬間にアクセントを合わせ、両腕を体側へ落とし切らず、支持足を保って余韻で終える｜TO=両手を下げる｜SHOW=face_eyes_mouth\n",
+      "parsed": {
+        "issues": [],
+        "missing": [],
+        "texts": {
+          "1": "PHASE=event｜FROM=両足支持で腕を低く置く｜ADVANCE=短い膝の弾みで重心を下げ、片足へ受け渡して骨盤を横へ送る｜TO=胸郭が斜めへ向け、片腕を横から斜め上へ、反対の腕を腰より低く逆方向へ通す｜SHOW=face_eyes_mouth",
+          "2": "PHASE=response｜FROM=胸郭が斜めへ向け、片腕を横から斜‐め上へ、反対の腕を腰より低く逆方向へ通す｜ADVANCE=顔と歌唱口が見える瞬間にアクセントを合わせ、両腕を体側へ落とし切らず、支持足を保って余韻で終える｜TO=両手を下げる｜SHOW=face_eyes_mouth"
+        },
+        "valid": true,
+        "steps": [
+          {
+            "phase": "event",
+            "from": "両足支持で腕を低く置く",
+            "advance": "短い膝の弾みで重心を下げ、片足へ受け渡して骨盤を横へ送る",
+            "to": "胸郭が斜めへ向け、片腕を横から斜め上へ、反対の腕を腰より低く逆方向へ通す",
+            "show": "face_eyes_mouth"
+          },
+          {
+            "phase": "response",
+            "from": "胸郭が斜めへ向け、片腕を横から斜‐め上へ、反対の腕を腰より低く逆方向へ通す",
+            "advance": "顔と歌唱口が見える瞬間にアクセントを合わせ、両腕を体側へ落とし切らず、支持足を保って余韻で終える",
+            "to": "両手を下げる",
+            "show": "face_eyes_mouth"
+          }
+        ]
+      },
+      "elapsed_seconds": 5.638
+    },
+    {
+      "seed": 43,
+      "scene_number": 11,
+      "variant": "baseline",
+      "task": "visual-beats",
+      "payload": {
+        "direction": {
+          "motion": [
+            "二コマ打ち又は三コマ打ちのセルアニメとして、読めるキーポーズ、加速、短い停止、余韻を作る。Sceneごとに身体の流れを考え、その準備・アクセント・解放をShotへ時間順に分配する。振付候補が合わない場合は独自の流れを考案する。各Shotで同じ開始姿勢へ戻らない。 身体演技は支持と重心、骨盤と胸郭、左右で異なる腕の経路、目と口の反応を一連の出来事として結ぶ。全身Shotに見える支持と体幹の変化を置き、顔Shotでは既に進んだフレーズの顔と上半身の結果を見せる。歌詞の感情とCamera coverageに合う可視部分だけを使い、候補の全文を毎Shotに詰め込まない。 参照画像の立ち姿、前傾、開腕、手を腰へ戻す動き、歩行及び同じ左右反転を反復しない。人物の全身旋回やピルエットを追加せず、視点の回り込みはカメラで表す。接地位置と体の向きを保ち、個々の足指や履物を演技の主題にしない。 歌詞又は作者が選んだ対象への接触・配置・変化を優先し、候補の比喩から小道具、場所、接触相手を増やさない。外部effectは人物の手に持たせず、独立した現象として扱う。静かなSceneは小さな動きと意図ある停止を選び、毎回大きなダンスにしない。"
+          ],
+          "other": [],
+          "style": [
+            "参照画像から人物の識別要素、髪型、髪色、瞳色、衣装、配色、装飾及び身体的特徴だけを保持する。参照画像のポーズ、手足の配置、視線、画角、視点、切り抜き、左右分割又は複数パネル構成、背景、線質、塗り、陰影及びブラシ表現は継承せず、各Shotで指定された一人の人物と感情を伴う身体演技を映画的な手描きセルアニメーションとして再設計する。各Shotの先頭frameからShot固有の身体姿勢、視線、手足配置、blocking、画角、視点、camera高及び距離を使用し、参照画像そのもの又は参照構図を静止画、開始画面、plate、poster、inset、背景として表示せず、参照ポーズからの変形又は遷移も行わない。各Sceneで指定された環境、時刻及び照明だけを完成映像の世界として使用し、参照画像内の白背景、無地背景、昼光、撮影用backdrop又はpanel固有の背景と照明を描画へ持ち込まない。指定されたScene環境を人物の背後と周囲を含む画面全体へ連続させる。画面全体を一つの連続した単一カメラ画像として使用し、画角及び視点の変更は時間方向のカメラ移動又はscene cutで表す。同一frame内へ複数視点、左右並列像、内部境界、inset又はpicture-in-pictureを同時配置しない。整理された強弱のある輪郭線、明瞭な色面、制御されたセル影、背景と統合された撮影処理及びアニメ映画的な照明で描く。人物の髪、体毛、動物耳、耳内部、尾、皮膚及び衣装は通常は非発光素材として扱う。完成EMDのShotが意図的な発光演出を明示する場合はその範囲を尊重する。それ以外ではこれらを光源、発光体又は強い透過光として描かず、局所的なglow、bloom、発光halo及び白飛びを生じさせない。月光、逆光及び実在する環境光は穏やかな反射光としてだけ表現し、耳内部の露出を周囲の毛並みから不自然に上げない。 歌詞中の傷、古傷、痛み、血又は心の損傷を、歌詞文字列だけで身体の損傷へ直結させない。人物設定又は完成EMDのShotが可視の状態として明示する場合は、その意図的な演出を尊重する。Shotで明示されない傷跡、切創、痣、出血、包帯、病変、染み、刺青状の印、裂けた皮膚又は破れた衣装は追加しない。歌詞の感情は視線、頭部、肩、胴体、手、対象との距離及び終端ポーズの変化でも表現する。 人物が足袋を着用する場合、滑らかで不透明な白いsplit-toe足袋として描き、つま先は親指側と残り四趾側の二つの連続した布形状だけにまとめる。黒い木下駄は足袋の外側へ正しく装着し、鼻緒だけを指定色で描く。作者又は歌詞が足元を明示しない限り、履物又は地面を接写の主題にしない。"
+          ],
+          "time_lighting": [
+            "夜、曇り。暗い夜空と灯りの照らし出された石畳の道"
+          ]
+        },
+        "planner_policy_contract": {
+          "all_later_continue_allowed": true,
+          "arc_density": "approximately_half_of_eligible_non_face_slots",
+          "arc_energy": "large_amplitude_fast_70_90_percent",
+          "body_accent_policy": "sparse_chorus",
+          "camera_phrase": "balanced_energetic_long_arc_short_face_pivot",
+          "choreography_policy": "scene_palette",
+          "cue_card_schema": "v2_spatial_anchor_visible_development",
+          "emotional_amplitude": "exaggerated_readable_full_body",
+          "environment_inventory_is_not_action_source": true,
+          "external_effect_mode": "autonomous_unless_current_lyric_operates_it",
+          "eye_expression_mode": "vary_eyelids_with_lyric_phase",
+          "face_zoom_frequency": "sparse_section_or_emotional_pivot",
+          "generic_locomotion_is_support_only": true,
+          "grounded_cue_development": "anchor_then_event_then_optional_subject_response",
+          "incidental_fixed_fixture_interaction": "forbidden",
+          "later_scene_continue_minimum_ratio": "3/4",
+          "lower_body_role": "scene_level_weight_transfer_not_required_per_shot_no_body_spins",
+          "lyric_cue_mode": "automatic",
+          "lyric_interpretation": "bounded",
+          "lyric_target_consumption": "one_scene_then_requires_new_trigger",
+          "lyric_trigger_scope": "current_scene_original_lyrics_only",
+          "noun_only_lyric_visualization": "same_scene_autonomous_visual_predicate",
+          "performance_mode": "dance_phrase",
+          "policy_id": "anime_emotional_mv",
+          "pose_contrast": "preparation_accent_release_across_scene_not_per_shot",
+          "priority_cue_scene_arc": "establish_relation_reaction_release_without_later_leakage",
+          "priority_cue_scope": "exact_current_scene_source_only",
+          "priority_lyric_cues": "entity_local_only",
+          "whole_body_emotion_mode": "one_connected_full_body_expression_phrase"
+        },
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "scene_context": {
+          "authority": "Observed baseline only. Explicit Direction and user instructions override time, lighting, weather, season, and staging. The Picture is environment evidence, never a performer or composition template.",
+          "background_picture": "<Picture 2>",
+          "environment": [
+            "夜の森の中の神社境内",
+            "鳥居",
+            "石灯籠",
+            "石畳の道",
+            "紅葉した木々",
+            "神社の建物"
+          ],
+          "time_lighting": [
+            "夜、曇り",
+            "暗い夜空と灯りの照らし出された石畳の道"
+          ]
+        },
+        "scene_context_usage": "spatial_support_only_never_activates_an_action_target",
+        "slots": [
+          {
+            "author_body": [],
+            "discovered_cues": [],
+            "has_resolved_lyrics": true,
+            "lyric_reading_context": {
+              "after": [
+                "自由なのか",
+                "それでも新しい足音が"
+              ],
+              "before": [
+                "狐火へ問う",
+                "忘れぬことは"
+              ]
+            },
+            "lyrics": [
+              {
+                "section": "CHORUS",
+                "text": "救いか"
+              },
+              {
+                "section": "CHORUS",
+                "text": "罰か"
+              },
+              {
+                "section": "SHORT_BRIDGE",
+                "text": "終わりがあるから"
+              },
+              {
+                "section": "SHORT_BRIDGE",
+                "text": "今日を選べる"
+              },
+              {
+                "section": "SHORT_BRIDGE",
+                "text": "終われぬ命は"
+              }
+            ],
+            "priority_lyric_cues": [],
+            "scene_number": 10,
+            "slot": 1,
+            "timeline_position": "middle",
+            "total_scene_count": 16
+          },
+          {
+            "author_body": [],
+            "discovered_cues": [
+              {
+                "evidence": "またこの社へ続くなら",
+                "kind": "place",
+                "target": "社"
+              }
+            ],
+            "has_resolved_lyrics": true,
+            "lyric_reading_context": {
+              "after": [
+                "千年鳥居を",
+                "くぐるそなたよ"
+              ],
+              "before": [
+                "今日を選べる",
+                "終われぬ命は"
+              ]
+            },
+            "lyrics": [
+              {
+                "section": "SHORT_BRIDGE",
+                "text": "自由なのか"
+              },
+              {
+                "section": "SHORT_BRIDGE",
+                "text": "それでも新しい足音が"
+              },
+              {
+                "section": "SHORT_BRIDGE",
+                "text": "またこの社へ続くなら"
+              }
+            ],
+            "priority_lyric_cues": [],
+            "scene_number": 11,
+            "slot": 2,
+            "timeline_position": "middle",
+            "total_scene_count": 16
+          },
+          {
+            "author_body": [],
+            "discovered_cues": [
+              {
+                "evidence": "千年鳥居を",
+                "kind": "place",
+                "target": "鳥居"
+              }
+            ],
+            "has_resolved_lyrics": true,
+            "lyric_reading_context": {
+              "after": [
+                "共に歩めるなら",
+                "別れの定めさえ"
+              ],
+              "before": [
+                "それでも新しい足音が",
+                "またこの社へ続くなら"
+              ]
+            },
+            "lyrics": [
+              {
+                "section": "FINAL_CHORUS",
+                "text": "千年鳥居を"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "くぐるそなたよ"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "今この刹那を"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "わらわに預けよ"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "異なる時を"
+              }
+            ],
+            "priority_lyric_cues": [],
+            "scene_number": 12,
+            "slot": 3,
+            "timeline_position": "middle",
+            "total_scene_count": 16
+          }
+        ],
+        "subject_roster": [
+          {
+            "concept_id": "サブジェクト1",
+            "subject_ref": "<Subject 1>"
+          }
+        ],
+        "task": "visual-beats"
+      },
+      "response": "BEAT\t1\t対象=なし｜根拠=なし｜感情=ためらい｜接触=禁止｜現象=なし｜配置=なし｜可視展開=なし｜身体主導=肩を左右に揺らし、胸郭を前後に動かす｜終端=手を顔の前で軽く止め、目を閉じる\nBEAT\t2\t対象=社｜根拠=またこの社へ続くなら｜感情=希望｜接触=許可｜現象=身体操作｜配置=社の前｜可視展開=人物が石畳の道を歩き、鳥居の下へ向かう｜身体主導=右肩を上げ、左肘を曲げて前へ出す｜終端=右手を胸の前で軽く止め、目を閉じる\nBEAT\t3\t対象=鳥居｜根拠=千年鳥居を｜感情=決意｜接触=許可｜現象=身体操作｜配置=鳥居の下｜可視展開=人物が鳥居の横を歩き、その上をくぐる｜身体主導=左肩を上げ、右肘を曲げて前へ出す｜終端=左手を胸の前で軽く止め、目を閉じる\n",
+      "parsed": {
+        "issues": [],
+        "missing": [],
+        "cards": {
+          "10": {
+            "slot": 1,
+            "text": "対象=なし｜根拠=なし｜感情=ためらい｜接触=禁止｜現象=なし｜配置=なし｜可視展開=なし｜身体主導=肩を左右に揺らし、胸郭を前後に動かす｜終端=手を顔の前で軽く止め、目を閉じる",
+            "card": {
+              "valid": true,
+              "emotion": "ためらい",
+              "evidence": "なし",
+              "target": "なし",
+              "contact": "禁止",
+              "phenomenon": "なし",
+              "spatial_anchor": "なし",
+              "visible_development": "なし",
+              "body_driver": "肩を左右に揺らし、胸郭を前後に動かす",
+              "final_state": "手を顔の前で軽く止め、目を閉じる",
+              "violations": []
+            }
+          },
+          "11": {
+            "slot": 2,
+            "text": "対象=社｜根拠=またこの社へ続くなら｜感情=希望｜接触=許可｜現象=身体操作｜配置=社の前｜可視展開=人物が石畳の道を歩き、鳥居の下へ向かう｜身体主導=右肩を上げ、左肘を曲げて前へ出す｜終端=右手を胸の前で軽く止め、目を閉じる",
+            "card": {
+              "valid": true,
+              "emotion": "希望",
+              "evidence": "またこの社へ続くなら",
+              "target": "社",
+              "contact": "許可",
+              "phenomenon": "身体操作",
+              "spatial_anchor": "社の前",
+              "visible_development": "人物が石畳の道を歩き、鳥居の下へ向かう",
+              "body_driver": "右肩を上げ、左肘を曲げて前へ出す",
+              "final_state": "右手を胸の前で軽く止め、目を閉じる",
+              "violations": []
+            }
+          },
+          "12": {
+            "slot": 3,
+            "text": "対象=鳥居｜根拠=千年鳥居を｜感情=決意｜接触=許可｜現象=身体操作｜配置=鳥居の下｜可視展開=人物が鳥居の横を歩き、その上をくぐる｜身体主導=左肩を上げ、右肘を曲げて前へ出す｜終端=左手を胸の前で軽く止め、目を閉じる",
+            "card": {
+              "valid": true,
+              "emotion": "決意",
+              "evidence": "千年鳥居を",
+              "target": "鳥居",
+              "contact": "許可",
+              "phenomenon": "身体操作",
+              "spatial_anchor": "鳥居の下",
+              "visible_development": "人物が鳥居の横を歩き、その上をくぐる",
+              "body_driver": "左肩を上げ、右肘を曲げて前へ出す",
+              "final_state": "左手を胸の前で軽く止め、目を閉じる",
+              "violations": []
+            }
+          }
+        },
+        "valid": true
+      },
+      "elapsed_seconds": 7.6
+    },
+    {
+      "seed": 43,
+      "scene_number": 11,
+      "variant": "baseline",
+      "task": "scene-spine",
+      "payload": {
+        "author_body": [],
+        "choreography_palette": [
+          {
+            "body_path": "始点は両足で安定し、片手は体側、もう片手は肘を曲げて低く置く。片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける。低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る。差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める。物を持つ・渡す動作は歌詞に明示された時だけ。",
+            "id": "passing_memory"
+          },
+          {
+            "body_path": "始点は膝を伸ばし切らず胸郭を正面に保つ。後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せ、一拍のアクセント後、肩と肘を緩めて前足支持で終える。移動を伴う歩行や人物の全身回転にはしない。",
+            "id": "resolve_diagonal"
+          },
+          {
+            "body_path": "始点は両足を地面に置き、両腕を体側の異なる高さに置く。短く膝を緩めて重心を落とし、胸郭をわずかに畳み、片腕だけを胴の前へ横断させる。目を伏せた後、支持を戻しながら横断した腕を外側へほどき、胸郭を開いて視線を結ぶ。終点は開始より直立し、両腕は開き切らず異なる高さで静止する。",
+            "id": "hesitation_recovery"
+          },
+          {
+            "body_path": "始点は両足支持で腕を低く置く。短い膝の弾みで重心を一度下げ、片足へ受け渡して骨盤を横へ送る。胸郭の遅れに合わせて片腕を横から斜め上へ、反対の腕を腰より低く逆方向へ通す。顔と歌唱口が見える瞬間にアクセントを合わせ、両腕を体側へ落とし切らず、支持足を保って余韻で終える。跳躍や全身回転はしない。",
+            "id": "joy_rebound"
+          },
+          {
+            "body_path": "始点は片足に軽く荷重し、肩と腕を緩める。支持は変えず胸郭だけを小さく斜めへ向け、片肘を体側から前へほどく。半開きの目から短く閉眼し、歌詞の変化で視線を戻す。手は顔を隠さず肩より下で止め、胸郭を正面へ戻しながら同じ支持のまま終える。静かな歌詞用で、大きな踏み替えを要求しない。",
+            "id": "quiet_refrain"
+          }
+        ],
+        "entry_body_state": "肩は右に傾き、胸郭は左に動いた状態で目線は左へ向けたまま手首は右へ回した姿勢",
+        "lyric_lines": [
+          "自由なのか",
+          "それでも新しい足音が",
+          "またこの社へ続くなら"
+        ],
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "scene_continuation": true,
+        "scene_number": 11,
+        "slots": [
+          {
+            "editorial_role": "continuity_bridge",
+            "scene_number": 11,
+            "shot_count": 2,
+            "shot_duration_ms": 4709,
+            "shot_index": 1,
+            "slot": 1
+          },
+          {
+            "editorial_role": "upper_body_performance_coverage",
+            "scene_number": 11,
+            "shot_count": 2,
+            "shot_duration_ms": 5208,
+            "shot_index": 2,
+            "slot": 2
+          }
+        ],
+        "spine_event_kind": "physical_contact",
+        "task": "scene-spine",
+        "visual_beat_grounding": {
+          "valid": true,
+          "emotion": "希望",
+          "evidence": "またこの社へ続くなら",
+          "target": "社",
+          "contact": "許可",
+          "phenomenon": "身体操作",
+          "spatial_anchor": "社の前",
+          "visible_development": "人物が石畳の道を歩き、鳥居の下へ向かう",
+          "body_driver": "右肩を上げ、左肘を曲げて前へ出す",
+          "final_state": "右手を胸の前で軽く止め、目を閉じる",
+          "violations": []
+        },
+        "visual_beat": "対象=社｜根拠=またこの社へ続くなら｜感情=希望｜接触=許可｜現象=身体操作｜配置=社の前｜可視展開=人物が石畳の道を歩き、鳥居の下へ向かう｜身体主導=右肩を上げ、左肘を曲げて前へ出す｜終端=右手を胸の前で軽く止め、目を閉じる"
+      },
+      "response": "SPINE\t1\tPHASE=event｜FROM=肩は右に傾き、胸郭は左に動いた状態で目線は左へ向けたまま手首は右へ回した姿勢｜ADVANCE=右肩を上げ、左肘を曲げて前へ出す｜TO=右手を胸の前で軽く止め、目を閉じる｜SHOW=lyric_target_hands\nSPINE\t2\tPHASE=response｜FROM=右手を胸の前で軽く止め、目を閉じる｜ADVANCE=歩きながら社へ近づく｜TO=社の前で立ち止まり、目線は社へ向けたまま手は体側｜SHOW=lyric_target\n",
+      "parsed": {
+        "issues": [],
+        "missing": [],
+        "texts": {
+          "1": "PHASE=event｜FROM=肩は右に傾き、胸郭は左に動いた状態で目線は左へ向けたまま手首は右へ回した姿勢｜ADVANCE=右肩を上げ、左肘を曲げて前へ出す｜TO=右手を胸の前で軽く止め、目を閉じる｜SHOW=lyric_target_hands",
+          "2": "PHASE=response｜FROM=右手を胸の前で軽く止め、目を閉じる｜ADVANCE=歩きながら社へ近づく｜TO=社の前で立ち止まり、目線は社へ向けたまま手は体側｜SHOW=lyric_target"
+        },
+        "valid": true,
+        "steps": [
+          {
+            "phase": "event",
+            "from": "肩は右に傾き、胸郭は左に動いた状態で目線は左へ向けたまま手首は右へ回した姿勢",
+            "advance": "右肩を上げ、左肘を曲げて前へ出す",
+            "to": "右手を胸の前で軽く止め、目を閉じる",
+            "show": "lyric_target_hands"
+          },
+          {
+            "phase": "response",
+            "from": "右手を胸の前で軽く止め、目を閉じる",
+            "advance": "歩きながら社へ近づく",
+            "to": "社の前で立ち止まり、目線は社へ向けたまま手は体側",
+            "show": "lyric_target"
+          }
+        ]
+      },
+      "elapsed_seconds": 4.672
+    },
+    {
+      "seed": 43,
+      "scene_number": 11,
+      "variant": "pre_cue_templates",
+      "task": "visual-beats",
+      "payload": {
+        "direction": {
+          "motion": [
+            "二コマ打ち又は三コマ打ちのセルアニメとして、読めるキーポーズ、加速、短い停止、余韻を作る。Sceneごとに身体の流れを考え、その準備・アクセント・解放をShotへ時間順に分配する。振付候補が合わない場合は独自の流れを考案する。各Shotで同じ開始姿勢へ戻らない。 身体演技は支持と重心、骨盤と胸郭、左右で異なる腕の経路、目と口の反応を一連の出来事として結ぶ。全身Shotに見える支持と体幹の変化を置き、顔Shotでは既に進んだフレーズの顔と上半身の結果を見せる。歌詞の感情とCamera coverageに合う可視部分だけを使い、候補の全文を毎Shotに詰め込まない。 参照画像の立ち姿、前傾、開腕、手を腰へ戻す動き、歩行及び同じ左右反転を反復しない。人物の全身旋回やピルエットを追加せず、視点の回り込みはカメラで表す。接地位置と体の向きを保ち、個々の足指や履物を演技の主題にしない。 歌詞又は作者が選んだ対象への接触・配置・変化を優先し、候補の比喩から小道具、場所、接触相手を増やさない。外部effectは人物の手に持たせず、独立した現象として扱う。静かなSceneは小さな動きと意図ある停止を選び、毎回大きなダンスにしない。"
+          ],
+          "other": [],
+          "style": [
+            "参照画像から人物の識別要素、髪型、髪色、瞳色、衣装、配色、装飾及び身体的特徴だけを保持する。参照画像のポーズ、手足の配置、視線、画角、視点、切り抜き、左右分割又は複数パネル構成、背景、線質、塗り、陰影及びブラシ表現は継承せず、各Shotで指定された一人の人物と感情を伴う身体演技を映画的な手描きセルアニメーションとして再設計する。各Shotの先頭frameからShot固有の身体姿勢、視線、手足配置、blocking、画角、視点、camera高及び距離を使用し、参照画像そのもの又は参照構図を静止画、開始画面、plate、poster、inset、背景として表示せず、参照ポーズからの変形又は遷移も行わない。各Sceneで指定された環境、時刻及び照明だけを完成映像の世界として使用し、参照画像内の白背景、無地背景、昼光、撮影用backdrop又はpanel固有の背景と照明を描画へ持ち込まない。指定されたScene環境を人物の背後と周囲を含む画面全体へ連続させる。画面全体を一つの連続した単一カメラ画像として使用し、画角及び視点の変更は時間方向のカメラ移動又はscene cutで表す。同一frame内へ複数視点、左右並列像、内部境界、inset又はpicture-in-pictureを同時配置しない。整理された強弱のある輪郭線、明瞭な色面、制御されたセル影、背景と統合された撮影処理及びアニメ映画的な照明で描く。人物の髪、体毛、動物耳、耳内部、尾、皮膚及び衣装は通常は非発光素材として扱う。完成EMDのShotが意図的な発光演出を明示する場合はその範囲を尊重する。それ以外ではこれらを光源、発光体又は強い透過光として描かず、局所的なglow、bloom、発光halo及び白飛びを生じさせない。月光、逆光及び実在する環境光は穏やかな反射光としてだけ表現し、耳内部の露出を周囲の毛並みから不自然に上げない。 歌詞中の傷、古傷、痛み、血又は心の損傷を、歌詞文字列だけで身体の損傷へ直結させない。人物設定又は完成EMDのShotが可視の状態として明示する場合は、その意図的な演出を尊重する。Shotで明示されない傷跡、切創、痣、出血、包帯、病変、染み、刺青状の印、裂けた皮膚又は破れた衣装は追加しない。歌詞の感情は視線、頭部、肩、胴体、手、対象との距離及び終端ポーズの変化でも表現する。 人物が足袋を着用する場合、滑らかで不透明な白いsplit-toe足袋として描き、つま先は親指側と残り四趾側の二つの連続した布形状だけにまとめる。黒い木下駄は足袋の外側へ正しく装着し、鼻緒だけを指定色で描く。作者又は歌詞が足元を明示しない限り、履物又は地面を接写の主題にしない。"
+          ],
+          "time_lighting": [
+            "夜、曇り。暗い夜空と灯りの照らし出された石畳の道"
+          ]
+        },
+        "planner_policy_contract": {
+          "all_later_continue_allowed": true,
+          "arc_density": "approximately_half_of_eligible_non_face_slots",
+          "arc_energy": "large_amplitude_fast_70_90_percent",
+          "body_accent_policy": "sparse_chorus",
+          "camera_phrase": "balanced_energetic_long_arc_short_face_pivot",
+          "choreography_policy": "scene_palette",
+          "cue_card_schema": "v2_spatial_anchor_visible_development",
+          "emotional_amplitude": "exaggerated_readable_full_body",
+          "environment_inventory_is_not_action_source": true,
+          "external_effect_mode": "autonomous_unless_current_lyric_operates_it",
+          "eye_expression_mode": "vary_eyelids_with_lyric_phase",
+          "face_zoom_frequency": "sparse_section_or_emotional_pivot",
+          "generic_locomotion_is_support_only": true,
+          "grounded_cue_development": "anchor_then_event_then_optional_subject_response",
+          "incidental_fixed_fixture_interaction": "forbidden",
+          "later_scene_continue_minimum_ratio": "3/4",
+          "lower_body_role": "scene_level_weight_transfer_not_required_per_shot_no_body_spins",
+          "lyric_cue_mode": "automatic",
+          "lyric_interpretation": "bounded",
+          "lyric_target_consumption": "one_scene_then_requires_new_trigger",
+          "lyric_trigger_scope": "current_scene_original_lyrics_only",
+          "noun_only_lyric_visualization": "same_scene_autonomous_visual_predicate",
+          "performance_mode": "dance_phrase",
+          "policy_id": "anime_emotional_mv",
+          "pose_contrast": "preparation_accent_release_across_scene_not_per_shot",
+          "priority_cue_scene_arc": "establish_relation_reaction_release_without_later_leakage",
+          "priority_cue_scope": "exact_current_scene_source_only",
+          "priority_lyric_cues": "entity_local_only",
+          "whole_body_emotion_mode": "one_connected_full_body_expression_phrase"
+        },
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "scene_context": {
+          "authority": "Observed baseline only. Explicit Direction and user instructions override time, lighting, weather, season, and staging. The Picture is environment evidence, never a performer or composition template.",
+          "background_picture": "<Picture 2>",
+          "environment": [
+            "夜の森の中の神社境内",
+            "鳥居",
+            "石灯籠",
+            "石畳の道",
+            "紅葉した木々",
+            "神社の建物"
+          ],
+          "time_lighting": [
+            "夜、曇り",
+            "暗い夜空と灯りの照らし出された石畳の道"
+          ]
+        },
+        "scene_context_usage": "spatial_support_only_never_activates_an_action_target",
+        "slots": [
+          {
+            "author_body": [],
+            "discovered_cues": [],
+            "has_resolved_lyrics": true,
+            "lyric_reading_context": {
+              "after": [
+                "自由なのか",
+                "それでも新しい足音が"
+              ],
+              "before": [
+                "狐火へ問う",
+                "忘れぬことは"
+              ]
+            },
+            "lyrics": [
+              {
+                "section": "CHORUS",
+                "text": "救いか"
+              },
+              {
+                "section": "CHORUS",
+                "text": "罰か"
+              },
+              {
+                "section": "SHORT_BRIDGE",
+                "text": "終わりがあるから"
+              },
+              {
+                "section": "SHORT_BRIDGE",
+                "text": "今日を選べる"
+              },
+              {
+                "section": "SHORT_BRIDGE",
+                "text": "終われぬ命は"
+              }
+            ],
+            "priority_lyric_cues": [],
+            "scene_number": 10,
+            "slot": 1,
+            "timeline_position": "middle",
+            "total_scene_count": 16
+          },
+          {
+            "author_body": [],
+            "discovered_cues": [
+              {
+                "evidence": "またこの社へ続くなら",
+                "kind": "place",
+                "target": "社"
+              }
+            ],
+            "has_resolved_lyrics": true,
+            "lyric_reading_context": {
+              "after": [
+                "千年鳥居を",
+                "くぐるそなたよ"
+              ],
+              "before": [
+                "今日を選べる",
+                "終われぬ命は"
+              ]
+            },
+            "lyrics": [
+              {
+                "section": "SHORT_BRIDGE",
+                "text": "自由なのか"
+              },
+              {
+                "section": "SHORT_BRIDGE",
+                "text": "それでも新しい足音が"
+              },
+              {
+                "section": "SHORT_BRIDGE",
+                "text": "またこの社へ続くなら"
+              }
+            ],
+            "priority_lyric_cues": [],
+            "scene_number": 11,
+            "slot": 2,
+            "timeline_position": "middle",
+            "total_scene_count": 16
+          },
+          {
+            "author_body": [],
+            "discovered_cues": [
+              {
+                "evidence": "千年鳥居を",
+                "kind": "place",
+                "target": "鳥居"
+              }
+            ],
+            "has_resolved_lyrics": true,
+            "lyric_reading_context": {
+              "after": [
+                "共に歩めるなら",
+                "別れの定めさえ"
+              ],
+              "before": [
+                "それでも新しい足音が",
+                "またこの社へ続くなら"
+              ]
+            },
+            "lyrics": [
+              {
+                "section": "FINAL_CHORUS",
+                "text": "千年鳥居を"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "くぐるそなたよ"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "今この刹那を"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "わらわに預けよ"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "異なる時を"
+              }
+            ],
+            "priority_lyric_cues": [],
+            "scene_number": 12,
+            "slot": 3,
+            "timeline_position": "middle",
+            "total_scene_count": 16
+          }
+        ],
+        "subject_roster": [
+          {
+            "concept_id": "サブジェクト1",
+            "subject_ref": "<Subject 1>"
+          }
+        ],
+        "task": "visual-beats",
+        "motion_templates": [
+          "始点は両足で安定し、片手は体側、もう片手は肘を曲げて低く置く。片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける。低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る。差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める。物を持つ・渡す動作は歌詞に明示された時だけ。",
+          "始点は膝を伸ばし切らず胸郭を正面に保つ。後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せ、一拍のアクセント後、肩と肘を緩めて前足支持で終える。移動を伴う歩行や人物の全身回転にはしない。"
+        ]
+      },
+      "response": "BEAT\t1\t対象=なし｜根拠=なし｜感情=ためらい｜接触=禁止｜現象=なし｜配置=なし｜可視展開=なし｜身体主導=胸郭を正面に保ち、片腕を体の横から斜め前へ通す。肩を軽く上げて顔を上げる｜終端=両手を腰に置き、胸郭を正面に保つ\nBEAT\t2\t対象=社｜根拠=またこの社へ続くなら｜感情=働きかけ｜接触=許可｜現象=身体操作｜配置=社の鳥居下｜可視展開=右手で石畳を軽く触り、左手は胸の前で軽く開く｜身体主導=右手を石畳に置き、左手を胸の前へ伸ばす｜終端=右手を腰に置き、左手を体側へ戻す\nBEAT\t3\t対象=鳥居｜根拠=千年鳥居を｜感情=解放｜接触=許可｜現象=身体操作｜配置=鳥居の下｜可視展開=右手を鳥居の柱に置き、左手は胸の前で軽く開く｜身体主導=右手を鳥居の柱に置き、左手を胸の前へ伸ばす｜終端=右手を腰に置き、左手を体側へ戻す\n",
+      "parsed": {
+        "issues": [],
+        "missing": [],
+        "cards": {
+          "10": {
+            "slot": 1,
+            "text": "対象=なし｜根拠=なし｜感情=ためらい｜接触=禁止｜現象=なし｜配置=なし｜可視展開=なし｜身体主導=胸郭を正面に保ち、片腕を体の横から斜め前へ通す。肩を軽く上げて顔を上げる｜終端=両手を腰に置き、胸郭を正面に保つ",
+            "card": {
+              "valid": true,
+              "emotion": "ためらい",
+              "evidence": "なし",
+              "target": "なし",
+              "contact": "禁止",
+              "phenomenon": "なし",
+              "spatial_anchor": "なし",
+              "visible_development": "なし",
+              "body_driver": "胸郭を正面に保ち、片腕を体の横から斜め前へ通す。肩を軽く上げて顔を上げる",
+              "final_state": "両手を腰に置き、胸郭を正面に保つ",
+              "violations": []
+            }
+          },
+          "11": {
+            "slot": 2,
+            "text": "対象=社｜根拠=またこの社へ続くなら｜感情=働きかけ｜接触=許可｜現象=身体操作｜配置=社の鳥居下｜可視展開=右手で石畳を軽く触り、左手は胸の前で軽く開く｜身体主導=右手を石畳に置き、左手を胸の前へ伸ばす｜終端=右手を腰に置き、左手を体側へ戻す",
+            "card": {
+              "valid": true,
+              "emotion": "働きかけ",
+              "evidence": "またこの社へ続くなら",
+              "target": "社",
+              "contact": "許可",
+              "phenomenon": "身体操作",
+              "spatial_anchor": "社の鳥居下",
+              "visible_development": "右手で石畳を軽く触り、左手は胸の前で軽く開く",
+              "body_driver": "右手を石畳に置き、左手を胸の前へ伸ばす",
+              "final_state": "右手を腰に置き、左手を体側へ戻す",
+              "violations": []
+            }
+          },
+          "12": {
+            "slot": 3,
+            "text": "対象=鳥居｜根拠=千年鳥居を｜感情=解放｜接触=許可｜現象=身体操作｜配置=鳥居の下｜可視展開=右手を鳥居の柱に置き、左手は胸の前で軽く開く｜身体主導=右手を鳥居の柱に置き、左手を胸の前へ伸ばす｜終端=右手を腰に置き、左手を体側へ戻す",
+            "card": {
+              "valid": true,
+              "emotion": "解放",
+              "evidence": "千年鳥居を",
+              "target": "鳥居",
+              "contact": "許可",
+              "phenomenon": "身体操作",
+              "spatial_anchor": "鳥居の下",
+              "visible_development": "右手を鳥居の柱に置き、左手は胸の前で軽く開く",
+              "body_driver": "右手を鳥居の柱に置き、左手を胸の前へ伸ばす",
+              "final_state": "右手を腰に置き、左手を体側へ戻す",
+              "violations": []
+            }
+          }
+        },
+        "valid": true
+      },
+      "elapsed_seconds": 8.607
+    },
+    {
+      "seed": 43,
+      "scene_number": 11,
+      "variant": "pre_cue_templates",
+      "task": "scene-spine",
+      "payload": {
+        "author_body": [],
+        "choreography_palette": [
+          {
+            "body_path": "始点は両足で安定し、片手は体側、もう片手は肘を曲げて低く置く。片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける。低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る。差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める。物を持つ・渡す動作は歌詞に明示された時だけ。",
+            "id": "passing_memory"
+          },
+          {
+            "body_path": "始点は膝を伸ばし切らず胸郭を正面に保つ。後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せ、一拍のアクセント後、肩と肘を緩めて前足支持で終える。移動を伴う歩行や人物の全身回転にはしない。",
+            "id": "resolve_diagonal"
+          },
+          {
+            "body_path": "始点は両足を地面に置き、両腕を体側の異なる高さに置く。短く膝を緩めて重心を落とし、胸郭をわずかに畳み、片腕だけを胴の前へ横断させる。目を伏せた後、支持を戻しながら横断した腕を外側へほどき、胸郭を開いて視線を結ぶ。終点は開始より直立し、両腕は開き切らず異なる高さで静止する。",
+            "id": "hesitation_recovery"
+          },
+          {
+            "body_path": "始点は両足支持で腕を低く置く。短い膝の弾みで重心を一度下げ、片足へ受け渡して骨盤を横へ送る。胸郭の遅れに合わせて片腕を横から斜め上へ、反対の腕を腰より低く逆方向へ通す。顔と歌唱口が見える瞬間にアクセントを合わせ、両腕を体側へ落とし切らず、支持足を保って余韻で終える。跳躍や全身回転はしない。",
+            "id": "joy_rebound"
+          },
+          {
+            "body_path": "始点は片足に軽く荷重し、肩と腕を緩める。支持は変えず胸郭だけを小さく斜めへ向け、片肘を体側から前へほどく。半開きの目から短く閉眼し、歌詞の変化で視線を戻す。手は顔を隠さず肩より下で止め、胸郭を正面へ戻しながら同じ支持のまま終える。静かな歌詞用で、大きな踏み替えを要求しない。",
+            "id": "quiet_refrain"
+          }
+        ],
+        "entry_body_state": "肩は右に傾き、胸郭は左に動いた状態で目線は左へ向けたまま手首は右へ回した姿勢",
+        "lyric_lines": [
+          "自由なのか",
+          "それでも新しい足音が",
+          "またこの社へ続くなら"
+        ],
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "scene_continuation": true,
+        "scene_number": 11,
+        "slots": [
+          {
+            "editorial_role": "continuity_bridge",
+            "scene_number": 11,
+            "shot_count": 2,
+            "shot_duration_ms": 4709,
+            "shot_index": 1,
+            "slot": 1
+          },
+          {
+            "editorial_role": "upper_body_performance_coverage",
+            "scene_number": 11,
+            "shot_count": 2,
+            "shot_duration_ms": 5208,
+            "shot_index": 2,
+            "slot": 2
+          }
+        ],
+        "spine_event_kind": "physical_contact",
+        "task": "scene-spine",
+        "visual_beat_grounding": {
+          "valid": true,
+          "emotion": "働きかけ",
+          "evidence": "またこの社へ続くなら",
+          "target": "社",
+          "contact": "許可",
+          "phenomenon": "身体操作",
+          "spatial_anchor": "社の鳥居下",
+          "visible_development": "右手で石畳を軽く触り、左手は胸の前で軽く開く",
+          "body_driver": "右手を石畳に置き、左手を胸の前へ伸ばす",
+          "final_state": "右手を腰に置き、左手を体側へ戻す",
+          "violations": []
+        },
+        "visual_beat": "対象=社｜根拠=またこの社へ続くなら｜感情=働きかけ｜接触=許可｜現象=身体操作｜配置=社の鳥居下｜可視展開=右手で石畳を軽く触り、左手は胸の前で軽く開く｜身体主導=右手を石畳に置き、左手を胸の前へ伸ばす｜終端=右手を腰に置き、左手を体側へ戻す"
+      },
+      "response": "SPINE\t1\tPHASE=event｜FROM=肩は右に傾き、胸郭は左に動いた状態で目線は左へ向けたまま手首は右へ回した姿勢｜ADVANCE=右手を石畳に置き、左手を胸の前へ伸ばす｜TO=右手を石畳に置き、左手を胸の前へ伸ばした姿勢｜SHOW=lyric_target_hands\nSPINE\t2\tPHASE=response｜FROM=右手を石畳に置き、左手を胸の前へ伸ばした姿勢｜ADVANCE=右手で石畳を軽く触り、左手は胸の前で軽く開く｜TO=右手を腰に置き、左手を体側へ戻す｜SHOW=lyric_target\n",
+      "parsed": {
+        "issues": [],
+        "missing": [],
+        "texts": {
+          "1": "PHASE=event｜FROM=肩は右に傾き、胸郭は左に動いた状態で目線は左へ向けたまま手首は右へ回した姿勢｜ADVANCE=右手を石畳に置き、左手を胸の前へ伸ばす｜TO=右手を石畳に置き、左手を胸の前へ伸ばした姿勢｜SHOW=lyric_target_hands",
+          "2": "PHASE=response｜FROM=右手を石畳に置き、左手を胸の前へ伸ばした姿勢｜ADVANCE=右手で石畳を軽く触り、左手は胸の前で軽く開く｜TO=右手を腰に置き、左手を体側へ戻す｜SHOW=lyric_target"
+        },
+        "valid": true,
+        "steps": [
+          {
+            "phase": "event",
+            "from": "肩は右に傾き、胸郭は左に動いた状態で目線は左へ向けたまま手首は右へ回した姿勢",
+            "advance": "右手を石畳に置き、左手を胸の前へ伸ばす",
+            "to": "右手を石畳に置き、左手を胸の前へ伸ばした姿勢",
+            "show": "lyric_target_hands"
+          },
+          {
+            "phase": "response",
+            "from": "右手を石畳に置き、左手を胸の前へ伸ばした姿勢",
+            "advance": "右手で石畳を軽く触り、左手は胸の前で軽く開く",
+            "to": "右手を腰に置き、左手を体側へ戻す",
+            "show": "lyric_target"
+          }
+        ]
+      },
+      "elapsed_seconds": 5.25
+    },
+    {
+      "seed": 43,
+      "scene_number": 14,
+      "variant": "baseline",
+      "task": "visual-beats",
+      "payload": {
+        "direction": {
+          "motion": [
+            "二コマ打ち又は三コマ打ちのセルアニメとして、読めるキーポーズ、加速、短い停止、余韻を作る。Sceneごとに身体の流れを考え、その準備・アクセント・解放をShotへ時間順に分配する。振付候補が合わない場合は独自の流れを考案する。各Shotで同じ開始姿勢へ戻らない。 身体演技は支持と重心、骨盤と胸郭、左右で異なる腕の経路、目と口の反応を一連の出来事として結ぶ。全身Shotに見える支持と体幹の変化を置き、顔Shotでは既に進んだフレーズの顔と上半身の結果を見せる。歌詞の感情とCamera coverageに合う可視部分だけを使い、候補の全文を毎Shotに詰め込まない。 参照画像の立ち姿、前傾、開腕、手を腰へ戻す動き、歩行及び同じ左右反転を反復しない。人物の全身旋回やピルエットを追加せず、視点の回り込みはカメラで表す。接地位置と体の向きを保ち、個々の足指や履物を演技の主題にしない。 歌詞又は作者が選んだ対象への接触・配置・変化を優先し、候補の比喩から小道具、場所、接触相手を増やさない。外部effectは人物の手に持たせず、独立した現象として扱う。静かなSceneは小さな動きと意図ある停止を選び、毎回大きなダンスにしない。"
+          ],
+          "other": [],
+          "style": [
+            "参照画像から人物の識別要素、髪型、髪色、瞳色、衣装、配色、装飾及び身体的特徴だけを保持する。参照画像のポーズ、手足の配置、視線、画角、視点、切り抜き、左右分割又は複数パネル構成、背景、線質、塗り、陰影及びブラシ表現は継承せず、各Shotで指定された一人の人物と感情を伴う身体演技を映画的な手描きセルアニメーションとして再設計する。各Shotの先頭frameからShot固有の身体姿勢、視線、手足配置、blocking、画角、視点、camera高及び距離を使用し、参照画像そのもの又は参照構図を静止画、開始画面、plate、poster、inset、背景として表示せず、参照ポーズからの変形又は遷移も行わない。各Sceneで指定された環境、時刻及び照明だけを完成映像の世界として使用し、参照画像内の白背景、無地背景、昼光、撮影用backdrop又はpanel固有の背景と照明を描画へ持ち込まない。指定されたScene環境を人物の背後と周囲を含む画面全体へ連続させる。画面全体を一つの連続した単一カメラ画像として使用し、画角及び視点の変更は時間方向のカメラ移動又はscene cutで表す。同一frame内へ複数視点、左右並列像、内部境界、inset又はpicture-in-pictureを同時配置しない。整理された強弱のある輪郭線、明瞭な色面、制御されたセル影、背景と統合された撮影処理及びアニメ映画的な照明で描く。人物の髪、体毛、動物耳、耳内部、尾、皮膚及び衣装は通常は非発光素材として扱う。完成EMDのShotが意図的な発光演出を明示する場合はその範囲を尊重する。それ以外ではこれらを光源、発光体又は強い透過光として描かず、局所的なglow、bloom、発光halo及び白飛びを生じさせない。月光、逆光及び実在する環境光は穏やかな反射光としてだけ表現し、耳内部の露出を周囲の毛並みから不自然に上げない。 歌詞中の傷、古傷、痛み、血又は心の損傷を、歌詞文字列だけで身体の損傷へ直結させない。人物設定又は完成EMDのShotが可視の状態として明示する場合は、その意図的な演出を尊重する。Shotで明示されない傷跡、切創、痣、出血、包帯、病変、染み、刺青状の印、裂けた皮膚又は破れた衣装は追加しない。歌詞の感情は視線、頭部、肩、胴体、手、対象との距離及び終端ポーズの変化でも表現する。 人物が足袋を着用する場合、滑らかで不透明な白いsplit-toe足袋として描き、つま先は親指側と残り四趾側の二つの連続した布形状だけにまとめる。黒い木下駄は足袋の外側へ正しく装着し、鼻緒だけを指定色で描く。作者又は歌詞が足元を明示しない限り、履物又は地面を接写の主題にしない。"
+          ],
+          "time_lighting": [
+            "夜、曇り。暗い夜空と灯りの照らし出された石畳の道"
+          ]
+        },
+        "planner_policy_contract": {
+          "all_later_continue_allowed": true,
+          "arc_density": "approximately_half_of_eligible_non_face_slots",
+          "arc_energy": "large_amplitude_fast_70_90_percent",
+          "body_accent_policy": "sparse_chorus",
+          "camera_phrase": "balanced_energetic_long_arc_short_face_pivot",
+          "choreography_policy": "scene_palette",
+          "cue_card_schema": "v2_spatial_anchor_visible_development",
+          "emotional_amplitude": "exaggerated_readable_full_body",
+          "environment_inventory_is_not_action_source": true,
+          "external_effect_mode": "autonomous_unless_current_lyric_operates_it",
+          "eye_expression_mode": "vary_eyelids_with_lyric_phase",
+          "face_zoom_frequency": "sparse_section_or_emotional_pivot",
+          "generic_locomotion_is_support_only": true,
+          "grounded_cue_development": "anchor_then_event_then_optional_subject_response",
+          "incidental_fixed_fixture_interaction": "forbidden",
+          "later_scene_continue_minimum_ratio": "3/4",
+          "lower_body_role": "scene_level_weight_transfer_not_required_per_shot_no_body_spins",
+          "lyric_cue_mode": "automatic",
+          "lyric_interpretation": "bounded",
+          "lyric_target_consumption": "one_scene_then_requires_new_trigger",
+          "lyric_trigger_scope": "current_scene_original_lyrics_only",
+          "noun_only_lyric_visualization": "same_scene_autonomous_visual_predicate",
+          "performance_mode": "dance_phrase",
+          "policy_id": "anime_emotional_mv",
+          "pose_contrast": "preparation_accent_release_across_scene_not_per_shot",
+          "priority_cue_scene_arc": "establish_relation_reaction_release_without_later_leakage",
+          "priority_cue_scope": "exact_current_scene_source_only",
+          "priority_lyric_cues": "entity_local_only",
+          "whole_body_emotion_mode": "one_connected_full_body_expression_phrase"
+        },
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "scene_context": {
+          "authority": "Observed baseline only. Explicit Direction and user instructions override time, lighting, weather, season, and staging. The Picture is environment evidence, never a performer or composition template.",
+          "background_picture": "<Picture 2>",
+          "environment": [
+            "夜の森の中の神社境内",
+            "鳥居",
+            "石灯籠",
+            "石畳の道",
+            "紅葉した木々",
+            "神社の建物"
+          ],
+          "time_lighting": [
+            "夜、曇り",
+            "暗い夜空と灯りの照らし出された石畳の道"
+          ]
+        },
+        "scene_context_usage": "spatial_support_only_never_activates_an_action_target",
+        "slots": [
+          {
+            "author_body": [],
+            "discovered_cues": [
+              {
+                "evidence": "暮れゆく空へ放つ",
+                "kind": "place",
+                "target": "空"
+              }
+            ],
+            "has_resolved_lyrics": true,
+            "lyric_reading_context": {
+              "after": [
+                "狐火は祈り",
+                "忘れぬことを"
+              ],
+              "before": [
+                "わらわに預けよ",
+                "異なる時を"
+              ]
+            },
+            "lyrics": [
+              {
+                "section": "FINAL_CHORUS",
+                "text": "共に歩めるなら"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "別れの定めさえ"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "愛してみせよう"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "暮れゆく空へ放つ"
+              }
+            ],
+            "priority_lyric_cues": [],
+            "scene_number": 13,
+            "slot": 1,
+            "timeline_position": "closing",
+            "total_scene_count": 16
+          },
+          {
+            "author_body": [],
+            "discovered_cues": [
+              {
+                "evidence": "狐火は祈り",
+                "kind": "effect",
+                "target": "狐火"
+              }
+            ],
+            "has_resolved_lyrics": true,
+            "lyric_reading_context": {
+              "after": [
+                "鳥居をくぐる"
+              ],
+              "before": [
+                "愛してみせよう",
+                "暮れゆく空へ放つ"
+              ]
+            },
+            "lyrics": [
+              {
+                "section": "FINAL_CHORUS",
+                "text": "狐火は祈り"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "忘れぬことを"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "救いと呼ぼう"
+              },
+              {
+                "section": "END",
+                "text": "またひとつの春が"
+              }
+            ],
+            "priority_lyric_cues": [],
+            "scene_number": 14,
+            "slot": 2,
+            "timeline_position": "closing",
+            "total_scene_count": 16
+          },
+          {
+            "author_body": [],
+            "discovered_cues": [
+              {
+                "evidence": "鳥居をくぐる",
+                "kind": "place",
+                "target": "鳥居"
+              }
+            ],
+            "has_resolved_lyrics": true,
+            "lyric_reading_context": {
+              "after": [],
+              "before": [
+                "救いと呼ぼう",
+                "またひとつの春が"
+              ]
+            },
+            "lyrics": [
+              {
+                "section": "END",
+                "text": "鳥居をくぐる"
+              }
+            ],
+            "priority_lyric_cues": [],
+            "scene_number": 15,
+            "slot": 3,
+            "timeline_position": "closing",
+            "total_scene_count": 16
+          }
+        ],
+        "subject_roster": [
+          {
+            "concept_id": "サブジェクト1",
+            "subject_ref": "<Subject 1>"
+          }
+        ],
+        "task": "visual-beats"
+      },
+      "response": "BEAT\t1\t対象=空｜根拠=暮れゆく空へ放つ｜感情=祈り｜接触=禁止｜現象=身体操作｜配置=空の上部｜可視展開=人物が手を上げて空に光を放つ｜身体主導=手首を捻じて指先を上へ伸ばし、肩を軽く振る｜終端=手を下げ、目を閉じる\nBEAT\t2\t対象=狐火｜根拠=狐火は祈り｜感情=願い｜接触=禁止｜現象=外部自律｜配置=狐火の上部｜可視展開=狐火が空に上がっていく｜身体主導=肩を軽く振る｜終端=狐火が消える\nBEAT\t3\t対象=鳥居｜根拠=鳥居をくぐる｜感情=感謝｜接触=許可｜現象=身体操作｜配置=鳥居の前｜可視展開=人物が鳥居をくぐる｜身体主導=腰を曲げて頭を下げ、手を胸に当て｜終端=鳥居をくぐり終え、立ち直る\n",
+      "parsed": {
+        "issues": [],
+        "missing": [],
+        "cards": {
+          "13": {
+            "slot": 1,
+            "text": "対象=空｜根拠=暮れゆく空へ放つ｜感情=祈り｜接触=禁止｜現象=身体操作｜配置=空の上部｜可視展開=人物が手を上げて空に光を放つ｜身体主導=手首を捻じて指先を上へ伸ばし、肩を軽く振る｜終端=手を下げ、目を閉じる",
+            "card": {
+              "valid": true,
+              "emotion": "祈り",
+              "evidence": "暮れゆく空へ放つ",
+              "target": "空",
+              "contact": "禁止",
+              "phenomenon": "身体操作",
+              "spatial_anchor": "空の上部",
+              "visible_development": "人物が手を上げて空に光を放つ",
+              "body_driver": "手首を捻じて指先を上へ伸ばし、肩を軽く振る",
+              "final_state": "手を下げ、目を閉じる",
+              "violations": []
+            }
+          },
+          "14": {
+            "slot": 2,
+            "text": "対象=狐火｜根拠=狐火は祈り｜感情=願い｜接触=禁止｜現象=外部自律｜配置=狐火の上部｜可視展開=狐火が空に上がっていく｜身体主導=肩を軽く振る｜終端=狐火が消える",
+            "card": {
+              "valid": true,
+              "emotion": "願い",
+              "evidence": "狐火は祈り",
+              "target": "狐火",
+              "contact": "禁止",
+              "phenomenon": "外部自律",
+              "spatial_anchor": "狐火の上部",
+              "visible_development": "狐火が空に上がっていく",
+              "body_driver": "肩を軽く振る",
+              "final_state": "狐火が消える",
+              "violations": []
+            }
+          },
+          "15": {
+            "slot": 3,
+            "text": "対象=鳥居｜根拠=鳥居をくぐる｜感情=感謝｜接触=許可｜現象=身体操作｜配置=鳥居の前｜可視展開=人物が鳥居をくぐる｜身体主導=腰を曲げて頭を下げ、手を胸に当て｜終端=鳥居をくぐり終え、立ち直る",
+            "card": {
+              "valid": true,
+              "emotion": "感謝",
+              "evidence": "鳥居をくぐる",
+              "target": "鳥居",
+              "contact": "許可",
+              "phenomenon": "身体操作",
+              "spatial_anchor": "鳥居の前",
+              "visible_development": "人物が鳥居をくぐる",
+              "body_driver": "腰を曲げて頭を下げ、手を胸に当て",
+              "final_state": "鳥居をくぐり終え、立ち直る",
+              "violations": []
+            }
+          }
+        },
+        "valid": true
+      },
+      "elapsed_seconds": 6.903
+    },
+    {
+      "seed": 43,
+      "scene_number": 14,
+      "variant": "baseline",
+      "task": "scene-spine",
+      "payload": {
+        "author_body": [],
+        "choreography_palette": [
+          {
+            "body_path": "始点は両足で安定し、片手は体側、もう片手は肘を曲げて低く置く。片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける。低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る。差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める。物を持つ・渡す動作は歌詞に明示された時だけ。",
+            "id": "passing_memory"
+          },
+          {
+            "body_path": "始点は膝を伸ばし切らず胸郭を正面に保つ。後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せ、一拍のアクセント後、肩と肘を緩めて前足支持で終える。移動を伴う歩行や人物の全身回転にはしない。",
+            "id": "resolve_diagonal"
+          },
+          {
+            "body_path": "始点は両足を地面に置き、両腕を体側の異なる高さに置く。短く膝を緩めて重心を落とし、胸郭をわずかに畳み、片腕だけを胴の前へ横断させる。目を伏せた後、支持を戻しながら横断した腕を外側へほどき、胸郭を開いて視線を結ぶ。終点は開始より直立し、両腕は開き切らず異なる高さで静止する。",
+            "id": "hesitation_recovery"
+          },
+          {
+            "body_path": "始点は両足支持で腕を低く置く。短い膝の弾みで重心を一度下げ、片足へ受け渡して骨盤を横へ送る。胸郭の遅れに合わせて片腕を横から斜め上へ、反対の腕を腰より低く逆方向へ通す。顔と歌唱口が見える瞬間にアクセントを合わせ、両腕を体側へ落とし切らず、支持足を保って余韻で終える。跳躍や全身回転はしない。",
+            "id": "joy_rebound"
+          },
+          {
+            "body_path": "始点は片足に軽く荷重し、肩と腕を緩める。支持は変えず胸郭だけを小さく斜めへ向け、片肘を体側から前へほどく。半開きの目から短く閉眼し、歌詞の変化で視線を戻す。手は顔を隠さず肩より下で止め、胸郭を正面へ戻しながら同じ支持のまま終える。静かな歌詞用で、大きな踏み替えを要求しない。",
+            "id": "quiet_refrain"
+          }
+        ],
+        "entry_body_state": "",
+        "lyric_lines": [
+          "狐火は祈り",
+          "忘れぬことを",
+          "救いと呼ぼう",
+          "またひとつの春が"
+        ],
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "scene_continuation": false,
+        "scene_number": 14,
+        "slots": [
+          {
+            "editorial_role": "new_scene_establishing_edit",
+            "scene_number": 14,
+            "shot_count": 2,
+            "shot_duration_ms": 4334,
+            "shot_index": 1,
+            "slot": 1
+          },
+          {
+            "editorial_role": "face_performance_cut",
+            "scene_number": 14,
+            "shot_count": 2,
+            "shot_duration_ms": 4375,
+            "shot_index": 2,
+            "slot": 2
+          }
+        ],
+        "spine_event_kind": "non_contact_change",
+        "task": "scene-spine",
+        "visual_beat_grounding": {
+          "valid": true,
+          "emotion": "願い",
+          "evidence": "狐火は祈り",
+          "target": "狐火",
+          "contact": "禁止",
+          "phenomenon": "外部自律",
+          "spatial_anchor": "狐火の上部",
+          "visible_development": "狐火が空に上がっていく",
+          "body_driver": "肩を軽く振る",
+          "final_state": "狐火が消える",
+          "violations": []
+        },
+        "visual_beat": "対象=狐火｜根拠=狐火は祈り｜感情=願い｜接触=禁止｜現象=外部自律｜配置=狐火の上部｜可視展開=狐火が空に上がっていく｜身体主導=肩を軽く振る｜終端=狐火が消える"
+      },
+      "response": "SPINE\t1\tPHASE=event｜FROM=両足支持で腕を低く置く｜ADVANCE=短い膝の弾みで重心を下げ、片足へ受け渡して骨盤を横へ送る｜TO=胸郭が斜めへ向け、片腕を横から斜め上へ、反対の腕を腰より低く逆方向へ通す｜SHOW=face_eyes_mouth\nSPINE\t2\tPHASE=response｜FROM=胸郭が斜めへ向け、片腕を横から斜‐上へ、反対の腕を腰より低く逆方向へ通す｜ADVANCE=顔と歌唱口が見える瞬間にアクセントを合わせ、両腕を体側へ落とし切らず、支持足を保って余韻で終える｜TO=胸郭を正面へ戻しながら同じ支持のまま終える｜SHOW=face_eyes_mouth\n",
+      "parsed": {
+        "issues": [],
+        "missing": [],
+        "texts": {
+          "1": "PHASE=event｜FROM=両足支持で腕を低く置く｜ADVANCE=短い膝の弾みで重心を下げ、片足へ受け渡して骨盤を横へ送る｜TO=胸郭が斜めへ向け、片腕を横から斜め上へ、反対の腕を腰より低く逆方向へ通す｜SHOW=face_eyes_mouth",
+          "2": "PHASE=response｜FROM=胸郭が斜めへ向け、片腕を横から斜‐上へ、反対の腕を腰より低く逆方向へ通す｜ADVANCE=顔と歌唱口が見える瞬間にアクセントを合わせ、両腕を体側へ落とし切らず、支持足を保って余韻で終える｜TO=胸郭を正面へ戻しながら同じ支持のまま終える｜SHOW=face_eyes_mouth"
+        },
+        "valid": true,
+        "steps": [
+          {
+            "phase": "event",
+            "from": "両足支持で腕を低く置く",
+            "advance": "短い膝の弾みで重心を下げ、片足へ受け渡して骨盤を横へ送る",
+            "to": "胸郭が斜めへ向け、片腕を横から斜め上へ、反対の腕を腰より低く逆方向へ通す",
+            "show": "face_eyes_mouth"
+          },
+          {
+            "phase": "response",
+            "from": "胸郭が斜めへ向け、片腕を横から斜‐上へ、反対の腕を腰より低く逆方向へ通す",
+            "advance": "顔と歌唱口が見える瞬間にアクセントを合わせ、両腕を体側へ落とし切らず、支持足を保って余韻で終える",
+            "to": "胸郭を正面へ戻しながら同じ支持のまま終える",
+            "show": "face_eyes_mouth"
+          }
+        ]
+      },
+      "elapsed_seconds": 5.803
+    },
+    {
+      "seed": 43,
+      "scene_number": 14,
+      "variant": "pre_cue_templates",
+      "task": "visual-beats",
+      "payload": {
+        "direction": {
+          "motion": [
+            "二コマ打ち又は三コマ打ちのセルアニメとして、読めるキーポーズ、加速、短い停止、余韻を作る。Sceneごとに身体の流れを考え、その準備・アクセント・解放をShotへ時間順に分配する。振付候補が合わない場合は独自の流れを考案する。各Shotで同じ開始姿勢へ戻らない。 身体演技は支持と重心、骨盤と胸郭、左右で異なる腕の経路、目と口の反応を一連の出来事として結ぶ。全身Shotに見える支持と体幹の変化を置き、顔Shotでは既に進んだフレーズの顔と上半身の結果を見せる。歌詞の感情とCamera coverageに合う可視部分だけを使い、候補の全文を毎Shotに詰め込まない。 参照画像の立ち姿、前傾、開腕、手を腰へ戻す動き、歩行及び同じ左右反転を反復しない。人物の全身旋回やピルエットを追加せず、視点の回り込みはカメラで表す。接地位置と体の向きを保ち、個々の足指や履物を演技の主題にしない。 歌詞又は作者が選んだ対象への接触・配置・変化を優先し、候補の比喩から小道具、場所、接触相手を増やさない。外部effectは人物の手に持たせず、独立した現象として扱う。静かなSceneは小さな動きと意図ある停止を選び、毎回大きなダンスにしない。"
+          ],
+          "other": [],
+          "style": [
+            "参照画像から人物の識別要素、髪型、髪色、瞳色、衣装、配色、装飾及び身体的特徴だけを保持する。参照画像のポーズ、手足の配置、視線、画角、視点、切り抜き、左右分割又は複数パネル構成、背景、線質、塗り、陰影及びブラシ表現は継承せず、各Shotで指定された一人の人物と感情を伴う身体演技を映画的な手描きセルアニメーションとして再設計する。各Shotの先頭frameからShot固有の身体姿勢、視線、手足配置、blocking、画角、視点、camera高及び距離を使用し、参照画像そのもの又は参照構図を静止画、開始画面、plate、poster、inset、背景として表示せず、参照ポーズからの変形又は遷移も行わない。各Sceneで指定された環境、時刻及び照明だけを完成映像の世界として使用し、参照画像内の白背景、無地背景、昼光、撮影用backdrop又はpanel固有の背景と照明を描画へ持ち込まない。指定されたScene環境を人物の背後と周囲を含む画面全体へ連続させる。画面全体を一つの連続した単一カメラ画像として使用し、画角及び視点の変更は時間方向のカメラ移動又はscene cutで表す。同一frame内へ複数視点、左右並列像、内部境界、inset又はpicture-in-pictureを同時配置しない。整理された強弱のある輪郭線、明瞭な色面、制御されたセル影、背景と統合された撮影処理及びアニメ映画的な照明で描く。人物の髪、体毛、動物耳、耳内部、尾、皮膚及び衣装は通常は非発光素材として扱う。完成EMDのShotが意図的な発光演出を明示する場合はその範囲を尊重する。それ以外ではこれらを光源、発光体又は強い透過光として描かず、局所的なglow、bloom、発光halo及び白飛びを生じさせない。月光、逆光及び実在する環境光は穏やかな反射光としてだけ表現し、耳内部の露出を周囲の毛並みから不自然に上げない。 歌詞中の傷、古傷、痛み、血又は心の損傷を、歌詞文字列だけで身体の損傷へ直結させない。人物設定又は完成EMDのShotが可視の状態として明示する場合は、その意図的な演出を尊重する。Shotで明示されない傷跡、切創、痣、出血、包帯、病変、染み、刺青状の印、裂けた皮膚又は破れた衣装は追加しない。歌詞の感情は視線、頭部、肩、胴体、手、対象との距離及び終端ポーズの変化でも表現する。 人物が足袋を着用する場合、滑らかで不透明な白いsplit-toe足袋として描き、つま先は親指側と残り四趾側の二つの連続した布形状だけにまとめる。黒い木下駄は足袋の外側へ正しく装着し、鼻緒だけを指定色で描く。作者又は歌詞が足元を明示しない限り、履物又は地面を接写の主題にしない。"
+          ],
+          "time_lighting": [
+            "夜、曇り。暗い夜空と灯りの照らし出された石畳の道"
+          ]
+        },
+        "planner_policy_contract": {
+          "all_later_continue_allowed": true,
+          "arc_density": "approximately_half_of_eligible_non_face_slots",
+          "arc_energy": "large_amplitude_fast_70_90_percent",
+          "body_accent_policy": "sparse_chorus",
+          "camera_phrase": "balanced_energetic_long_arc_short_face_pivot",
+          "choreography_policy": "scene_palette",
+          "cue_card_schema": "v2_spatial_anchor_visible_development",
+          "emotional_amplitude": "exaggerated_readable_full_body",
+          "environment_inventory_is_not_action_source": true,
+          "external_effect_mode": "autonomous_unless_current_lyric_operates_it",
+          "eye_expression_mode": "vary_eyelids_with_lyric_phase",
+          "face_zoom_frequency": "sparse_section_or_emotional_pivot",
+          "generic_locomotion_is_support_only": true,
+          "grounded_cue_development": "anchor_then_event_then_optional_subject_response",
+          "incidental_fixed_fixture_interaction": "forbidden",
+          "later_scene_continue_minimum_ratio": "3/4",
+          "lower_body_role": "scene_level_weight_transfer_not_required_per_shot_no_body_spins",
+          "lyric_cue_mode": "automatic",
+          "lyric_interpretation": "bounded",
+          "lyric_target_consumption": "one_scene_then_requires_new_trigger",
+          "lyric_trigger_scope": "current_scene_original_lyrics_only",
+          "noun_only_lyric_visualization": "same_scene_autonomous_visual_predicate",
+          "performance_mode": "dance_phrase",
+          "policy_id": "anime_emotional_mv",
+          "pose_contrast": "preparation_accent_release_across_scene_not_per_shot",
+          "priority_cue_scene_arc": "establish_relation_reaction_release_without_later_leakage",
+          "priority_cue_scope": "exact_current_scene_source_only",
+          "priority_lyric_cues": "entity_local_only",
+          "whole_body_emotion_mode": "one_connected_full_body_expression_phrase"
+        },
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "scene_context": {
+          "authority": "Observed baseline only. Explicit Direction and user instructions override time, lighting, weather, season, and staging. The Picture is environment evidence, never a performer or composition template.",
+          "background_picture": "<Picture 2>",
+          "environment": [
+            "夜の森の中の神社境内",
+            "鳥居",
+            "石灯籠",
+            "石畳の道",
+            "紅葉した木々",
+            "神社の建物"
+          ],
+          "time_lighting": [
+            "夜、曇り",
+            "暗い夜空と灯りの照らし出された石畳の道"
+          ]
+        },
+        "scene_context_usage": "spatial_support_only_never_activates_an_action_target",
+        "slots": [
+          {
+            "author_body": [],
+            "discovered_cues": [
+              {
+                "evidence": "暮れゆく空へ放つ",
+                "kind": "place",
+                "target": "空"
+              }
+            ],
+            "has_resolved_lyrics": true,
+            "lyric_reading_context": {
+              "after": [
+                "狐火は祈り",
+                "忘れぬことを"
+              ],
+              "before": [
+                "わらわに預けよ",
+                "異なる時を"
+              ]
+            },
+            "lyrics": [
+              {
+                "section": "FINAL_CHORUS",
+                "text": "共に歩めるなら"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "別れの定めさえ"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "愛してみせよう"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "暮れゆく空へ放つ"
+              }
+            ],
+            "priority_lyric_cues": [],
+            "scene_number": 13,
+            "slot": 1,
+            "timeline_position": "closing",
+            "total_scene_count": 16
+          },
+          {
+            "author_body": [],
+            "discovered_cues": [
+              {
+                "evidence": "狐火は祈り",
+                "kind": "effect",
+                "target": "狐火"
+              }
+            ],
+            "has_resolved_lyrics": true,
+            "lyric_reading_context": {
+              "after": [
+                "鳥居をくぐる"
+              ],
+              "before": [
+                "愛してみせよう",
+                "暮れゆく空へ放つ"
+              ]
+            },
+            "lyrics": [
+              {
+                "section": "FINAL_CHORUS",
+                "text": "狐火は祈り"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "忘れぬことを"
+              },
+              {
+                "section": "FINAL_CHORUS",
+                "text": "救いと呼ぼう"
+              },
+              {
+                "section": "END",
+                "text": "またひとつの春が"
+              }
+            ],
+            "priority_lyric_cues": [],
+            "scene_number": 14,
+            "slot": 2,
+            "timeline_position": "closing",
+            "total_scene_count": 16
+          },
+          {
+            "author_body": [],
+            "discovered_cues": [
+              {
+                "evidence": "鳥居をくぐる",
+                "kind": "place",
+                "target": "鳥居"
+              }
+            ],
+            "has_resolved_lyrics": true,
+            "lyric_reading_context": {
+              "after": [],
+              "before": [
+                "救いと呼ぼう",
+                "またひとつの春が"
+              ]
+            },
+            "lyrics": [
+              {
+                "section": "END",
+                "text": "鳥居をくぐる"
+              }
+            ],
+            "priority_lyric_cues": [],
+            "scene_number": 15,
+            "slot": 3,
+            "timeline_position": "closing",
+            "total_scene_count": 16
+          }
+        ],
+        "subject_roster": [
+          {
+            "concept_id": "サブジェクト1",
+            "subject_ref": "<Subject 1>"
+          }
+        ],
+        "task": "visual-beats",
+        "motion_templates": [
+          "始点は両足で安定し、片手は体側、もう片手は肘を曲げて低く置く。片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける。低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る。差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める。物を持つ・渡す動作は歌詞に明示された時だけ。",
+          "始点は膝を伸ばし切らず胸郭を正面に保つ。後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せ、一拍のアクセント後、肩と肘を緩めて前足支持で終える。移動を伴う歩行や人物の全身回転にはしない。"
+        ]
+      },
+      "response": "BEAT\t1\t対象=空｜根拠=暮れゆく空へ放つ｜感情=祈り｜接触=禁止｜現象=身体操作｜配置=空の上部｜可視展開=人物が手を空に向け、祈るように手を広げる｜身体主導=右肩を上げて左腕を斜め前へ伸ばし、胸郭を右へ傾ける｜終端=手を広げたまま静止\nBEAT\t2\t対象=狐火｜根拠=狐火は祈り｜感情=願い｜接触=禁止｜現象=外部自律｜配置=狐火の上部｜可視展開=狐火が空に上がっていく｜身体主導=左肩を下げて右腕を体側へ下げる｜終端=手を下げたまま静止\nBEAT\t3\t対象=鳥居｜根拠=鳥居をくぐる｜感情=通過｜接触=許可｜現象=身体操作｜配置=鳥居の前部｜可視展開=人物が鳥居をくぐる｜身体主導=右肩を上げて左腕を体側へ下げる｜終端=鳥居をくぐった後で静止\n",
+      "parsed": {
+        "issues": [],
+        "missing": [],
+        "cards": {
+          "13": {
+            "slot": 1,
+            "text": "対象=空｜根拠=暮れゆく空へ放つ｜感情=祈り｜接触=禁止｜現象=身体操作｜配置=空の上部｜可視展開=人物が手を空に向け、祈るように手を広げる｜身体主導=右肩を上げて左腕を斜め前へ伸ばし、胸郭を右へ傾ける｜終端=手を広げたまま静止",
+            "card": {
+              "valid": true,
+              "emotion": "祈り",
+              "evidence": "暮れゆく空へ放つ",
+              "target": "空",
+              "contact": "禁止",
+              "phenomenon": "身体操作",
+              "spatial_anchor": "空の上部",
+              "visible_development": "人物が手を空に向け、祈るように手を広げる",
+              "body_driver": "右肩を上げて左腕を斜め前へ伸ばし、胸郭を右へ傾ける",
+              "final_state": "手を広げたまま静止",
+              "violations": []
+            }
+          },
+          "14": {
+            "slot": 2,
+            "text": "対象=狐火｜根拠=狐火は祈り｜感情=願い｜接触=禁止｜現象=外部自律｜配置=狐火の上部｜可視展開=狐火が空に上がっていく｜身体主導=左肩を下げて右腕を体側へ下げる｜終端=手を下げたまま静止",
+            "card": {
+              "valid": true,
+              "emotion": "願い",
+              "evidence": "狐火は祈り",
+              "target": "狐火",
+              "contact": "禁止",
+              "phenomenon": "外部自律",
+              "spatial_anchor": "狐火の上部",
+              "visible_development": "狐火が空に上がっていく",
+              "body_driver": "左肩を下げて右腕を体側へ下げる",
+              "final_state": "手を下げたまま静止",
+              "violations": []
+            }
+          },
+          "15": {
+            "slot": 3,
+            "text": "対象=鳥居｜根拠=鳥居をくぐる｜感情=通過｜接触=許可｜現象=身体操作｜配置=鳥居の前部｜可視展開=人物が鳥居をくぐる｜身体主導=右肩を上げて左腕を体側へ下げる｜終端=鳥居をくぐった後で静止",
+            "card": {
+              "valid": true,
+              "emotion": "通過",
+              "evidence": "鳥居をくぐる",
+              "target": "鳥居",
+              "contact": "許可",
+              "phenomenon": "身体操作",
+              "spatial_anchor": "鳥居の前部",
+              "visible_development": "人物が鳥居をくぐる",
+              "body_driver": "右肩を上げて左腕を体側へ下げる",
+              "final_state": "鳥居をくぐった後で静止",
+              "violations": []
+            }
+          }
+        },
+        "valid": true
+      },
+      "elapsed_seconds": 7.374
+    },
+    {
+      "seed": 43,
+      "scene_number": 14,
+      "variant": "pre_cue_templates",
+      "task": "scene-spine",
+      "payload": {
+        "author_body": [],
+        "choreography_palette": [
+          {
+            "body_path": "始点は両足で安定し、片手は体側、もう片手は肘を曲げて低く置く。片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける。低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る。差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める。物を持つ・渡す動作は歌詞に明示された時だけ。",
+            "id": "passing_memory"
+          },
+          {
+            "body_path": "始点は膝を伸ばし切らず胸郭を正面に保つ。後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せ、一拍のアクセント後、肩と肘を緩めて前足支持で終える。移動を伴う歩行や人物の全身回転にはしない。",
+            "id": "resolve_diagonal"
+          },
+          {
+            "body_path": "始点は両足を地面に置き、両腕を体側の異なる高さに置く。短く膝を緩めて重心を落とし、胸郭をわずかに畳み、片腕だけを胴の前へ横断させる。目を伏せた後、支持を戻しながら横断した腕を外側へほどき、胸郭を開いて視線を結ぶ。終点は開始より直立し、両腕は開き切らず異なる高さで静止する。",
+            "id": "hesitation_recovery"
+          },
+          {
+            "body_path": "始点は両足支持で腕を低く置く。短い膝の弾みで重心を一度下げ、片足へ受け渡して骨盤を横へ送る。胸郭の遅れに合わせて片腕を横から斜め上へ、反対の腕を腰より低く逆方向へ通す。顔と歌唱口が見える瞬間にアクセントを合わせ、両腕を体側へ落とし切らず、支持足を保って余韻で終える。跳躍や全身回転はしない。",
+            "id": "joy_rebound"
+          },
+          {
+            "body_path": "始点は片足に軽く荷重し、肩と腕を緩める。支持は変えず胸郭だけを小さく斜めへ向け、片肘を体側から前へほどく。半開きの目から短く閉眼し、歌詞の変化で視線を戻す。手は顔を隠さず肩より下で止め、胸郭を正面へ戻しながら同じ支持のまま終える。静かな歌詞用で、大きな踏み替えを要求しない。",
+            "id": "quiet_refrain"
+          }
+        ],
+        "entry_body_state": "",
+        "lyric_lines": [
+          "狐火は祈り",
+          "忘れぬことを",
+          "救いと呼ぼう",
+          "またひとつの春が"
+        ],
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "scene_continuation": false,
+        "scene_number": 14,
+        "slots": [
+          {
+            "editorial_role": "new_scene_establishing_edit",
+            "scene_number": 14,
+            "shot_count": 2,
+            "shot_duration_ms": 4334,
+            "shot_index": 1,
+            "slot": 1
+          },
+          {
+            "editorial_role": "face_performance_cut",
+            "scene_number": 14,
+            "shot_count": 2,
+            "shot_duration_ms": 4375,
+            "shot_index": 2,
+            "slot": 2
+          }
+        ],
+        "spine_event_kind": "non_contact_change",
+        "task": "scene-spine",
+        "visual_beat_grounding": {
+          "valid": true,
+          "emotion": "願い",
+          "evidence": "狐火は祈り",
+          "target": "狐火",
+          "contact": "禁止",
+          "phenomenon": "外部自律",
+          "spatial_anchor": "狐火の上部",
+          "visible_development": "狐火が空に上がっていく",
+          "body_driver": "左肩を下げて右腕を体側へ下げる",
+          "final_state": "手を下げたまま静止",
+          "violations": []
+        },
+        "visual_beat": "対象=狐火｜根拠=狐火は祈り｜感情=願い｜接触=禁止｜現象=外部自律｜配置=狐火の上部｜可視展開=狐火が空に上がっていく｜身体主導=左肩を下げて右腕を体側へ下げる｜終端=手を下げたまま静止"
+      },
+      "response": "SPINE\t1\tPHASE=setup｜FROM=両足支持｜ADVANCE=左肩を下げて右腕を体側へ下げる｜TO=手を下げたまま静止｜SHOW=face_eyes_mouth\nSPINE\t2\tPHASE=event｜FROM=手を下げたまま静止｜ADVANCE=狐火が空に上がっていく｜TO=狐火が上昇中｜SHOW=face_eyes_mouth\n",
+      "parsed": {
+        "issues": [],
+        "missing": [],
+        "texts": {
+          "1": "PHASE=setup｜FROM=両足支持｜ADVANCE=左肩を下げて右腕を体側へ下げる｜TO=手を下げたまま静止｜SHOW=face_eyes_mouth",
+          "2": "PHASE=event｜FROM=手を下げたまま静止｜ADVANCE=狐火が空に上がっていく｜TO=狐火が上昇中｜SHOW=face_eyes_mouth"
+        },
+        "valid": true,
+        "steps": [
+          {
+            "phase": "setup",
+            "from": "両足支持",
+            "advance": "左肩を下げて右腕を体側へ下げる",
+            "to": "手を下げたまま静止",
+            "show": "face_eyes_mouth"
+          },
+          {
+            "phase": "event",
+            "from": "手を下げたまま静止",
+            "advance": "狐火が空に上がっていく",
+            "to": "狐火が上昇中",
+            "show": "face_eyes_mouth"
+          }
+        ]
+      },
+      "elapsed_seconds": 2.523
+    }
+  ]
+}

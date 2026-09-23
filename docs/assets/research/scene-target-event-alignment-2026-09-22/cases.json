@@ -1,0 +1,21 @@
+{
+  "description": "Human-labelled, short Scene target/change pairs fixed before the 8B audit probe. Hand-origin foxfire is allowed.",
+  "cases": [
+    {"id": "shrine_roof_seen", "lyrics": ["またこの社へ続くなら"], "target": "社", "change": "人物が社の屋根を見上げ、木々の奥にその輪郭が現れる", "source": "yes", "event": "yes"},
+    {"id": "shrine_footsteps_only", "lyrics": ["またこの社へ続くなら"], "target": "社", "change": "足音が石畳の道を伝って響く", "source": "yes", "event": "no"},
+    {"id": "shrine_substring_trap", "lyrics": ["またこの社へ続くなら"], "target": "社", "change": "新たな足音が石畳の道を伝って神社へ向かう", "source": "yes", "event": "no"},
+    {"id": "shrine_pillar_touch", "lyrics": ["またこの社へ続くなら"], "target": "社", "change": "人物が社の柱へ掌を添え、木目を確かめて手を離す", "source": "yes", "event": "yes"},
+    {"id": "shrine_lantern_touch", "lyrics": ["またこの社へ続くなら"], "target": "社", "change": "人物が参道の石灯籠へ掌を添え、灯りを見つめる", "source": "yes", "event": "no"},
+    {"id": "foxfire_hand_origin_orbit", "lyrics": ["狐火は祈り"], "target": "狐火", "change": "人物の掌に狐火が灯り、手を離れた複数の狐火が周囲を巡って木々を照らす", "source": "yes", "event": "yes"},
+    {"id": "foxfire_independent_orbit", "lyrics": ["狐火は祈り"], "target": "狐火", "change": "狐火が自ら森に現れ、人物の周囲を旋回して紅葉へ光を落とす", "source": "yes", "event": "yes"},
+    {"id": "foxfire_hands_only", "lyrics": ["狐火は祈り"], "target": "狐火", "change": "人物が両腕を開いて祈り、顔を上げる", "source": "yes", "event": "no"},
+    {"id": "foxfire_static_backdrop", "lyrics": ["狐火は祈り"], "target": "狐火", "change": "狐火を背に人物が参道を歩き続ける", "source": "yes", "event": "no"},
+    {"id": "foxfire_hand_origin_rise", "lyrics": ["狐火は祈り"], "target": "狐火", "change": "差し出した手から狐火が生まれ、宙へ上がって人物の髪に光を映す", "source": "yes", "event": "yes"},
+    {"id": "moss_root_touch", "lyrics": ["苔へと還る"], "target": "苔", "change": "人物が大樹の根元の苔を指先で撫で、苔の表面がわずかに揺れる", "source": "yes", "event": "yes"},
+    {"id": "moss_absent_lantern", "lyrics": ["苔へと還る"], "target": "苔", "change": "人物が参道の石灯籠の縁を撫で、手を下ろす", "source": "yes", "event": "no"},
+    {"id": "flowers_petals", "lyrics": ["人は花より"], "target": "花", "change": "参道脇の花が風に揺れ、花びらが人物の前を横切る", "source": "yes", "event": "yes"},
+    {"id": "flowers_absent_walk", "lyrics": ["人は花より"], "target": "花", "change": "人物が参道を歩きながら袖を揺らす", "source": "yes", "event": "no"},
+    {"id": "unsupported_lantern_target", "lyrics": ["狐火は祈り"], "target": "灯籠", "change": "灯籠の火が揺れ、石畳に明かりを落とす", "source": "no", "event": "yes"},
+    {"id": "generated_shrine_sound", "lyrics": ["またこの社へ続くなら"], "target": "社", "change": "足音が社の境内を伝う", "source": "yes", "event": "no"}
+  ]
+}

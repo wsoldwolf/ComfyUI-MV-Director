@@ -1,0 +1,652 @@
+{
+  "source": "E:\\ComfyUI\\projects\\ComfyUI-MV-Director\\docs\\assets\\research\\choreography-full-run-v4-2026-09-22\\evidence.json",
+  "model": "E:\\ComfyUI\\models\\LLM\\GGUF\\Qwen3-8B-Abliterated\\qwen3-8b-abliterated-Q4_K_M.gguf",
+  "runtime": {
+    "chat_format": "",
+    "max_tokens": 4096,
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "repetition_penalty": 1.05,
+    "gpu_layers": -1,
+    "n_batch": 512,
+    "n_ctx": 16384,
+    "flash_attn": true,
+    "kv_cache_type": "q8_0",
+    "op_offload": true,
+    "keep_model_loaded": false,
+    "seed": 42
+  },
+  "event_prompt": "あなたはアニメMVのSceneで起こる出来事だけを決める。身体振付候補や共通motion文は与えない。現在Sceneの原歌詞・作者指示だけを対象の根拠にし、背景scene_contextは配置の参考に限る。discovered_cuesのtargetは現在Sceneに選ばれた対象である。\nMODEはnone/observe/contact/autonomous。歌詞に物への接触動詞がない場合は、対象を見せるobserveをまず検討し、接触を演出する必然がある時だけcontactを選ぶ。contactならCONTACT_POINTをTARGETの実際の部位として書き、CHANGEでもその部位へ人物が到達して触れる。床や別物へ作用して対象名だけ書くことは禁止。effectの発光体や狐火は人物の手から出さずautonomousで自律した出現・空間経路・結果を作る。TARGET以外の足音や歩行だけをCHANGEの主役にしない。\n実TABで一行 EVENT、Scene番号、EVIDENCE=...｜TARGET=...｜MODE=...｜ANCHOR=...｜CONTACT_POINT=...｜CHANGE=...｜RESULT=...。根拠は現在の歌詞の連続引用。非contactならCONTACT_POINT=なし。説明やBODY行は書かない。",
+  "body_prompt": "あなたは既に確定したSceneのEVENTを変えず、人物の連続した身体演技だけを計画する。候補は任意の着想であり、選択・融合・改変・不使用ができる。身体の支持・骨盤・胸郭・左右の腕・視線を必要な範囲でSTART→PATH→ACCENT→ENDへ進める。毎Scene同じ候補全文を複写しない。対象、小道具、場所、接触の有無を候補から増やさない。SYNCにEVENT.CHANGEの一回の瞬間と人物の反応の関係を書く。外部自律の光は人物が発生・保持・操作せず、視線や身体で反応する。\n実TABで一行 BODY、Scene番号、START=...｜PATH=...｜ACCENT=...｜END=...｜SYNC=...。各欄は短い具体文。EVENT行、説明、Markdownは出さない。",
+  "scenes": [
+    11,
+    14
+  ],
+  "seeds": [
+    42,
+    43
+  ],
+  "runs": [
+    {
+      "seed": 42,
+      "scene": 11,
+      "event_input": {
+        "scene_number": 11,
+        "lyrics": [
+          {
+            "section": "SHORT_BRIDGE",
+            "text": "自由なのか"
+          },
+          {
+            "section": "SHORT_BRIDGE",
+            "text": "それでも新しい足音が"
+          },
+          {
+            "section": "SHORT_BRIDGE",
+            "text": "またこの社へ続くなら"
+          }
+        ],
+        "author_body": [],
+        "discovered_cues": [
+          {
+            "evidence": "またこの社へ続くなら",
+            "kind": "place",
+            "target": "社"
+          }
+        ],
+        "scene_context": {
+          "authority": "Observed baseline only. Explicit Direction and user instructions override time, lighting, weather, season, and staging. The Picture is environment evidence, never a performer or composition template.",
+          "background_picture": "<Picture 2>",
+          "environment": [
+            "夜の森の中の神社境内",
+            "鳥居",
+            "石灯籠",
+            "石畳の道",
+            "紅葉した木々",
+            "神社の建物"
+          ],
+          "time_lighting": [
+            "夜、曇り",
+            "暗い夜空と灯りの照らし出された石畳の道"
+          ]
+        }
+      },
+      "event_response": "EVENT\t11\tEVIDENCE=またこの社へ続くなら｜TARGET=社｜MODE=observe｜ANCHOR=石畳の道｜CONTACT_POINT=なし｜CHANGE=足音｜RESULT=新たな足音が石畳の道を伝って神社へ向かう\n",
+      "event": {
+        "valid": true,
+        "fields": {
+          "EVIDENCE": "またこの社へ続くなら",
+          "TARGET": "社",
+          "MODE": "observe",
+          "ANCHOR": "石畳の道",
+          "CONTACT_POINT": "なし",
+          "CHANGE": "足音",
+          "RESULT": "新たな足音が石畳の道を伝って神社へ向かう"
+        }
+      },
+      "event_prompt_tokens": 490,
+      "event_elapsed_seconds": 1.879,
+      "event_retry": {
+        "payload": {
+          "scene_number": 11,
+          "lyrics": [
+            {
+              "section": "SHORT_BRIDGE",
+              "text": "自由なのか"
+            },
+            {
+              "section": "SHORT_BRIDGE",
+              "text": "それでも新しい足音が"
+            },
+            {
+              "section": "SHORT_BRIDGE",
+              "text": "またこの社へ続くなら"
+            }
+          ],
+          "author_body": [],
+          "discovered_cues": [
+            {
+              "evidence": "またこの社へ続くなら",
+              "kind": "place",
+              "target": "社"
+            }
+          ],
+          "scene_context": {
+            "authority": "Observed baseline only. Explicit Direction and user instructions override time, lighting, weather, season, and staging. The Picture is environment evidence, never a performer or composition template.",
+            "background_picture": "<Picture 2>",
+            "environment": [
+              "夜の森の中の神社境内",
+              "鳥居",
+              "石灯籠",
+              "石畳の道",
+              "紅葉した木々",
+              "神社の建物"
+            ],
+            "time_lighting": [
+              "夜、曇り",
+              "暗い夜空と灯りの照らし出された石畳の道"
+            ]
+          },
+          "previous_rejected_event": "EVENT\t11\tEVIDENCE=またこの社へ続くなら｜TARGET=社｜MODE=observe｜ANCHOR=石畳の道｜CONTACT_POINT=なし｜CHANGE=足音｜RESULT=新たな足音が石畳の道を伝って神社へ向かう\n",
+          "repair_reason": "CHANGE must name TARGET and show the target itself or a person's visible relation to it; background sound or footsteps alone are insufficient"
+        },
+        "response": "EVENT\t11\tEVIDENCE=またこの社へ続くなら｜TARGET=社｜MODE=observe｜ANCHOR=石畳の道｜CONTACT_POINT=なし｜CHANGE=新たな足音が石畳の道を伝って神社へ向かう｜RESULT=新たな足音が石畳の道を伝って神社へ向かう\n",
+        "parsed": {
+          "valid": true,
+          "fields": {
+            "EVIDENCE": "またこの社へ続くなら",
+            "TARGET": "社",
+            "MODE": "observe",
+            "ANCHOR": "石畳の道",
+            "CONTACT_POINT": "なし",
+            "CHANGE": "新たな足音が石畳の道を伝って神社へ向かう",
+            "RESULT": "新たな足音が石畳の道を伝って神社へ向かう"
+          }
+        },
+        "prompt_tokens": 668,
+        "elapsed_seconds": 2.17
+      },
+      "event_final_response": "EVENT\t11\tEVIDENCE=またこの社へ続くなら｜TARGET=社｜MODE=observe｜ANCHOR=石畳の道｜CONTACT_POINT=なし｜CHANGE=新たな足音が石畳の道を伝って神社へ向かう｜RESULT=新たな足音が石畳の道を伝って神社へ向かう\n",
+      "event_final": {
+        "valid": true,
+        "fields": {
+          "EVIDENCE": "またこの社へ続くなら",
+          "TARGET": "社",
+          "MODE": "observe",
+          "ANCHOR": "石畳の道",
+          "CONTACT_POINT": "なし",
+          "CHANGE": "新たな足音が石畳の道を伝って神社へ向かう",
+          "RESULT": "新たな足音が石畳の道を伝って神社へ向かう"
+        }
+      },
+      "target_named_in_change": true,
+      "body_input": {
+        "scene_number": 11,
+        "lyrics": [
+          "自由なのか",
+          "それでも新しい足音が",
+          "またこの社へ続くなら"
+        ],
+        "fixed_event": "EVENT\t11\tEVIDENCE=またこの社へ続くなら｜TARGET=社｜MODE=observe｜ANCHOR=石畳の道｜CONTACT_POINT=なし｜CHANGE=新たな足音が石畳の道を伝って神社へ向かう｜RESULT=新たな足音が石畳の道を伝って神社へ向かう\n",
+        "direction_motion": [
+          "二コマ打ち又は三コマ打ちのセルアニメとして、読めるキーポーズ、加速、短い停止、余韻を作る。Sceneごとに身体の流れを考え、その準備・アクセント・解放をShotへ時間順に分配する。振付候補が合わない場合は独自の流れを考案する。各Shotで同じ開始姿勢へ戻らない。 身体演技は支持と重心、骨盤と胸郭、左右で異なる腕の経路、目と口の反応を一連の出来事として結ぶ。全身Shotに見える支持と体幹の変化を置き、顔Shotでは既に進んだフレーズの顔と上半身の結果を見せる。歌詞の感情とCamera coverageに合う可視部分だけを使い、候補の全文を毎Shotに詰め込まない。 参照画像の立ち姿、前傾、開腕、手を腰へ戻す動き、歩行及び同じ左右反転を反復しない。人物の全身旋回やピルエットを追加せず、視点の回り込みはカメラで表す。接地位置と体の向きを保ち、個々の足指や履物を演技の主題にしない。 歌詞又は作者が選んだ対象への接触・配置・変化を優先し、候補の比喩から小道具、場所、接触相手を増やさない。外部effectは人物の手に持たせず、独立した現象として扱う。静かなSceneは小さな動きと意図ある停止を選び、毎回大きなダンスにしない。"
+        ],
+        "motion_templates": [
+          "始点は両足で安定し、片手は体側、もう片手は肘を曲げて低く置く。片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける。低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る。差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める。物を持つ・渡す動作は歌詞に明示された時だけ。",
+          "始点は膝を伸ばし切らず胸郭を正面に保つ。後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せ、一拍のアクセント後、肩と肘を緩めて前足支持で終える。移動を伴う歩行や人物の全身回転にはしない。"
+        ]
+      },
+      "body_response": "BODY\t11\tSTART=片手を体側に、もう片手は肘を曲げて低く置く｜PATH=片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける｜ACCENT=低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る｜END=差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める｜SYNC=新たな足音が石畳の道を伝って神社へ向かう\n",
+      "body": {
+        "valid": true,
+        "fields": {
+          "START": "片手を体側に、もう片手は肘を曲げて低く置く",
+          "PATH": "片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける",
+          "ACCENT": "低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る",
+          "END": "差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める",
+          "SYNC": "新たな足音が石畳の道を伝って神社へ向かう"
+        }
+      },
+      "body_prompt_tokens": 972,
+      "body_elapsed_seconds": 4.623,
+      "combined_plan": "EVENT\t11\tEVIDENCE=またこの社へ続くなら｜TARGET=社｜MODE=observe｜ANCHOR=石畳の道｜CONTACT_POINT=なし｜CHANGE=新たな足音が石畳の道を伝って神社へ向かう｜RESULT=新たな足音が石畳の道を伝って神社へ向かう\nBODY\t11\tSTART=片手を体側に、もう片手は肘を曲げて低く置く｜PATH=片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける｜ACCENT=低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る｜END=差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める｜SYNC=新たな足音が石畳の道を伝って神社へ向かう\n",
+      "combined_parsed": {
+        "valid": true,
+        "issues": [],
+        "missing": [],
+        "event": {
+          "EVIDENCE": "またこの社へ続くなら",
+          "TARGET": "社",
+          "MODE": "observe",
+          "ANCHOR": "石畳の道",
+          "CONTACT_POINT": "なし",
+          "CHANGE": "新たな足音が石畳の道を伝って神社へ向かう",
+          "RESULT": "新たな足音が石畳の道を伝って神社へ向かう"
+        },
+        "body": {
+          "START": "片手を体側に、もう片手は肘を曲げて低く置く",
+          "PATH": "片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける",
+          "ACCENT": "低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る",
+          "END": "差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める",
+          "SYNC": "新たな足音が石畳の道を伝って神社へ向かう"
+        }
+      },
+      "matrix_audit": {
+        "response": "CHECK\t1\tTARGET_ACTION=PASS｜CONTACT_POINT=PASS｜EXTERNAL_EFFECT=PASS｜SYNC=PASS",
+        "parsed": {
+          "valid": true,
+          "flags": {
+            "TARGET_ACTION": "PASS",
+            "CONTACT_POINT": "PASS",
+            "EXTERNAL_EFFECT": "PASS",
+            "SYNC": "PASS"
+          }
+        },
+        "prompt_tokens": 604,
+        "elapsed_seconds": 0.507
+      }
+    },
+    {
+      "seed": 42,
+      "scene": 14,
+      "event_input": {
+        "scene_number": 14,
+        "lyrics": [
+          {
+            "section": "FINAL_CHORUS",
+            "text": "狐火は祈り"
+          },
+          {
+            "section": "FINAL_CHORUS",
+            "text": "忘れぬことを"
+          },
+          {
+            "section": "FINAL_CHORUS",
+            "text": "救いと呼ぼう"
+          },
+          {
+            "section": "END",
+            "text": "またひとつの春が"
+          }
+        ],
+        "author_body": [],
+        "discovered_cues": [
+          {
+            "evidence": "狐火は祈り",
+            "kind": "effect",
+            "target": "狐火"
+          }
+        ],
+        "scene_context": {
+          "authority": "Observed baseline only. Explicit Direction and user instructions override time, lighting, weather, season, and staging. The Picture is environment evidence, never a performer or composition template.",
+          "background_picture": "<Picture 2>",
+          "environment": [
+            "夜の森の中の神社境内",
+            "鳥居",
+            "石灯籠",
+            "石畳の道",
+            "紅葉した木々",
+            "神社の建物"
+          ],
+          "time_lighting": [
+            "夜、曇り",
+            "暗い夜空と灯りの照らし出された石畳の道"
+          ]
+        }
+      },
+      "event_response": "EVENT\t14\tEVIDENCE=狐火は祈り｜TARGET=狐火｜MODE=autonomous｜ANCHOR=夜の森の中の神社境内｜CONTACT_POINT=なし｜CHANGE=狐火が空に舞い上がる｜RESULT=狐火が夜空を照らし出す\n",
+      "event": {
+        "valid": true,
+        "fields": {
+          "EVIDENCE": "狐火は祈り",
+          "TARGET": "狐火",
+          "MODE": "autonomous",
+          "ANCHOR": "夜の森の中の神社境内",
+          "CONTACT_POINT": "なし",
+          "CHANGE": "狐火が空に舞い上がる",
+          "RESULT": "狐火が夜空を照らし出す"
+        }
+      },
+      "event_prompt_tokens": 506,
+      "event_elapsed_seconds": 1.693,
+      "event_final_response": "EVENT\t14\tEVIDENCE=狐火は祈り｜TARGET=狐火｜MODE=autonomous｜ANCHOR=夜の森の中の神社境内｜CONTACT_POINT=なし｜CHANGE=狐火が空に舞い上がる｜RESULT=狐火が夜空を照らし出す\n",
+      "event_final": {
+        "valid": true,
+        "fields": {
+          "EVIDENCE": "狐火は祈り",
+          "TARGET": "狐火",
+          "MODE": "autonomous",
+          "ANCHOR": "夜の森の中の神社境内",
+          "CONTACT_POINT": "なし",
+          "CHANGE": "狐火が空に舞い上がる",
+          "RESULT": "狐火が夜空を照らし出す"
+        }
+      },
+      "target_named_in_change": true,
+      "body_input": {
+        "scene_number": 14,
+        "lyrics": [
+          "狐火は祈り",
+          "忘れぬことを",
+          "救いと呼ぼう",
+          "またひとつの春が"
+        ],
+        "fixed_event": "EVENT\t14\tEVIDENCE=狐火は祈り｜TARGET=狐火｜MODE=autonomous｜ANCHOR=夜の森の中の神社境内｜CONTACT_POINT=なし｜CHANGE=狐火が空に舞い上がる｜RESULT=狐火が夜空を照らし出す\n",
+        "direction_motion": [
+          "二コマ打ち又は三コマ打ちのセルアニメとして、読めるキーポーズ、加速、短い停止、余韻を作る。Sceneごとに身体の流れを考え、その準備・アクセント・解放をShotへ時間順に分配する。振付候補が合わない場合は独自の流れを考案する。各Shotで同じ開始姿勢へ戻らない。 身体演技は支持と重心、骨盤と胸郭、左右で異なる腕の経路、目と口の反応を一連の出来事として結ぶ。全身Shotに見える支持と体幹の変化を置き、顔Shotでは既に進んだフレーズの顔と上半身の結果を見せる。歌詞の感情とCamera coverageに合う可視部分だけを使い、候補の全文を毎Shotに詰め込まない。 参照画像の立ち姿、前傾、開腕、手を腰へ戻す動き、歩行及び同じ左右反転を反復しない。人物の全身旋回やピルエットを追加せず、視点の回り込みはカメラで表す。接地位置と体の向きを保ち、個々の足指や履物を演技の主題にしない。 歌詞又は作者が選んだ対象への接触・配置・変化を優先し、候補の比喩から小道具、場所、接触相手を増やさない。外部effectは人物の手に持たせず、独立した現象として扱う。静かなSceneは小さな動きと意図ある停止を選び、毎回大きなダンスにしない。"
+        ],
+        "motion_templates": [
+          "始点は両足で安定し、片手は体側、もう片手は肘を曲げて低く置く。片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける。低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る。差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める。物を持つ・渡す動作は歌詞に明示された時だけ。",
+          "始点は膝を伸ばし切らず胸郭を正面に保つ。後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せ、一拍のアクセント後、肩と肘を緩めて前足支持で終える。移動を伴う歩行や人物の全身回転にはしない。"
+        ]
+      },
+      "body_response": "BODY\t14\tSTART=両足で安定｜PATH=片手体側・もう片手肘曲げ低く｜ACCENT=低い手を視線先へ弧状差し出し｜END=呼吸と視線戻し両足支持｜SYNC=狐火が空に舞い上がる時、目を上げて視線追う\n",
+      "body": {
+        "valid": true,
+        "fields": {
+          "START": "両足で安定",
+          "PATH": "片手体側・もう片手肘曲げ低く",
+          "ACCENT": "低い手を視線先へ弧状差し出し",
+          "END": "呼吸と視線戻し両足支持",
+          "SYNC": "狐火が空に舞い上がる時、目を上げて視線追う"
+        }
+      },
+      "body_prompt_tokens": 965,
+      "body_elapsed_seconds": 2.345,
+      "combined_plan": "EVENT\t14\tEVIDENCE=狐火は祈り｜TARGET=狐火｜MODE=autonomous｜ANCHOR=夜の森の中の神社境内｜CONTACT_POINT=なし｜CHANGE=狐火が空に舞い上がる｜RESULT=狐火が夜空を照らし出す\nBODY\t14\tSTART=両足で安定｜PATH=片手体側・もう片手肘曲げ低く｜ACCENT=低い手を視線先へ弧状差し出し｜END=呼吸と視線戻し両足支持｜SYNC=狐火が空に舞い上がる時、目を上げて視線追う\n",
+      "combined_parsed": {
+        "valid": true,
+        "issues": [],
+        "missing": [],
+        "event": {
+          "EVIDENCE": "狐火は祈り",
+          "TARGET": "狐火",
+          "MODE": "autonomous",
+          "ANCHOR": "夜の森の中の神社境内",
+          "CONTACT_POINT": "なし",
+          "CHANGE": "狐火が空に舞い上がる",
+          "RESULT": "狐火が夜空を照らし出す"
+        },
+        "body": {
+          "START": "両足で安定",
+          "PATH": "片手体側・もう片手肘曲げ低く",
+          "ACCENT": "低い手を視線先へ弧状差し出し",
+          "END": "呼吸と視線戻し両足支持",
+          "SYNC": "狐火が空に舞い上がる時、目を上げて視線追う"
+        }
+      },
+      "matrix_audit": {
+        "response": "CHECK\t1\tTARGET_ACTION=PASS｜CONTACT_POINT=PASS｜EXTERNAL_EFFECT=PASS｜SYNC=PASS\n",
+        "parsed": {
+          "valid": true,
+          "flags": {
+            "TARGET_ACTION": "PASS",
+            "CONTACT_POINT": "PASS",
+            "EXTERNAL_EFFECT": "PASS",
+            "SYNC": "PASS"
+          }
+        },
+        "prompt_tokens": 529,
+        "elapsed_seconds": 0.417
+      }
+    },
+    {
+      "seed": 43,
+      "scene": 11,
+      "event_input": {
+        "scene_number": 11,
+        "lyrics": [
+          {
+            "section": "SHORT_BRIDGE",
+            "text": "自由なのか"
+          },
+          {
+            "section": "SHORT_BRIDGE",
+            "text": "それでも新しい足音が"
+          },
+          {
+            "section": "SHORT_BRIDGE",
+            "text": "またこの社へ続くなら"
+          }
+        ],
+        "author_body": [],
+        "discovered_cues": [
+          {
+            "evidence": "またこの社へ続くなら",
+            "kind": "place",
+            "target": "社"
+          }
+        ],
+        "scene_context": {
+          "authority": "Observed baseline only. Explicit Direction and user instructions override time, lighting, weather, season, and staging. The Picture is environment evidence, never a performer or composition template.",
+          "background_picture": "<Picture 2>",
+          "environment": [
+            "夜の森の中の神社境内",
+            "鳥居",
+            "石灯籠",
+            "石畳の道",
+            "紅葉した木々",
+            "神社の建物"
+          ],
+          "time_lighting": [
+            "夜、曇り",
+            "暗い夜空と灯りの照らし出された石畳の道"
+          ]
+        }
+      },
+      "event_response": "EVENT\t11\tEVIDENCE=またこの社へ続くなら｜TARGET=社｜MODE=observe｜ANCHOR=石畳の道｜CONTACT_POINT=なし｜CHANGE=足音が石畳の道を伝って響く｜RESULT=神社境内の暗闇に足音が聞こえる\n",
+      "event": {
+        "valid": true,
+        "fields": {
+          "EVIDENCE": "またこの社へ続くなら",
+          "TARGET": "社",
+          "MODE": "observe",
+          "ANCHOR": "石畳の道",
+          "CONTACT_POINT": "なし",
+          "CHANGE": "足音が石畳の道を伝って響く",
+          "RESULT": "神社境内の暗闇に足音が聞こえる"
+        }
+      },
+      "event_prompt_tokens": 490,
+      "event_elapsed_seconds": 1.814,
+      "event_retry": {
+        "payload": {
+          "scene_number": 11,
+          "lyrics": [
+            {
+              "section": "SHORT_BRIDGE",
+              "text": "自由なのか"
+            },
+            {
+              "section": "SHORT_BRIDGE",
+              "text": "それでも新しい足音が"
+            },
+            {
+              "section": "SHORT_BRIDGE",
+              "text": "またこの社へ続くなら"
+            }
+          ],
+          "author_body": [],
+          "discovered_cues": [
+            {
+              "evidence": "またこの社へ続くなら",
+              "kind": "place",
+              "target": "社"
+            }
+          ],
+          "scene_context": {
+            "authority": "Observed baseline only. Explicit Direction and user instructions override time, lighting, weather, season, and staging. The Picture is environment evidence, never a performer or composition template.",
+            "background_picture": "<Picture 2>",
+            "environment": [
+              "夜の森の中の神社境内",
+              "鳥居",
+              "石灯籠",
+              "石畳の道",
+              "紅葉した木々",
+              "神社の建物"
+            ],
+            "time_lighting": [
+              "夜、曇り",
+              "暗い夜空と灯りの照らし出された石畳の道"
+            ]
+          },
+          "previous_rejected_event": "EVENT\t11\tEVIDENCE=またこの社へ続くなら｜TARGET=社｜MODE=observe｜ANCHOR=石畳の道｜CONTACT_POINT=なし｜CHANGE=足音が石畳の道を伝って響く｜RESULT=神社境内の暗闇に足音が聞こえる\n",
+          "repair_reason": "CHANGE must name TARGET and show the target itself or a person's visible relation to it; background sound or footsteps alone are insufficient"
+        },
+        "response": "EVENT\t11\tEVIDENCE=またこの社へ続くなら｜TARGET=社｜MODE=observe｜ANCHOR=石畳の道｜CONTACT_POINT=なし｜CHANGE=石畳の道に足音が伝わる｜RESULT=神社境内の暗闇に足音が聞こえる\n",
+        "parsed": {
+          "valid": true,
+          "fields": {
+            "EVIDENCE": "またこの社へ続くなら",
+            "TARGET": "社",
+            "MODE": "observe",
+            "ANCHOR": "石畳の道",
+            "CONTACT_POINT": "なし",
+            "CHANGE": "石畳の道に足音が伝わる",
+            "RESULT": "神社境内の暗闇に足音が聞こえる"
+          }
+        },
+        "prompt_tokens": 675,
+        "elapsed_seconds": 1.874
+      },
+      "event_final_response": "EVENT\t11\tEVIDENCE=またこの社へ続くなら｜TARGET=社｜MODE=observe｜ANCHOR=石畳の道｜CONTACT_POINT=なし｜CHANGE=石畳の道に足音が伝わる｜RESULT=神社境内の暗闇に足音が聞こえる\n",
+      "event_final": {
+        "valid": true,
+        "fields": {
+          "EVIDENCE": "またこの社へ続くなら",
+          "TARGET": "社",
+          "MODE": "observe",
+          "ANCHOR": "石畳の道",
+          "CONTACT_POINT": "なし",
+          "CHANGE": "石畳の道に足音が伝わる",
+          "RESULT": "神社境内の暗闇に足音が聞こえる"
+        }
+      },
+      "target_named_in_change": false
+    },
+    {
+      "seed": 43,
+      "scene": 14,
+      "event_input": {
+        "scene_number": 14,
+        "lyrics": [
+          {
+            "section": "FINAL_CHORUS",
+            "text": "狐火は祈り"
+          },
+          {
+            "section": "FINAL_CHORUS",
+            "text": "忘れぬことを"
+          },
+          {
+            "section": "FINAL_CHORUS",
+            "text": "救いと呼ぼう"
+          },
+          {
+            "section": "END",
+            "text": "またひとつの春が"
+          }
+        ],
+        "author_body": [],
+        "discovered_cues": [
+          {
+            "evidence": "狐火は祈り",
+            "kind": "effect",
+            "target": "狐火"
+          }
+        ],
+        "scene_context": {
+          "authority": "Observed baseline only. Explicit Direction and user instructions override time, lighting, weather, season, and staging. The Picture is environment evidence, never a performer or composition template.",
+          "background_picture": "<Picture 2>",
+          "environment": [
+            "夜の森の中の神社境内",
+            "鳥居",
+            "石灯籠",
+            "石畳の道",
+            "紅葉した木々",
+            "神社の建物"
+          ],
+          "time_lighting": [
+            "夜、曇り",
+            "暗い夜空と灯りの照らし出された石畳の道"
+          ]
+        }
+      },
+      "event_response": "EVENT\t14\tEVIDENCE=狐火は祈り｜TARGET=狐火｜MODE=autonomous｜ANCHOR=夜の森の中の神社境内｜CONTACT_POINT=なし｜CHANGE=狐火が空に散らばる｜RESULT=夜空に赤い光が舞う\n",
+      "event": {
+        "valid": true,
+        "fields": {
+          "EVIDENCE": "狐火は祈り",
+          "TARGET": "狐火",
+          "MODE": "autonomous",
+          "ANCHOR": "夜の森の中の神社境内",
+          "CONTACT_POINT": "なし",
+          "CHANGE": "狐火が空に散らばる",
+          "RESULT": "夜空に赤い光が舞う"
+        }
+      },
+      "event_prompt_tokens": 506,
+      "event_elapsed_seconds": 1.738,
+      "event_final_response": "EVENT\t14\tEVIDENCE=狐火は祈り｜TARGET=狐火｜MODE=autonomous｜ANCHOR=夜の森の中の神社境内｜CONTACT_POINT=なし｜CHANGE=狐火が空に散らばる｜RESULT=夜空に赤い光が舞う\n",
+      "event_final": {
+        "valid": true,
+        "fields": {
+          "EVIDENCE": "狐火は祈り",
+          "TARGET": "狐火",
+          "MODE": "autonomous",
+          "ANCHOR": "夜の森の中の神社境内",
+          "CONTACT_POINT": "なし",
+          "CHANGE": "狐火が空に散らばる",
+          "RESULT": "夜空に赤い光が舞う"
+        }
+      },
+      "target_named_in_change": true,
+      "body_input": {
+        "scene_number": 14,
+        "lyrics": [
+          "狐火は祈り",
+          "忘れぬことを",
+          "救いと呼ぼう",
+          "またひとつの春が"
+        ],
+        "fixed_event": "EVENT\t14\tEVIDENCE=狐火は祈り｜TARGET=狐火｜MODE=autonomous｜ANCHOR=夜の森の中の神社境内｜CONTACT_POINT=なし｜CHANGE=狐火が空に散らばる｜RESULT=夜空に赤い光が舞う\n",
+        "direction_motion": [
+          "二コマ打ち又は三コマ打ちのセルアニメとして、読めるキーポーズ、加速、短い停止、余韻を作る。Sceneごとに身体の流れを考え、その準備・アクセント・解放をShotへ時間順に分配する。振付候補が合わない場合は独自の流れを考案する。各Shotで同じ開始姿勢へ戻らない。 身体演技は支持と重心、骨盤と胸郭、左右で異なる腕の経路、目と口の反応を一連の出来事として結ぶ。全身Shotに見える支持と体幹の変化を置き、顔Shotでは既に進んだフレーズの顔と上半身の結果を見せる。歌詞の感情とCamera coverageに合う可視部分だけを使い、候補の全文を毎Shotに詰め込まない。 参照画像の立ち姿、前傾、開腕、手を腰へ戻す動き、歩行及び同じ左右反転を反復しない。人物の全身旋回やピルエットを追加せず、視点の回り込みはカメラで表す。接地位置と体の向きを保ち、個々の足指や履物を演技の主題にしない。 歌詞又は作者が選んだ対象への接触・配置・変化を優先し、候補の比喩から小道具、場所、接触相手を増やさない。外部effectは人物の手に持たせず、独立した現象として扱う。静かなSceneは小さな動きと意図ある停止を選び、毎回大きなダンスにしない。"
+        ],
+        "motion_templates": [
+          "始点は両足で安定し、片手は体側、もう片手は肘を曲げて低く置く。片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける。低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る。差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める。物を持つ・渡す動作は歌詞に明示された時だけ。",
+          "始点は膝を伸ばし切らず胸郭を正面に保つ。後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せ、一拍のアクセント後、肩と肘を緩めて前足支持で終える。移動を伴う歩行や人物の全身回転にはしない。"
+        ]
+      },
+      "body_response": "BODY\t14\tSTART=両足で安定｜PATH=片手体側・もう片手低く置く｜ACCENT=低い手を視線先へ弧状に差し出す｜END=呼吸と視線戻し｜SYNC=狐火が空に散らばる時、視線は光の先へ向かう\n",
+      "body": {
+        "valid": true,
+        "fields": {
+          "START": "両足で安定",
+          "PATH": "片手体側・もう片手低く置く",
+          "ACCENT": "低い手を視線先へ弧状に差し出す",
+          "END": "呼吸と視線戻し",
+          "SYNC": "狐火が空に散らばる時、視線は光の先へ向かう"
+        }
+      },
+      "body_prompt_tokens": 965,
+      "body_elapsed_seconds": 2.534,
+      "combined_plan": "EVENT\t14\tEVIDENCE=狐火は祈り｜TARGET=狐火｜MODE=autonomous｜ANCHOR=夜の森の中の神社境内｜CONTACT_POINT=なし｜CHANGE=狐火が空に散らばる｜RESULT=夜空に赤い光が舞う\nBODY\t14\tSTART=両足で安定｜PATH=片手体側・もう片手低く置く｜ACCENT=低い手を視線先へ弧状に差し出す｜END=呼吸と視線戻し｜SYNC=狐火が空に散らばる時、視線は光の先へ向かう\n",
+      "combined_parsed": {
+        "valid": true,
+        "issues": [],
+        "missing": [],
+        "event": {
+          "EVIDENCE": "狐火は祈り",
+          "TARGET": "狐火",
+          "MODE": "autonomous",
+          "ANCHOR": "夜の森の中の神社境内",
+          "CONTACT_POINT": "なし",
+          "CHANGE": "狐火が空に散らばる",
+          "RESULT": "夜空に赤い光が舞う"
+        },
+        "body": {
+          "START": "両足で安定",
+          "PATH": "片手体側・もう片手低く置く",
+          "ACCENT": "低い手を視線先へ弧状に差し出す",
+          "END": "呼吸と視線戻し",
+          "SYNC": "狐火が空に散らばる時、視線は光の先へ向かう"
+        }
+      },
+      "matrix_audit": {
+        "response": "CHECK\t1\tTARGET_ACTION=PASS｜CONTACT_POINT=PASS｜EXTERNAL_EFFECT=PASS｜SYNC=PASS\n",
+        "parsed": {
+          "valid": true,
+          "flags": {
+            "TARGET_ACTION": "PASS",
+            "CONTACT_POINT": "PASS",
+            "EXTERNAL_EFFECT": "PASS",
+            "SYNC": "PASS"
+          }
+        },
+        "prompt_tokens": 528,
+        "elapsed_seconds": 0.513
+      }
+    }
+  ]
+}

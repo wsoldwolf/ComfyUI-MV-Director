@@ -1,0 +1,216 @@
+{
+  "source": "E:\\ComfyUI\\projects\\ComfyUI-MV-Director\\docs\\assets\\research\\scene-event-performance-dual-probe-2026-09-22\\evidence.json",
+  "model": "E:\\ComfyUI\\models\\LLM\\GGUF\\Qwen3-8B-Abliterated\\qwen3-8b-abliterated-Q4_K_M.gguf",
+  "runtime": {
+    "chat_format": "",
+    "max_tokens": 4096,
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "repetition_penalty": 1.05,
+    "gpu_layers": -1,
+    "n_batch": 512,
+    "n_ctx": 16384,
+    "flash_attn": true,
+    "kv_cache_type": "q8_0",
+    "op_offload": true,
+    "keep_model_loaded": false,
+    "seed": 42
+  },
+  "prompt": "あなたはMVの計画文を独立に検査する。EVENTとBODYを修正・創作しない。各質問を別々に評価してPASS又はFAILを記す。\nTARGET_ACTION: EVENT.CHANGEで動くもの・作用されるものはEVENT.TARGETか。TARGET=社なのに足音や石畳だけが変化するならFAIL。\nCONTACT_POINT: MODE=contactならCONTACT_POINTはTARGETの一部分か。TARGET=社で石畳ならFAIL。contact以外でCONTACT_POINT=なしならPASS。\nEXTERNAL_EFFECT: TARGETが狐火など独立した現象ならMODE=autonomousで人物の手から発生・操作しないか。狐火をcontact扱いするならFAIL。独立現象でなければPASS。\nSYNC: BODY.SYNCはEVENT.CHANGEの同じ瞬間へ反応し、別の出来事へ置き換えていないか。\n例: TARGET=社、CONTACT_POINT=石畳、CHANGE=石畳に触れる → TARGET_ACTION=FAIL、CONTACT_POINT=FAIL。\n例: TARGET=狐火、MODE=contact、CONTACT_POINT=神社の建物、CHANGE=狐火が建物に触れる → CONTACT_POINT=FAIL、EXTERNAL_EFFECT=FAIL。\n例: TARGET=狐火、MODE=autonomous、CHANGE=狐火が自ら空中を巡る → EXTERNAL_EFFECT=PASS。\nEVENT/BODYを読んで実TAB区切り一行 CHECK、1、TARGET_ACTION=...｜CONTACT_POINT=...｜EXTERNAL_EFFECT=...｜SYNC=... のみ出力する。説明を出さない。",
+  "runs": [
+    {
+      "name": "shrine_valid_observe",
+      "expected": "OK",
+      "payload": {
+        "scene_number": 11,
+        "lyrics": [
+          "またこの社へ続くなら"
+        ],
+        "plan": "EVENT\t11\tEVIDENCE=またこの社へ続くなら｜TARGET=社｜MODE=observe｜ANCHOR=参道の先の社｜CONTACT_POINT=なし｜CHANGE=人物が社を見上げ、屋根の輪郭が月明かりに現れる｜RESULT=社の姿を見届ける\nBODY\t11\tSTART=両足支持で腕を低く置く｜PATH=胸郭を起こし、視線に遅れて片腕を斜めへ通す｜ACCENT=社を見上げて一拍止める｜END=腕を静かに戻す｜SYNC=社の輪郭を認めた瞬間に視線を上げる"
+      },
+      "response": "CHECK\t1\tTARGET_ACTION=PASS｜CONTACT_POINT=PASS｜EXTERNAL_EFFECT=PASS｜SYNC=PASS\n",
+      "parsed": {
+        "valid": true,
+        "flags": {
+          "TARGET_ACTION": "PASS",
+          "CONTACT_POINT": "PASS",
+          "EXTERNAL_EFFECT": "PASS",
+          "SYNC": "PASS"
+        }
+      },
+      "prompt_tokens": 515,
+      "elapsed_seconds": 0.488
+    },
+    {
+      "name": "shrine_bad_other_object",
+      "expected": "REJECT:TARGET_MISMATCH",
+      "payload": {
+        "scene_number": 11,
+        "lyrics": [
+          "またこの社へ続くなら"
+        ],
+        "plan": "EVENT\t11\tEVIDENCE=またこの社へ続くなら｜TARGET=社｜MODE=contact｜ANCHOR=社の前｜CONTACT_POINT=石畳｜CHANGE=右手で石畳に触れる｜RESULT=石畳から手を離す\nBODY\t11\tSTART=両足支持｜PATH=右手を下へ伸ばす｜ACCENT=石畳に触れる｜END=手を戻す｜SYNC=石畳に触れた瞬間に身体を傾ける"
+      },
+      "response": "CHECK\t1\tTARGET_ACTION=PASS｜CONTACT_POINT=FAIL｜EXTERNAL_EFFECT=PASS｜SYNC=PASS\n",
+      "parsed": {
+        "valid": true,
+        "flags": {
+          "TARGET_ACTION": "PASS",
+          "CONTACT_POINT": "FAIL",
+          "EXTERNAL_EFFECT": "PASS",
+          "SYNC": "PASS"
+        }
+      },
+      "prompt_tokens": 481,
+      "elapsed_seconds": 0.405
+    },
+    {
+      "name": "foxfire_valid_autonomous",
+      "expected": "OK",
+      "payload": {
+        "scene_number": 14,
+        "lyrics": [
+          "狐火は祈り"
+        ],
+        "plan": "EVENT\t14\tEVIDENCE=狐火は祈り｜TARGET=狐火｜MODE=autonomous｜ANCHOR=人物の周囲の空間｜CONTACT_POINT=なし｜CHANGE=狐火が人物の周囲を自ら巡り、木々へ光を落とす｜RESULT=光の輪が遠ざかる\nBODY\t14\tSTART=両足支持で視線を伏せる｜PATH=胸郭を起こし、左右の腕を異なる高さへ開く｜ACCENT=狐火を追って目を見開く｜END=腕を緩めて息を落とす｜SYNC=狐火が巡り始める瞬間に視線を上げる"
+      },
+      "response": "CHECK\t1\tTARGET_ACTION=PASS｜CONTACT_POINT=PASS｜EXTERNAL_EFFECT=PASS｜SYNC=PASS",
+      "parsed": {
+        "valid": true,
+        "flags": {
+          "TARGET_ACTION": "PASS",
+          "CONTACT_POINT": "PASS",
+          "EXTERNAL_EFFECT": "PASS",
+          "SYNC": "PASS"
+        }
+      },
+      "prompt_tokens": 520,
+      "elapsed_seconds": 0.419
+    },
+    {
+      "name": "foxfire_bad_hand_generated",
+      "expected": "REJECT:EFFECT_CAUSALITY",
+      "payload": {
+        "scene_number": 14,
+        "lyrics": [
+          "狐火は祈り"
+        ],
+        "plan": "EVENT\t14\tEVIDENCE=狐火は祈り｜TARGET=狐火｜MODE=autonomous｜ANCHOR=人物の手の中｜CONTACT_POINT=なし｜CHANGE=人物が手から狐火を発生させて空へ放つ｜RESULT=狐火が手元から上がる\nBODY\t14\tSTART=腕を下げる｜PATH=右手を前へ伸ばす｜ACCENT=手から狐火を放つ｜END=手を戻す｜SYNC=右手を伸ばすことで狐火を発生させる"
+      },
+      "response": "CHECK\t1\tTARGET_ACTION=PASS｜CONTACT_POINT=PASS｜EXTERNAL_EFFECT=PASS｜SYNC=PASS\n",
+      "parsed": {
+        "valid": true,
+        "flags": {
+          "TARGET_ACTION": "PASS",
+          "CONTACT_POINT": "PASS",
+          "EXTERNAL_EFFECT": "PASS",
+          "SYNC": "PASS"
+        }
+      },
+      "prompt_tokens": 488,
+      "elapsed_seconds": 0.427
+    },
+    {
+      "name": "generated_scene11_seed42",
+      "expected": null,
+      "payload": {
+        "scene_number": 11,
+        "lyrics": [
+          "自由なのか",
+          "それでも新しい足音が",
+          "またこの社へ続くなら"
+        ],
+        "plan": "EVENT\t11\tEVIDENCE=またこの社へ続くなら｜TARGET=社｜MODE=contact｜ANCHOR=足音｜CONTACT_POINT=石畳の道｜CHANGE=足音が石畳の道を踏みしめる｜RESULT=石畳の道に足音が響く\nBODY\t11\tSTART=両足で安定｜PATH=片手体側・もう片手肘曲げ低く置く→片側荷重・骨盤斜めへ胸郭進む→低い手を視線先へ弧状差し出す｜ACCENT=差し出した手を開いたまま一拍止め｜END=両足支持で静かに収める｜SYNC=足音が石畳の道を踏みしめる瞬間、視線は足音の先へ向け、右手を弧状に差し出し、左手は反対方向へ開く\n"
+      },
+      "response": "CHECK\t1\tTARGET_ACTION=PASS｜CONTACT_POINT=FAIL｜EXTERNAL_EFFECT=PASS｜SYNC=PASS",
+      "parsed": {
+        "valid": true,
+        "flags": {
+          "TARGET_ACTION": "PASS",
+          "CONTACT_POINT": "FAIL",
+          "EXTERNAL_EFFECT": "PASS",
+          "SYNC": "PASS"
+        }
+      },
+      "prompt_tokens": 579,
+      "elapsed_seconds": 0.409
+    },
+    {
+      "name": "generated_scene14_seed42",
+      "expected": null,
+      "payload": {
+        "scene_number": 14,
+        "lyrics": [
+          "狐火は祈り",
+          "忘れぬことを",
+          "救いと呼ぼう",
+          "またひとつの春が"
+        ],
+        "plan": "EVENT\t14\tEVIDENCE=狐火｜TARGET=狐火｜MODE=contact｜ANCHOR=狐火｜CONTACT_POINT=神社の建物｜CHANGE=狐火が神社の建物に触れる｜RESULT=狐火が神社の建物に沿って流れる\nBODY\t14\tSTART=両足で安定｜PATH=片手を体側、もう片手を肘を曲げて低く置く→片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける｜ACCENT=低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る｜END=差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める｜SYNC=狐火が神社の建物に触れる瞬間、右手を斜め前に伸ばし、顔を少し右へ向け、視線を狐火に合わせる\n"
+      },
+      "response": "CHECK\t1\tTARGET_ACTION=PASS｜CONTACT_POINT=FAIL｜EXTERNAL_EFFECT=FAIL｜SYNC=PASS",
+      "parsed": {
+        "valid": true,
+        "flags": {
+          "TARGET_ACTION": "PASS",
+          "CONTACT_POINT": "FAIL",
+          "EXTERNAL_EFFECT": "FAIL",
+          "SYNC": "PASS"
+        }
+      },
+      "prompt_tokens": 623,
+      "elapsed_seconds": 0.388
+    },
+    {
+      "name": "generated_scene11_seed43",
+      "expected": null,
+      "payload": {
+        "scene_number": 11,
+        "lyrics": [
+          "自由なのか",
+          "それでも新しい足音が",
+          "またこの社へ続くなら"
+        ],
+        "plan": "EVENT\t11\tEVIDENCE=またこの社へ続くなら｜TARGET=社｜MODE=contact｜ANCHOR=足音｜CONTACT_POINT=石畳｜CHANGE=足音が石畳を踏みしめる｜RESULT=石畳の上に足音が響く\nBODY\t11\tSTART=両足で安定｜PATH=片手体側・もう片手肘曲げ低く置く→片側荷重・骨盤斜めへ胸郭進む→低い手を視線先へ弧状差し出す→反対腕肘緩めて釣り合い→手を開いたまま一拍止め｜ACCENT=足音が石畳を踏みしめる瞬間｜END=両足支持で静かに収める｜SYNC=足音のタイミングで視線を石畳へ向け、手を差し出す方向へ動かす\n"
+      },
+      "response": "CHECK\t1\tTARGET_ACTION=PASS｜CONTACT_POINT=FAIL｜EXTERNAL_EFFECT=PASS｜SYNC=PASS",
+      "parsed": {
+        "valid": true,
+        "flags": {
+          "TARGET_ACTION": "PASS",
+          "CONTACT_POINT": "FAIL",
+          "EXTERNAL_EFFECT": "PASS",
+          "SYNC": "PASS"
+        }
+      },
+      "prompt_tokens": 578,
+      "elapsed_seconds": 0.411
+    },
+    {
+      "name": "generated_scene14_seed43",
+      "expected": null,
+      "payload": {
+        "scene_number": 14,
+        "lyrics": [
+          "狐火は祈り",
+          "忘れぬことを",
+          "救いと呼ぼう",
+          "またひとつの春が"
+        ],
+        "plan": "EVENT\t14\tEVIDENCE=狐火｜TARGET=狐火｜MODE=contact｜ANCHOR=狐火｜CONTACT_POINT=神社の建物｜CHANGE=狐火が神社の建物に触れる｜RESULT=狐火が神社の建物に沿って流れる\nBODY\t14\tSTART=両足で安定｜PATH=片手を体側、もう片手を肘を曲げて低く置く→片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける｜ACCENT=低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る｜END=差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める｜SYNC=狐火が神社の建物に触れる瞬間、右手を斜め前に伸ばし、左腕は体側へ下げる。目は狐火の動きに追う\n"
+      },
+      "response": "CHECK\t1\tTARGET_ACTION=PASS｜CONTACT_POINT=FAIL｜EXTERNAL_EFFECT=FAIL｜SYNC=PASS",
+      "parsed": {
+        "valid": true,
+        "flags": {
+          "TARGET_ACTION": "PASS",
+          "CONTACT_POINT": "FAIL",
+          "EXTERNAL_EFFECT": "FAIL",
+          "SYNC": "PASS"
+        }
+      },
+      "prompt_tokens": 625,
+      "elapsed_seconds": 0.445
+    }
+  ]
+}

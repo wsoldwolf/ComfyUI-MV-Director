@@ -185,7 +185,7 @@ certutil -hashfile "C:\Software\ComfyUI\models\LLM\GGUF\Qwen3-VL-4B-Instruct\Qwe
 
 ### 動画workflowの既定H3 Hybrid Loader
 
-配布workflowの動画生成側（`02_video_context_loop.json`、`04_video_audio_reference.json`、`06_video_lyrics.json`）は`MiniMaxH3HybridLoader`を使用します。FL2VAをベースに、Ref2VAの一部のAdaLN変調重みをオーバーレイします。これはFL2VAの画質・動きとRef2VAの参照条件付けを併用するための構成で、[Hybrid Loader作者の説明](https://github.com/scottmudge/ComfyUI_MinimaxH3HybridLoader)もこの組合せを提案しています。本workflowはユーザーが`02_video_context_loop.json`で設定した`block_range_adaln`、開始block `30`、終了block `49`、`final_adaln_from_overlay=false`をそのまま既定値とします。作者の別の推奨値は開始block `25`ですが、本workflowの検証設定とは区別してください。
+配布workflowの動画生成側（`02_video_context_loop.json`、`04_video_audio_reference.json`、`06_video_lyrics.json`）は`MiniMaxH3HybridLoader`を使用します。FL2VAをベースに、Ref2VAの一部のAdaLN変調重みをオーバーレイします。これはFL2VAの画質・動きとRef2VAの参照条件付けを併用するための構成で、[Hybrid Loader作者の説明](https://github.com/scottmudge/ComfyUI_MinimaxH3HybridLoader)もこの組合せを提案しています。本workflowはユーザーが`02_video_context_loop.json`で設定した`block_range_adaln`、開始block `25`、終了block `49`、`final_adaln_from_overlay=false`をそのまま既定値とします。
 
 モデルファイルの配布元は[Comfy-Org/MiniMax-H3](https://huggingface.co/Comfy-Org/MiniMax-H3)です。FL2VAとRef2VAの両方をダウンロードし、表の配置先へ保存してください。Turbo LoRAはHybrid Loaderの出力へ適用します。
 
@@ -225,6 +225,6 @@ ComfyUIを再起動し、ノード検索で`MV Director`を確認します。11�
 4. Enhancer、Planner、CompilerでText GGUFが選べる。
 5. 実行logに各ノード名付きの`started`と`completed`が一度ずつ出る。
 
-次に動画workflowを開き、`MiniMax H3 Hybrid Loader`が未定義ノードにならず、FL2VAが`base_model`、Ref2VAが`overlay_model`、presetが`block_range_adaln`、block範囲が`30`～`49`であることを確認してください。Hybrid Loaderの`MODEL`出力はTurbo LoRAへ接続されています。
+次に動画workflowを開き、`MiniMax H3 Hybrid Loader`が未定義ノードにならず、FL2VAが`base_model`、Ref2VAが`overlay_model`、presetが`block_range_adaln`、block範囲が`25`～`49`であることを確認してください。Hybrid Loaderの`MODEL`出力はTurbo LoRAへ接続されています。
 
 見つからない場合は[トラブルシューティング](troubleshooting.md)を参照してください。

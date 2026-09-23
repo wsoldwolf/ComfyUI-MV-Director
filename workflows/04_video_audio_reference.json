@@ -882,7 +882,7 @@
         "MiniMaxH3\\minimax_h3_fl2va_pruned_int8_convrot.safetensors",
         "MiniMaxH3\\minimax_h3_ref2va_pruned_int8_convrot.safetensors",
         "block_range_adaln",
-        30,
+        25,
         49,
         false,
         "",

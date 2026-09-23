@@ -1,0 +1,828 @@
+{
+  "cases_sha256": "3891e6c931ba8f42543188d228e3d72fb15141f60863ee5c4b8afa226a63a8e1",
+  "cases_path": "E:\\ComfyUI\\projects\\ComfyUI-MV-Director\\docs\\assets\\research\\scene-target-event-alignment-2026-09-22\\cases.json",
+  "model": "E:\\ComfyUI\\models\\LLM\\GGUF\\Qwen3-8B-Abliterated\\qwen3-8b-abliterated-Q4_K_M.gguf",
+  "runtime": {
+    "chat_format": "",
+    "max_tokens": 4096,
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "repetition_penalty": 1.05,
+    "gpu_layers": -1,
+    "n_batch": 512,
+    "n_ctx": 16384,
+    "flash_attn": true,
+    "kv_cache_type": "q8_0",
+    "op_offload": true,
+    "keep_model_loaded": false,
+    "seed": 42
+  },
+  "prompt": "あなたはアニメMVのScene計画の意味監査者。計画文を直さず、現在Sceneの原歌詞、TARGET、CHANGEだけを評価する。\nSOURCE=yesはTARGETが原歌詞の現在Sceneに根拠を持つこと。背景や別Sceneだけにある対象ならno。\nEVENT=yesはCHANGEがそのTARGETを画面上の出来事として実際に見せること。対象自身が現れる・動く・変化する、又は人物が対象を見つめる・触れる等の撮影可能な関係を作るならyes。TARGET名が別欄にあるだけ、対象が動かない単なる背景、足音や歩行など別物だけの出来事ならno。日本語の部分文字列だけで判断しない。\n人物の手から狐火や光が生まれること自体は許される。狐火が手を離れて進む演出も、狐火を手元で光らせる演出も、TARGET=狐火の可視出来事になり得る。人物が腕を動かすだけで狐火が映らない場合はEVENT=no。起源・自律性・好みを理由にnoへしない。\n説明不要。実TAB区切り一行 ALIGN、1、SOURCE=yes|no｜EVENT=yes|no だけを出す。",
+  "format": "binary",
+  "seeds": [
+    42,
+    43
+  ],
+  "runs": [
+    {
+      "seed": 42,
+      "case_id": "shrine_roof_seen",
+      "gold": {
+        "source": "yes",
+        "event": "yes"
+      },
+      "payload": {
+        "lyrics": [
+          "またこの社へ続くなら"
+        ],
+        "target": "社",
+        "change": "人物が社の屋根を見上げ、木々の奥にその輪郭が現れる"
+      },
+      "response": "ALIGN\t1\tSOURCE=yes｜EVENT=yes\n",
+      "parsed": {
+        "valid": true,
+        "fields": {
+          "SOURCE": "yes",
+          "EVENT": "yes"
+        }
+      },
+      "prompt_tokens": 325,
+      "elapsed_seconds": 0.254
+    },
+    {
+      "seed": 42,
+      "case_id": "shrine_footsteps_only",
+      "gold": {
+        "source": "yes",
+        "event": "no"
+      },
+      "payload": {
+        "lyrics": [
+          "またこの社へ続くなら"
+        ],
+        "target": "社",
+        "change": "足音が石畳の道を伝って響く"
+      },
+      "response": "ALIGN\t1\tSOURCE=yes｜EVENT=yes\n",
+      "parsed": {
+        "valid": true,
+        "fields": {
+          "SOURCE": "yes",
+          "EVENT": "yes"
+        }
+      },
+      "prompt_tokens": 318,
+      "elapsed_seconds": 0.186
+    },
+    {
+      "seed": 42,
+      "case_id": "shrine_substring_trap",
+      "gold": {
+        "source": "yes",
+        "event": "no"
+      },
+      "payload": {
+        "lyrics": [
+          "またこの社へ続くなら"
+        ],
+        "target": "社",
+        "change": "新たな足音が石畳の道を伝って神社へ向かう"
+      },
+      "response": "ALIGN\t1\tSOURCE=yes｜EVENT=yes\n",
+      "parsed": {
+        "valid": true,
+        "fields": {
+          "SOURCE": "yes",
+          "EVENT": "yes"
+        }
+      },
+      "prompt_tokens": 323,
+      "elapsed_seconds": 0.194
+    },
+    {
+      "seed": 42,
+      "case_id": "shrine_pillar_touch",
+      "gold": {
+        "source": "yes",
+        "event": "yes"
+      },
+      "payload": {
+        "lyrics": [
+          "またこの社へ続くなら"
+        ],
+        "target": "社",
+        "change": "人物が社の柱へ掌を添え、木目を確かめて手を離す"
+      },
+      "response": "ALIGN\t1\tSOURCE=yes｜EVENT=yes\n",
+      "parsed": {
+        "valid": true,
+        "fields": {
+          "SOURCE": "yes",
+          "EVENT": "yes"
+        }
+      },
+      "prompt_tokens": 325,
+      "elapsed_seconds": 0.186
+    },
+    {
+      "seed": 42,
+      "case_id": "shrine_lantern_touch",
+      "gold": {
+        "source": "yes",
+        "event": "no"
+      },
+      "payload": {
+        "lyrics": [
+          "またこの社へ続くなら"
+        ],
+        "target": "社",
+        "change": "人物が参道の石灯籠へ掌を添え、灯りを見つめる"
+      },
+      "response": "ALIGN\t1\tSOURCE=yes｜EVENT=yes\n",
+      "parsed": {
+        "valid": true,
+        "fields": {
+          "SOURCE": "yes",
+          "EVENT": "yes"
+        }
+      },
+      "prompt_tokens": 325,
+      "elapsed_seconds": 0.204
+    },
+    {
+      "seed": 42,
+      "case_id": "foxfire_hand_origin_orbit",
+      "gold": {
+        "source": "yes",
+        "event": "yes"
+      },
+      "payload": {
+        "lyrics": [
+          "狐火は祈り"
+        ],
+        "target": "狐火",
+        "change": "人物の掌に狐火が灯り、手を離れた複数の狐火が周囲を巡って木々を照らす"
+      },
+      "response": "ALIGN\t1\tSOURCE=yes｜EVENT=yes\n",
+      "parsed": {
+        "valid": true,
+        "fields": {
+          "SOURCE": "yes",
+          "EVENT": "yes"
+        }
+      },
+      "prompt_tokens": 337,
+      "elapsed_seconds": 0.206
+    },
+    {
+      "seed": 42,
+      "case_id": "foxfire_independent_orbit",
+      "gold": {
+        "source": "yes",
+        "event": "yes"
+      },
+      "payload": {
+        "lyrics": [
+          "狐火は祈り"
+        ],
+        "target": "狐火",
+        "change": "狐火が自ら森に現れ、人物の周囲を旋回して紅葉へ光を落とす"
+      },
+      "response": "ALIGN\t1\tSOURCE=yes｜EVENT=yes\n",
+      "parsed": {
+        "valid": true,
+        "fields": {
+          "SOURCE": "yes",
+          "EVENT": "yes"
+        }
+      },
+      "prompt_tokens": 332,
+      "elapsed_seconds": 0.192
+    },
+    {
+      "seed": 42,
+      "case_id": "foxfire_hands_only",
+      "gold": {
+        "source": "yes",
+        "event": "no"
+      },
+      "payload": {
+        "lyrics": [
+          "狐火は祈り"
+        ],
+        "target": "狐火",
+        "change": "人物が両腕を開いて祈り、顔を上げる"
+      },
+      "response": "ALIGN\t1\tSOURCE=yes｜EVENT=yes\n",
+      "parsed": {
+        "valid": true,
+        "fields": {
+          "SOURCE": "yes",
+          "EVENT": "yes"
+        }
+      },
+      "prompt_tokens": 320,
+      "elapsed_seconds": 0.194
+    },
+    {
+      "seed": 42,
+      "case_id": "foxfire_static_backdrop",
+      "gold": {
+        "source": "yes",
+        "event": "no"
+      },
+      "payload": {
+        "lyrics": [
+          "狐火は祈り"
+        ],
+        "target": "狐火",
+        "change": "狐火を背に人物が参道を歩き続ける"
+      },
+      "response": "ALIGN\t1\tSOURCE=yes｜EVENT=yes\n",
+      "parsed": {
+        "valid": true,
+        "fields": {
+          "SOURCE": "yes",
+          "EVENT": "yes"
+        }
+      },
+      "prompt_tokens": 318,
+      "elapsed_seconds": 0.192
+    },
+    {
+      "seed": 42,
+      "case_id": "foxfire_hand_origin_rise",
+      "gold": {
+        "source": "yes",
+        "event": "yes"
+      },
+      "payload": {
+        "lyrics": [
+          "狐火は祈り"
+        ],
+        "target": "狐火",
+        "change": "差し出した手から狐火が生まれ、宙へ上がって人物の髪に光を映す"
+      },
+      "response": "ALIGN\t1\tSOURCE=yes｜EVENT=yes\n",
+      "parsed": {
+        "valid": true,
+        "fields": {
+          "SOURCE": "yes",
+          "EVENT": "yes"
+        }
+      },
+      "prompt_tokens": 327,
+      "elapsed_seconds": 0.201
+    },
+    {
+      "seed": 42,
+      "case_id": "moss_root_touch",
+      "gold": {
+        "source": "yes",
+        "event": "yes"
+      },
+      "payload": {
+        "lyrics": [
+          "苔へと還る"
+        ],
+        "target": "苔",
+        "change": "人物が大樹の根元の苔を指先で撫で、苔の表面がわずかに揺れる"
+      },
+      "response": "ALIGN\t1\tSOURCE=yes｜EVENT=yes\n",
+      "parsed": {
+        "valid": true,
+        "fields": {
+          "SOURCE": "yes",
+          "EVENT": "yes"
+        }
+      },
+      "prompt_tokens": 331,
+      "elapsed_seconds": 0.186
+    },
+    {
+      "seed": 42,
+      "case_id": "moss_absent_lantern",
+      "gold": {
+        "source": "yes",
+        "event": "no"
+      },
+      "payload": {
+        "lyrics": [
+          "苔へと還る"
+        ],
+        "target": "苔",
+        "change": "人物が参道の石灯籠の縁を撫で、手を下ろす"
+      },
+      "response": "ALIGN\t1\tSOURCE=yes｜EVENT=yes\n",
+      "parsed": {
+        "valid": true,
+        "fields": {
+          "SOURCE": "yes",
+          "EVENT": "yes"
+        }
+      },
+      "prompt_tokens": 326,
+      "elapsed_seconds": 0.186
+    },
+    {
+      "seed": 42,
+      "case_id": "flowers_petals",
+      "gold": {
+        "source": "yes",
+        "event": "yes"
+      },
+      "payload": {
+        "lyrics": [
+          "人は花より"
+        ],
+        "target": "花",
+        "change": "参道脇の花が風に揺れ、花びらが人物の前を横切る"
+      },
+      "response": "ALIGN\t1\tSOURCE=yes｜EVENT=yes\n",
+      "parsed": {
+        "valid": true,
+        "fields": {
+          "SOURCE": "yes",
+          "EVENT": "yes"
+        }
+      },
+      "prompt_tokens": 326,
+      "elapsed_seconds": 0.191
+    },
+    {
+      "seed": 42,
+      "case_id": "flowers_absent_walk",
+      "gold": {
+        "source": "yes",
+        "event": "no"
+      },
+      "payload": {
+        "lyrics": [
+          "人は花より"
+        ],
+        "target": "花",
+        "change": "人物が参道を歩きながら袖を揺らす"
+      },
+      "response": "ALIGN\t1\tSOURCE=no｜EVENT=no\n",
+      "parsed": {
+        "valid": true,
+        "fields": {
+          "SOURCE": "no",
+          "EVENT": "no"
+        }
+      },
+      "prompt_tokens": 316,
+      "elapsed_seconds": 0.196
+    },
+    {
+      "seed": 42,
+      "case_id": "unsupported_lantern_target",
+      "gold": {
+        "source": "no",
+        "event": "yes"
+      },
+      "payload": {
+        "lyrics": [
+          "狐火は祈り"
+        ],
+        "target": "灯籠",
+        "change": "灯籠の火が揺れ、石畳に明かりを落とす"
+      },
+      "response": "ALIGN\t1\tSOURCE=no｜EVENT=yes\n",
+      "parsed": {
+        "valid": true,
+        "fields": {
+          "SOURCE": "no",
+          "EVENT": "yes"
+        }
+      },
+      "prompt_tokens": 326,
+      "elapsed_seconds": 0.211
+    },
+    {
+      "seed": 42,
+      "case_id": "generated_shrine_sound",
+      "gold": {
+        "source": "yes",
+        "event": "no"
+      },
+      "payload": {
+        "lyrics": [
+          "またこの社へ続くなら"
+        ],
+        "target": "社",
+        "change": "足音が社の境内を伝う"
+      },
+      "response": "ALIGN\t1\tSOURCE=yes｜EVENT=yes\n",
+      "parsed": {
+        "valid": true,
+        "fields": {
+          "SOURCE": "yes",
+          "EVENT": "yes"
+        }
+      },
+      "prompt_tokens": 314,
+      "elapsed_seconds": 0.231
+    },
+    {
+      "seed": 43,
+      "case_id": "shrine_roof_seen",
+      "gold": {
+        "source": "yes",
+        "event": "yes"
+      },
+      "payload": {
+        "lyrics": [
+          "またこの社へ続くなら"
+        ],
+        "target": "社",
+        "change": "人物が社の屋根を見上げ、木々の奥にその輪郭が現れる"
+      },
+      "response": "ALIGN\t1\tSOURCE=yes｜EVENT=yes\n",
+      "parsed": {
+        "valid": true,
+        "fields": {
+          "SOURCE": "yes",
+          "EVENT": "yes"
+        }
+      },
+      "prompt_tokens": 325,
+      "elapsed_seconds": 0.221
+    },
+    {
+      "seed": 43,
+      "case_id": "shrine_footsteps_only",
+      "gold": {
+        "source": "yes",
+        "event": "no"
+      },
+      "payload": {
+        "lyrics": [
+          "またこの社へ続くなら"
+        ],
+        "target": "社",
+        "change": "足音が石畳の道を伝って響く"
+      },
+      "response": "ALIGN\t1\tSOURCE=yes｜EVENT=yes\n",
+      "parsed": {
+        "valid": true,
+        "fields": {
+          "SOURCE": "yes",
+          "EVENT": "yes"
+        }
+      },
+      "prompt_tokens": 318,
+      "elapsed_seconds": 0.192
+    },
+    {
+      "seed": 43,
+      "case_id": "shrine_substring_trap",
+      "gold": {
+        "source": "yes",
+        "event": "no"
+      },
+      "payload": {
+        "lyrics": [
+          "またこの社へ続くなら"
+        ],
+        "target": "社",
+        "change": "新たな足音が石畳の道を伝って神社へ向かう"
+      },
+      "response": "ALIGN\t1\tSOURCE=yes｜EVENT=yes\n",
+      "parsed": {
+        "valid": true,
+        "fields": {
+          "SOURCE": "yes",
+          "EVENT": "yes"
+        }
+      },
+      "prompt_tokens": 323,
+      "elapsed_seconds": 0.197
+    },
+    {
+      "seed": 43,
+      "case_id": "shrine_pillar_touch",
+      "gold": {
+        "source": "yes",
+        "event": "yes"
+      },
+      "payload": {
+        "lyrics": [
+          "またこの社へ続くなら"
+        ],
+        "target": "社",
+        "change": "人物が社の柱へ掌を添え、木目を確かめて手を離す"
+      },
+      "response": "ALIGN\t1\tSOURCE=yes｜EVENT=yes\n",
+      "parsed": {
+        "valid": true,
+        "fields": {
+          "SOURCE": "yes",
+          "EVENT": "yes"
+        }
+      },
+      "prompt_tokens": 325,
+      "elapsed_seconds": 0.207
+    },
+    {
+      "seed": 43,
+      "case_id": "shrine_lantern_touch",
+      "gold": {
+        "source": "yes",
+        "event": "no"
+      },
+      "payload": {
+        "lyrics": [
+          "またこの社へ続くなら"
+        ],
+        "target": "社",
+        "change": "人物が参道の石灯籠へ掌を添え、灯りを見つめる"
+      },
+      "response": "ALIGN\t1\tSOURCE=yes｜EVENT=no\n",
+      "parsed": {
+        "valid": true,
+        "fields": {
+          "SOURCE": "yes",
+          "EVENT": "no"
+        }
+      },
+      "prompt_tokens": 325,
+      "elapsed_seconds": 0.189
+    },
+    {
+      "seed": 43,
+      "case_id": "foxfire_hand_origin_orbit",
+      "gold": {
+        "source": "yes",
+        "event": "yes"
+      },
+      "payload": {
+        "lyrics": [
+          "狐火は祈り"
+        ],
+        "target": "狐火",
+        "change": "人物の掌に狐火が灯り、手を離れた複数の狐火が周囲を巡って木々を照らす"
+      },
+      "response": "ALIGN\t1\tSOURCE=yes｜EVENT=yes\n",
+      "parsed": {
+        "valid": true,
+        "fields": {
+          "SOURCE": "yes",
+          "EVENT": "yes"
+        }
+      },
+      "prompt_tokens": 337,
+      "elapsed_seconds": 0.181
+    },
+    {
+      "seed": 43,
+      "case_id": "foxfire_independent_orbit",
+      "gold": {
+        "source": "yes",
+        "event": "yes"
+      },
+      "payload": {
+        "lyrics": [
+          "狐火は祈り"
+        ],
+        "target": "狐火",
+        "change": "狐火が自ら森に現れ、人物の周囲を旋回して紅葉へ光を落とす"
+      },
+      "response": "ALIGN\t1\tSOURCE=yes｜EVENT=yes\n",
+      "parsed": {
+        "valid": true,
+        "fields": {
+          "SOURCE": "yes",
+          "EVENT": "yes"
+        }
+      },
+      "prompt_tokens": 332,
+      "elapsed_seconds": 0.192
+    },
+    {
+      "seed": 43,
+      "case_id": "foxfire_hands_only",
+      "gold": {
+        "source": "yes",
+        "event": "no"
+      },
+      "payload": {
+        "lyrics": [
+          "狐火は祈り"
+        ],
+        "target": "狐火",
+        "change": "人物が両腕を開いて祈り、顔を上げる"
+      },
+      "response": "ALIGN\t1\tSOURCE=yes｜EVENT=yes\n",
+      "parsed": {
+        "valid": true,
+        "fields": {
+          "SOURCE": "yes",
+          "EVENT": "yes"
+        }
+      },
+      "prompt_tokens": 320,
+      "elapsed_seconds": 0.188
+    },
+    {
+      "seed": 43,
+      "case_id": "foxfire_static_backdrop",
+      "gold": {
+        "source": "yes",
+        "event": "no"
+      },
+      "payload": {
+        "lyrics": [
+          "狐火は祈り"
+        ],
+        "target": "狐火",
+        "change": "狐火を背に人物が参道を歩き続ける"
+      },
+      "response": "ALIGN\t1\tSOURCE=yes｜EVENT=yes\n",
+      "parsed": {
+        "valid": true,
+        "fields": {
+          "SOURCE": "yes",
+          "EVENT": "yes"
+        }
+      },
+      "prompt_tokens": 318,
+      "elapsed_seconds": 0.217
+    },
+    {
+      "seed": 43,
+      "case_id": "foxfire_hand_origin_rise",
+      "gold": {
+        "source": "yes",
+        "event": "yes"
+      },
+      "payload": {
+        "lyrics": [
+          "狐火は祈り"
+        ],
+        "target": "狐火",
+        "change": "差し出した手から狐火が生まれ、宙へ上がって人物の髪に光を映す"
+      },
+      "response": "ALIGN\t1\tSOURCE=yes｜EVENT=yes\n",
+      "parsed": {
+        "valid": true,
+        "fields": {
+          "SOURCE": "yes",
+          "EVENT": "yes"
+        }
+      },
+      "prompt_tokens": 327,
+      "elapsed_seconds": 0.203
+    },
+    {
+      "seed": 43,
+      "case_id": "moss_root_touch",
+      "gold": {
+        "source": "yes",
+        "event": "yes"
+      },
+      "payload": {
+        "lyrics": [
+          "苔へと還る"
+        ],
+        "target": "苔",
+        "change": "人物が大樹の根元の苔を指先で撫で、苔の表面がわずかに揺れる"
+      },
+      "response": "ALIGN\t1\tSOURCE=yes｜EVENT=yes\n",
+      "parsed": {
+        "valid": true,
+        "fields": {
+          "SOURCE": "yes",
+          "EVENT": "yes"
+        }
+      },
+      "prompt_tokens": 331,
+      "elapsed_seconds": 0.185
+    },
+    {
+      "seed": 43,
+      "case_id": "moss_absent_lantern",
+      "gold": {
+        "source": "yes",
+        "event": "no"
+      },
+      "payload": {
+        "lyrics": [
+          "苔へと還る"
+        ],
+        "target": "苔",
+        "change": "人物が参道の石灯籠の縁を撫で、手を下ろす"
+      },
+      "response": "ALIGN\t1\tSOURCE=yes｜EVENT=yes\n",
+      "parsed": {
+        "valid": true,
+        "fields": {
+          "SOURCE": "yes",
+          "EVENT": "yes"
+        }
+      },
+      "prompt_tokens": 326,
+      "elapsed_seconds": 0.199
+    },
+    {
+      "seed": 43,
+      "case_id": "flowers_petals",
+      "gold": {
+        "source": "yes",
+        "event": "yes"
+      },
+      "payload": {
+        "lyrics": [
+          "人は花より"
+        ],
+        "target": "花",
+        "change": "参道脇の花が風に揺れ、花びらが人物の前を横切る"
+      },
+      "response": "ALIGN\t1\tSOURCE=yes｜EVENT=yes\n",
+      "parsed": {
+        "valid": true,
+        "fields": {
+          "SOURCE": "yes",
+          "EVENT": "yes"
+        }
+      },
+      "prompt_tokens": 326,
+      "elapsed_seconds": 0.19
+    },
+    {
+      "seed": 43,
+      "case_id": "flowers_absent_walk",
+      "gold": {
+        "source": "yes",
+        "event": "no"
+      },
+      "payload": {
+        "lyrics": [
+          "人は花より"
+        ],
+        "target": "花",
+        "change": "人物が参道を歩きながら袖を揺らす"
+      },
+      "response": "ALIGN\t1\tSOURCE=no｜EVENT=no\n",
+      "parsed": {
+        "valid": true,
+        "fields": {
+          "SOURCE": "no",
+          "EVENT": "no"
+        }
+      },
+      "prompt_tokens": 316,
+      "elapsed_seconds": 0.206
+    },
+    {
+      "seed": 43,
+      "case_id": "unsupported_lantern_target",
+      "gold": {
+        "source": "no",
+        "event": "yes"
+      },
+      "payload": {
+        "lyrics": [
+          "狐火は祈り"
+        ],
+        "target": "灯籠",
+        "change": "灯籠の火が揺れ、石畳に明かりを落とす"
+      },
+      "response": "ALIGN\t1\tSOURCE=yes｜EVENT=yes\n",
+      "parsed": {
+        "valid": true,
+        "fields": {
+          "SOURCE": "yes",
+          "EVENT": "yes"
+        }
+      },
+      "prompt_tokens": 326,
+      "elapsed_seconds": 0.197
+    },
+    {
+      "seed": 43,
+      "case_id": "generated_shrine_sound",
+      "gold": {
+        "source": "yes",
+        "event": "no"
+      },
+      "payload": {
+        "lyrics": [
+          "またこの社へ続くなら"
+        ],
+        "target": "社",
+        "change": "足音が社の境内を伝う"
+      },
+      "response": "ALIGN\t1\tSOURCE=yes｜EVENT=yes\n",
+      "parsed": {
+        "valid": true,
+        "fields": {
+          "SOURCE": "yes",
+          "EVENT": "yes"
+        }
+      },
+      "prompt_tokens": 314,
+      "elapsed_seconds": 0.197
+    }
+  ]
+}

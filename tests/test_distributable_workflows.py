@@ -4,6 +4,7 @@ import unittest
 
 from core.lyrics import parse_plain_lyrics
 from core.utilities import decode_embedded_text
+from tools.generate_workflows import DEFAULT_USER_PROMPT
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -191,7 +192,7 @@ class DistributableWorkflowTests(unittest.TestCase):
             )
             user_prompt = titled_node(workflow, "ユーザープロンプト")
             self.assertEqual(user_prompt["type"], "PrimitiveStringMultiline")
-            self.assertEqual(user_prompt["widgets_values"], [""])
+            self.assertEqual(user_prompt["widgets_values"], [DEFAULT_USER_PROMPT])
             self.assertEqual(
                 input_link(workflow, direction, "user_request")[1:3],
                 [user_prompt["id"], 0],
@@ -447,7 +448,7 @@ class DistributableWorkflowTests(unittest.TestCase):
             )
             self.assertEqual(hybrid["widgets_values"], [
                 H3_BASE_MODEL, H3_OVERLAY_MODEL, "block_range_adaln",
-                30, 49, False, "", "", "default",
+                25, 49, False, "", "", "default",
             ])
             self.assertEqual(hybrid["pos"], [1920, 170])
             self.assertEqual(text_encoder["widgets_values"][0], H3_TEXT_ENCODER)

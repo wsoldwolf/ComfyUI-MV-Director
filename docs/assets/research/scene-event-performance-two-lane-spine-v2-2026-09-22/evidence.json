@@ -1,0 +1,138 @@
+{
+  "source": "E:\\ComfyUI\\projects\\ComfyUI-MV-Director\\docs\\assets\\research\\scene-event-performance-two-stage-2026-09-22\\evidence.json",
+  "model": "E:\\ComfyUI\\models\\LLM\\GGUF\\Qwen3-8B-Abliterated\\qwen3-8b-abliterated-Q4_K_M.gguf",
+  "runtime": {
+    "chat_format": "",
+    "max_tokens": 4096,
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "repetition_penalty": 1.05,
+    "gpu_layers": -1,
+    "n_batch": 512,
+    "n_ctx": 16384,
+    "flash_attn": true,
+    "kv_cache_type": "q8_0",
+    "op_offload": true,
+    "keep_model_loaded": false,
+    "seed": 42
+  },
+  "prompt": "あなたは一つのSceneの二Shotを同時に計画する。EVENTとBODYは既に別々のLLMによって決定された原文であり、対象や意味を変更しない。\nShot1は対象の出来事を一度だけ映すevent。EVENT_STEPにはEVENT.CHANGEからRESULTへ至る狐火自身の可視変化を具体的に記す。BODY_STEPには人物の身体経路の最初の段階と同時反応を書く。狐火を人物の手から発生・保持・操作させない。\nShot2は顔と歌唱口のresponse。EVENT_STEP=なしで、狐火の出現を繰り返さず、BODY_STEPに前Shotで進んだ身体の落ち着きと視線・目・口の結果を書く。Shot2のFROMはShot1のTOから自然に続ける。新しい出来事、対象、Camera動作を書かない。\nFROMとTOの主語は必ず人物とし、支持・体幹・腕・視線など人物の姿勢又は位置だけを記す。夜空、狐火、背景、光の結果をFROM/TOに書かない。Shot1のFROMはBODY.STARTの人物姿勢、Shot1のTOはアクセント時の人物姿勢、Shot2のFROMはその姿勢の続き、Shot2のTOはBODY.ENDの人物姿勢とする。対象の変化はEVENT_STEPだけで表す。\n各Shotにつき実TAB区切り一行 STEP、slot番号、PHASE=...｜FROM=...｜EVENT_STEP=...｜BODY_STEP=...｜TO=...｜SHOW=...。指定された二行のみ。",
+  "runs": [
+    {
+      "seed": 42,
+      "payload": {
+        "scene_number": 14,
+        "lyric_lines": [
+          "狐火は祈り",
+          "忘れぬことを",
+          "救いと呼ぼう",
+          "またひとつの春が"
+        ],
+        "event": "EVENT\t14\tEVIDENCE=狐火は祈り｜TARGET=狐火｜MODE=autonomous｜ANCHOR=夜の森の中の神社境内｜CONTACT_POINT=なし｜CHANGE=狐火が空に舞い上がる｜RESULT=狐火が夜空を照らし出す\n",
+        "body": "BODY\t14\tSTART=両足で安定｜PATH=片手体側・もう片手肘曲げ低く｜ACCENT=低い手を視線先へ弧状差し出し｜END=呼吸と視線戻し両足支持｜SYNC=狐火が空に舞い上がる時、目を上げて視線追う\n",
+        "shot_slots": [
+          {
+            "editorial_role": "new_scene_establishing_edit",
+            "scene_number": 14,
+            "shot_count": 2,
+            "shot_duration_ms": 4334,
+            "shot_index": 1,
+            "slot": 1
+          },
+          {
+            "editorial_role": "face_performance_cut",
+            "scene_number": 14,
+            "shot_count": 2,
+            "shot_duration_ms": 4375,
+            "shot_index": 2,
+            "slot": 2
+          }
+        ]
+      },
+      "response": "STEP\t1\tPHASE=event｜FROM=両足で安定｜EVENT_STEP=狐火が空に舞い上がる｜BODY_STEP=片手体側・もう片手肘曲げ低く｜TO=低い手を視線先へ弧状差し出し｜SHOW=lyric_target\nSTEP\t2\tPHASE=response｜FROM=低い手を視線先へ弧状差し出し｜EVENT_STEP=なし｜BODY_STEP=呼吸と視線戻し両足支持｜TO=呼吸と視線戻し両足支持｜SHOW=face_eyes_mouth\n",
+      "parsed": {
+        "valid": true,
+        "issues": [],
+        "missing": [],
+        "rows": {
+          "1": {
+            "PHASE": "event",
+            "FROM": "両足で安定",
+            "EVENT_STEP": "狐火が空に舞い上がる",
+            "BODY_STEP": "片手体側・もう片手肘曲げ低く",
+            "TO": "低い手を視線先へ弧状差し出し",
+            "SHOW": "lyric_target"
+          },
+          "2": {
+            "PHASE": "response",
+            "FROM": "低い手を視線先へ弧状差し出し",
+            "EVENT_STEP": "なし",
+            "BODY_STEP": "呼吸と視線戻し両足支持",
+            "TO": "呼吸と視線戻し両足支持",
+            "SHOW": "face_eyes_mouth"
+          }
+        }
+      },
+      "prompt_tokens": 636,
+      "elapsed_seconds": 3.643
+    },
+    {
+      "seed": 43,
+      "payload": {
+        "scene_number": 14,
+        "lyric_lines": [
+          "狐火は祈り",
+          "忘れぬことを",
+          "救いと呼ぼう",
+          "またひとつの春が"
+        ],
+        "event": "EVENT\t14\tEVIDENCE=狐火は祈り｜TARGET=狐火｜MODE=autonomous｜ANCHOR=夜の森の中の神社境内｜CONTACT_POINT=なし｜CHANGE=狐火が空に舞い上がる｜RESULT=神社境内の夜空に狐火が舞い上がる\n",
+        "body": "BODY\t14\tSTART=両足で安定｜PATH=片手体側・もう片手低く｜ACCENT=手を弧状に差し出す｜END=呼吸と視線戻す｜SYNC=狐火が空に舞い上がる時、胸郭を斜めへ向け視線を追う\n",
+        "shot_slots": [
+          {
+            "editorial_role": "new_scene_establishing_edit",
+            "scene_number": 14,
+            "shot_count": 2,
+            "shot_duration_ms": 4334,
+            "shot_index": 1,
+            "slot": 1
+          },
+          {
+            "editorial_role": "face_performance_cut",
+            "scene_number": 14,
+            "shot_count": 2,
+            "shot_duration_ms": 4375,
+            "shot_index": 2,
+            "slot": 2
+          }
+        ]
+      },
+      "response": "STEP\t1\tPHASE=event｜FROM=両足で安定｜EVENT_STEP=狐火が空に舞い上がる｜BODY_STEP=片手体側・もう片手低く｜TO=胸郭を斜めへ向け視線を追う｜SHOW=lyric_target\nSTEP\t2\tPHASE=response｜FROM=胸郭を斜めへ向け視線を追う｜EVENT_STEP=なし｜BODY_STEP=呼吸と視線戻す｜TO=両足で安定｜SHOW=face_eyes_mouth\n",
+      "parsed": {
+        "valid": true,
+        "issues": [],
+        "missing": [],
+        "rows": {
+          "1": {
+            "PHASE": "event",
+            "FROM": "両足で安定",
+            "EVENT_STEP": "狐火が空に舞い上がる",
+            "BODY_STEP": "片手体側・もう片手低く",
+            "TO": "胸郭を斜めへ向け視線を追う",
+            "SHOW": "lyric_target"
+          },
+          "2": {
+            "PHASE": "response",
+            "FROM": "胸郭を斜めへ向け視線を追う",
+            "EVENT_STEP": "なし",
+            "BODY_STEP": "呼吸と視線戻す",
+            "TO": "両足で安定",
+            "SHOW": "face_eyes_mouth"
+          }
+        }
+      },
+      "prompt_tokens": 632,
+      "elapsed_seconds": 3.176
+    }
+  ]
+}
