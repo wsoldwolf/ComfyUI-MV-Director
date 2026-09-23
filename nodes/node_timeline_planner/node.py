@@ -211,6 +211,7 @@ class _LlamaPlannerBackend:
     ) -> str:
         model_payload = f"/no_think\n{payload}"
         grammar_kwargs: dict[str, str] = {}
+        finite_camera = False
         if task == "lyric-cues":
             request = json.loads(payload)
             grammar_kwargs["grammar"] = build_discovery_grammar(request["slots"])
@@ -272,7 +273,8 @@ class _LlamaPlannerBackend:
                 )
         if task == "cameras":
             request = json.loads(payload)
-            if request.get("camera_protocol_contract", {}).get("id") == "finite_v1":
+            finite_camera = request.get("camera_protocol_contract", {}).get("id") == "finite_v1"
+            if finite_camera:
                 grammar_kwargs["grammar"] = build_camera_plan_grammar(request["slots"])
                 _LOGGER.info(
                     "[MV Director - Timeline Planner] output constraint=camera_plan_v1; slots=%d",
@@ -280,11 +282,16 @@ class _LlamaPlannerBackend:
                 )
         count = self.lifecycle.count_serialized_prompt(system_prompt + "\n" + model_payload)
         slot_count, scene_label, retry_label = self._request_summary(payload)
-        # Allow a small output-ceiling adjustment, not a near-empty response.
-        # Larger overflows go back to the shared request splitter before inference.
-        minimum_output = min(config.max_tokens, max(
-            256 * max(1, slot_count), (config.max_tokens * 3 + 3) // 4,
-        ))
+        # A finite Camera record is a short, grammar-constrained line. Its
+        # minimum reservation should scale with the number of requested lines,
+        # not with a user-configured ceiling intended for longer Planner tasks.
+        # Keep the conservative floor for free-text and other request types.
+        if finite_camera:
+            minimum_output = min(config.max_tokens, max(512, 384 * slot_count))
+        else:
+            minimum_output = min(config.max_tokens, max(
+                256 * max(1, slot_count), (config.max_tokens * 3 + 3) // 4,
+            ))
         budget = fit_context_budget(
             count.count,
             config.max_tokens,

@@ -36,6 +36,27 @@ def request(slots=4, **extra):
 
 
 class PlannerContextBudgetTests(unittest.TestCase):
+    def test_finite_camera_singleton_fits_reported_220_token_overflow(self):
+        lifecycle = CountingLifecycle(lambda _: 12221)
+        backend = _LlamaPlannerBackend(lifecycle)
+        original = request(1)
+        original["slots"][0]["slot"] = 3
+        original["slots"][0]["camera_protocol"] = "finite_v1"
+        original["camera_protocol_contract"] = {"id": "finite_v1"}
+        payload = canonical_json(original)
+        with self.assertLogs("mv_director.nodes", level="INFO") as logs:
+            response = complete_with_context_recovery(
+                backend, task="cameras", system_prompt="system",
+                payload=payload, config=LlamaRuntimeConfig(max_tokens=4096),
+            )
+        self.assertEqual(len(lifecycle.calls), 1)
+        messages, actual_config, actual = lifecycle.calls[0]
+        self.assertEqual(actual, original)
+        self.assertEqual(messages[1]["content"], "/no_think\n" + payload)
+        self.assertEqual(actual_config.max_tokens, 2852)
+        self.assertIn("CAMERA\t3\t", response)
+        self.assertIn("context output fitted", "\n".join(logs.output))
+
     def test_reported_26_token_overflow_fits_output_and_preserves_input(self):
         lifecycle = CountingLifecycle(lambda _: 13563)
         backend = _LlamaPlannerBackend(lifecycle)
