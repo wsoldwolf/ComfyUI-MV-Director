@@ -268,7 +268,8 @@ class MVDirectorDirectionEnhancer:
                     result.direction,
                     result.direction_emd_preview,
                     "cache=bypass; model=not_loaded; passthrough=yes; "
-                    f"issues={len(result.issues)}; missing_retry=no",
+                    f"issues={len(result.issues)}; missing_retry=no; "
+                    f"staging_candidates={len(result.direction.staging_candidates)}",
                 )
             model = resolve_comfy_gguf_model(model_name)
             system_prompt = _system_prompt()
@@ -339,6 +340,7 @@ class MVDirectorDirectionEnhancer:
                         self._lifecycle.clear()
             status = (
                 f"cache={cache_status}; issues={issues}; "
-                f"missing_retry={'yes' if retried else 'no'}"
+                f"missing_retry={'yes' if retried else 'no'}; "
+                f"staging_candidates={len(direction.staging_candidates)}"
             )
             return direction, preview, status

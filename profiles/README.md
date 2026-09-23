@@ -73,7 +73,7 @@ Direction→Plannerの計画用入力として従来どおり使い、EMDへ出�
 ```
 
 `performance_mode`は`event_based`（省略時）又は`dance_phrase`です。
-`anime_choreography_mv`は全編比較用の選択可能なMotionであり、既定の`anime_emotional_mv`には適用しません。`# プロファイル`で`choreography_policy scene_palette`と`performance_mode dance_phrase`を明示し、共通本文の後に二つ以上の`# 振付候補`を置いた時だけ、Plannerが候補群を任意の着想としてScene SpineとActionへ渡します。各候補は`* `id` 始点・支持／重心・体幹／腕・終端の運動経路`形式です。候補IDの選択、候補本文の再現、均等な使用は要求しません。歌詞に合えばLLMは候補を使わず、独自の身体経路を考案できます。候補本文は動画用`render_prompt`へ混ぜません。Actionの自然文はPythonで修復しません。候補を置くだけ、又は他のMotionを選ぶだけでは機能しません。有限IDを別のLLM段階で選ぶ`scene_choice`も仕様上残しますが、8B全編試験では静かな候補に偏ったため、このprofileでは使用しません。
+`anime_choreography_mv`は全編比較用の選択可能なMotionであり、既定の`anime_emotional_mv`には適用しません。以前の`scene_palette`とprofile内の`# 振付候補`の一括投入は廃止しました。ユーザー固有の動き又は出来事の候補は、Direction Enhancerの`user_request`に`# 演出候補`として記述します。Motion profileに関係なくPlannerがSceneの歌詞から候補一件又は不採用を選びます。旧`scene_choice`は既存の任意profile用として残りますが、通常の演出候補には不要です。
 `anime_emotional_mv`と、現在その内容を複製した`anime_story_mv`のMotionは`dance_phrase`を選びます。選択したMotionの
 metadataだけで切り替え、UI項目は追加しません。Cameraだけをemotionalにしても
 有効になりません。設定もPlannerのcache keyへ含めます。

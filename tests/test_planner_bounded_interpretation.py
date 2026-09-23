@@ -22,6 +22,44 @@ from test_timeline_planner import (
 
 
 class BoundedInterpretationTests(unittest.TestCase):
+    def test_user_staging_candidates_reach_only_scene_interpretation(self):
+        candidate = "苔のある大木へ近づき、根元を指先で撫でる。"
+        backend = FakePlannerBackend()
+        result = plan_timeline(
+            backend, template_emd=TEMPLATE, concept_emd=CONCEPT,
+            direction=DirectionArtifact(
+                camera_profile_id="anime_emotional_mv",
+                staging_candidates=(candidate,),
+            ),
+            lip_sync_mode="off", lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1, scenes_per_batch=3,
+            system_prompts=prompts(), runtime_config=runtime(),
+        )
+        self.assertTrue(result.complete)
+        selection_payloads = [payload for task, payload in backend.calls if task == "staging-selection"]
+        self.assertTrue(selection_payloads)
+        self.assertTrue(all(
+            slot["candidates"][0]["text"] == candidate
+            for payload in selection_payloads for slot in payload["slots"]
+        ))
+        beat_payloads = [payload for task, payload in backend.calls if task == "visual-beats"]
+        self.assertTrue(beat_payloads)
+        self.assertTrue(all(
+            "selected_staging_candidate" not in slot
+            for payload in beat_payloads for slot in payload["slots"]
+        ))
+        action_payloads = [payload for task, payload in backend.calls if task == "actions"]
+        self.assertTrue(any(
+            slot.get("selected_body_staging_candidate", {}).get("text") == candidate
+            for payload in action_payloads for slot in payload["slots"]
+        ))
+        self.assertTrue(all(
+            "selected_staging_candidate" not in slot
+            for task, payload in backend.calls if task not in {"visual-beats", "staging-selection"}
+            for slot in payload.get("slots", [])
+        ))
+        self.assertNotIn(candidate, result.emd.text)
+
     def test_profile_metadata_changes_cache_identity_without_changing_prose(self):
         from core.inference import build_cache_key
         keys = []

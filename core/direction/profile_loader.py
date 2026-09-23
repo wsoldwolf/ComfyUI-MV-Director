@@ -25,7 +25,7 @@ _CAMERA_META_KEYS = frozenset(
 _META_KEYS = _STYLE_META_KEYS | _CAMERA_META_KEYS | _MOTION_META_KEYS
 _PERFORMANCE_MODES = frozenset({"event_based", "dance_phrase"})
 _BODY_ACCENT_POLICIES = frozenset({"off", "sparse_chorus"})
-_CHOREOGRAPHY_POLICIES = frozenset({"off", "scene_choice", "scene_palette"})
+_CHOREOGRAPHY_POLICIES = frozenset({"off", "scene_choice"})
 _ARC_ROLL_POLICIES = frozenset({"off", "selective_arc"})
 _PRIORITY_CUE_KINDS = frozenset(
     {"object", "symbolic_motif", "external_effect"}
@@ -251,8 +251,8 @@ def load_direction_profile(path: Path, kind: str) -> DirectionProfile:
         raise _fail(path, "body_accent_policy requires dance_phrase")
     choreography_policy = metadata.get("choreography_policy", "off")
     if choreography_policy not in _CHOREOGRAPHY_POLICIES:
-        raise _fail(path, "choreography_policy must be off, scene_choice, or scene_palette")
-    if choreography_policy in {"scene_choice", "scene_palette"} and (
+        raise _fail(path, "choreography_policy must be off or scene_choice")
+    if choreography_policy == "scene_choice" and (
         performance_mode != "dance_phrase" or len(choreography_phrases) < 2
     ):
         raise _fail(path, "choreography policy requires dance_phrase and at least two choreography phrases")

@@ -7,7 +7,7 @@ Subject EMD、Scene EMD、ユーザー希望、三つのprofileを統合し、MV
 | 入力 | 既定 | 説明 |
 |---|---|---|
 | `retention_policy` | `profile` | profile既定の保持、Compiler既定、完全pass-throughを切り替える |
-| `user_request` | 空 | 最優先の演出希望。空でも動作する |
+| `user_request` | 空 | 最優先の演出希望。計画専用の演出候補ディレクティブも記述できる。空でも動作する |
 | `style_profile` | `anime_emotional_mv` | 画風と媒体変換。`passthrough`で直接記述を優先 |
 | `motion_profile` | `anime_emotional_mv` | 全体の身体演技方針 |
 | `camera_profile` | `anime_emotional_mv` | 全体の撮影方針。Shot固有のカメラはPlannerが決める |
@@ -15,6 +15,22 @@ Subject EMD、Scene EMD、ユーザー希望、三つのprofileを統合し、MV
 | `scene_emd` | 任意 | scene-only Visionが確定した環境、時刻・照明baseline、背景Picture。Plannerにも同じ断片を渡す |
 | `direction_emd_passthrough` | 任意 | profileを使わず、利用者が直接書く演出EMD |
 | `cache_mode` | `reuse` | 成功結果の再利用方針 |
+
+`user_request`には共通指示と計画専用の演出候補を別セクションで記述できます。候補は最大12件、各500文字までです。
+
+```markdown
+# 共通プロンプト
+## 時間・照明
+* シーン全編を通して夜間。
+
+# 演出候補
+* 苔を扱う場面では、参道脇の大木の根元に生えた苔へ人物が近づき、指先で撫でる。
+* 歌詞に合う場面では、片側への荷重から胸郭と腕を連動させ、歌唱口が見える瞬間にアクセントを置く。
+```
+
+Directionは`# 演出候補`の各箇条書きを共通指示から分離し、原文のままtyped artifactへ保持します。Direction LLM、`direction_emd_preview`、完成EMD及びH3の全Scene共通`prompt_prefix`へは入れません。PlannerはSceneごとの短いLLM選択で歌詞との適合を判断し、選んだ一件だけをVisual Beatへ渡します。対象・配置を含む候補が選ばれた場合、その場所と支持物をCue Card及び接触Shotへ伝え、同じ具体的出来事の候補を後続Sceneへ再配布しません。候補の記載は発生を保証しません。候補件数と採用SceneはINFOログで確認できます。Plannerへの専用入力ソケットや特別なMotion profile指定は不要です。
+
+`anime_choreography_mv`は身体演技の共通方針だけを提供します。以前の`scene_palette`による振付候補の一括投入は廃止しました。必要な身体フレーズは`# 演出候補`へ記述し、PlannerにScene単位で採否を決めさせてください。
 
 `max_tokens`は利用者が指定する生成上限ですが、Directionの応答は少数の型付き行に限定されます。そのため実推論では入力を削らず、出力予約だけを最大1024 tokenへ自動調整します。さらにcontextが狭い場合は、安全余白を維持したまま128 token以上の範囲で縮小します。調整時は`requested_max_tokens`と`effective_max_tokens`をINFOログへ出します。128 tokenも確保できない場合だけ、入力を黙って切り詰めず`ContextBudgetError`で停止します。
 

@@ -45,6 +45,7 @@ from .scene_spine import (
     SceneSpineStep, parse_scene_spine_step, validate_contact_coverage,
     validate_scene_spine,
 )
+from .staging import parse_staging_selection
 from .text_normalization import strip_generated_line_continuation
 from .template import (
     PlannerTemplate,
@@ -54,10 +55,11 @@ from .template import (
 )
 
 
-PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v74"
+PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v79"
 _ACTION_AUDIT_REPAIR_ATTEMPTS = 1
 _LOGGER = logging.getLogger("mv_director.nodes")
 TASKS = (
+    "staging-selection",
     "visual-beats",
     "song-direction",
     "shot-layout",
@@ -730,6 +732,11 @@ def _camera_plan_contract_violations(
     if required_spine_coverage in {"lyric_target", "lyric_target_and_hands"}:
         if {plan.start_scale, plan.end_scale} & {"face_closeup", "head_and_shoulders"}:
             violations.append("spine_target_occluded")
+    if required_spine_coverage in {"whole_body_emotion", "whole_body_hands"}:
+        if not {plan.start_scale, plan.end_scale} & {
+            "wide", "medium_wide", "full_body"
+        }:
+            violations.append("spine_whole_body_not_visible")
     if required_spine_coverage == "face_eyes_mouth" and plan.end_view not in {
         "front", "front_three_quarter", "high_front", "low_front_three_quarter"
     }:
@@ -998,7 +1005,10 @@ def _fallback_camera_plan(entity: _Entity, ordinal: int) -> _CameraPlan:
         )
         return _choose_fallback_camera_option(entity, ordinal, options)
     if entity.value.get("arc_permission") == "required":
-        if entity.value.get("editorial_role") == "upper_body_performance_coverage":
+        if (
+            entity.value.get("editorial_role") == "upper_body_performance_coverage"
+            and required_coverage not in {"whole_body_emotion", "whole_body_hands"}
+        ):
             options = tuple(
                 _CameraPlan("Arc Shot with large amplitude at fast speed",
                     "medium", "upper_body", "side", "front_three_quarter",
@@ -1233,6 +1243,9 @@ def _with_grounding_transfer_requirements(
         autonomous_effect = grounding.get("phenomenon") == "外部自律"
         anchor_entity = eligible[0]
         requirements = [(anchor_entity, "required_spatial_anchor", spatial_anchor)]
+        selected_anchor = ordered[0].value.get("selected_staging_anchor")
+        if selected_anchor and selected_anchor != "なし" and development_entity != anchor_entity:
+            requirements.append((development_entity, "required_spatial_anchor", spatial_anchor))
         # The LLM-authored Scene step already names the one-time change. The
         # older exact Cue development otherwise duplicates contact in a Shot.
         # An external effect has no contact to duplicate: preserve its actual
@@ -1286,6 +1299,12 @@ def _parse_cue_card(entity: _Entity, text: str) -> _CueCard:
     contact = parsed.get("接触", "").strip()
     phenomenon = parsed.get("現象", "").strip()
     spatial_anchor = _strip_cue_quote(parsed.get("配置", ""))
+    target_location = spatial_anchor
+    if spatial_anchor.startswith("対象位置:"):
+        target_location, separator, actor_location = spatial_anchor.partition("；人物位置:")
+        target_location = target_location.removeprefix("対象位置:").strip()
+        if not separator or not target_location or actor_location.strip() in _CUE_NONE_VALUES:
+            violations.append("spatial_roles_incomplete")
     visible_development = _strip_cue_quote(parsed.get("可視展開", ""))
     spatial_anchor_is_none = spatial_anchor in _CUE_NONE_VALUES
     visible_development_is_none = visible_development in _CUE_NONE_VALUES
@@ -1315,8 +1334,18 @@ def _parse_cue_card(entity: _Entity, text: str) -> _CueCard:
     else:
         if spatial_anchor_is_none:
             violations.append("missing_spatial_anchor")
+        elif spatial_anchor.startswith("対象位置:") and not target_location.startswith(target):
+            violations.append("spatial_target_mismatch")
         if visible_development_is_none:
             violations.append("missing_visible_development")
+    selected_staging = entity.value.get("selected_staging_candidate")
+    if isinstance(selected_staging, Mapping):
+        required_anchor = str(selected_staging.get("anchor", "")).strip()
+        if required_anchor and required_anchor != "なし":
+            if target_location != required_anchor:
+                violations.append("staging_anchor_missing")
+            if target not in _CUE_NONE_VALUES and not required_anchor.startswith(target):
+                violations.append("staging_target_mismatch")
 
     unique_violations = tuple(dict.fromkeys(violations))
     return _CueCard(
@@ -1349,8 +1378,8 @@ def _priority_cue_card_violations(
     if not token or card.target != token:
         violations.append("priority_target_not_selected")
     if kind == "external_effect":
-        if card.phenomenon != "外部自律":
-            violations.append("priority_effect_not_autonomous")
+        if card.phenomenon not in {"外部自律", "身体操作"}:
+            violations.append("priority_effect_missing_phenomenon")
         if card.contact != "禁止":
             violations.append("priority_effect_contact_not_forbidden")
     return tuple(dict.fromkeys(violations))
@@ -2741,6 +2770,8 @@ def _shot_context(
                         lyric.text,
                         source_ref=f"scene:{scene.scene_number}:shot:{shot_index}:lyric",
                     ),
+                    "start_ms": lyric.start_ms,
+                    "end_ms": lyric.end_ms,
                 }
                 for lyric in shot.lyric_annotations
             ]
@@ -3272,6 +3303,19 @@ def generate_planner_content(
         for task in ("visual-beats", "actions"):
             if f"{task}-bounded" in system_prompts:
                 system_prompts[task] = system_prompts[f"{task}-bounded"]
+    if direction.staging_candidates:
+        system_prompts["visual-beats"] += (
+            "\nselected_staging_candidateは現在Sceneだけに選ばれた任意着想。"
+            "採用する場合は対象・支持物・場所・接触を一組の出来事として扱い、"
+            "動詞だけを抜き出さない。anchorが「なし」以外なら配置の対象位置をその文と完全一致させ、"
+            "可視展開ではその位置の対象と人物の関係を示す。"
+            "候補は原歌詞の引用根拠ではない。対象は現在Sceneの原歌詞から選ぶ。\n"
+        )
+        _LOGGER.info(
+            "[MV Director - Timeline Planner] user staging directives; "
+            "candidates=%d; scope=scene_visual_beats; selection=scene_local_llm",
+            len(direction.staging_candidates),
+        )
     planner_policy_contract = (
         {
             "policy_id": "anime_emotional_mv",
@@ -3283,7 +3327,7 @@ def generate_planner_content(
             "noun_only_lyric_visualization": "same_scene_autonomous_visual_predicate",
             "environment_inventory_is_not_action_source": True,
             "lyric_target_consumption": "one_scene_then_requires_new_trigger",
-            "external_effect_mode": "autonomous_unless_current_lyric_operates_it",
+            "external_effect_mode": "autonomous_or_hand_origin_with_visible_effect",
             "eye_expression_mode": "vary_eyelids_with_lyric_phase",
             "whole_body_emotion_mode": "coordinated_head_torso_pelvis_limbs_weight",
             "emotional_amplitude": "exaggerated_readable_full_body",
@@ -3341,13 +3385,6 @@ def generate_planner_content(
             "継続Sceneはentry_body_stateを実際の始点とし、候補の記載より優先する。"
             "候補全文のコピー、歌詞にない小道具・場所・接触、画角に映らない脚動作を追加しない。"
             "顔Shotはすでに起きた身体accentへの目・眉・歌唱口の反応だけを描く。\n"
-        )
-    elif choreography_policy == "scene_palette":
-        system_prompts["actions"] = system_prompts["actions"] + (
-            "\nchoreography_paletteは任意の着想であり、候補IDの選択や本文の再現は不要。"
-            "歌詞・Cue・Camera・前Sceneの終端に適する独自の身体経路を自由に考案してよい。"
-            "候補にある対象・場所・接触を歌詞の根拠なく追加しない。"
-            "Scene Spineがあれば、その運動のFROM・ADVANCE・TOをShotで連続させる。\n"
         )
     _LOGGER.info(
         "[MV Director - Timeline Planner] performance_mode=%s; motion_profile=%s; "
@@ -3448,6 +3485,164 @@ def generate_planner_content(
             "scenes=%s; mode=scene_local_requests",
             ",".join(str(value) for value in isolated_cue_scenes),
         )
+    selected_staging_by_scene: dict[int, dict[str, str]] = {}
+    selected_body_staging_by_scene: dict[int, dict[str, str]] = {}
+    used_spatial_candidates: set[int] = set()
+    if direction.staging_candidates:
+        for scene in template.scenes:
+            available = [
+                (index, candidate)
+                for index, candidate in enumerate(direction.staging_candidates, 1)
+                if index not in used_spatial_candidates
+            ]
+            if not available:
+                break
+            scene_number = scene.scene_number
+            priority = scene_priority_cues.get(scene_number, ())
+            discovered = discovered_by_scene.get(scene_number, ())
+            current_target = (
+                priority[0]["token"] if priority else
+                discovered[0]["target"] if discovered else ""
+            )
+            selection_entity = _Entity(scene_number, (scene_number,), {
+                "scene_number": scene_number,
+                "lyrics": scene_lyrics_by_number[scene_number],
+                "author_body": scene_author_body_by_number[scene_number],
+                "current_target": current_target,
+                "candidates": [
+                    {"id": f"C{index}", "text": candidate}
+                    for index, candidate in available
+                ],
+            })
+            for attempt in range(2):
+                values, issues, retries, missing, recovered = _request_entities(
+                    backend, task="staging-selection", record_type="STAGING",
+                    entities=[selection_entity], shared={},
+                    system_prompt=system_prompts["staging-selection"],
+                    runtime_config=replace(
+                        runtime_config, max_tokens=min(runtime_config.max_tokens, 128)
+                    ),
+                    interrupt_callback=interrupt_callback,
+                )
+                all_issues.extend(issues)
+                all_retries.update(retries)
+                protocol_recovered_count += recovered
+                if missing:
+                    break
+                try:
+                    selected = parse_staging_selection(
+                        values[selection_entity.key], direction.staging_candidates,
+                        current_target=current_target,
+                    )
+                    if selected is not None and selected[0] not in {
+                        index for index, _ in available
+                    }:
+                        raise ValueError("Candidate was already used for a spatial event")
+                except ValueError as error:
+                    if attempt == 0:
+                        selection_entity = replace(selection_entity, value={
+                            **selection_entity.value,
+                            "retry": "invalid_selection",
+                            "last_error": str(error),
+                        })
+                        continue
+                    _LOGGER.warning(
+                        "[MV Director - Timeline Planner] staging selection ignored; "
+                        "scene=%d; reason=%s", scene_number, error,
+                    )
+                    break
+                if selected is not None:
+                    index, anchor = selected
+                    selected_staging_by_scene[scene_number] = {
+                        "id": f"C{index}",
+                        "text": direction.staging_candidates[index - 1],
+                        "anchor": anchor,
+                    }
+                    if anchor != "なし":
+                        used_spatial_candidates.add(index)
+                    else:
+                        selected_body_staging_by_scene[scene_number] = {
+                            "id": f"C{index}",
+                            "text": direction.staging_candidates[index - 1],
+                        }
+                    _LOGGER.info(
+                        "[MV Director - Timeline Planner] staging selected; "
+                        "scene=%d; candidate=C%d; anchored=%s",
+                        scene_number, index, "yes" if anchor != "なし" else "no",
+                    )
+                break
+            if scene_number not in selected_staging_by_scene or (
+                selected_staging_by_scene[scene_number]["anchor"] == "なし"
+            ):
+                continue
+            body_available = [
+                (index, candidate)
+                for index, candidate in enumerate(direction.staging_candidates, 1)
+                if index not in used_spatial_candidates
+            ]
+            if not body_available:
+                continue
+            body_entity = _Entity(scene_number, (scene_number,), {
+                "scene_number": scene_number,
+                "selection_role": "body",
+                "lyrics": scene_lyrics_by_number[scene_number],
+                "author_body": scene_author_body_by_number[scene_number],
+                "current_target": current_target,
+                "selected_event": selected_staging_by_scene[scene_number],
+                "candidates": [
+                    {"id": f"C{index}", "text": candidate}
+                    for index, candidate in body_available
+                ],
+            })
+            for attempt in range(2):
+                values, issues, retries, missing, recovered = _request_entities(
+                    backend, task="staging-selection", record_type="STAGING",
+                    entities=[body_entity], shared={},
+                    system_prompt=system_prompts["staging-selection"],
+                    runtime_config=replace(
+                        runtime_config, max_tokens=min(runtime_config.max_tokens, 128)
+                    ),
+                    interrupt_callback=interrupt_callback,
+                )
+                all_issues.extend(issues)
+                all_retries.update(retries)
+                protocol_recovered_count += recovered
+                if missing:
+                    break
+                try:
+                    selected_body = parse_staging_selection(
+                        values[body_entity.key], direction.staging_candidates,
+                        current_target=current_target,
+                    )
+                    if selected_body is not None and (
+                        selected_body[1] != "なし"
+                        or selected_body[0] not in {index for index, _ in body_available}
+                    ):
+                        raise ValueError("Body candidate must be available and use anchor=なし")
+                except ValueError as error:
+                    if attempt == 0:
+                        body_entity = replace(body_entity, value={
+                            **body_entity.value,
+                            "retry": "invalid_body_selection",
+                            "last_error": str(error),
+                        })
+                        continue
+                    _LOGGER.warning(
+                        "[MV Director - Timeline Planner] body staging selection ignored; "
+                        "scene=%d; reason=%s", scene_number, error,
+                    )
+                    break
+                if selected_body is not None:
+                    body_index = selected_body[0]
+                    selected_body_staging_by_scene[scene_number] = {
+                        "id": f"C{body_index}",
+                        "text": direction.staging_candidates[body_index - 1],
+                    }
+                    _LOGGER.info(
+                        "[MV Director - Timeline Planner] body staging selected; "
+                        "scene=%d; candidate=C%d", scene_number, body_index,
+                    )
+                break
     total_scenes = len(template.scenes)
     for scene_batch in _scene_batches_with_isolated_priority_cues(
         list(template.scenes), scene_priority_cues, scenes_per_batch
@@ -3464,6 +3659,8 @@ def generate_planner_content(
                     (scene.scene_number,),
                     {
                         "scene_number": scene.scene_number,
+                        "scene_start_ms": scene.start_ms,
+                        "scene_end_ms": scene.end_ms,
                         "total_scene_count": total_scenes,
                         "timeline_position": (
                             "opening"
@@ -3475,6 +3672,9 @@ def generate_planner_content(
                         "has_resolved_lyrics": bool(scene_lyrics),
                         "lyrics": scene_lyrics,
                         "author_body": scene_author_body,
+                        **({"selected_staging_candidate": selected_staging_by_scene[scene.scene_number]}
+                    if scene.scene_number in selected_staging_by_scene
+                    and selected_staging_by_scene[scene.scene_number]["anchor"] != "なし" else {}),
                         "priority_lyric_cues": list(
                             scene_priority_cues[scene.scene_number]
                         ),
@@ -3559,6 +3759,9 @@ def generate_planner_content(
                             for value in context["author_body"]
                         )
                     ),
+                    **({"selected_staging_candidate": selected_staging_by_scene[scene.scene_number]}
+                       if scene.scene_number in selected_staging_by_scene
+                       and selected_staging_by_scene[scene.scene_number]["anchor"] != "なし" else {}),
                     "priority_lyric_cues": list(
                         scene_priority_cues.get(scene.scene_number, ())
                     ),
@@ -3576,6 +3779,55 @@ def generate_planner_content(
         key: _parse_cue_card(beat_entities[key], text)
         for key, text in beat_values.items()
     }
+    staging_retry_entities = [
+        _Entity(key[0], key, {
+            **beat_entities[key].value,
+            "rejected_output": beat_values[key],
+            "retry": "selected_staging_anchor",
+            "last_error": ",".join(card.violations),
+        })
+        for key, card in cue_cards.items()
+        if "staging_anchor_missing" in card.violations
+        or "staging_target_mismatch" in card.violations
+    ]
+    if staging_retry_entities:
+        retry_values, retry_issues, retry_scenes, retry_missing, retry_recovered = (
+            _request_entity_batches(
+                backend, task="visual-beats", record_type="BEAT",
+                entities=staging_retry_entities, batch_size=scenes_per_batch,
+                shared={
+                    "subject_roster": subject_roster,
+                    "direction": performance_directions,
+                    "planner_policy_contract": planner_policy_contract,
+                    "staging_retry": "Preserve the complete selected spatial "
+                    "relation in 配置 and its target at the interaction point.",
+                },
+                system_prompt=system_prompts["visual-beats"],
+                runtime_config=runtime_config,
+                interrupt_callback=interrupt_callback,
+            )
+        )
+        all_issues.extend(retry_issues)
+        all_retries.update(retry_scenes)
+        protocol_recovered_count += retry_recovered
+        failed_staging: list[tuple[str, int, int]] = list(retry_missing)
+        for entity in staging_retry_entities:
+            retry_text = retry_values.get(entity.key)
+            if retry_text is not None:
+                retry_text = dialogue_filter.filter(retry_text)
+                retry_card = _parse_cue_card(beat_entities[entity.key], retry_text)
+                if retry_card.valid:
+                    beat_values[entity.key] = retry_text
+                    cue_cards[entity.key] = retry_card
+                    continue
+            failed_staging.append(("STAGING_ANCHOR", entity.scene_number, 1))
+        if failed_staging:
+            _LOGGER.error(
+                "[MV Director - Timeline Planner] selected staging anchor was "
+                "not preserved after retry; scenes=%s",
+                ",".join(str(item[1]) for item in failed_staging),
+            )
+            return None, tuple(dict.fromkeys(failed_staging))
     required_cue_scopes = dict(scene_priority_cues)
     for scene_number, discovered in discovered_by_scene.items():
         if discovered and discovered[0]["kind"] == "effect":
@@ -3793,6 +4045,17 @@ def generate_planner_content(
             if lyric["section"]
         }
         unseen_sections = current_sections - seen_layout_sections
+        new_section_starts = [
+            lyric.start_ms
+            for shot in scene.shots
+            for lyric in shot.lyric_annotations
+            if lyric.section in unseen_sections and lyric.start_ms is not None
+        ]
+        new_section_start_ms = min(new_section_starts) if new_section_starts else None
+        new_section_at_scene_start = (
+            new_section_start_ms is not None
+            and new_section_start_ms <= scene.start_ms + 500
+        )
         section_entry_shot_index = next(
             (
                 int(group["shot_index"])
@@ -3830,6 +4093,8 @@ def generate_planner_content(
                         and current_sections != previous_sections
                     ),
                     "first_section_appearance": bool(unseen_sections),
+                    "new_section_start_ms": new_section_start_ms,
+                    "new_section_at_scene_start": new_section_at_scene_start,
                     "new_sections": sorted(unseen_sections),
                     "section_entry_shot_index": section_entry_shot_index,
                     "lyric_groups": lyric_groups,
@@ -4100,7 +4365,10 @@ def generate_planner_content(
                     "scene_number": scene.scene_number,
                     "shot_index": key[1],
                     "shot_count": len(keys),
+                    "shot_start_ms": shot_context[key]["shot_start_ms"],
+                    "shot_end_ms": shot_context[key]["shot_end_ms"],
                     "shot_duration_ms": shot_context[key]["shot_duration_ms"],
+                    "lyrics": shot_context[key]["lyrics"],
                     "editorial_role": _camera_editorial_role(
                         shot_context[key], lip_sync_active=lip_sync_mode != "off"
                     ),
@@ -4121,6 +4389,8 @@ def generate_planner_content(
                 continue
             shared_spine = {
                 "scene_number": scene.scene_number,
+                "scene_start_ms": scene.start_ms,
+                "scene_end_ms": scene.end_ms,
                 "lyric_lines": list(dict.fromkeys(
                     str(lyric["text"])
                     for key in keys for lyric in shot_context[key]["lyrics"]
@@ -4148,12 +4418,8 @@ def generate_planner_content(
                         "body_path": scene_choreography[scene.scene_number][1],
                     }
                 } if scene.scene_number in scene_choreography else {}),
-                **({
-                    "choreography_palette": [
-                        {"id": phrase_id, "body_path": body_path}
-                        for phrase_id, body_path in choreography_phrases
-                    ],
-                } if choreography_policy == "scene_palette" else {}),
+                **({"selected_body_staging_candidate": selected_body_staging_by_scene[scene.scene_number]}
+                   if scene.scene_number in selected_body_staging_by_scene else {}),
             }
             spine_config = replace(
                 runtime_config,
@@ -4172,11 +4438,7 @@ def generate_planner_content(
                         system_prompts["scene-spine"]
                         + "\nselected_choreography_phraseがある場合、その身体経路を着想として歌詞と固定Shotへ具体化してよい。より適切な独自の身体経路を考案してもよい。候補本文の始点姿勢へ毎Scene戻らず、継続時はentry_body_stateから始める。候補の全文を写さず、接触・場所・対象はvisual_beat_groundingだけを根拠にする。\n"
                         if scene.scene_number in scene_choreography
-                        else system_prompts["scene-spine"] + (
-                            "\nchoreography_paletteがある場合、候補は任意の着想であり、ID選択や逐語的再現は不要。"
-                            "歌詞とSceneの出来事に合う独自の身体経路を考案し、Shot間を連続させてよい。\n"
-                            if choreography_policy == "scene_palette" else ""
-                        )
+                        else system_prompts["scene-spine"]
                     ),
                     runtime_config=spine_config,
                     interrupt_callback=interrupt_callback,
@@ -4250,6 +4512,11 @@ def generate_planner_content(
                 else ""
             )
             context["visual_beat_grounding"] = cue_card.to_dict()
+            selected_staging = selected_staging_by_scene.get(key[0])
+            if selected_staging is not None and cue_card.valid:
+                context["selected_staging_anchor"] = selected_staging["anchor"]
+            if key[0] in selected_body_staging_by_scene:
+                context["selected_body_staging_candidate"] = selected_body_staging_by_scene[key[0]]
             if key[0] in scene_choreography:
                 context["selected_choreography_phrase"] = {
                     "id": scene_choreography[key[0]][0],
@@ -4394,10 +4661,6 @@ def generate_planner_content(
                         "unrequested_running_maximum": 0,
                     },
                     "recent_action_history": recent_action_history[-18:],
-                    **({"choreography_palette": [
-                        {"id": phrase_id, "body_path": body_path}
-                        for phrase_id, body_path in choreography_phrases
-                    ]} if choreography_policy == "scene_palette" else {}),
                 },
                 history=recent_action_history,
                 system_prompt=system_prompts["actions"],

@@ -253,6 +253,21 @@ class CameraContinuityTests(unittest.TestCase):
             self.assertEqual(plan.end_scale, "upper_body")
             self.assertEqual(_camera_plan_contract_violations(e, plan), ())
 
+    def test_whole_body_spine_overrides_upper_body_editorial_fallback(self):
+        e = entity(
+            1, 1,
+            editorial_role="upper_body_performance_coverage",
+            required_spine_coverage="whole_body_emotion",
+        )
+        for ordinal in range(8):
+            plan = _fallback_camera_plan(e, ordinal)
+            self.assertEqual(plan.coverage, "whole_body_emotion")
+            self.assertTrue(
+                {plan.start_scale, plan.end_scale}
+                & {"wide", "medium_wide", "full_body"}
+            )
+            self.assertEqual(_camera_plan_contract_violations(e, plan), ())
+
 
 if __name__ == "__main__":
     unittest.main()

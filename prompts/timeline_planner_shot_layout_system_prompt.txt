@@ -20,8 +20,8 @@ neither mode.
 Read the original lyrics before choosing the mode. A change of concrete object,
 action, location, direction, emotional state, point of view, section, or
 narrative claim can favor CUT when it creates a genuinely new editorial beat.
-At the first appearance of a new lyric section, prefer one CUT when its opening
-contains a strong emotional reaction suitable for an extreme face insert. Do
+When a new lyric section begins at this Scene's opening, prefer one CUT if that
+opening contains a strong emotional reaction suitable for a face insert. Do
 not create additional CUT boundaries merely because later lyrics repeat words
 about memory, a name, doubt, fear, loneliness, pain, tears, resolve, or hope.
 The face insert is renderer-owned and is reserved for the first qualifying CUT
@@ -29,10 +29,15 @@ of a lyric section. A continued phrase or the next physical phase of an already
 established approach, touch, manipulation, release, turn, or walk favors
 CONTINUE. Otherwise use CUT only for a purposeful new wide view, reverse angle,
 insert detail, reaction, or close-up.
-When first_section_appearance is true, use CUT unless the supplied
-boundary_contract makes every such CUT impossible. section_entry_shot_index
-identifies the existing Shot that actually carries the first lyric annotation;
-do not assume that the Scene start and the lyric start are the same time.
+When first_section_appearance is true, inspect new_section_start_ms and
+new_section_at_scene_start before choosing the Scene boundary. Prefer a CUT
+for a strong new-section opening only when new_section_at_scene_start is true.
+If the new section starts later within this Scene, do not move its edit to the
+Scene beginning: preserve CONTINUE when the previous lyric and physical action
+carry into the opening, and develop the section pivot at an internal Shot
+boundary near the new lyric. A separate genuine spatial or emotional reset may
+still justify CUT. section_entry_shot_index identifies the existing Shot that
+carries the first lyric annotation; its Scene start may precede the new lyric.
 When a Scene contains a structural face insert and also contains a concrete
 lyric noun, environmental phenomenon, or supernatural effect, do not let the
 face insert consume the only Shot capable of visualizing that cue. Select at

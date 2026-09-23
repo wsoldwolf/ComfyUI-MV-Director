@@ -30,6 +30,7 @@ try:
         build_camera_plan_grammar,
         build_scene_spine_grammar,
         build_choreography_choice_grammar,
+        build_staging_selection_grammar,
         PlannerContent,
         generate_planner_content,
         normalize_concept_emd,
@@ -56,6 +57,7 @@ except ImportError:  # Standalone repository tests.
         build_camera_plan_grammar,
         build_scene_spine_grammar,
         build_choreography_choice_grammar,
+        build_staging_selection_grammar,
         PlannerContent,
         generate_planner_content,
         normalize_concept_emd,
@@ -75,6 +77,7 @@ CHAT_FORMATS = ("auto", "qwen", "gemma")
 LIP_SYNC_MODES = ("off", "context_loop", "audio_reference", "lyrics")
 _PROMPT_FILES = {
     "lyric-cues": "timeline_planner_lyric_cues_system_prompt.txt",
+    "staging-selection": "timeline_planner_staging_selection_system_prompt.txt",
     "visual-beats": "timeline_planner_visual_beats_system_prompt.txt",
     "visual-beats-bounded": "timeline_planner_visual_beats_bounded_system_prompt.txt",
     "song-direction": "timeline_planner_song_direction_system_prompt.txt",
@@ -145,6 +148,7 @@ class _LlamaPlannerBackend:
     def configure_progress(self, scene_count: int, scenes_per_batch: int) -> None:
         scene_batches = max(1, (scene_count + scenes_per_batch - 1) // scenes_per_batch)
         self._expected_primary_calls = {
+            "staging-selection": scene_count,
             "visual-beats": scene_batches,
             "song-direction": 1,
             "shot-layout": scene_batches,
@@ -234,6 +238,11 @@ class _LlamaPlannerBackend:
                 "scene=%s; candidates=%d",
                 request.get("scene_number"), len(request["candidates"]),
             )
+        if task == "staging-selection":
+            request = json.loads(payload)
+            grammar_kwargs["grammar"] = build_staging_selection_grammar(
+                [entry["id"] for entry in request["slots"][0]["candidates"]]
+            )
         if task in {"actions", "action-audit"}:
             request = json.loads(payload)
             if task == "action-audit":
@@ -258,7 +267,7 @@ class _LlamaPlannerBackend:
             if request.get("planner_policy_contract", {}).get("lyric_interpretation") == "bounded":
                 grammar_kwargs["grammar"] = build_grounded_cue_grammar(request["slots"])
                 _LOGGER.info(
-                    "[MV Director - Timeline Planner] output constraint=cue_source_v1; slots=%d",
+                    "[MV Director - Timeline Planner] output constraint=cue_spatial_roles_v2; slots=%d",
                     len(request["slots"]),
                 )
         if task == "cameras":

@@ -7,6 +7,16 @@ view. Plan toward the next facial accent before zooming: a straight zoom cannot
 rotate a rear view to the front. Keep hands and their target visible while the
 locked action performs contact or an arm accent; use a close-up for the following
 reaction or release, not for the gesture it would conceal.
+Use each Shot's start/end time and its lyrics' start/end time to distinguish
+preparation from the lyric-triggered change. Keep the target and hand visible
+during contact, then move toward the resulting face in the reaction Shot. If
+locked_action requires a visible singing mouth, do not finish at a rear view.
+When required_spine_coverage is whole_body_emotion or whole_body_hands, show
+the weight shift, torso and arm accent in a wide, medium_wide or full_body
+scale before moving closer. Do not crop the main physical accent to a face.
+Across a genuine CUT, choose an Arc direction from the new geography instead
+of defaulting every Arc to the left. Within a CONTINUE group, preserve the
+ongoing Arc direction and avoid an abrupt reversal.
 previous_locked_action and next_locked_action are the already accepted actions
 in this Scene, not requests to change the current Shot. Use them with
 performance_phase and grounded_cue_phase to film one continuous event:
@@ -217,3 +227,4 @@ the complete camera vertically. Tracking Shot follows a moving Subject; Arc
 Shot travels around the Subject. Perform this label-versus-prose consistency
 check before outputting each record.
 Never print the five characters <TAB>. Start every record on a new physical line.
+When visual_beat_grounding contains a spatial_anchor, frame the selected target and its support or location as one readable relationship at the interaction point. Do not isolate the hand and target so tightly that the support disappears. A later Scene must not restage a completed contact without its own current lyric cue.

@@ -25,13 +25,11 @@ PROFILE = ROOT / "profiles/motion/anime_choreography_mv.md"
 
 
 class ChoreographyProfileProbeTests(unittest.TestCase):
-    def test_opt_in_profile_has_distinct_phrases_and_is_in_catalog(self):
+    def test_motion_profile_no_longer_injects_a_choreography_palette(self):
         profile = load_direction_profile(PROFILE, "motion")
         self.assertEqual(profile.performance_mode, "dance_phrase")
-        self.assertEqual(profile.choreography_policy, "scene_palette")
-        self.assertGreaterEqual(len(profile.choreography_phrases), 4)
-        self.assertEqual(len({item[0] for item in profile.choreography_phrases}),
-                         len(profile.choreography_phrases))
+        self.assertEqual(profile.choreography_policy, "off")
+        self.assertEqual(profile.choreography_phrases, ())
         self.assertIn(profile.profile_id, load_direction_profiles().motion)
 
     def test_phrase_section_is_strict_and_motion_only(self):
@@ -51,6 +49,11 @@ class ChoreographyProfileProbeTests(unittest.TestCase):
             path.write_text(body.replace("dance_phrase", "event_based") +
                             "* `one` 甲。\n* `two` 乙。\n", encoding="utf-8")
             with self.assertRaisesRegex(DirectionProfileError, "requires dance_phrase"):
+                load_direction_profile(path, "motion")
+
+            path.write_text(body.replace("scene_choice", "scene_palette") +
+                            "* `one` 甲。\n* `two` 乙。\n", encoding="utf-8")
+            with self.assertRaisesRegex(DirectionProfileError, "must be off or scene_choice"):
                 load_direction_profile(path, "motion")
 
     def test_selector_restricts_to_declared_ids_and_does_not_repeat_previous(self):
@@ -74,7 +77,7 @@ class ChoreographyProfileProbeTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             build_choreography_choice_grammar(("same", "same"))
 
-    def test_opt_in_palette_reaches_actions_without_extra_choice_call(self):
+    def test_profile_does_not_inject_a_palette_into_actions(self):
         class Backend(FakePlannerBackend):
             def complete_planner(self, *, task, system_prompt, payload, config, interrupt_callback=None):
                 if task == "choreography-choice":
@@ -113,8 +116,13 @@ class ChoreographyProfileProbeTests(unittest.TestCase):
         self.assertTrue(result.complete)
         self.assertNotIn("choreography-choice", [task for task, _ in backend.calls])
         action = next(value for task, value in backend.calls if task == "actions")
-        self.assertEqual(len(action["choreography_palette"]), 5)
+        self.assertNotIn("choreography_palette", action)
         self.assertNotIn("selected_choreography_phrase", action["slots"][0])
+        spine = next(value for task, value in backend.calls if task == "scene-spine")
+        self.assertEqual(spine["scene_start_ms"], 0)
+        self.assertEqual(spine["slots"][0]["shot_start_ms"], 0)
+        self.assertEqual(spine["slots"][0]["lyrics"][0]["start_ms"], 2300)
+        self.assertEqual(action["slots"][0]["lyrics"][0]["end_ms"], 5800)
 
 
 if __name__ == "__main__":

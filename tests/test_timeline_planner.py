@@ -113,6 +113,8 @@ class FakePlannerBackend:
         self.calls.append((task, value))
         if task == "lyric-cues":
             return "\n".join(f"DISCOVERY\t{item['slot']}\tnone|なし" for item in value["slots"])
+        if task == "staging-selection":
+            return "STAGING\t1\tC1|なし"
         record_type = {
             "visual-beats": "BEAT",
             "song-direction": "DIRECTION",
@@ -146,7 +148,13 @@ class FakePlannerBackend:
                     "visual-beats": (
                         (
                             "感情=決意｜根拠=千年鳥居｜対象=千年鳥居｜"
-                            "接触=禁止｜現象=なし｜配置=参道奥の鳥居｜"
+                            "接触=禁止｜現象=なし｜配置="
+                            + (
+                                item.get("selected_staging_candidate", {}).get("anchor")
+                                if item.get("selected_staging_candidate", {}).get("anchor") not in {None, "なし"}
+                                else "参道奥の鳥居"
+                            )
+                            + "｜"
                             "可視展開=鳥居の輪郭が夜空に浮かぶ｜身体主導=胸郭と肩の反転｜"
                             "終端=鳥居へ正対して静止"
                         )
@@ -341,6 +349,7 @@ def runtime() -> LlamaRuntimeConfig:
 
 def prompts() -> dict[str, str]:
     return {
+        "staging-selection": "staging",
         "visual-beats": "beats",
         "song-direction": "direction",
         "shot-layout": "layout",
@@ -888,7 +897,8 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertIn("previous_visual_beat and previous_lyrics", prompt)
         self.assertIn("must contain both later CUT and", prompt)
-        self.assertIn("first appearance of a new lyric section", prompt)
+        self.assertIn("new lyric section begins at this Scene's opening", prompt)
+        self.assertIn("new_section_at_scene_start", prompt)
         self.assertIn("renderer-owned", prompt)
         self.assertNotIn("must begin a new CUT", prompt)
         self.assertIn("boundary_mix_retry_reason", prompt)
@@ -1827,6 +1837,36 @@ class TimelinePlannerCoreTests(unittest.TestCase):
         self.assertIn("camera_plan_short_arc", contract)
         self.assertIn("unassigned_arc", contract)
 
+    def test_spine_whole_body_requires_wide_enough_camera_scale(self) -> None:
+        entity = _Entity(
+            1,
+            (1, 1),
+            {
+                "shot_duration_ms": 3000,
+                "required_spine_coverage": "whole_body_emotion",
+            },
+        )
+        narrow, issues = _parse_camera_plan(
+            "MOTION=Zoom In｜START_SCALE=medium｜END_SCALE=upper_body｜"
+            "START_VIEW=front｜END_VIEW=front｜PATH=zoom_in_35_55｜"
+            "COVERAGE=whole_body_emotion"
+        )
+        self.assertEqual(issues, ())
+        self.assertIn(
+            "spine_whole_body_not_visible",
+            _camera_plan_contract_violations(entity, narrow),
+        )
+        readable, issues = _parse_camera_plan(
+            "MOTION=Zoom In｜START_SCALE=full_body｜END_SCALE=upper_body｜"
+            "START_VIEW=front｜END_VIEW=front｜PATH=zoom_in_35_55｜"
+            "COVERAGE=whole_body_emotion"
+        )
+        self.assertEqual(issues, ())
+        self.assertNotIn(
+            "spine_whole_body_not_visible",
+            _camera_plan_contract_violations(entity, readable),
+        )
+
     def test_anime_emotional_mv_boundary_contract_allows_long_continue_run(self) -> None:
         scenes = tuple(
             Scene(
@@ -1886,6 +1926,40 @@ class TimelinePlannerCoreTests(unittest.TestCase):
              if text == FACE_PERFORMANCE_CUT_CAMERA],
             [(1, 3)],
         )
+
+    def test_layout_exposes_new_section_lyric_time_inside_continued_scene(self) -> None:
+        template = LATE_SECTION_TEMPLATE + """
+> `シーン` 2
+# シーン 00:06.000 --> 00:12.000 継続
+* `H3長` 158
+> `セクション` VERSE2
+> `歌詞開始` 00:06.000
+> `歌詞終了` 00:07.500
+> `歌詞` 前の節の続き
+## ショット 00:06.000
+* 未計画
+> `セクション` CHORUS
+> `歌詞開始` 00:09.500
+> `歌詞終了` 00:11.000
+> `歌詞` 新しい節の始まり
+## ショット 00:09.500
+* 未計画
+"""
+        backend = FakePlannerBackend()
+        result = plan_timeline(
+            backend, template_emd=template, concept_emd=CONCEPT,
+            direction=None, lip_sync_mode="lyrics", lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1, scenes_per_batch=3,
+            system_prompts=prompts(), runtime_config=runtime(),
+        )
+        self.assertTrue(result.complete)
+        layout = next(payload for task, payload in backend.calls if task == "shot-layout")
+        scene = next(slot for slot in layout["slots"] if slot["scene_number"] == 2)
+        self.assertTrue(scene["first_section_appearance"])
+        self.assertEqual(scene["new_section_start_ms"], 9500)
+        self.assertFalse(scene["new_section_at_scene_start"])
+        self.assertEqual(scene["section_entry_shot_index"], 2)
+        self.assertIn((2, True), result.content.scene_continuations)
 
     def test_unrequested_foot_camera_is_retried_without_rewriting(self) -> None:
         class FootCameraBackend(FakePlannerBackend):
@@ -2948,8 +3022,20 @@ class TimelinePlannerCoreTests(unittest.TestCase):
             handheld,
             {"token": "狐火", "kind": "external_effect"},
         )
-        self.assertIn("priority_effect_not_autonomous", violations)
         self.assertIn("priority_effect_contact_not_forbidden", violations)
+        hand_origin = _parse_cue_card(
+            entity,
+            "感情=畏れ｜根拠=狐火へ問う｜対象=狐火｜接触=禁止｜"
+            "現象=身体操作｜配置=人物の掌から樹間へ｜"
+            "可視展開=掌に狐火が生まれ、樹間へ飛んで幹を照らす｜"
+            "身体主導=手を差し出す｜終端=火を見上げる",
+        )
+        self.assertEqual(
+            _priority_cue_card_violations(
+                hand_origin, {"token": "狐火", "kind": "external_effect"}
+            ),
+            (),
+        )
 
     def test_priority_target_is_required_even_when_cue_card_is_invalid(self) -> None:
         entities = [

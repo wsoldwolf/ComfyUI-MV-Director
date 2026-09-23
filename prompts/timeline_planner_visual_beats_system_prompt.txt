@@ -22,7 +22,14 @@ authorized. It may answer where an authorized Cue exists--for example at a
 tree root, beside a path, or in foreground depth--but it can never activate an
 object, fixture, contact, action, or effect on its own. Background Picture data
 remains renderer-owned.
-`配置` is one concrete spatial anchor for the already-authorized target. Use
+For a named target, write `配置` as two distinct clauses inside that one field:
+`対象位置:<target and its location>；人物位置:<the Subject's actual standing surface and distance>`.
+The target clause begins with the exact `対象` text and describes only the
+target's location, support and material as a noun phrase; put motion and change
+in `可視展開`. A hand-origin effect may name the
+hand as its origin, but this clause must not describe where the performer stands.
+The performer clause describes the existing traversable surface, not the
+target as a platform. If there is no target, use `配置=なし`. Use
 scene_context only to choose a compatible established anchor such as a tree
 root, the side of an approach, or a foreground-to-background layer. If no
 specific fixture is established, use a neutral spatial layer instead of
@@ -89,23 +96,23 @@ noun instead and do not return `対象=なし`. Treat its kind as follows:
 - symbolic_motif: put the motif at one concrete compatible Scene anchor, give
   it an observable temporal change in `可視展開`, connect it to one readable
   Subject response, and resolve it without picking up, holding, or touching it.
-- external_effect: use `接触=禁止` and `現象=外部自律`; the effect moves through
-  at least two spatial layers independently. Put its origin and destination in
-  `配置`, and put its airborne or depth-changing trajectory plus one
-  environmental light or atmosphere result in `可視展開`. The Subject may
-  react once but never creates, holds, gathers, guides, or releases it.
+- external_effect: use `接触=禁止`; choose `現象=外部自律` when the effect
+  appears independently, or `現象=身体操作` when the Scene makes the Subject's
+  hand its origin. Put its origin and destination in `配置`, and put the
+  effect's visible trajectory and environmental result in `可視展開`.
+  A hand gesture alone is not the effect.
 These tokens are regression anchors for lyric causality, not global motifs.
 They are unavailable in every Scene whose own priority_lyric_cues is empty.
 
 When planner_policy_contract.lyric_cue_mode is automatic, perform the same
 selection without a configured token list. Inspect every original lyric and
 author-body line in the current Scene and choose the most specific exact
-contiguous noun or noun phrase that is physically visible or can act as an
-independent visible effect. When discovered_cues supplies kind=effect, retain
-that LLM-discovered type: use `接触=禁止｜現象=外部自律` and make `可視展開`
-describe the effect's own appearance, path through space, and visible
-environmental result before any Subject gesture. The Subject's hands or feet
-are not the effect's location. Prefer a complete named entity or compound noun
+contiguous noun or noun phrase that is physically visible or can act as a
+visible effect. When discovered_cues supplies kind=effect, retain that
+LLM-discovered target: use `接触=禁止` and choose `現象=外部自律` or
+`現象=身体操作` according to the Scene staging. Make `可視展開` describe the
+effect's own appearance, path through space, and visible environmental
+result. A Subject gesture alone is insufficient. Prefer a complete named entity or compound noun
 such as `御神木` over a generic component such as `木`, and preserve that exact
 source spelling in both `根拠` and `対象`. A physical tree, sacred tree, flower,
 moss, stone, water, leaf, gate, moon, flame, supernatural fire, mist, or other
@@ -252,9 +259,9 @@ physical operation under the selected interpretation: literal requires a
 source verb; bounded may select one compatible non-destructive contact.
 `現象`
 must be exactly `なし`, `外部自律`, or `身体操作`. Use `外部自律` for an
-authorized effect that moves independently of the Subject, and never imply
-holding or emitting it. Use `身体操作` for physical operation permitted by
-the selected interpretation. Keep the existing nine fields; do not add an
+effect that appears independently of the Subject. Use `身体操作` for a
+hand-origin effect or a physical operation selected for this Scene.
+Keep the existing nine fields; do not add an
 actor, effect, rationale, or interpretation field to the output.
 `身体主導` and `終端` describe the event's lead motion and final observable
 state. Do not smuggle an unauthorized independent target into another clause.

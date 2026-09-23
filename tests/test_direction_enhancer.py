@@ -15,6 +15,8 @@ from core.direction import (
     enhance_direction,
     parse_direction_passthrough,
 )
+from core.artifacts import DirectionArtifact
+from core.direction.enhancer import split_staging_directives
 from core.inference import LlamaRuntimeConfig
 from nodes import NODE_CLASS_MAPPINGS
 
@@ -42,6 +44,72 @@ VALID = "\n".join(
 
 
 class DirectionEnhancerTests(unittest.TestCase):
+    def test_staging_candidate_limit_is_twelve(self) -> None:
+        items = [f"* 候補{i}" for i in range(1, 13)]
+        request = "# 演出候補\n" + "\n".join(items)
+        self.assertEqual(len(split_staging_directives(request)[1]), 12)
+        with self.assertRaisesRegex(DirectionEnhancerError, "more than 12 演出候補"):
+            split_staging_directives(request + "\n* 候補13")
+
+    def test_sectioned_user_request_keeps_candidates_out_of_global_direction(self) -> None:
+        candidate = "大木の根元に生えた苔を指先で撫でる。"
+        request = (
+            "# 共通プロンプト\n## 時間・照明\n* 夜間。\n\n"
+            f"# 演出候補\n* {candidate}\n* 歌詞が合えば片腕を弧状に差し出す。\n"
+        )
+        value = DirectionEnhancerInput(user_request=request)
+        self.assertEqual(value.staging_candidates, (
+            candidate, "歌詞が合えば片腕を弧状に差し出す。",
+        ))
+        self.assertEqual(value.user_direction_text, "# 共通プロンプト\n## 時間・照明\n* 夜間。")
+        payload = json.loads(build_direction_payload(value))
+        self.assertEqual(payload["user_request"], value.user_direction_text)
+        result = enhance_direction(
+            FakeDirectionBackend(VALID), value=value,
+            system_prompt="fixed", runtime_config=LlamaRuntimeConfig(),
+        )
+        self.assertEqual(result.direction.staging_candidates, value.staging_candidates)
+        self.assertNotIn(candidate, result.direction_emd_preview)
+
+    def test_staging_section_without_common_prompt_is_planner_only(self) -> None:
+        candidate = "苔が歌詞に合うなら参道脇の大木の根元へ近づき、指先で撫でる。"
+        request = f"# 演出候補\n* {candidate}\n"
+        value = DirectionEnhancerInput(user_request=request)
+        payload = json.loads(build_direction_payload(value))
+        self.assertEqual(payload["user_request"], "")
+        result = enhance_direction(
+            FakeDirectionBackend(VALID), value=value,
+            system_prompt="fixed", runtime_config=LlamaRuntimeConfig(),
+        )
+        self.assertEqual(result.direction.staging_candidates, (candidate,))
+        self.assertNotIn(candidate, result.direction_emd_preview)
+        self.assertEqual(
+            DirectionArtifact.from_dict(result.direction.to_dict()).staging_candidates,
+            (candidate,),
+        )
+        legacy = result.direction.to_dict()
+        legacy.pop("staging_candidates")
+        self.assertEqual(DirectionArtifact.from_dict(legacy).staging_candidates, ())
+
+    def test_staging_section_requires_valid_list_items(self) -> None:
+        self.assertEqual(split_staging_directives("通常指示"), ("通常指示", ()))
+        for text in (
+            "* `演出候補` 旧形式",
+            "# 演出候補\n* `演出候補` 旧形式",
+        ):
+            with self.subTest(text=text[:30]), self.assertRaisesRegex(
+                DirectionEnhancerError, "use # 演出候補"
+            ):
+                split_staging_directives(text)
+        for text in (
+            "# 演出候補\n",
+            "# 演出候補\n本文だけ",
+            "# 演出候補\n* 候補\n# 演出候補\n* 重複",
+            "# 演出候補\n* " + "あ" * 501,
+        ):
+            with self.subTest(text=text[:30]), self.assertRaises(DirectionEnhancerError):
+                split_staging_directives(text)
+
     def test_llama_backend_caps_oversized_output_reservation(self) -> None:
         from nodes.node_direction_enhancer.node import _LlamaDirectionBackend
 

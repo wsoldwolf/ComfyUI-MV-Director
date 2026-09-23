@@ -44,6 +44,10 @@ Lyric Segmentationが確定したScene/Shot枠へ、歌詞解釈、人物動作�
 | `cache_mode` | `reuse` | 成功結果の再利用方針 |
 | `save_debug_output` | `false` | 一時ディレクトリへLLM traceを保存 |
 
+ユーザーのScene演出候補は新しいPlanner入力ソケットではなく、Direction Enhancerの`user_request`に`# 演出候補`と箇条書きで記述します。Plannerは現在Sceneの原歌詞を見て、まず出来事候補一件又は不採用をLLMで選びます。対象と配置を伴う候補はVisual Beatへ渡し、LLMが記した空間関係をCue Cardの`配置`に保持して接触Shotにも同じ配置を要求します。この場合、別の身体演技候補一件を追加でLLM選択し、Scene SpineとActionへ着想として渡せます。選択は追加の小さな推論一段を要し、形式違反時は一度再要求した後、なお無効なら身体候補のみを不採用にします。空間関係が欠落すれば一回再要求し、なお欠落すれば不完全なEMDを出しません。具体的な出来事の候補は一度使った後のScene選択肢から外し、身体演技だけの候補は再選択可能です。Pythonは候補の意味選択や自然文の書換えを行いません。候補行そのものは完成EMDへ残りません。
+
+対象付き候補のanchorは、候補本文と現在Sceneの歌詞の両方に同じ対象名がある場合だけ採用します。身体演技だけの候補はVisual Beatの空間配置へ渡さず、Scene SpineとActionの演技候補へ渡します。bounded profileのVisual Beatは九fieldを維持したまま、`配置=対象位置:...；人物位置:...`として対象の支持面と人物の足場を分けます。選択済みanchorは`対象位置`側へ完全一致で残し、人物位置はLLMが現在のSceneに合わせて記します。Pythonは自然文を修復せず、構造と対象の出典だけを検証します。
+
 既定の`max_tokens=4096`、`temperature=0.1`、`n_ctx=16384`等は[GGUF共通設定](gguf-settings.md)を参照してください。
 
 ## コンテキスト超過時の自動調整
@@ -97,13 +101,11 @@ Action保持検査へ渡します。各Shotへ`establish`、`relation`、
 
 - `object`: Scene内の位置と人物との関係を確立する。
 - `symbolic_motif`: 可視の時間変化と人物反応を作り、保持物にしない。
-- `external_effect`: 人物から独立して空間を移動し、人物に生成、保持、収集、
-  誘導又は解放させない。
+- `external_effect`: 自律的に現れるか人物の手元を起点とし、対象自身が空間を移動する。人物の手振りだけで代用しない。
 
 Cue CardとAction groundingのINFOログから、Sceneごとに選ばれた対象、配置、
 可視展開及び割当slotを追跡できます。Action Auditの
-`MISSING_GROUNDED_CUE`は対象欠落、Scene位相欠落及び外部effectを
-人物が操作した場合も対象にします。
+`MISSING_GROUNDED_CUE`は対象欠落やScene位相欠落を対象にします。
 
 Planner v47では優先Cueの実tokenを全Stage共通contractへ入れません。優先Cueを
 持つSceneだけをVisual Beat及びAction/Auditの単独requestとして処理し、その

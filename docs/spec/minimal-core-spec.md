@@ -151,7 +151,7 @@ ACTION<TAB>2<TAB>人物は立ち止まり、上げた手を胸元へ静かに戻
 
 組み込みの初期セットは次の通りとする。本文はPython定数へ埋め込まず、repository直下の`profiles/style/*.md`、`profiles/motion/*.md`、`profiles/camera/*.md`からUTF-8 EMDとして起動時に読み込む。拡張子を除く小文字英数字・underscoreのファイル名をprofile IDとし、`passthrough`は予約する。各文書は`# 共通プロンプト`と種別に一致する一つの`## スタイル`、`## モーション`又は`## カメラ`を持ち、一個以上のlist itemを文書順に空白一個で結合してprofile本文とする。別section、空item、code fence、NUL、未知metadata及びディレクトリとsubsectionの不一致は起動時エラーとする。ファイル変更はComfyUI再起動後に反映する。
 
-Style、Motion、Camera文書は`# 共通プロンプト`の前に任意の`# プロファイル`を持てる。Styleは``locked true|false``、``retention TEXT``、``scene_reinforcement TEXT``、Motionは``performance_mode event_based|dance_phrase``、``body_accent_policy off|sparse_chorus``、``choreography_policy off|scene_choice|scene_palette``と``render_prompt TEXT``、Cameraは``planner_policy POLICY_ID``、``lyric_cue_mode MODE``、``lyric_interpretation MODE``と``render_prompt TEXT``などの種別に応じたmetadataを持つ。`retention`は`` `fully_preserved` ``又は`` `partially_preserved` ``から始める。metadataはUI socketを増やさず、実装済みのPlanner構造最適化をprofile選択と同時に切り替える。生成済み自然文の意味的な置換又は修復には使わない。
+Style、Motion、Camera文書は`# 共通プロンプト`の前に任意の`# プロファイル`を持てる。Styleは``locked true|false``、``retention TEXT``、``scene_reinforcement TEXT``、Motionは``performance_mode event_based|dance_phrase``、``body_accent_policy off|sparse_chorus``、既存の任意profile用``choreography_policy off|scene_choice``と``render_prompt TEXT``、Cameraは``planner_policy POLICY_ID``、``lyric_cue_mode MODE``、``lyric_interpretation MODE``と``render_prompt TEXT``などの種別に応じたmetadataを持つ。`retention`は`` `fully_preserved` ``又は`` `partially_preserved` ``から始める。metadataはUI socketを増やさず、実装済みのPlanner構造最適化をprofile選択と同時に切り替える。生成済み自然文の意味的な置換又は修復には使わない。
 
 Cameraの追加metadata ``arc_roll_policy off|selective_arc`` は有限Camera計画のArc＋Rollを切り替える。`selective_arc`は`planner_policy=anime_emotional_mv`を必要とし、Planner cache keyへ含める。
 
@@ -369,6 +369,8 @@ Image to Subject EMDはScene、Shot、歌詞、音響、カメラ又は物語展
 - `style_profile`、`motion_profile`、`camera_profile`
 - `retention_policy`: `profile` / `compiler_default` / `passthrough`
 - `direction_emd_passthrough`: 外部マルチラインSTRING。`# 保持分析`と`# 共通プロンプト`だけを持つ任意断片
+
+ユーザー固有のScene演出候補は別socketを追加せず、Direction Enhancerの既存`user_request`内の`# 演出候補`セクションに箇条書きで指定する。Directionはこの計画専用sectionを原文のまま`staging_candidates`としてtyped artifactへ保ち、Direction推論用の通常`user_request`、preview及び完成EMD共通プロンプトから除く。PlannerはSceneごとのLLM選択で一件又は不採用を決め、選択候補だけをVisual Beatへ提示する。具体的な出来事の候補は一Sceneで消費し、LLMが選んだ対象・配置の関係をCue CardからAction/Cameraへ伝える。Pythonは候補IDの経路制御と行構文だけを扱い、自然文の意味選択・合成はしない。候補本文はCompiler/H3へ直接渡さない。別途提案された`motion_templates_emd`入力ソケットは採用しない。
 - `model_name`、`seed`、生成設定
 
 概念EMDがなくてもuser requestとprofileからdirectionを作れる。ユーザーが「丸く短い金色の眉」のような重要特徴を明示した場合、その条件をVision由来概念より優先する。
@@ -631,7 +633,7 @@ Camera profileの`arc_roll_policy`は`off`（省略時）又は`selective_arc`�
 
 Planner v73では、`CONTINUE`の次Sceneへ渡す`entry_body_state`に、直前Sceneで採用済みのScene Spineがあれば最終Shotの`TO`を原文のまま優先し、なければ直前Cue Cardの`終端`を使う。現在SceneのScene Spine最初の`FROM`及び最初のActionがこの身体姿勢を受け取る。`CUT`では空とし、前Sceneの歌詞対象や出来事を新Sceneへ持ち込まない。Pythonは姿勢文を解釈・合成・修復せず、LLMの文を転送するだけである。これは姿勢情報の連続性を補う契約であり、振り付けの多様化を保証しない。
 
-Planner v74では、Motion profileが`performance_mode dance_phrase`と`choreography_policy scene_palette`をともに宣言し、二つ以上の`# 振付候補`を持つ場合に限り、候補群をScene SpineとActionへ任意の着想として渡す。LLMに候補IDの選択、逐語的再現又は候補間の均等配分を要求しない。候補を使わず独自の身体経路も生成でき、追加LLM段階も設けない。任意の別方式`scene_choice`は候補ID又は`FREEFORM`を一Sceneずつ選べるが、8Bで特定候補への強い偏りを確認したため、運用用`anime_choreography_mv`では選ばない。PythonはAction自然文を合成・修復・置換しない。既存Motion profileは`off`のままであり、UI項目は増やさない。
+旧Planner v74の`scene_palette`によるprofile候補の全Scene一括投入は廃止した。現行では`# 演出候補`をDirection入力から分離してPlannerがSceneごとに選ぶため、Motion profileで`choreography_policy`を指定する必要はない。歌詞に適さなければ不採用にできる。既存の任意`scene_choice`方式のみ残すが、標準profileでは使わない。PythonはAction自然文を合成・修復・置換しない。UI項目は増やさない。
 
 可視の傷等に関する旧Visual Beat規則の「作者本文又はSubject定義だけ」という限定は、意図的な歌詞解釈を排除しない規則へ改める。歌詞文字列だけから身体の損傷を自動追加しないが、LLMが歌詞に基づいて可視の比喩又は身体状態を明確なShot演出として採用した場合、完成EMDのShot本文を下流Style及びCompilerが優先する。日本語Actionの意味内容をPythonで禁止語除去又は書換えせず、歌詞に無関係な損傷を既定描写へ追加しない。
 

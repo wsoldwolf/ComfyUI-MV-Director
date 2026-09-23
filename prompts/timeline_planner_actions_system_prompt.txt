@@ -72,12 +72,12 @@ one setup, relationship, response, and release. For kind=object, establish a
 specific location and do not invent contact unless the current source or valid
 Cue Card permits it. For kind=symbolic_motif, give the motif a visible temporal
 change and connect it to the Subject's emotion without turning it into a held
-prop. For kind=external_effect, keep it autonomous in the surrounding space;
-state the effect's own path or visible environmental result before the
-Subject's reaction. The Subject never touches, reaches toward as if touching,
-approaches face-first, creates, holds, gathers, guides, or releases it and
-responds to that effect at most once. In dance_phrase mode a separate lyric-led
-body phrase can continue without touching or operating the effect.
+prop. For kind=external_effect, follow the validated Cue Card's selected
+origin: independent when `現象=外部自律`, or hand-origin when `現象=身体操作`.
+State the effect's own appearance, path, and visible environmental result;
+do not substitute a Subject gesture for the effect. Do not invent physical
+contact or change the chosen origin later in the Scene. In dance_phrase mode
+a separate lyric-led body phrase can continue alongside the effect.
 A generic hand, shoulder, chest, lean, or open-arm pose that
 could be exchanged with another lyric does not satisfy a priority cue phase.
 When planner_policy_contract.lyric_cue_mode is automatic, the validated
@@ -267,3 +267,4 @@ object interaction in one Scene and do not
 repeat it later without a new lyric trigger. Keep permitted external effects
 autonomous unless the current lyric explicitly requires bodily operation.
 Never print the five characters <TAB>. Start every record on a new physical line.
+selected_staging_anchorがあるSceneでは、対象への接触Shotにrequired_spatial_anchorを丸ごと残し、対象と支持物の位置関係を維持する。後続Shotでは完了した接触を再演しない。

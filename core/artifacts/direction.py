@@ -30,10 +30,12 @@ _REASONS = {
     "profile_enforced",
     "profile_overridden",
     "passthrough_enforced",
+    "planning_directive",
 }
 _TARGET_RE = re.compile(
     r"(?:style_direction|environment_direction|time_lighting_direction|"
-    r"motion_direction|camera_direction|other_direction|retention_lines)\[[0-9]+\]\Z"
+    r"motion_direction|camera_direction|other_direction|retention_lines|"
+    r"staging_candidates)\[[0-9]+\]\Z"
 )
 _RETENTION_POLICIES = {"compiler_default", "profile", "passthrough"}
 
@@ -163,6 +165,7 @@ class DirectionArtifact:
     camera_profile_id: str = ""
     retention_policy: str = "compiler_default"
     retention_lines: tuple[str, ...] = ()
+    staging_candidates: tuple[str, ...] = ()
     provenance: tuple[ProvenanceRecord, ...] = ()
     schema: str = SCHEMA
 
@@ -177,6 +180,7 @@ class DirectionArtifact:
             "camera_direction",
             "other_direction",
             "retention_lines",
+            "staging_candidates",
         ):
             values = getattr(self, field_name)
             if not isinstance(values, tuple):
@@ -237,6 +241,8 @@ class DirectionArtifact:
             "camera_profile_id": self.camera_profile_id,
             "retention_policy": self.retention_policy,
             "retention_lines": list(self.retention_lines),
+            **({"staging_candidates": list(self.staging_candidates)}
+               if self.staging_candidates else {}),
             "provenance": [record.to_dict() for record in self.provenance],
         }
 
@@ -264,6 +270,7 @@ class DirectionArtifact:
                 "retention_lines",
                 "provenance",
             },
+            optional={"staging_candidates"},
         )
         if value["schema"] != SCHEMA:
             raise ArtifactValidationError(SCHEMA, "schema", "schema mismatch")
@@ -277,9 +284,10 @@ class DirectionArtifact:
             "camera_direction",
             "other_direction",
             "retention_lines",
+            "staging_candidates",
         ):
             items = require_sequence(
-                value[field_name], schema=SCHEMA, path=field_name
+                value.get(field_name, []), schema=SCHEMA, path=field_name
             )
             directions[field_name] = tuple(items)
         provenance_values = require_sequence(
@@ -297,6 +305,7 @@ class DirectionArtifact:
             camera_profile_id=value["camera_profile_id"],
             retention_policy=value["retention_policy"],
             retention_lines=directions["retention_lines"],
+            staging_candidates=directions["staging_candidates"],
             provenance=tuple(
                 ProvenanceRecord.from_dict(item) for item in provenance_values
             ),

@@ -54,23 +54,23 @@ class CueDiscoveryTests(unittest.TestCase):
                 "discovered_cues": [parse_discovery("motif|雪", source)]}
         grammar = build_grounded_cue_grammar([slot])
         self.assertIn("雪｜根拠=雪へ還る｜感情=", grammar)
-        self.assertIn("｜配置=雪", grammar)
+        self.assertIn("｜配置=対象位置:雪", grammar)
+        self.assertIn("人物位置:", grammar)
         self.assertNotIn("塔", grammar)
         self.assertNotIn('s2-l0-c0 ::=', grammar)
         slot["discovered_cues"] = [parse_discovery("motif|月", "月へ還る")]
         with self.assertRaises(ValueError):
             build_grounded_cue_grammar([slot])
 
-    def test_discovered_effect_keeps_autonomous_noncontact_cue_type(self):
+    def test_discovered_effect_keeps_noncontact_and_allows_origin_choice(self):
         source = "狐火へ問う"
         grammar = build_grounded_cue_grammar([{
             "slot": 1, "lyrics": [{"text": source}],
             "discovered_cues": [parse_discovery("effect|狐火", source)],
         }])
         self.assertIn('"｜接触=禁止"', grammar)
-        self.assertIn('"｜現象=外部自律"', grammar)
+        self.assertIn('"外部自律" | "身体操作"', grammar)
         self.assertNotIn('"許可"', grammar)
-        self.assertNotIn('"身体操作"', grammar)
 
     def test_scene_spine_keeps_autonomous_effect_development_in_event(self):
         cue = {

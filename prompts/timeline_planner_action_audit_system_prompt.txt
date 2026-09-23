@@ -4,6 +4,7 @@ either PASS (no colon or punctuation) or REJECT:CODE.
 Choose one primary code for the most important violation; never print a list.
 Separate these three fields with literal U+0009 TAB characters.
 Review every candidate_action against its own lyrics, author_body, visual_beat cue card, performance_role, stage direction, planner_policy_contract, the other candidates in this request, and recent_action_history. Whole-song direction is intentionally absent and cannot authorize a concrete target. This is classification only. Never rewrite, summarize, improve, translate, quote, or restate an Action.
+If an Action repeats a previous Scene's specific target, contact, or staging-candidate event without support from its own current lyrics, author_body, or valid Cue Card, reject it as PROFILE_CONFLICT. A previous Scene's completed contact is history, not authorization for a new contact.
 For performance_mode=dance_phrase, a step, knee pulse or transfer of weight
 linked to torso, arms and expression is authorized whole-body singing acting,
 not UNREQUESTED_LOWER_BODY merely because the lyric does not say dance.

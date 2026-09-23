@@ -26,9 +26,11 @@ from .profiles import (
 from .passthrough import DirectionPassthrough, parse_direction_passthrough
 
 
-DIRECTION_PROMPT_VERSION = "mvd-direction-enhancer-v21"
+DIRECTION_PROMPT_VERSION = "mvd-direction-enhancer-v24"
 PASSTHROUGH_PROFILE = "passthrough"
 RETENTION_POLICIES = ("profile", "compiler_default", "passthrough")
+_MAX_STAGING_CANDIDATES = 12
+_MAX_STAGING_CANDIDATE_CHARS = 500
 _ALLOWED = {
     "STYLE": frozenset({1}),
     "ENVIRONMENT": frozenset({1}),
@@ -50,6 +52,66 @@ _DIRECTION_RECORD_TYPES = tuple(_ALLOWED)
 
 class DirectionEnhancerError(ValueError):
     pass
+
+
+def split_staging_directives(user_request: str) -> tuple[str, tuple[str, ...]]:
+    """Keep plan-only EMD directives out of the global Direction prompt.
+
+    This only parses line structure. The Planner LLM judges scene relevance;
+    Python does not select a lyric, object, action, or preferred candidate.
+    """
+
+    lines: list[str] = []
+    candidates: list[str] = []
+    in_staging_section = False
+    saw_staging_section = False
+
+    def add_candidate(candidate: str, line_number: int) -> None:
+        candidate = candidate.strip()
+        if not candidate or "｜" in candidate:
+            raise DirectionEnhancerError(
+                f"user_request line {line_number}: invalid 演出候補"
+            )
+        if len(candidate) > _MAX_STAGING_CANDIDATE_CHARS:
+            raise DirectionEnhancerError(
+                f"user_request line {line_number}: 演出候補 exceeds "
+                f"{_MAX_STAGING_CANDIDATE_CHARS} characters"
+            )
+        candidates.append(candidate)
+        if len(candidates) > _MAX_STAGING_CANDIDATES:
+            raise DirectionEnhancerError(
+                f"user_request has more than {_MAX_STAGING_CANDIDATES} 演出候補"
+            )
+
+    for line_number, line in enumerate(normalize_newlines(user_request).split("\n"), 1):
+        stripped = line.strip()
+        if stripped == "# 演出候補":
+            if saw_staging_section:
+                raise DirectionEnhancerError(
+                    f"user_request line {line_number}: duplicate # 演出候補"
+                )
+            saw_staging_section = True
+            in_staging_section = True
+            continue
+        if stripped.startswith("# "):
+            in_staging_section = False
+        if stripped.startswith("* `演出候補`"):
+            raise DirectionEnhancerError(
+                f"user_request line {line_number}: use # 演出候補 with plain list items"
+            )
+        if in_staging_section:
+            if not stripped:
+                continue
+            if not stripped.startswith("* "):
+                raise DirectionEnhancerError(
+                    f"user_request line {line_number}: # 演出候補 requires list items"
+                )
+            add_candidate(stripped[2:], line_number)
+            continue
+        lines.append(line)
+    if saw_staging_section and not candidates:
+        raise DirectionEnhancerError("# 演出候補 requires at least one list item")
+    return "\n".join(lines).strip(), tuple(candidates)
 
 
 class DirectionEnhancerBackend(Protocol):
@@ -95,6 +157,7 @@ class DirectionEnhancerInput:
             raise DirectionEnhancerError("unknown camera_profile")
         if self.retention_policy not in RETENTION_POLICIES:
             raise DirectionEnhancerError("unknown retention_policy")
+        split_staging_directives(self.normalized_user_request)
         concept = self.normalized_concept_emd
         if concept:
             headings = [line for line in concept.split("\n") if line.startswith("# ")]
@@ -146,6 +209,14 @@ class DirectionEnhancerInput:
     @property
     def normalized_user_request(self) -> str:
         return normalize_newlines(self.user_request).strip()
+
+    @property
+    def user_direction_text(self) -> str:
+        return split_staging_directives(self.normalized_user_request)[0]
+
+    @property
+    def staging_candidates(self) -> tuple[str, ...]:
+        return split_staging_directives(self.normalized_user_request)[1]
 
     @property
     def normalized_direction_emd_passthrough(self) -> str:
@@ -200,7 +271,7 @@ def build_direction_payload(value: DirectionEnhancerInput) -> str:
         "protocol": "MVD_LLM_RECORDS_V1",
         "task": DIRECTION_PROMPT_VERSION,
         "authority_order": ["user", "scene_emd", "vision_concept", "profile", "generated"],
-        "user_request": value.normalized_user_request,
+        "user_request": value.user_direction_text,
         "concept_emd": value.normalized_concept_emd,
         "requested_records": list(value.requested_record_types),
         "profiles": {},
@@ -575,6 +646,20 @@ def enhance_direction(
                 sha256=sha256_text(text),
             )
         )
+    for index, text in enumerate(value.staging_candidates):
+        provenance.append(
+            ProvenanceRecord(
+                record_id=f"out_staging_{index + 1:04d}",
+                record_kind="output",
+                source="user",
+                source_ref="user_request",
+                source_position=index,
+                target=f"staging_candidates[{index}]",
+                disposition="accepted",
+                reason="planning_directive",
+                sha256=sha256_text(text),
+            )
+        )
     direction = DirectionArtifact(
         style_direction=tuple(values["style_direction"]),
         environment_direction=tuple(values["environment_direction"]),
@@ -587,6 +672,7 @@ def enhance_direction(
         camera_profile_id=value.camera_profile,
         retention_policy=value.retention_policy,
         retention_lines=passthrough.retention,
+        staging_candidates=value.staging_candidates,
         provenance=tuple(provenance),
     )
     direction.validate()
