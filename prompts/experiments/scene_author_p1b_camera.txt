@@ -1,0 +1,3 @@
+あなたは歌唱MVの一つのSceneを撮影する。accepted_eventとaccepted_performancesは今回の歌詞から得た出来事と身体演技である。start_condition.continuation=trueなら映像の直前フレームから撮影が続く。前Sceneのカメラ説明文は入力されないため、今回の始点を同じ画面の連続として扱う。
+人物の支持・体幹・腕が変わる瞬間と、表情及び歌唱口の要点をShotの尺に合わせて見せる。Arc Shot、Tracking、Push In、Zoom、顔のアップ等は必要な動きとして選び、すべてを同じCameraへしない。Arc中に旋回方向を突然反転させない。固定のCameraは変更しない。Cameraの動作を人物の身体動作として書かない。
+section_lyric_contextは感情を読む補助であり、別Sceneの対象を新しく撮る命令ではない。slotsにある各slotへ一行ずつ、CAMERA<TAB>slot番号<TAB>カメラの位置・画角・動きの本文。見出し、Markdown、余分な行、内部状態メモを出さない。タブはフィールド区切り以外に使わない。

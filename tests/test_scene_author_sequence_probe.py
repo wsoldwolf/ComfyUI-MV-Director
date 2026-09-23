@@ -6,7 +6,7 @@ import unittest
 
 from core.planner.template import parse_template_emd
 from core.planner.scene_author import _split_terminal_state
-from tools.offline_scene_author_sequence_probe import scene_prefix
+from tools.offline_scene_author_sequence_probe import p1b_request, scene_prefix
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -14,6 +14,36 @@ FIXTURE = ROOT / "docs/assets/research/scene-composition-full-sequence-2026-09-2
 
 
 class SceneAuthorSequenceProbeTests(unittest.TestCase):
+    def test_p1b_separates_prior_frame_from_current_lyric_event(self):
+        request = {
+            "continuation": True,
+            "previous_scene_state": "苔を撫でている",
+            "subject_emd": "黒い木下駄",
+            "original_lyrics": [
+                {"shot": 1, "lyrics": [{"text": "花が咲く"}]},
+                {"shot": 2, "lyrics": [{"text": "風に揺れる"}]},
+            ],
+            "shot_positions": [{"shot": 1}, {"shot": 2}],
+        }
+        event = p1b_request("scene-author-event", request)
+        self.assertNotIn("previous_scene_state", event)
+        self.assertNotIn("subject_emd", event)
+        self.assertEqual(event["start_condition"], {
+            "continuation": True, "source": "previous_video_frame",
+        })
+        self.assertEqual(event["current_lyric_focus"], [
+            {"shot": 1, "lines": ["花が咲く"]},
+            {"shot": 2, "lines": ["風に揺れる"]},
+        ])
+        performance = p1b_request("scene-author-performance", request)
+        self.assertEqual(performance["shot_progression"], [
+            {"shot": 1, "role": "trigger"},
+            {"shot": 2, "role": "carry_forward"},
+        ])
+        self.assertIn("subject_emd", performance)
+        self.assertEqual(request["previous_scene_state"], "苔を撫でている")
+        self.assertNotIn("start_condition", request)
+
     def test_frozen_prefix_retains_original_scene_numbers_and_times(self):
         source = (FIXTURE / "template.md").read_text(encoding="utf-8")
         prefix = scene_prefix(source, 4)

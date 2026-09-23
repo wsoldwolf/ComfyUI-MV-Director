@@ -304,3 +304,27 @@ P1試験版ではScene間に前の完成文全文を渡すのを止め、Event�
 次はP1bとして、自由文の終端状態を過去の動作文として使わせず、Sceneの開始条件と**今回の歌詞から選んだ変化**を分けて一度で計画する軽量な契約を検証する。Eventは前対象の存続情報を背景として扱い、現在歌詞の対象と結び付かない場合に新しい主題へ再利用しない。PerformanceはSceneの一回の身体フレーズを最初に短く決め、各Shotはその異なる局面を書く。Cameraはその変化を撮る。これは新しいLLM段を増やす提案ではなく、既存のEvent／Performance／Cameraの同じ呼出し内で何を必須の出力にするかの変更案である。8Bがこの契約を守り、御神木・苔・花・狐火と身体演技が短区間EMDで成立するまでは、全曲又はH3へ進めない。作者の固定文、`# 演出候補`、明示的モーション補完を優先する境界は維持する。
 
 全CPU回帰試験は546件成功。8B比較はEMDまでで、H3映像生成・視覚品質の確認は未実施である。今回の入力分離、短い状態、プロンプト改訂をまとめた試験であり、個々の寄与を単独で証明したものではない。既存の未コミット変更は保持した。
+
+## 9. P1b着手：開始条件と今回の歌詞を分離した6 Scene試験
+
+P1までの変更を`dev`の`124598a`としてコミットし、GitHubの`dev`へpushしてからP1bを開始した。ここからの変更は、まず[オフライン連続プローブ](../../tools/offline_scene_author_sequence_probe.py)の`--p1b`にだけ置いた。本番ノード、EMD仕様、Compiler、H3入力は変えていない。
+
+P1bでは既存のEvent→Performance→Cameraの3呼出しを維持する。担当別`previous_scene_state`を渡さず、継続の有無を`start_condition`という直前映像フレームの境界として渡す。`current_lyric_focus`は今回の歌詞をShotごとに明示する。Eventへの入力から人物の外見EMDだけを外し、服装・履物を外部出来事へ誤用する経路を狭めた。PerformanceにはShotごとの`trigger`／`development`／`carry_forward`を時間配分のヒントとして与えた。各担当の[実験用プロンプト](../../prompts/experiments/scene_author_p1b_performance.txt)も別ファイルにした。これらは出力された自然文を書き換える処理ではない。
+
+元の全16 Scene固定fixtureの先頭6 Sceneを、同じQwen3 8B、`n_ctx=16384`、temperature 0.2、各呼出し実効seed 2で二度実行した。各試験はEvent／Performance／Camera各6回、計18呼出しで完走した。[第1試験](../assets/research/scene-composition-full-sequence-2026-09-23/p1b-six-scenes-seed2/summary.json)は[Event指示v1](../../prompts/experiments/scene_author_p1b_event_v1.txt)、[第2試験](../assets/research/scene-composition-full-sequence-2026-09-23/p1b-six-scenes-seed2-v2/summary.json)は具体物とその歌詞Shotを優先する[Event指示v2](../../prompts/experiments/scene_author_p1b_event.txt)を用いた。作者のScene番号、歌詞時刻、Shot、継続、モーション補完の予定Shotは同じである。比較対照は[全状態なしの既存16 Scene試験](../assets/research/scene-composition-full-sequence-2026-09-23/no-previous-state-full-seed2/summary.json)の先頭6 Sceneとした。
+
+| 現象 | 第1試験 | 第2試験 | 評価 |
+|---|---|---|---|
+| Scene 3の「苔へと還る」 | 石段の苔をShot 1から表示 | 苔をShot 2へ移した | 歌詞Shotとの対応は改善。ただし参道脇の大樹の根元にはならず、石段の苔という局所解釈 |
+| Scene 4の「人は花より／短く咲いて」 | 落葉が道を覆う | 木の影と落葉 | 花の映像化に失敗 |
+| Scene 6の「御神木は」 | 木々の影をShot 1で表示 | 鳥居に落葉を積もらせる | Shot 2の御神木を選べず、背景の一般物へ流れる |
+| 服装由来の誤Event | 旧対照は下駄が木から落ちる | 2試験とも下駄の脱落なし | Eventから人物EMDを除いた効果と整合するが、単独の因果とは断定しない |
+| 身体演技 | 歩行・手の上げ下げが多い | Scene 1–2で似た支持・腕の文を繰り返す | Sceneを一つの身体フレーズとして発展させるには不足 |
+
+6 SceneのActionは各13行で、移動を示す語を含む行は旧対照9、第1試験8、第2試験8だった。ただし語数の僅差を振付品質の向上とは見なさない。第2試験のScene 1と2には「前足へ荷重、右手を斜め前、左手を低く開き、顔と歌唱口を見せる」に近い反復がある。これは前Scene stateの再演ではなく、同じprofileの補完候補とLLMの定型化が残る別の問題である。各Sceneの補完配置は対照と同一で、いずれもScene 1–6で6件だった。
+
+**判定：P1bの形式試験は通過、品質ゲートは不合格。** P1bの入力分離だけでは、8Bは具体的な現在歌詞の対象より、常時見える背景（紅葉・石畳・鳥居）をEventに選ぶ。v2の自然文指示を強めても花・御神木は選べず、身体フレーズにも一貫した改善がない。したがって全16 Scene、H3短区間、本番profileへの昇格は行わない。これは「現在歌詞を見せれば十分」という仮説への反証である。
+
+次のP1b小改修では、新しいLLM段や物体名辞書を増やす前に、Eventの同一呼出しで「今回の歌詞から採用した原文とShot」及び「そこから作る可視変化」を別フィールドとして出せるかを試す。前者は歌詞原文とShotの照合だけを機械的に確認し、後者の表現はLLM原文をAS ISで採用する。原文に具体物がない場合は無理な背景Eventを作らず`なし`を許す。これは8Bへの輸送契約の試案であり、実測前に成功を約束しない。ユーザー固定Event・演技・Camera、演出候補、明示的モーション補完の優先順位は変えない。
+
+P1b入力分離の単体試験を加え、全CPU回帰試験は547件成功した。2試験ともEMDまでの比較であり、動画映像の結果ではない。P1bのコード・プロンプト・証拠は試験用の未コミット変更として保持した。
