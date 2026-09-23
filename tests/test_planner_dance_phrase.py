@@ -14,12 +14,13 @@ from core.direction.profiles import (
     planner_profile_metadata,
 )
 from core.inference import build_cache_key
-from core.planner import plan_timeline
+from core.planner import parse_template_emd, plan_timeline
+from core.planner.layout import build_layout_candidates
 from core.planner.engine import (
     _CameraPlan, _CueCard, _Entity, _action_audit_failures,
     _action_budget_violations, _camera_plan_contract_violations,
     _fallback_camera_plan, _sparse_body_accent_keys,
-    _is_prechorus_scene,
+    _is_prechorus_scene, _layout_min_duration_ms,
 )
 from core.planner.scene_spine import SceneSpineStep
 from test_timeline_planner import CONCEPT, TEMPLATE, FakePlannerBackend, prompts, runtime
@@ -31,7 +32,7 @@ class DancePhraseTests(unittest.TestCase):
         profile = load_direction_profile(root / "profiles/motion/anime_emotional_mv.md", "motion")
         action_prompt = (root / "prompts/timeline_planner_actions_dance_phrase_system_prompt.txt").read_text(encoding="utf-8")
         self.assertEqual(profile.performance_mode, "dance_phrase")
-        self.assertEqual(profile.body_accent_policy, "sparse_chorus_prechorus")
+        self.assertEqual(profile.body_accent_policy, "sparse_chorus_prechorus_verse_contact")
         self.assertIn("連続した全身フレーズ", profile.render_prompt)
         self.assertIn("少なくとも一つの通常Shotに踏み替え", action_prompt)
         self.assertNotIn("上半身だけで完結する演技を積極的に選び", action_prompt)
@@ -120,19 +121,22 @@ class DancePhraseTests(unittest.TestCase):
             with patch.dict(MOTION_PERFORMANCE_MODES, {"custom": mode}):
                 keys.append(build_cache_key(task="timeline-planner", algorithm_version="test",
                     inputs={"planner_profile": planner_profile_metadata("anime_emotional_mv", "custom")}))
-        self.assertNotEqual(*keys)
+        self.assertEqual(len(set(keys)), len(keys))
         self.assertEqual(planner_profile_metadata("anime_emotional_mv")["performance_mode"], "event_based")
 
         keys = []
-        for policy in ("off", "sparse_chorus", "sparse_chorus_prechorus"):
+        for policy in (
+            "off", "sparse_chorus", "sparse_chorus_prechorus",
+            "sparse_chorus_prechorus_verse_contact",
+        ):
             with patch.dict(MOTION_BODY_ACCENT_POLICIES, {"custom": policy}):
                 keys.append(build_cache_key(task="timeline-planner", algorithm_version="test",
                     inputs={"planner_profile": planner_profile_metadata("anime_emotional_mv", "custom")}))
-        self.assertNotEqual(*keys)
+        self.assertEqual(len(set(keys)), len(keys))
 
     def test_emotional_development_policy_preserves_story_baseline(self):
         self.assertEqual(MOTION_BODY_ACCENT_POLICIES["anime_story_mv"], "off")
-        self.assertEqual(MOTION_BODY_ACCENT_POLICIES["anime_emotional_mv"], "sparse_chorus_prechorus")
+        self.assertEqual(MOTION_BODY_ACCENT_POLICIES["anime_emotional_mv"], "sparse_chorus_prechorus_verse_contact")
         for motion, first_role in (
             ("anime_story_mv", "continuous_upper_body_phrase"),
             ("anime_emotional_mv", "body_phrase_accent"),
@@ -156,6 +160,83 @@ class DancePhraseTests(unittest.TestCase):
                 MOTION_BODY_ACCENT_POLICIES[motion],
             )
 
+    def test_verse_contact_gets_one_non_event_body_accent_only(self):
+        context = {
+            (3, index): {
+                "lyrics": [{"section": "VERSE", "text": "苔へと還る"}],
+                "shot_index": index, "scene_shot_count": 2,
+                "scene_continuation": True, "shot_duration_ms": 4500,
+            }
+            for index in (1, 2)
+        }
+        setup = SceneSpineStep(
+            "setup", "石畳に立つ", "重心から体幹と両腕へ動きを伝える",
+            "大樹の前で姿勢を収める", "whole_body",
+        )
+        event = SceneSpineStep(
+            "event", "大樹の前に立つ", "苔に一度触れる",
+            "指を離す", "lyric_target_hands",
+        )
+        contact = {(3,): _CueCard(valid=True, target="苔", contact="許可")}
+        kwargs = dict(lip_sync_active=True, cue_cards=contact, include_verse_contact=True)
+        self.assertEqual(
+            _sparse_body_accent_keys(
+                context, {(3, 1): setup, (3, 2): event}, **kwargs,
+            ),
+            {(3, 1)},
+        )
+        self.assertEqual(
+            _sparse_body_accent_keys(
+                context, {(3, 1): event, (3, 2): setup}, **kwargs,
+            ),
+            {(3, 2)},
+        )
+        self.assertEqual(
+            _sparse_body_accent_keys(context, {(3, 1): setup}, **kwargs), set()
+        )
+        self.assertEqual(
+            _sparse_body_accent_keys(
+                context, {(3, 1): setup, (3, 2): event},
+                lip_sync_active=True, cue_cards=contact,
+            ),
+            set(),
+        )
+        no_contact = {(3,): _CueCard(valid=True, target="苔", contact="禁止")}
+        self.assertEqual(
+            _sparse_body_accent_keys(
+                context, {(3, 1): setup, (3, 2): event},
+                lip_sync_active=True, cue_cards=no_contact,
+                include_verse_contact=True,
+            ),
+            set(),
+        )
+
+    def test_only_verse_contact_shortens_dance_layout_candidates(self):
+        scene = parse_template_emd(
+            TEMPLATE.replace("## ショット 00:05.000\n* 未計画\n", "")
+        ).scenes[0]
+        policy = "sparse_chorus_prechorus_verse_contact"
+        contact = _CueCard(valid=True, target="苔", contact="許可")
+        base = _layout_min_duration_ms(
+            scene, performance_mode="dance_phrase",
+            body_accent_policy=policy, cue_card=None,
+        )
+        short = _layout_min_duration_ms(
+            scene, performance_mode="dance_phrase",
+            body_accent_policy=policy, cue_card=contact,
+        )
+        self.assertEqual((base, short), (4000, 3000))
+        self.assertGreater(
+            len(build_layout_candidates(scene, min_duration_ms=short)),
+            len(build_layout_candidates(scene, min_duration_ms=base)),
+        )
+        self.assertEqual(
+            _layout_min_duration_ms(
+                scene, performance_mode="event_based",
+                body_accent_policy=policy, cue_card=contact,
+            ),
+            1500,
+        )
     def test_body_accent_audit_code_is_finite_and_nonblocking(self):
         entity = _Entity(1, (1, 1), {"performance_role": "body_phrase_accent"})
         self.assertEqual(

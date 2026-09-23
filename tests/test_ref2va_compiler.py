@@ -59,6 +59,22 @@ class CameraDirectiveMutatingTranslator:
 
 
 class Ref2VACompilerTests(unittest.TestCase):
+    def test_translation_progress_counts_completed_fields(self) -> None:
+        source = (FIXTURES / "canonical_ref2va.emd").read_text(encoding="utf-8")
+        updates = []
+        compile_ref2va(
+            source,
+            EchoTranslator(),
+            progress_callback=lambda completed, total: updates.append((completed, total)),
+        )
+        self.assertGreater(updates[0][1], 0)
+        self.assertEqual(updates[0][0], 0)
+        self.assertEqual(updates[-1][0], updates[-1][1])
+        self.assertEqual(
+            updates,
+            [(index, updates[0][1]) for index in range(updates[0][1] + 1)],
+        )
+
     def test_plan_json_is_pretty_printed_deterministically(self) -> None:
         source = (FIXTURES / "canonical_ref2va.emd").read_text(encoding="utf-8")
         result = compile_ref2va(source, EchoTranslator())

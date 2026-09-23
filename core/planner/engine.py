@@ -22,6 +22,7 @@ from ..direction.profiles import (
     MOTION_PERFORMANCE_MODES,
 )
 from ..emd import parse_scene_emd_fragment
+from ..emd.ast import Scene
 from ..h3_contract import (
     ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA,
     FACE_PERFORMANCE_CUT_ACTION,
@@ -2872,6 +2873,7 @@ def _sparse_body_accent_keys(
     lip_sync_active: bool,
     cue_cards: Mapping[tuple[int, ...], _CueCard] | None = None,
     include_prechorus_single: bool = False,
+    include_verse_contact: bool = False,
 ) -> set[tuple[int, int]]:
     """Reserve one eligible accent per chorus or long single-Shot pre-chorus."""
 
@@ -2898,7 +2900,13 @@ def _sparse_body_accent_keys(
                 and keys[0] not in scene_spine_steps
             )
         )
-        if not sections.intersection({"CHORUS", "FINAL_CHORUS"}) and not prechorus_single:
+        verse_contact = (
+            include_verse_contact
+            and len(keys) > 1
+            and _verse_contact_cue(sections, effect_card)
+            and all(key in scene_spine_steps for key in keys)
+        )
+        if not sections.intersection({"CHORUS", "FINAL_CHORUS"}) and not prechorus_single and not verse_contact:
             continue
         external_effect = bool(
             effect_card and effect_card.valid
@@ -2920,6 +2928,8 @@ def _sparse_body_accent_keys(
             ) == "face_and_upper_body_accent":
                 continue
             spine = scene_spine_steps.get(key)
+            if verse_contact and (spine is None or spine.phase == "event"):
+                continue
             if spine is not None and spine.show not in {
                 "whole_body", "upper_body_hands", "lyric_target_body"
             }:
@@ -2927,11 +2937,42 @@ def _sparse_body_accent_keys(
                     prechorus_single and spine.show == "lyric_target_hands"
                     or (external_effect or prechorus_single)
                     and spine.show == "lyric_target"
+                    or verse_contact and spine.show == "lyric_target"
                 ):
                     continue
             selected.add(key)
             break
     return selected
+
+
+def _verse_contact_cue(sections: set[str], card: _CueCard | None) -> bool:
+    """Identify a lyric-grounded Verse contact without naming any object."""
+
+    return bool(
+        sections and all(section.startswith("VERSE") for section in sections)
+        and card is not None and card.valid and card.contact == "許可"
+        and card.target not in _CUE_NONE_VALUES
+    )
+
+
+def _layout_min_duration_ms(
+    scene: Scene, *, performance_mode: str, body_accent_policy: str,
+    cue_card: _CueCard | None,
+) -> int:
+    if performance_mode != "dance_phrase":
+        return 1500
+    sections = {
+        annotation.section.upper()
+        for shot in scene.shots
+        for annotation in shot.lyric_annotations
+        if annotation.section
+    }
+    if (
+        body_accent_policy == "sparse_chorus_prechorus_verse_contact"
+        and _verse_contact_cue(sections, cue_card)
+    ):
+        return 3000
+    return 4000
 
 
 def _is_prechorus_scene(
@@ -4100,7 +4141,11 @@ def generate_planner_content(
 
     candidate_map = {
         scene.scene_number: build_layout_candidates(
-            scene, min_duration_ms=4000 if performance_mode == "dance_phrase" else 1500
+            scene, min_duration_ms=_layout_min_duration_ms(
+                scene, performance_mode=performance_mode,
+                body_accent_policy=body_accent_policy,
+                cue_card=cue_cards.get((scene.scene_number,)),
+            )
         )
         for scene in template.scenes
     }
@@ -4181,6 +4226,13 @@ def generate_planner_content(
                     "new_sections": sorted(unseen_sections),
                     "section_entry_shot_index": section_entry_shot_index,
                     "lyric_groups": lyric_groups,
+                    "contact_verse": (
+                        body_accent_policy == "sparse_chorus_prechorus_verse_contact"
+                        and _verse_contact_cue(
+                            {section.upper() for section in current_sections},
+                            cue_cards.get((scene.scene_number,)),
+                        )
+                    ),
                     "candidates": [
                         candidate.to_dict()
                         for candidate in candidate_map[scene.scene_number]
@@ -4581,9 +4633,16 @@ def generate_planner_content(
         _sparse_body_accent_keys(
             shot_context, scene_spine_steps, lip_sync_active=lip_sync_mode != "off",
             cue_cards=cue_cards,
-            include_prechorus_single=body_accent_policy == "sparse_chorus_prechorus",
+            include_prechorus_single=body_accent_policy in {
+                "sparse_chorus_prechorus",
+                "sparse_chorus_prechorus_verse_contact",
+            },
+            include_verse_contact=body_accent_policy == "sparse_chorus_prechorus_verse_contact",
         )
-        if body_accent_policy in {"sparse_chorus", "sparse_chorus_prechorus"} else set()
+        if body_accent_policy in {
+            "sparse_chorus", "sparse_chorus_prechorus",
+            "sparse_chorus_prechorus_verse_contact",
+        } else set()
     )
     _LOGGER.info(
         "[MV Director - Timeline Planner] body accents; policy=%s; slots=%s",
@@ -5245,7 +5304,10 @@ def generate_planner_content(
                 cue_card.valid and cue_card.target not in _CUE_NONE_VALUES
             )
             single_prechorus_body_accent = (
-                body_accent_policy == "sparse_chorus_prechorus"
+                body_accent_policy in {
+                    "sparse_chorus_prechorus",
+                    "sparse_chorus_prechorus_verse_contact",
+                }
                 and key in body_accent_keys
                 and _is_prechorus_scene(action_keys, shot_context)
             )

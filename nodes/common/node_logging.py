@@ -7,6 +7,8 @@ import logging
 from time import perf_counter
 from typing import Any
 
+from .node_progress import begin_progress, end_progress
+
 
 LOGGER = logging.getLogger("mv_director.nodes")
 LOGGER.setLevel(logging.INFO)
@@ -64,6 +66,7 @@ def instrument_node_class(node_class: type[Any], display_name: str) -> None:
     def logged(self: Any, *args: Any, **kwargs: Any) -> Any:
         started = perf_counter()
         LOGGER.info("[%s] started", display_name)
+        progress, progress_token = begin_progress()
         try:
             result = original(self, *args, **kwargs)
         except BaseException as exc:
@@ -76,6 +79,8 @@ def instrument_node_class(node_class: type[Any], display_name: str) -> None:
                 _single_line(exc),
             )
             raise
+        finally:
+            end_progress(progress_token)
         elapsed = perf_counter() - started
         status = _result_status(node_class, result)
         if _is_blocked(status):
@@ -86,6 +91,7 @@ def instrument_node_class(node_class: type[Any], display_name: str) -> None:
                 status,
             )
         elif status:
+            progress.finish()
             LOGGER.info(
                 "[%s] completed; elapsed=%.3fs; status=%s",
                 display_name,
@@ -94,6 +100,7 @@ def instrument_node_class(node_class: type[Any], display_name: str) -> None:
                 extra={"color": "cyan"},
             )
         else:
+            progress.finish()
             LOGGER.info(
                 "[%s] completed; elapsed=%.3fs",
                 display_name,

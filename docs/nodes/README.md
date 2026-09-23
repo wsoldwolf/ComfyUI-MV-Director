@@ -35,3 +35,9 @@
 | [Scene Debug Splitter](scene-debug-splitter.md) | Planの連続Scene範囲と対応PCMだけを切り出してデバッグする |
 
 LLMを使うノードの共通調整値は[GGUF共通設定](gguf-settings.md)を参照してください。
+
+## 進捗表示
+
+全ノードはComfyUIの進捗バーに開始と正常完了を通知する。Vision、Direction、Lyric Segmentationは完了した処理工程、Timeline Plannerは完了したLLM呼び出し、EMD Compilerは翻訳済みフィールド数も反映する。キャッシュヒットした場合は途中工程を省略するため、表示が開始から完了へ進むことがある。
+
+パーセンテージは残り時間ではない。Plannerのリトライなどで作業数が増えた場合は総数を拡張する。エラーまたはブロックで停止したノードを100%とは表示しない。

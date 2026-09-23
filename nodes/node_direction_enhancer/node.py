@@ -50,6 +50,7 @@ except ImportError:  # Standalone repository tests.
     )
 
 from ..common import gguf_model_choices, resolve_comfy_gguf_model
+from ..common.node_progress import advance_progress, configure_progress
 
 
 CACHE_MODES = ("reuse", "refresh", "disabled")
@@ -224,6 +225,7 @@ class MVDirectorDirectionEnhancer:
         direction_emd_passthrough: str = "",
     ) -> tuple[DirectionArtifact, str, str]:
         with self._lock:
+            configure_progress(3)
             if cache_mode not in CACHE_MODES:
                 raise ValueError("cache_mode must be reuse, refresh, or disabled")
             value = DirectionEnhancerInput(
@@ -237,6 +239,7 @@ class MVDirectorDirectionEnhancer:
                 direction_emd_passthrough=direction_emd_passthrough,
             )
             value.validate()
+            advance_progress()
             config = LlamaRuntimeConfig(
                 chat_format=chat_format,
                 max_tokens=max_tokens,
@@ -262,6 +265,7 @@ class MVDirectorDirectionEnhancer:
                         runtime_config=config,
                         interrupt_callback=_interrupt,
                     )
+                    advance_progress()
                 finally:
                     self._lifecycle.clear()
                 return (
@@ -313,6 +317,7 @@ class MVDirectorDirectionEnhancer:
             else:
                 try:
                     self._lifecycle.ensure_loaded(model.path, config)
+                    advance_progress()
                     result = enhance_direction(
                         self._backend,
                         value=value,
@@ -320,6 +325,7 @@ class MVDirectorDirectionEnhancer:
                         runtime_config=config,
                         interrupt_callback=_interrupt,
                     )
+                    advance_progress()
                     direction = result.direction
                     preview = result.direction_emd_preview
                     issues = len(result.issues)

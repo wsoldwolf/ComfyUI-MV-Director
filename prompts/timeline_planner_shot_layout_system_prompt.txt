@@ -83,6 +83,9 @@ Shots per Scene, normally 4-8 seconds each, so an arm trajectory and its accent
 can complete without restarting. A body phrase can develop within one Shot;
 preparation, accent and release do not each require a new boundary. Use the
 supplied candidates only; keep source Scene and audio boundaries unchanged.
+When contact_verse is true, prefer three supplied Shots in a roughly ten-second
+Scene: one body phrase, one contact at the lyric onset, one release. Keep the
+contact in its lyric-bearing Shot; never add a Shot for repeated hand motion.
 
 B0 is mandatory immediately after the boundary mode and must be the first
 boundary ID. Select only supplied candidate IDs, in timeline order, without

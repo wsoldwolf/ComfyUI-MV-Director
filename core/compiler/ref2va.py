@@ -7,7 +7,7 @@ import json
 import hashlib
 import logging
 import re
-from typing import Any
+from typing import Any, Callable
 
 from ..artifacts.references import (
     RequiredReference,
@@ -54,9 +54,15 @@ def format_time_ms(value: int) -> str:
 
 
 class _TranslationTable:
-    def __init__(self, document: EMDDocument, translator: PromptTranslator) -> None:
+    def __init__(
+        self,
+        document: EMDDocument,
+        translator: PromptTranslator,
+        progress_callback: Callable[[int, int], None] | None = None,
+    ) -> None:
         self.document = document
         self.translator = translator
+        self.progress_callback = progress_callback
         self._values: dict[str, str] = {}
 
     def build(self) -> None:
@@ -88,6 +94,13 @@ class _TranslationTable:
 
         protected = [protect_unit(text, self.document.subjects) for text in units]
         translated_fragments: dict[int, dict[int, str]] = {}
+        required_fields = sum(
+            any(_TRANSLATION_REQUIRED_RE.search(fragment) for fragment in item.fragments)
+            for item in protected
+        )
+        if self.progress_callback is not None:
+            self.progress_callback(0, required_fields)
+        completed_fields = 0
         for unit_index, item in enumerate(protected):
             indices = [index for index, fragment in enumerate(item.fragments)
                        if _TRANSLATION_REQUIRED_RE.search(fragment)]
@@ -110,6 +123,9 @@ class _TranslationTable:
                       restored=item.restore(translated_fragments[unit_index]))
             _LOGGER.info("[MV Director - EMD Compiler (Ref2VA)] translation field completed; field=%s; output_chars=%d",
                          field_id, sum(map(len, translated)))
+            completed_fields += 1
+            if self.progress_callback is not None:
+                self.progress_callback(completed_fields, required_fields)
         self._values = {
             key: item.restore(translated_fragments.get(index))
             for index, (key, item) in enumerate(zip(keys, protected))
@@ -415,12 +431,13 @@ def compile_ref2va(
     *,
     steps: int = 8,
     timing_profile: H3TimingProfile = DEFAULT_H3_TIMING_PROFILE,
+    progress_callback: Callable[[int, int], None] | None = None,
 ) -> CompileResult:
     if not isinstance(steps, int) or isinstance(steps, bool) or steps < 1:
         raise ValueError("steps must be a positive integer")
     timing_profile.validate()
     document = parse_emd(source, timing_profile=timing_profile)
-    translations = _TranslationTable(document, translator)
+    translations = _TranslationTable(document, translator, progress_callback)
     translations.build()
 
     plan: dict[str, Any] = {"defaults": {"steps": steps}, "shots": []}

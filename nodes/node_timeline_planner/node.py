@@ -67,6 +67,7 @@ except ImportError:  # Standalone repository tests.
     )
 
 from ..common import gguf_model_choices, resolve_comfy_gguf_model
+from ..common.node_progress import advance_progress, configure_progress as configure_node_progress
 
 
 _LOGGER = logging.getLogger("mv_director.nodes")
@@ -158,6 +159,7 @@ class _LlamaPlannerBackend:
             "action-audit": scene_batches,
             "cameras": scene_batches,
         }
+        configure_node_progress(sum(self._expected_primary_calls.values()) + 1)
 
     @staticmethod
     def _request_summary(payload: str) -> tuple[int, str, str]:
@@ -375,6 +377,7 @@ class _LlamaPlannerBackend:
             len(response),
         )
         self.trace.append({"task": task, "payload": payload, "response": response})
+        advance_progress()
         return response
 
 
@@ -571,6 +574,7 @@ class MVDirectorTimelinePlanner:
                         perf_counter() - load_started,
                         self._lifecycle.effective_n_ctx or config.n_ctx,
                     )
+                    advance_progress()
                     content, missing = generate_planner_content(
                         self._backend,
                         template=template,

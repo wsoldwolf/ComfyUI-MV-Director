@@ -39,6 +39,7 @@ except ImportError:  # Standalone repository tests.
         resolve_picture_binding,
     )
 from ..common import resolve_comfy_vision_model, vision_model_choices
+from ..common.node_progress import advance_progress, configure_progress
 
 
 CACHE_MODES = ("reuse", "refresh", "disabled")
@@ -202,9 +203,11 @@ class MVDirectorImageToSubjectEMD:
         unique_id: Any = None,
     ) -> dict[str, Any]:
         with self._lock:
+            configure_progress(4)
             if cache_mode not in CACHE_MODES:
                 raise ValueError("cache_mode must be reuse, refresh, or disabled")
             prepared = prepare_comfy_image(image, analysis_max_edge)
+            advance_progress()
             pair = resolve_comfy_vision_model(model_name)
             request = VisionObservationRequest(
                 analysis_profile=analysis_profile,
@@ -260,6 +263,7 @@ class MVDirectorImageToSubjectEMD:
             else:
                 try:
                     self._backend.ensure_loaded(pair, config)
+                    advance_progress()
                     observations, warnings = observe_image(
                         self._backend,
                         prepared=prepared,
@@ -269,6 +273,7 @@ class MVDirectorImageToSubjectEMD:
                         runtime_config=config,
                         interrupt_callback=_interrupt,
                     )
+                    advance_progress()
                     if cache_mode in {"reuse", "refresh"} and cache is not None:
                         cache.put_success(
                             cache_key,
@@ -289,6 +294,7 @@ class MVDirectorImageToSubjectEMD:
                 concept_type=concept_type,
                 warnings=warnings,
             )
+            advance_progress()
             status = (
                 f"picture={result.resolved_picture_reference}; cache={cache_status}; "
                 f"analysis={prepared.analysis_width}x{prepared.analysis_height}"

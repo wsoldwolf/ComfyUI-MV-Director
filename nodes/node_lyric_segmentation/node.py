@@ -50,6 +50,7 @@ from ..common.whisper_discovery import (
     resolve_comfy_whisper_model,
     whisper_model_choices,
 )
+from ..common.node_progress import advance_progress, configure_progress
 
 
 CACHE_MODES = ("reuse", "refresh", "disabled")
@@ -173,6 +174,7 @@ class MVDirectorLyricSegmentation:
         h3_timing_profile: H3TimingProfile | None = None,
     ) -> tuple[str, str, TimelineArtifact, str] | dict[str, Any]:
         with self._lock:
+            configure_progress(5)
             if cache_mode not in CACHE_MODES:
                 raise ValueError("cache_mode must be reuse, refresh, or disabled")
             if language != "ja":
@@ -181,6 +183,7 @@ class MVDirectorLyricSegmentation:
             profile.validate()
             lyrics = parse_plain_lyrics(lyrics_text)
             waveform, sample_rate, total_samples = validate_comfy_audio(vocal_audio)
+            advance_progress()
             duration_ms = math.ceil(total_samples * 1000 / sample_rate)
             model = resolve_comfy_whisper_model(whisper_model)
             key = build_cache_key(
@@ -218,6 +221,7 @@ class MVDirectorLyricSegmentation:
                     sample_rate=sample_rate,
                     total_samples=total_samples,
                 )
+                advance_progress()
                 if lyrics:
                     device = self._whisper.resolve_device()
                     self._whisper.ensure_loaded(model.path, device=device)
@@ -233,6 +237,7 @@ class MVDirectorLyricSegmentation:
                         initial_prompt="",
                         condition_on_previous_text=False,
                     )
+                    advance_progress()
                     words = extract_whisper_words(
                         transcription, audio_duration_ms=duration_ms
                     )
@@ -243,6 +248,7 @@ class MVDirectorLyricSegmentation:
                         sample_rate=sample_rate,
                         audio_duration_ms=duration_ms,
                     )
+                    advance_progress()
                     if unplaced:
                         resolved, unplaced, retry = recover_unplaced_lyrics(
                             lyrics,
@@ -271,6 +277,7 @@ class MVDirectorLyricSegmentation:
                     max_scene_duration_ms=max_scene_duration_ms,
                     timing_profile=profile,
                 )
+                advance_progress()
                 if timeline.unplaced_lyrics:
                     return _block_unplaced(timeline, cache="miss")
                 template = render_template_emd(timeline).text

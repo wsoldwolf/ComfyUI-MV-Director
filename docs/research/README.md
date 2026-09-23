@@ -2,6 +2,7 @@
 
 | 文書 | 内容 |
 |---|---|
+| [9月23日完成動画：苔・花の尺と振付不足](emd-2026-09-23-moss-flower-choreography-review.md) | 約23秒続く植物への片手接触、Verseで全身accentが選ばれない条件、4秒Shot下限、歌詞開始より早い接触を整理し、限定改修と検証条件を記録 |
 | [Scene内進行・全身演技・外部effectの統合改修](planner-scene-spine-motion-effect-integration-2026-09-22.md) | P0〜P2、上半身偏重の是正、狐火欠落のPlanner→Compiler追跡、v64の型保持・可視展開転送と未検証事項を整理 |
 | [Scene内進行：P0〜P2実装と8B評価](scene-event-spine-p0-p2-2026-09-21.md) | Scene一括の進行とCamera coverageを実装。二seedの8B評価、残る意味上の接触反復、P3用PlanとScene 9の選定 |
 | [Scene内進行の検証計画](scene-event-spine-validation-plan-2026-09-21.md) | Sceneの出来事、演技、Camera coverageを短区間で検証する計画 |

@@ -40,6 +40,7 @@ except ImportError:  # Standalone repository tests.
     )
 
 from ..common import gguf_model_choices, resolve_comfy_gguf_model
+from ..common.node_progress import advance_progress, configure_progress
 
 
 TRANSLATION_MODES = ("ja_to_en", "already_english")
@@ -269,6 +270,12 @@ class MVDirectorEMDCompiler:
                     "translation_batches=0; estimated_token_batches=0; cache=hit"
                 )
                 return plan_json, references, status
+            def translation_progress(completed: int, total: int) -> None:
+                if completed == 0:
+                    configure_progress(total)
+                else:
+                    advance_progress()
+
             translator: LlamaPromptTranslator | None = None
             try:
                 self._lifecycle.ensure_loaded(model.path, config)
@@ -283,6 +290,7 @@ class MVDirectorEMDCompiler:
                     translator,
                     steps=steps,
                     timing_profile=profile,
+                    progress_callback=translation_progress,
                 )
                 plan_json = result.plan_json()
                 if cache_mode in {"reuse", "refresh"} and cache is not None:
