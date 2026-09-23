@@ -307,9 +307,13 @@ def recover_unplaced_lyrics(
         attempted += 1
         run_lyrics = lyrics[run_start:run_end]
         run_lines = _run_line_texts(run_lyrics, line_texts)
+        guided_lines = [lyric.text for lyric in run_lyrics]
         preceding_line = (
             line_texts[lyrics[run_start - 1].source_line]
-            if run_start > 0
+            if (
+                run_start > 0
+                and lyrics[run_start - 1].source_line != run_lyrics[0].source_line
+            )
             else ""
         )
         slice_duration_ms = math.ceil(
@@ -330,6 +334,7 @@ def recover_unplaced_lyrics(
         def decode(
             *,
             guided: bool,
+            guided_prefix: str = "",
             decode_windows: tuple[tuple[int, int], ...] = windows,
         ) -> tuple[WhisperWord, ...]:
             decoded: list[WhisperWord] = []
@@ -351,8 +356,8 @@ def recover_unplaced_lyrics(
                     language=language,
                     device=device,
                     initial_prompt=_window_prompt(
-                        run_lines,
-                        preceding_line=preceding_line,
+                        guided_lines if guided else run_lines,
+                        preceding_line=guided_prefix if guided else preceding_line,
                         window_start_ms=window_start_ms,
                         duration_ms=slice_duration_ms,
                         guided=guided,
@@ -539,76 +544,100 @@ def recover_unplaced_lyrics(
                     )
 
         if len(proposals) < len(run_lyrics):
-            try:
-                guided_words = decode(guided=True)
-                guided_lyrics = (
-                    (*run_lyrics, following.source)
-                    if following is not None
-                    else run_lyrics
-                )
-                guided_resolved, guided_unplaced = align_lyrics(
-                    tuple(guided_lyrics),
-                    guided_words,
-                    voiced_intervals=local_voiced,
-                    sample_rate=sample_rate,
-                    audio_duration_ms=slice_duration_ms,
-                    initial_search_ms=max(1, slice_duration_ms),
-                    anchored_search_ms=max(1, slice_duration_ms),
-                )
-                guided_by_id = {
-                    item.source.segment_id: item for item in guided_resolved
-                }
-                required = [item.segment_id for item in run_lyrics]
-                if following is not None:
-                    required.append(following.source.segment_id)
-                if guided_unplaced or any(item not in guided_by_id for item in required):
-                    raise LyricSegmentationError(
-                        "guided retry did not preserve every target and following anchor"
+            guided_prefixes = ("",)
+            if (
+                run_start > 0
+                and lyrics[run_start - 1].source_line == run_lyrics[0].source_line
+            ):
+                # A previous segment from the same physical line may help
+                # Whisper disambiguate the missing phrase. Try it only after
+                # the target-only prompt, without repeating the whole line.
+                guided_prefixes += (lyrics[run_start - 1].text,)
+            last_guided_error: LyricSegmentationError | None = None
+            for guided_prefix in guided_prefixes:
+                try:
+                    guided_words = decode(
+                        guided=True,
+                        guided_prefix=guided_prefix,
                     )
-                if following is not None:
-                    guided_following = _to_absolute(
-                        guided_by_id[following.source.segment_id],
-                        slice_start_ms,
+                    guided_lyrics = (
+                        (*run_lyrics, following.source)
+                        if following is not None
+                        else run_lyrics
                     )
-                    if not (
-                        guided_following.start_ms < following.end_ms
-                        and guided_following.end_ms > following.start_ms
-                    ):
-                        raise LyricSegmentationError(
-                            "guided retry did not reproduce the following anchor"
-                        )
-                guided_proposals: dict[str, AlignedLyric] = {}
-                previous_end_ms = anchor_start_ms
-                for source in run_lyrics:
-                    local = guided_by_id[source.segment_id]
-                    if not any(
-                        word.start_ms < local.end_ms
-                        and word.end_ms > local.start_ms
-                        for word in unguided_words
-                    ):
-                        raise LyricSegmentationError(
-                            f"guided retry lacks acoustic evidence for {source.segment_id}"
-                        )
-                    absolute = _to_absolute(local, slice_start_ms)
-                    bounded = _clip_to_anchor_bounds(
-                        absolute,
-                        start_ms=previous_end_ms,
-                        end_ms=anchor_end_ms,
+                    guided_resolved, guided_unplaced = align_lyrics(
+                        tuple(guided_lyrics),
+                        guided_words,
+                        voiced_intervals=local_voiced,
+                        sample_rate=sample_rate,
+                        audio_duration_ms=slice_duration_ms,
+                        initial_search_ms=max(1, slice_duration_ms),
+                        anchored_search_ms=max(1, slice_duration_ms),
                     )
-                    if bounded is None:
+                    guided_by_id = {
+                        item.source.segment_id: item for item in guided_resolved
+                    }
+                    required = [item.segment_id for item in run_lyrics]
+                    if following is not None:
+                        required.append(following.source.segment_id)
+                    if guided_unplaced or any(item not in guided_by_id for item in required):
                         raise LyricSegmentationError(
-                            f"guided retry crossed an anchor for {source.segment_id}"
+                            "guided retry did not preserve every target and following anchor"
                         )
-                    guided_proposals[source.segment_id] = bounded
-                    previous_end_ms = bounded.end_ms
-                proposals = guided_proposals
-            except LyricSegmentationError as exc:
+                    if following is not None:
+                        guided_following = _to_absolute(
+                            guided_by_id[following.source.segment_id],
+                            slice_start_ms,
+                        )
+                        if not (
+                            guided_following.start_ms < following.end_ms
+                            and guided_following.end_ms > following.start_ms
+                        ):
+                            raise LyricSegmentationError(
+                                "guided retry did not reproduce the following anchor"
+                            )
+                    guided_proposals: dict[str, AlignedLyric] = {}
+                    previous_end_ms = anchor_start_ms
+                    for source in run_lyrics:
+                        local = guided_by_id[source.segment_id]
+                        if not any(
+                            word.start_ms < local.end_ms
+                            and word.end_ms > local.start_ms
+                            for word in unguided_words
+                        ):
+                            raise LyricSegmentationError(
+                                f"guided retry lacks acoustic evidence for {source.segment_id}"
+                            )
+                        absolute = _to_absolute(local, slice_start_ms)
+                        bounded = _clip_to_anchor_bounds(
+                            absolute,
+                            start_ms=previous_end_ms,
+                            end_ms=anchor_end_ms,
+                        )
+                        if bounded is None:
+                            raise LyricSegmentationError(
+                                f"guided retry crossed an anchor for {source.segment_id}"
+                            )
+                        guided_proposals[source.segment_id] = bounded
+                        previous_end_ms = bounded.end_ms
+                    proposals = guided_proposals
+                    if guided_prefix:
+                        _LOGGER.info(
+                            "[MV Director - Lyric Segmentation] guided retry "
+                            "recovered with preceding segment context; segments=%s..%s",
+                            run_lyrics[0].segment_id,
+                            run_lyrics[-1].segment_id,
+                        )
+                    break
+                except LyricSegmentationError as exc:
+                    last_guided_error = exc
+            else:
                 _LOGGER.warning(
                     "[MV Director - Lyric Segmentation] evidence-gated guided "
                     "retry was not accepted for %s..%s: %s",
                     run_lyrics[0].segment_id,
                     run_lyrics[-1].segment_id,
-                    exc,
+                    last_guided_error,
                 )
 
         for index in range(run_start, run_end):

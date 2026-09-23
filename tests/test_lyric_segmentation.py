@@ -576,6 +576,100 @@ class TargetedRecoveryTests(unittest.TestCase):
         self.assertEqual(stats.recovered_segments, 0)
         self.assertEqual(len(backend.calls), 2)
 
+    def test_guided_retry_uses_only_missing_segment_from_same_source_line(self) -> None:
+        lyrics = parse_plain_lyrics(
+            "[CHORUS]\n朱の空に舞う　狐火へ問う\n忘れぬことは救い\n"
+        )
+        resolved = (
+            AlignedLyric(lyrics[0], 1000, 2000),
+            AlignedLyric(lyrics[2], 6000, 6500),
+        )
+
+        class PromptSensitiveTranscriber:
+            def __init__(self, result_factory):
+                self.calls = []
+                self.result_factory = result_factory
+
+            def transcribe(self, audio, **kwargs):
+                prompt = kwargs["initial_prompt"]
+                self.calls.append(prompt)
+                if prompt == "狐火へ問う":
+                    return self.result_factory(
+                        ("狐火へ問う", 3.0, 4.0),
+                        ("忘れぬことは救い", 6.0, 6.5),
+                    )
+                return self.result_factory(
+                    ("きつねびへと", 3.0, 4.0),
+                    ("忘れぬことは救い", 6.0, 6.5),
+                )
+
+        backend = PromptSensitiveTranscriber(self._result)
+        recovered, unplaced, stats = recover_unplaced_lyrics(
+            lyrics,
+            resolved,
+            [0.0] * (8 * 16000),
+            backend,
+            language="ja",
+            device="cpu",
+            voiced_intervals=(),
+            sample_rate=16000,
+            audio_duration_ms=8000,
+        )
+
+        self.assertFalse(unplaced)
+        self.assertEqual(stats.recovered_segments, 1)
+        self.assertEqual(backend.calls, ["", "狐火へ問う"])
+        self.assertEqual(recovered[1].source.text, "狐火へ問う")
+        self.assertEqual((recovered[1].start_ms, recovered[1].end_ms), (3000, 4000))
+
+    def test_guided_retry_uses_previous_segment_only_after_target_only_failure(self) -> None:
+        lyrics = parse_plain_lyrics(
+            "[CHORUS]\n答えを問うても　御神木は\nただ葉を鳴らすだけ\n"
+        )
+        resolved = (
+            AlignedLyric(lyrics[0], 1000, 2000),
+            AlignedLyric(lyrics[2], 6000, 6500),
+        )
+
+        class PromptSensitiveTranscriber:
+            def __init__(self, result_factory):
+                self.calls = []
+                self.result_factory = result_factory
+
+            def transcribe(self, audio, **kwargs):
+                prompt = kwargs["initial_prompt"]
+                self.calls.append(prompt)
+                target = (
+                    "御神木は"
+                    if prompt == "答えを問うても\n御神木は"
+                    else "手戻しんぼくは"
+                )
+                return self.result_factory(
+                    (target, 3.0, 4.0),
+                    ("ただ葉を鳴らすだけ", 6.0, 6.5),
+                )
+
+        backend = PromptSensitiveTranscriber(self._result)
+        recovered, unplaced, stats = recover_unplaced_lyrics(
+            lyrics,
+            resolved,
+            [0.0] * (8 * 16000),
+            backend,
+            language="ja",
+            device="cpu",
+            voiced_intervals=(),
+            sample_rate=16000,
+            audio_duration_ms=8000,
+        )
+
+        self.assertFalse(unplaced)
+        self.assertEqual(stats.recovered_segments, 1)
+        self.assertEqual(
+            backend.calls,
+            ["", "御神木は", "答えを問うても\n御神木は"],
+        )
+        self.assertEqual(recovered[1].source.text, "御神木は")
+
     def test_adaptive_unguided_window_recovers_prefix_missed_at_window_edge(self) -> None:
         lyrics = parse_plain_lyrics("[VERSE]\n前\n先頭歌詞 後半歌詞\n次\n")
         resolved = (
