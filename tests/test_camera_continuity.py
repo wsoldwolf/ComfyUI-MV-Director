@@ -34,8 +34,11 @@ class CameraContinuityTests(unittest.TestCase):
         story = load_direction_profile(root / "profiles/camera/anime_story_mv.md", "camera")
         self.assertEqual(emotional.arc_roll_policy, "selective_arc")
         self.assertEqual(story.arc_roll_policy, "off")
+        self.assertEqual(emotional.camera_render_style, "detailed")
+        self.assertEqual(story.camera_render_style, "detailed")
         self.assertEqual(CAMERA_ARC_ROLL_POLICIES["anime_emotional_mv"], "selective_arc")
         self.assertEqual(planner_profile_metadata("anime_emotional_mv")["arc_roll_policy"], "selective_arc")
+        self.assertEqual(planner_profile_metadata("anime_emotional_mv")["camera_render_style"], "detailed")
         bad = root / "profiles/camera/anime_emotional_mv.md"
         with self.assertRaisesRegex(DirectionProfileError, "arc_roll_policy"):
             from unittest.mock import patch
@@ -51,6 +54,12 @@ class CameraContinuityTests(unittest.TestCase):
         with self.assertRaisesRegex(DirectionProfileError, "arc_tilt_policy is retired"):
             with patch("pathlib.Path.read_text", return_value=bad.read_text(encoding="utf-8").replace(
                 "`arc_roll_policy` selective_arc", "`arc_tilt_policy` selective_full_body", 1
+            )):
+                load_direction_profile(bad, "camera")
+        with self.assertRaisesRegex(DirectionProfileError, "camera_render_style"):
+            with patch("pathlib.Path.read_text", return_value=bad.read_text(encoding="utf-8").replace(
+                "`arc_roll_policy` selective_arc",
+                "`arc_roll_policy` selective_arc\n* `camera_render_style` unknown", 1
             )):
                 load_direction_profile(bad, "camera")
 
@@ -98,6 +107,13 @@ class CameraContinuityTests(unittest.TestCase):
         self.assertTrue(rendered.startswith("Arc Shot with large amplitude at fast speed."))
         self.assertIn("Roll Clockwise with small amplitude", rendered)
         self.assertIn("return the horizon to level", rendered)
+        compact = _render_camera_plan(plan, style="compact")
+        self.assertTrue(compact.startswith("Arc Shot with large amplitude at fast speed."))
+        self.assertIn("Move right around the subject", compact)
+        self.assertIn("Roll Clockwise with small amplitude", compact)
+        self.assertIn("Show the face, shoulders, arms, and hands together", compact)
+        self.assertLess(len(compact), len(rendered))
+        self.assertNotIn("60-to-120-degree", compact)
         wrong_scale = _CameraPlan(
             plan.motion, "face_closeup", plan.end_scale, plan.start_view,
             plan.end_view, plan.path, plan.coverage,

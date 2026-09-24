@@ -9,11 +9,19 @@ from __future__ import annotations
 import gc
 import importlib
 import inspect
+import logging
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping
 
 from .runtime import LlamaRuntimeConfig
+
+
+_LOGGER = logging.getLogger("mv_director.inference")
+_LEADING_THINK_BLOCK = re.compile(
+    r"\A\s*<think>.*?</think>\s*", flags=re.DOTALL | re.IGNORECASE
+)
 
 
 class InferenceBackendError(RuntimeError):
@@ -232,4 +240,17 @@ class LlamaCppLifecycle:
         result = "".join(parts)
         if not result.strip():
             raise InferenceBackendError("llama.cpp returned an empty response")
+        removed = 0
+        while match := _LEADING_THINK_BLOCK.match(result):
+            result = result[match.end():]
+            removed += 1
+        if removed:
+            _LOGGER.info(
+                "removed %d leading closed think block(s) from llama.cpp response",
+                removed,
+            )
+        if not result.strip():
+            raise InferenceBackendError(
+                "llama.cpp returned no answer after removing think blocks"
+            )
         return result

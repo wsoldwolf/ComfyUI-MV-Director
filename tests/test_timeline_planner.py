@@ -3,10 +3,12 @@ from __future__ import annotations
 import json
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from core.artifacts import DirectionArtifact
 from core.compiler import compile_ref2va
 from core.direction import STYLE_PROFILES
+from core.direction.profiles import CAMERA_RENDER_STYLES
 from core.emd import parse_emd
 from core.emd.ast import Scene
 from core.inference import LlamaRuntimeConfig
@@ -1332,6 +1334,53 @@ class TimelinePlannerCoreTests(unittest.TestCase):
                 "Arc Shot with large amplitude at fast speed."
             )
         )
+        self.assertIn("Start with ", result.content.cameras[1][2])
+        emd = render_planner_content(
+            content=result.content,
+            concept_emd=normalize_concept_emd(CONCEPT),
+            template=parse_template_emd(TEMPLATE),
+            direction=DirectionArtifact(
+                camera_profile_id="anime_emotional_mv"
+            ),
+            lip_sync_mode="off",
+            lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1,
+        ).text
+        self.assertIn(result.content.cameras[1][2], emd)
+        plan = compile_ref2va(emd, PassthroughTranslator()).plan
+        self.assertIn(
+            result.content.cameras[1][2],
+            "\n".join(plan["shots"][0]["prompt"]),
+        )
+        with patch.dict(CAMERA_RENDER_STYLES, {"anime_emotional_mv": "compact"}):
+            compact_result = plan_timeline(
+                FakePlannerBackend(),
+                template_emd=TEMPLATE,
+                concept_emd=CONCEPT,
+                direction=DirectionArtifact(camera_profile_id="anime_emotional_mv"),
+                lip_sync_mode="lyrics",
+                lip_sync_target="サブジェクト1",
+                lip_sync_audio_slot=1,
+                scenes_per_batch=3,
+                system_prompts=prompts(),
+                runtime_config=runtime(),
+            )
+        self.assertTrue(compact_result.complete)
+        compact_camera = compact_result.content.cameras[1][2]
+        self.assertIn("From ", compact_camera)
+        self.assertNotIn("60-to-120-degree", compact_camera)
+        compact_emd = render_planner_content(
+            content=compact_result.content,
+            concept_emd=normalize_concept_emd(CONCEPT),
+            template=parse_template_emd(TEMPLATE),
+            direction=DirectionArtifact(camera_profile_id="anime_emotional_mv"),
+            lip_sync_mode="off",
+            lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1,
+        ).text
+        self.assertIn(compact_camera, compact_emd)
+        compact_plan = compile_ref2va(compact_emd, PassthroughTranslator()).plan
+        self.assertIn(compact_camera, "\n".join(compact_plan["shots"][0]["prompt"]))
         payloads = {task: payload for task, payload in backend.calls}
         for task in ("visual-beats", "shot-layout", "actions", "cameras"):
             self.assertEqual(

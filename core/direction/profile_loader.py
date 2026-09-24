@@ -22,7 +22,7 @@ _KIND_HEADINGS = {
 _STYLE_META_KEYS = frozenset({"locked", "retention", "scene_reinforcement"})
 _MOTION_META_KEYS = frozenset({"performance_mode", "body_accent_policy", "choreography_policy", "render_prompt"})
 _CAMERA_META_KEYS = frozenset(
-    {"planner_policy", "arc_roll_policy", "arc_tilt_policy", "lyric_cue_mode", "priority_lyric_cues", "lyric_interpretation", "render_prompt"}
+    {"planner_policy", "arc_roll_policy", "arc_tilt_policy", "camera_render_style", "lyric_cue_mode", "priority_lyric_cues", "lyric_interpretation", "render_prompt"}
 )
 _META_KEYS = _STYLE_META_KEYS | _CAMERA_META_KEYS | _MOTION_META_KEYS
 _PERFORMANCE_MODES = frozenset({"event_based", "dance_phrase", "scene_author"})
@@ -32,6 +32,7 @@ _BODY_ACCENT_POLICIES = frozenset({
 })
 _CHOREOGRAPHY_POLICIES = frozenset({"off", "scene_choice"})
 _ARC_ROLL_POLICIES = frozenset({"off", "selective_arc"})
+_CAMERA_RENDER_STYLES = frozenset({"detailed", "compact"})
 _PRIORITY_CUE_KINDS = frozenset(
     {"object", "symbolic_motif", "external_effect"}
 )
@@ -55,6 +56,7 @@ class DirectionProfile:
     scene_reinforcement: str = ""
     planner_policy: str = ""
     arc_roll_policy: str = "off"
+    camera_render_style: str = "detailed"
     lyric_cue_mode: str = ""
     lyric_interpretation: str = "literal"
     priority_lyric_cues: tuple[tuple[str, str], ...] = ()
@@ -76,6 +78,7 @@ class DirectionProfileCatalog:
     style_scene_reinforcement: dict[str, str]
     camera_planner_policy: dict[str, str]
     camera_arc_roll_policy: dict[str, str]
+    camera_render_style: dict[str, str]
     camera_lyric_cue_mode: dict[str, str]
     camera_lyric_interpretation: dict[str, str]
     camera_priority_lyric_cues: dict[str, tuple[tuple[str, str], ...]]
@@ -251,6 +254,9 @@ def load_direction_profile(path: Path, kind: str) -> DirectionProfile:
         raise _fail(path, "arc_roll_policy must be off or selective_arc")
     if arc_roll_policy != "off" and planner_policy != "anime_emotional_mv":
         raise _fail(path, "arc_roll_policy requires anime_emotional_mv planner_policy")
+    camera_render_style = metadata.get("camera_render_style", "detailed")
+    if camera_render_style not in _CAMERA_RENDER_STYLES:
+        raise _fail(path, "camera_render_style must be detailed or compact")
     lyric_cue_mode = metadata.get("lyric_cue_mode", "")
     if lyric_cue_mode and lyric_cue_mode not in _LYRIC_CUE_MODES:
         raise _fail(
@@ -294,6 +300,7 @@ def load_direction_profile(path: Path, kind: str) -> DirectionProfile:
         scene_reinforcement=metadata.get("scene_reinforcement", ""),
         planner_policy=planner_policy,
         arc_roll_policy=arc_roll_policy,
+        camera_render_style=camera_render_style,
         lyric_cue_mode=lyric_cue_mode,
         lyric_interpretation=lyric_interpretation,
         priority_lyric_cues=priority_lyric_cues,
@@ -364,6 +371,10 @@ def load_direction_profiles(root: Path = PROFILE_ROOT) -> DirectionProfileCatalo
         },
         camera_arc_roll_policy={
             key: value.arc_roll_policy
+            for key, value in grouped["camera"].items()
+        },
+        camera_render_style={
+            key: value.camera_render_style
             for key, value in grouped["camera"].items()
         },
         camera_lyric_cue_mode={

@@ -12,6 +12,7 @@ from typing import Any, Mapping, Protocol
 from ..artifacts import DirectionArtifact, EMDTextArtifact, canonical_json, normalize_newlines
 from ..direction.profiles import (
     CAMERA_ARC_ROLL_POLICIES,
+    CAMERA_RENDER_STYLES,
     CAMERA_LYRIC_CUE_MODES,
     CAMERA_LYRIC_INTERPRETATIONS,
     CAMERA_PLANNER_POLICIES,
@@ -56,7 +57,7 @@ from .template import (
 )
 
 
-PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v84-scene-terminal-state"
+PLANNER_ALGORITHM_VERSION = "mvd-timeline-planner-v85-compact-camera-render"
 _ACTION_AUDIT_REPAIR_ATTEMPTS = 1
 _LOGGER = logging.getLogger("mv_director.nodes")
 TASKS = (
@@ -884,11 +885,82 @@ _CAMERA_COVERAGE_TEXT = {
     "face_eyes_mouth": "Keep both eyes, both eyebrows, the nose, the complete singing mouth, and the facial contour visible",
     "expressive_result": "Keep the changed expression and final silhouette readable",
 }
+_COMPACT_CAMERA_SCALE_TEXT = {
+    "wide": "wide",
+    "full_body": "full-body",
+    "medium_wide": "medium-wide",
+    "medium": "medium",
+    "upper_body": "upper-body",
+    "head_and_shoulders": "head-and-shoulders",
+    "face_closeup": "face close-up",
+}
+_COMPACT_CAMERA_VIEW_TEXT = {
+    "front": "front",
+    "front_three_quarter": "front three-quarter",
+    "side": "side",
+    "rear_three_quarter": "rear three-quarter",
+    "over_shoulder": "over-shoulder",
+    "high_front": "high front",
+    "low_front_three_quarter": "low front three-quarter",
+}
+_COMPACT_CAMERA_PATH_TEXT = {
+    "stationary": "Hold the camera and lens still",
+    "zoom_in_35_55": "Zoom in during the first half, then hold the expression",
+    "zoom_out": "Widen the lens through the shot",
+    "push_in": "Move the camera forward",
+    "pull_out": "Move the camera backward",
+    "pan_left": "Pivot the camera left in place",
+    "pan_right": "Pivot the camera right in place",
+    "truck_left": "Move the camera left",
+    "truck_right": "Move the camera right",
+    "tilt_up": "Pivot the camera upward in place",
+    "tilt_down": "Pivot the camera downward in place",
+    "pedestal_up": "Raise the camera",
+    "pedestal_down": "Lower the camera",
+    "arc_left_60_120_70_90": "Move left around the subject",
+    "arc_right_60_120_70_90": "Move right around the subject",
+    "arc_left_60_120_70_90_roll_counterclockwise": (
+        "Move left around the subject; blend in Roll Counterclockwise "
+        "with small amplitude, then level the horizon"
+    ),
+    "arc_right_60_120_70_90_roll_clockwise": (
+        "Move right around the subject; blend in Roll Clockwise "
+        "with small amplitude, then level the horizon"
+    ),
+    "tracking_forward": "Follow the subject's forward travel",
+    "tracking_lateral": "Follow the subject's lateral travel",
+    "shake": "Apply the selected shake without changing the framing",
+    "roll_clockwise": "Rotate the frame clockwise",
+    "roll_counterclockwise": "Rotate the frame counterclockwise",
+}
+_COMPACT_CAMERA_COVERAGE_TEXT = {
+    "environment_relation": "Show the subject and surrounding space together",
+    "lyric_target": "Keep the lyric target visible in its setting",
+    "lyric_target_and_hands": "Show the lyric target and interacting hands together",
+    "lyric_target_and_body": "Show the lyric target, face, torso, and both arms together",
+    "whole_body_emotion": "Show the full-body silhouette and facial expression",
+    "whole_body_hands": "Show the full-body silhouette, face, arms, and hands together",
+    "upper_body_hands": "Show the face, shoulders, arms, and hands together",
+    "face_eyes_mouth": "Show both eyes, eyebrows, nose, and complete singing mouth",
+    "expressive_result": "Show the changed expression and final silhouette",
+}
 
 
-def _render_camera_plan(plan: _CameraPlan) -> str:
+def _render_camera_plan(plan: _CameraPlan, *, style: str = "detailed") -> str:
     """Serialize finite LLM selections; never add a target or character action."""
 
+    if style == "compact":
+        return (
+            f"{plan.motion}. From "
+            f"{_COMPACT_CAMERA_VIEW_TEXT[plan.start_view]} "
+            f"{_COMPACT_CAMERA_SCALE_TEXT[plan.start_scale]} to "
+            f"{_COMPACT_CAMERA_VIEW_TEXT[plan.end_view]} "
+            f"{_COMPACT_CAMERA_SCALE_TEXT[plan.end_scale]}. "
+            f"{_COMPACT_CAMERA_PATH_TEXT[plan.path]}. "
+            f"{_COMPACT_CAMERA_COVERAGE_TEXT[plan.coverage]}."
+        )
+    if style != "detailed":
+        raise ValueError(f"unknown camera render style: {style}")
     return (
         f"{plan.motion}. Start with {_CAMERA_SCALE_TEXT[plan.start_scale]} from "
         f"{_CAMERA_VIEW_TEXT[plan.start_view]}; end with "
@@ -3521,6 +3593,14 @@ def generate_planner_content(
     planner_policy = CAMERA_PLANNER_POLICIES.get(
         direction.camera_profile_id, ""
     )
+    camera_render_style = CAMERA_RENDER_STYLES.get(
+        direction.camera_profile_id, "detailed"
+    )
+    if camera_render_style == "compact":
+        _LOGGER.info(
+            "[MV Director - Timeline Planner] Camera render style=compact; "
+            "finite Camera selections are unchanged"
+        )
     configured_priority_cues = CAMERA_PRIORITY_LYRIC_CUES.get(
         direction.camera_profile_id, ()
     )
@@ -5932,7 +6012,9 @@ def generate_planner_content(
                         if _camera_motion_type(plan.motion) == "Arc Shot":
                             chosen_arc_paths[group] = _arc_base_path(plan.path)
                     chosen_camera_plans[int(entity.value["camera_continuity_group"])] = plan
-                    rendered_plan = _render_camera_plan(plan)
+                    rendered_plan = _render_camera_plan(
+                        plan, style=camera_render_style
+                    )
                     values[entity.key] = rendered_plan
                     used_rendered_plans.add(rendered_plan)
                 if fallback_rows:

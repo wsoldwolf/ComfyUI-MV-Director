@@ -3,7 +3,7 @@ from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import unittest
 
-from core.inference import LlamaCppLifecycle, LlamaRuntimeConfig
+from core.inference import InferenceBackendError, LlamaCppLifecycle, LlamaRuntimeConfig
 
 
 class FakeLlama:
@@ -104,8 +104,36 @@ class LlamaCppLifecycleTests(unittest.TestCase):
             )
             self.assertIs(model.completion_kwargs["reasoning"], False)
 
+    def test_closed_leading_think_blocks_are_removed_after_stream_assembly(self) -> None:
+        stream = [
+            {"choices": [{"delta": {"content": "<thi"}}]},
+            {"choices": [{"delta": {"content": "nk>private</think>\n"}}]},
+            {"choices": [{"delta": {"content": "<think>\n</think>\nANSWER\t1\tvalue"}}]},
+        ]
+        with self.assertLogs("mv_director.inference", level="INFO") as logged:
+            result = LlamaCppLifecycle._collect_chat_stream(stream, None)
+        self.assertEqual(result, "ANSWER\t1\tvalue")
+        self.assertIn("2 leading closed think block(s)", logged.output[0])
+
+    def test_unclosed_or_embedded_think_is_not_silently_removed(self) -> None:
+        def streamed(text):
+            return [{"choices": [{"delta": {"content": text}}]}]
+
+        collect = LlamaCppLifecycle._collect_chat_stream
+        self.assertEqual(
+            collect(streamed("<think>unfinished\nANSWER"), None),
+            "<think>unfinished\nANSWER",
+        )
+        self.assertEqual(
+            collect(streamed("ANSWER\n<think>x</think>"), None),
+            "ANSWER\n<think>x</think>",
+        )
+        with self.assertRaisesRegex(
+            InferenceBackendError, "no answer after removing think blocks"
+        ):
+            collect(streamed("<think>hidden</think>\n"), None)
+
     def test_optional_grammar_is_forwarded_and_missing_support_is_explicit(self):
-        from core.inference import InferenceBackendError
         with TemporaryDirectory() as temporary:
             path = Path(temporary) / "model.gguf"
             path.write_bytes(b"model")

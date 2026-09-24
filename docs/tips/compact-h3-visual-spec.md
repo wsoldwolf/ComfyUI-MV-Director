@@ -24,4 +24,6 @@ H3用のPlanを読むと、Cameraの軌道や画角を長く説明する一方�
 
 現在のPlannerでは、CameraのMotion・画角・経路・coverageを有限の選択肢として扱い、`core/planner/engine.py`の`_render_camera_plan`が長い英文へ展開する。Compilerは`core/compiler/ref2va.py`でScene概要とShot本文を組み立て、英訳Planへ渡す。したがって、完成したJSONを後から文字列置換する方式に固定する必要はない。
 
-最初の実装候補は、profileで明示的に選んだ場合だけ、既存のCamera選択結果を簡潔な文へ展開すること。元の構造化選択とEMDのAction、歌詞時刻、作者の直接指定は保持する。**これはCameraだけを短くする試験**であり、今回の手作業で短くしたScene概要やActionまで同じ結果になる保証はない。次に必要なら、Plannerが元から持つ出来事・人物反応を短いScene概要として出せるか、追加のLLM段を増やさず比較する。自由文への事後的な正規表現書換えや、全profileへの一律適用は避ける。
+P0では、Camera profileの`camera_render_style=compact`を選んだ場合だけ、既存の有限Camera選択結果を簡潔な文へ展開する経路を追加した。元の構造化選択とEMDのAction、歌詞時刻、作者の直接指定は保持する。[実装とH3比較](../research/compact-visual-spec-pipeline-p0-2026-09-24.md)を参照。**Cameraだけを短くしても、手書き簡潔版の良さは安定して再現しなかった**。御神木のCamera-only版にはコミカルな左右の揺れが出たため、付属profileの既定は`detailed`のままとした。狐火の発生源も、基準版では人物の手から、Camera-only版では空中からに見え、ユーザーは両方を許容した。次はPlannerが元から持つ出来事・人物反応とCameraの関係を短いScene仕様として一緒に表せるか、追加のLLM段を増やさず比較する。自由文への事後的な正規表現書換えや、全profileへの一律適用は避ける。
+
+[P1の追加比較](../research/compact-visual-spec-pipeline-p1-2026-09-24.md)では、Cameraを保持したままScene概要だけ、または概要とActionを手書きで短くした。御神木は**基準版が最良**、狐火は**概要のみ短縮が最良**だった。実8Bでも保存済みActionの短文化を小範囲で試したが、これはH3比較に投入した短縮Planとは異なる。したがって文章量だけを全曲で削る規則にはしない。

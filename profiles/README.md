@@ -139,6 +139,9 @@ Cameraは任意の`planner_policy`、
 Motion profileの`body_accent_policy`は`off`（省略時）、`sparse_chorus`、`sparse_chorus_prechorus`又は`sparse_chorus_prechorus_verse_contact`を指定できます。いずれも`performance_mode=dance_phrase`を必要とし、サビ及び最終サビの適格なSceneで最大一Shotだけ`body_phrase_accent`を選びます。後ろ二つはPRE-CHORUSのみ・単一Shot・6秒以上のSceneにも一回のaccentを許可します。最後の方針はさらに、元歌詞から認可された接触を扱う複数ShotのVerseで、接触event以外の一Shotだけに身体accentを置き、そのSceneのShot境界候補を3秒間隔まで広げます。Scene spineが欠落した場合や顔専用Shot・接触event Shotはこの追加accentの対象外です。対象語は固定辞書にしません。本文をPythonで書き換えず、LLMに支持脚から体幹・腕へつながる演技を要求します。監査はこのroleにだけ不足理由を返せますが、再要求上限に達した場合は既存のAS IS候補を警告付きで残します。metadataはPlanner cache keyに含めます。
 
 Camera profileの`arc_roll_policy`は`off`（省略時）又は`selective_arc`です。後者は3.5秒以上の長尺ArcからCamera batchごとに最大一Shotを選び、Arcの中盤で画面を光軸まわりに約10度傾け、終端までに水平へ戻します。これは上下を見上げる`Tilt Up`ではなく、水平線が傾く`Roll Clockwise / Counterclockwise`です。Arcの左右方向は維持し、Roll方向はArc方向に対応させます。固定顔Shotから全身へ抜けるArcも候補に含めますが、顔へ入るArcと顔だけの可視条件は除外します。歌詞対象の必須coverageはそのまま維持します。有限Camera fieldをLLMが選び、Pythonは選択済み経路を固定H3文へ直列化するだけです。`anime_story_mv`では従来どおり無効です。
+
+Camera profileの`camera_render_style`は`detailed`（省略時）又は実験用`compact`です。`compact`は、有限CameraのMotion・開始／終端画角と視点・経路・可視対象を、短いH3向け文へ直列化します。LLMが選んだ有限値、Arcの方向、Roll、必要なcoverage及びCUT/CONTINUEは変えません。作者がEMDへ直接書いたAction、Scene概要、自由文Cameraは書き換えません。短区間H3のP0比較では御神木の不自然な揺れが確認されたため、`anime_emotional_mv`を含む付属profileはすべて従来の`detailed`です。`compact`を試す場合だけカスタムCamera profileに明示してください。設定はPlanner cache keyに含まれるため、変更後はComfyUIを再起動しPlanを再生成します。[P0検証記録](../docs/research/compact-visual-spec-pipeline-p0-2026-09-24.md)を参照してください。
+
 旧`arc_tilt_policy`は上下首振りを意味する別の動きであり廃止しました。カスタムCamera profileで使用している場合は`arc_roll_policy`へ明示的に移行してください。
 
 `lyric_cue_mode`は`automatic`、`priority_only`又は`off`です。
