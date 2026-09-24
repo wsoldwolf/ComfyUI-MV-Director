@@ -1,0 +1,47 @@
+{
+  "model": "gemma4-31b-mv-probe",
+  "system": "Translate Japanese MV shot action descriptions into concise, faithful English for a text-to-video prompt. Preserve every temporal change, body movement, visible object, emotion, and spatial relationship; do not invent or omit events. Return only JSON: an object with a 'translations' array of exactly five strings in the same order as the input. No commentary.",
+  "source": [
+    {
+      "scene": 3,
+      "shot": 1,
+      "japanese": "前Sceneの姿勢を保持したまま、視線をゆっくりと足元の石段へと落とす。胸郭をわずかに畳み、片方の手を体側から胸の高さまで緩やかに上げ、指先で夜の冷気を感じるように静止させる。",
+      "english": "Maintaining the previous posture, slowly lower gaze to the stone steps at the feet. Slightly collapse the chest and gently raise one hand from the side to chest height, holding it still as if feeling the cold night air with the fingertips."
+    },
+    {
+      "scene": 3,
+      "shot": 2,
+      "japanese": "「名もなき季節」で身体全体を後方へ大きく退かせ、視線を一度空へと泳がせる。「昨日の願いは」で前方へ切り返し、足元の苔が光り出すのに合わせて視線を鋭く落とす。「苔へと還る」に合わせて、光る苔に向かって片手をゆっくりと伸ばし、指先をわずかに曲げて光の流れをなぞるように動かす。「幼い手で結んだ」では、伸ばした手を胸元へ引き寄せ、記憶を抱きしめるように指先を軽く閉じ、切なげに目を伏せて重心を前方に残す。",
+      "english": "Move the entire body far backward while letting the gaze wander toward the sky. Shift forward and sharply drop the gaze as moss at the feet begins to glow. Slowly extend one hand toward the glowing moss, slightly bending the fingertips to trace the flow of light. Pull the extended hand back to the chest, lightly closing the fingertips as if embracing a memory, casting eyes down sorrowfully while keeping the center of gravity shifted forward."
+    },
+    {
+      "scene": 4,
+      "shot": 1,
+      "japanese": "前Sceneの姿勢を保持したまま、視線を足元の石畳へ落とす。紅葉の葉が舞い落ちるのに合わせ、肩の力を抜き、胸郭をわずかに畳んで深い溜息をつくように重心を低く沈める。",
+      "english": "Maintaining the previous posture, lower gaze to the stone pavement at the feet. As autumn leaves flutter down, relax the shoulders, slightly collapse the chest, and sink the center of gravity low as if letting out a deep sigh."
+    },
+    {
+      "scene": 4,
+      "shot": 2,
+      "japanese": "斜め前方へ歩き出しながら、右手を胸元から外側へゆっくりと弧を描くように開き、「花が咲いて散る」様子をなぞる。視線は遠くを見つめ、寂寥感を漂わせたまま歩行の速度を維持する。",
+      "english": "Walk diagonally forward, slowly opening the right hand from the chest outward in an arc as if tracing flowers blooming and falling. Keep the gaze fixed on the distance with a sense of loneliness while maintaining walking speed."
+    },
+    {
+      "scene": 4,
+      "shot": 3,
+      "japanese": "歩みを緩め、顔を上げて夜空へと視線を移す。開いた右手をゆっくりと下ろし、袖口を軽く握りしめることで「永遠」への強い想いと葛藤を表現し、体幹にわずかな緊張を残して次Sceneへ繋げる。",
+      "english": "Slow down the pace, lift the face, and shift the gaze to the night sky. Slowly lower the open right hand and lightly grip the sleeve cuff to express strong longing and conflict toward eternity, leaving slight tension in the torso for the transition to the next scene."
+    }
+  ],
+  "elapsed_seconds": 26.557,
+  "usage": {
+    "prompt_tokens": 548,
+    "completion_tokens": 1466,
+    "total_tokens": 2014,
+    "completion_tokens_details": {
+      "reasoning_tokens": 1160
+    }
+  },
+  "finish_reason": "stop",
+  "raw_response": "```json\n{\n  \"translations\": [\n    \"Maintaining the previous posture, slowly lower gaze to the stone steps at the feet. Slightly collapse the chest and gently raise one hand from the side to chest height, holding it still as if feeling the cold night air with the fingertips.\",\n    \"Move the entire body far backward while letting the gaze wander toward the sky. Shift forward and sharply drop the gaze as moss at the feet begins to glow. Slowly extend one hand toward the glowing moss, slightly bending the fingertips to trace the flow of light. Pull the extended hand back to the chest, lightly closing the fingertips as if embracing a memory, casting eyes down sorrowfully while keeping the center of gravity shifted forward.\",\n    \"Maintaining the previous posture, lower gaze to the stone pavement at the feet. As autumn leaves flutter down, relax the shoulders, slightly collapse the chest, and sink the center of gravity low as if letting out a deep sigh.\",\n    \"Walk diagonally forward, slowly opening the right hand from the chest outward in an arc as if tracing flowers blooming and falling. Keep the gaze fixed on the distance with a sense of loneliness while maintaining walking speed.\",\n    \"Slow down the pace, lift the face, and shift the gaze to the night sky. Slowly lower the open right hand and lightly grip the sleeve cuff to express strong longing and conflict toward eternity, leaving slight tension in the torso for the transition to the next scene.\"\n  ]\n}\n```"
+}

@@ -2,6 +2,7 @@
 
 | 文書 | 内容 |
 |---|---|
+| [Gemma 4 31B：実8B入力の再生と苔・花Scene短区間映像](gemma4-31b-scene-author-s2-4-2026-09-25.md) | 保存済み8BのScene 2–4推論入力を31Bへ渡し、人物演技5行のみ差し替えたH3動画・無音上下比較・両EMDを出典付きで記録 |
 | [作者演出候補とPython動作補完の2×2比較](author-candidate-vs-python-motion-p7-2026-09-25.md) | 保存済みScene 5・9で候補・補完・seedを切り分け。候補は身体語彙を増やすが採用・Shot進行は不安定で、作者短文の原文保持を次の検証対象にした |
 | [簡潔Scene仕様 P6：公式8Bと現行8Bの形式・本文・推論設定](compact-scene-spec-p6-official-8b-protocol-sampling-2026-09-25.md) | 保存Sceneを本番grammarで再生し、両モデルの形式4/4と、反復・自転など本文の未解決を分離。公式推奨寄りsamplingも小範囲で比較 |
 | [簡潔Scene仕様 P5：8Bの意味ラベル比較](compact-scene-spec-p5-semantic-field-labels-2026-09-25.md) | `SCENE_EVENT`は主題の焦点を改善したが、`PERFORMER_BODY_ACTION`は振付を増やさず、`PERFORMER_POSE_CHANGE`は主語混同。欄名単独の本番採用を見送った |

@@ -1,0 +1,230 @@
+[32m[INFO][0m setup plugin alembic.autogenerate.schemas
+[32m[INFO][0m setup plugin alembic.autogenerate.tables
+[32m[INFO][0m setup plugin alembic.autogenerate.types
+[32m[INFO][0m setup plugin alembic.autogenerate.constraints
+[32m[INFO][0m setup plugin alembic.autogenerate.defaults
+[32m[INFO][0m setup plugin alembic.autogenerate.comments
+[32m[INFO][0m setup plugin alembic.ext.checkconstraint_byname
+[1m[33m[WARNING][0m On windows we are currently forcing single GPU mode in ComfyUI due to a Nvidia related issue, if you want to disable this use: --cuda-device all
+[32m[INFO][0m 
+Prestartup times for custom nodes:
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\comfyui-easy-use
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\rgthree-comfy
+[32m[INFO][0m    2.3 seconds: C:\Software\ComfyUI\custom_nodes\ComfyUI-Manager
+[32m[INFO][0m 
+C:\Software\ComfyUI\venv\Lib\site-packages\torch\cuda\__init__.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+[32m[INFO][0m Found comfy_kitchen backend triton: {'available': True, 'disabled': True, 'unavailable_reason': None, 'capabilities': ['adaln', 'apply_rope', 'apply_rope1', 'apply_rope1_', 'apply_rope_', 'apply_rope_split_half', 'apply_rope_split_half1', 'apply_rope_split_half1_', 'apply_rope_split_half_', 'dequantize_nvfp4', 'dequantize_per_tensor_fp8', 'int8_linear', 'na3d', 'quantize_and_rotate_rowwise', 'quantize_int8_rowwise', 'quantize_mxfp8', 'quantize_nvfp4', 'quantize_per_tensor_fp8', 'rms_adaln', 'rms_rope', 'rms_rope1', 'rms_rope1_', 'rms_rope_', 'rms_rope_split_half', 'rms_rope_split_half1', 'rms_rope_split_half1_', 'rms_rope_split_half_', 'w4a8_int8_linear']}
+[32m[INFO][0m Found comfy_kitchen backend eager: {'available': True, 'disabled': False, 'unavailable_reason': None, 'capabilities': ['adaln', 'apply_rope', 'apply_rope1', 'apply_rope1_', 'apply_rope_', 'apply_rope_split_half', 'apply_rope_split_half1', 'apply_rope_split_half1_', 'apply_rope_split_half_', 'convrot_w4a4_linear', 'dequantize_convrot_w4a4_weight', 'dequantize_int8_convrot_weight', 'dequantize_int8_convrot_weight_dtype', 'dequantize_int8_embedding', 'dequantize_int8_simple', 'dequantize_int8_simple_dtype', 'dequantize_mxfp8', 'dequantize_nvfp4', 'dequantize_per_tensor_fp8', 'dequantize_w4a8_int8_weight', 'fp16_conv3d', 'fp16_linear', 'gemv_awq_w4a16', 'group_norm_silu_pad3d', 'int8_linear', 'na3d', 'prepare_int4_weight_for_int8_linear', 'quantize_and_rotate_rowwise', 'quantize_convrot_w4a4_weight', 'quantize_int8_convrot_weight', 'quantize_int8_rowwise', 'quantize_int8_tensorwise', 'quantize_mxfp8', 'quantize_nvfp4', 'quantize_per_tensor_fp8', 'quantize_svdquant_w4a4', 'quantize_w4a8_int8_weight', 'rms_adaln', 'rms_rope', 'rms_rope1', 'rms_rope1_', 'rms_rope_', 'rms_rope_split_half', 'rms_rope_split_half1', 'rms_rope_split_half1_', 'rms_rope_split_half_', 'rotate_int8_convrot_weight', 'scaled_mm_mxfp8', 'scaled_mm_nvfp4', 'scaled_mm_svdquant_w4a4', 'sol_attn', 'stochastic_rounding_fp8', 'w4a8_int8_linear']}
+[32m[INFO][0m Found comfy_kitchen backend hip: {'available': False, 'disabled': False, 'unavailable_reason': 'PyTorch ROCm/HIP runtime not available', 'capabilities': []}
+[32m[INFO][0m Found comfy_kitchen backend cuda: {'available': True, 'disabled': False, 'unavailable_reason': None, 'capabilities': ['adaln', 'apply_rope', 'apply_rope1', 'apply_rope1_', 'apply_rope_', 'apply_rope_split_half', 'apply_rope_split_half1', 'apply_rope_split_half1_', 'apply_rope_split_half_', 'convrot_w4a4_linear', 'dequantize_convrot_w4a4_weight', 'dequantize_int8_convrot_weight', 'dequantize_int8_convrot_weight_dtype', 'dequantize_int8_simple', 'dequantize_int8_simple_dtype', 'dequantize_nvfp4', 'dequantize_per_tensor_fp8', 'dequantize_w4a8_int8_weight', 'fp16_conv3d', 'fp16_linear', 'gemv_awq_w4a16', 'group_norm_silu_pad3d', 'int8_linear', 'na3d', 'prepare_int4_weight_for_int8_linear', 'quantize_and_rotate_rowwise', 'quantize_convrot_w4a4_weight', 'quantize_int8_convrot_weight', 'quantize_int8_rowwise', 'quantize_int8_tensorwise', 'quantize_mxfp8', 'quantize_nvfp4', 'quantize_per_tensor_fp8', 'quantize_svdquant_w4a4', 'quantize_w4a8_int8_weight', 'rms_adaln', 'rms_rope', 'rms_rope1', 'rms_rope1_', 'rms_rope_', 'rms_rope_split_half', 'rms_rope_split_half1', 'rms_rope_split_half1_', 'rms_rope_split_half_', 'rotate_int8_convrot_weight', 'scaled_mm_nvfp4', 'scaled_mm_svdquant_w4a4', 'sol_attn', 'stochastic_rounding_fp8', 'w4a8_int8_linear']}
+[32m[INFO][0m Checkpoint files will always be loaded safely.
+[32m[INFO][0m Total VRAM 32579 MB, total RAM 261688 MB
+[32m[INFO][0m pytorch version: 2.13.0+cu130
+[32m[INFO][0m Enabled fp16 accumulation.
+[32m[INFO][0m Set vram state to: NORMAL_VRAM
+[32m[INFO][0m Device: cuda:0 NVIDIA GeForce RTX 5090 : cudaMallocAsync
+[32m[INFO][0m Using async weight offloading with 2 streams
+[32m[INFO][0m Enabled pinned memory 104675.0
+[32m[INFO][0m Using pytorch attention
+[32m[INFO][0m aimdo: src-win/cuda-detour.c:38:INFO:aimdo_setup_hooks: installing 6 hooks
+[32m[INFO][0m aimdo: src/control.c:269:INFO:comfy-aimdo NVML pressure enabled
+[32m[INFO][0m aimdo: src-win/shmem-detect.c:80:INFO:comfy-aimdo WDDM adapter match: NVIDIA GeForce RTX 5090 runtime_luid=00000000:00012cbe dxgi_luid=00000000:00012cbe
+[32m[INFO][0m aimdo: src/control.c:284:INFO:comfy-aimdo inited for GPU: NVIDIA GeForce RTX 5090 (VRAM: 32579 MB)
+[32m[INFO][0m DynamicVRAM support detected and enabled
+[32m[INFO][0m Python version: 3.13.14 (tags/v3.13.14:fd17997, Jun 10 2026, 13:03:48) [MSC v.1944 64 bit (AMD64)]
+[32m[INFO][0m ComfyUI version: 0.36.0
+[32m[INFO][0m comfy-aimdo version: 0.5.3
+[32m[INFO][0m comfy-kitchen version: 0.2.34
+[32m[INFO][0m comfyui-frontend-package version: 1.52.7
+[32m[INFO][0m comfyui-workflow-templates version: 0.11.62
+[32m[INFO][0m comfyui-embedded-docs version: 0.5.11
+[32m[INFO][0m comfy-kitchen version: 0.2.34
+[32m[INFO][0m comfy-aimdo version: 0.5.3
+[32m[INFO][0m [Prompt Server] web root: C:\Software\ComfyUI\venv\Lib\site-packages\comfyui_frontend_package\static
+[32m[INFO][0m Asset seeder disabled
+[32m[INFO][0m No OpenGL_accelerate module loaded: No module named 'OpenGL_accelerate'
+[32m[INFO][0m ComfyUI-GGUF: Allowing full torch compile
+C:\Software\ComfyUI\venv\Lib\site-packages\timm\models\layers\__init__.py:49: FutureWarning: Importing from timm.models.layers is deprecated, please import via timm.layers
+  warnings.warn(f"Importing from {__name__} is deprecated, please import via timm.layers", FutureWarning)
+C:\Software\ComfyUI\venv\Lib\site-packages\timm\models\registry.py:4: FutureWarning: Importing from timm.models.registry is deprecated, please import via timm.models
+  warnings.warn(f"Importing from {__name__} is deprecated, please import via timm.models", FutureWarning)
+C:\Software\ComfyUI\venv\Lib\site-packages\timm\models\helpers.py:7: FutureWarning: Importing from timm.models.helpers is deprecated, please import via timm.models
+  warnings.warn(f"Importing from {__name__} is deprecated, please import via timm.models", FutureWarning)
+[32m[INFO][0m ### Loading: ComfyUI-Impact-Pack (V8.28.3)
+[32m[INFO][0m [Impact Pack] Wildcard total size (0.00 MB) is within cache limit (50.00 MB). Using full cache mode.
+[32m[INFO][0m [Impact Pack] Wildcards loading done.
+[32m[INFO][0m ### Loading: ComfyUI-Impact-Subpack (V1.3.5)
+[32m[INFO][0m [Impact Pack/Subpack] Using folder_paths to determine whitelist path: C:\Software\ComfyUI\user\default\ComfyUI-Impact-Subpack\model-whitelist.txt
+[32m[INFO][0m [Impact Pack/Subpack] Ensured whitelist directory exists: C:\Software\ComfyUI\user\default\ComfyUI-Impact-Subpack
+[32m[INFO][0m [Impact Pack/Subpack] Loaded 0 model(s) from whitelist: C:\Software\ComfyUI\user\default\ComfyUI-Impact-Subpack\model-whitelist.txt
+[32m[INFO][0m [Impact Subpack] ultralytics_bbox: C:\Software\ComfyUI\models\ultralytics\bbox
+[32m[INFO][0m [Impact Subpack] ultralytics_segm: C:\Software\ComfyUI\models\ultralytics\segm
+[32m[INFO][0m ### Loading: ComfyUI-Manager (V3.40)
+[32m[INFO][0m [ComfyUI-Manager] network_mode: personal_cloud
+[32m[INFO][0m [ComfyUI-Manager] ComfyUI per-queue preview override detected (PR #11261). Manager's preview method feature is disabled. Use ComfyUI's --preview-method CLI option or 'Settings > Execution > Live preview method'.
+[32m[INFO][0m ### ComfyUI Revision: 5959 [ee71d5c4] *DETACHED | Released on '2026-09-15'
+[32m[INFO][0m [ComfyUI-Manager] default cache updated: https://raw.githubusercontent.com/ltdrdata/ComfyUI-Manager/main/model-list.json
+[32m[INFO][0m [ComfyUI-Manager] default cache updated: https://raw.githubusercontent.com/ltdrdata/ComfyUI-Manager/main/alter-list.json
+[32m[INFO][0m [ComfyUI-Manager] default cache updated: https://raw.githubusercontent.com/ltdrdata/ComfyUI-Manager/main/github-stats.json
+[32m[INFO][0m [ComfyUI-Manager] default cache updated: https://raw.githubusercontent.com/ltdrdata/ComfyUI-Manager/main/extension-node-map.json
+[32m[INFO][0m [ComfyUI-Manager] default cache updated: https://raw.githubusercontent.com/ltdrdata/ComfyUI-Manager/main/custom-node-list.json
+[32m[INFO][0m ('Looking for cached Spacy xx_sent_ud_sm.',)
+USDU batch patches applied successfully.
+[32m[INFO][0m USDU batch patches applied successfully.
+[32m[INFO][0m 
+Import times for custom nodes:
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\websocket_image_save.py
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\Comfyui-PainterSampler
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\ComfyUI-PainterI2V
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\comfyui-fitsize
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\comfyui-unload-model
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\ComfyUI_MinimaxH3HybridLoader
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\cd-tuner_negpip-ComfyUI
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\comfyui-torch-compile
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\openai-llm
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\comfyui-mxtoolkit
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\ComfyUI-Anima-LLLite
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\ComfyUI-Spectrum-sdxl
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\comfyui-anima-enhancer
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\loop-image
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\ComfyUI-Anima-NAG
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\comfyui-post-processing-nodes
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\ControlFlowUtils
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\cg-use-everywhere
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\ComfyUI-LoRA-Block-Filter
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\ComfyUI-Upscaler-Tensorrt
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\comfyui-comfycouple
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\ComfyUI-VFI
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\ComfyUI-GGUF
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\comfyui-florence2
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\comfyui-spectrum-sdxl-proper
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\comfyui_essentials
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\Comfyui-Nodes-Stats
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\comfyui-minimax-h3-blockcache-T8
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\comfyui_essentials_mb
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\comfyui-various
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\save-image-extended-comfyui
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\comfyui-custom-scripts
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\comfy-image-saver
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\comfyui-frame-interpolation
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\efficiency-nodes-comfyui
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\comfyui-segment-anything-2
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\comfyui_ultimatesdupscale
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\comfyui-ppm
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\rgthree-comfy
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\comfyui-kjnodes
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\civitai-comfy-nodes
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\ComfyUI-Multiband
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\comfyui-logicutils
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\ComfyUI-JNodes
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\ComfyUI-QwenVL-Mod
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\ComfyUI-MiniMaxH3-Contex-Loop
+[32m[INFO][0m    0.0 seconds: C:\Software\ComfyUI\custom_nodes\seedvr2_videoupscaler
+[32m[INFO][0m    0.1 seconds: C:\Software\ComfyUI\custom_nodes\comfyui-impact-subpack
+[32m[INFO][0m    0.1 seconds: C:\Software\ComfyUI\custom_nodes\comfyui-impact-pack
+[32m[INFO][0m    0.1 seconds: C:\Software\ComfyUI\custom_nodes\comfyui-videohelpersuite
+[32m[INFO][0m    0.1 seconds: C:\Software\ComfyUI\custom_nodes\ComfyUI-Crystools
+[32m[INFO][0m    0.2 seconds: C:\Software\ComfyUI\custom_nodes\ComfyUI-WanVideoWrapper
+[32m[INFO][0m    0.2 seconds: C:\Software\ComfyUI\custom_nodes\ComfyUI-SeedVR2_VideoUpscaler
+[32m[INFO][0m    0.2 seconds: C:\Software\ComfyUI\custom_nodes\ComfyUI-MV-Director
+[32m[INFO][0m    0.2 seconds: C:\Software\ComfyUI\custom_nodes\comfyui-daremerge
+[32m[INFO][0m    0.3 seconds: C:\Software\ComfyUI\custom_nodes\ComfyUI-GIMM-VFI
+[32m[INFO][0m    0.3 seconds: C:\Software\ComfyUI\custom_nodes\ComfyUI-Rife-Tensorrt
+[32m[INFO][0m    0.4 seconds: C:\Software\ComfyUI\custom_nodes\ComfyUI-cl-japanese2json
+[32m[INFO][0m    0.8 seconds: C:\Software\ComfyUI\custom_nodes\ComfyUI-PainterLongVideo
+[32m[INFO][0m    1.0 seconds: C:\Software\ComfyUI\custom_nodes\comfyui_custom_nodes_alekpet
+[32m[INFO][0m    1.0 seconds: C:\Software\ComfyUI\custom_nodes\ComfyUI-Manager
+[32m[INFO][0m    1.0 seconds: C:\Software\ComfyUI\custom_nodes\was-ns
+[32m[INFO][0m    2.7 seconds: C:\Software\ComfyUI\custom_nodes\comfyui-easy-use
+[32m[INFO][0m 
+[32m[INFO][0m Context impl SQLiteImpl.
+[32m[INFO][0m Will assume non-transactional DDL.
+[32m[INFO][0m Using RAM pressure cache.
+[32m[INFO][0m Starting server
+
+[32m[INFO][0m To see the GUI go to: http://127.0.0.1:8188
+[32m[INFO][0m got prompt
+[32m[INFO][0m [MV Director - Load Text File] started
+[32m[INFO][0m [36m[MV Director - Load Text File] completed; elapsed=0.001s[0m
+[32m[INFO][0m [MV Director - H3 Timing Profile] started
+[32m[INFO][0m [36m[MV Director - H3 Timing Profile] completed; elapsed=0.000s; status=contract=context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9; fps=24[0m
+[32m[INFO][0m [MV Director - Lyric Segmentation] started
+[32m[INFO][0m [MV Director - Lyric Segmentation] targeted retry 1; segments=lyric_0001..lyric_0001; source=0..10140ms; windows=1
+[32m[INFO][0m [MV Director - Lyric Segmentation] targeted retry recovered 1/1 segment(s) for lyric_0001..lyric_0001
+[32m[INFO][0m [MV Director - Lyric Segmentation] targeted retry 2; segments=lyric_0026..lyric_0026; source=52000..60200ms; windows=1
+[32m[INFO][0m [MV Director - Lyric Segmentation] guided retry recovered with preceding segment context; segments=lyric_0026..lyric_0026
+[32m[INFO][0m [MV Director - Lyric Segmentation] targeted retry recovered 1/1 segment(s) for lyric_0026..lyric_0026
+[32m[INFO][0m [MV Director - Lyric Segmentation] targeted retry 3; segments=lyric_0041..lyric_0041; source=79180..85160ms; windows=1
+[32m[INFO][0m [MV Director - Lyric Segmentation] targeted retry recovered 1/1 segment(s) for lyric_0041..lyric_0041
+[32m[INFO][0m [MV Director - Lyric Segmentation] targeted retries completed; runs=3; recovered=3; remaining=0
+[32m[INFO][0m [36m[MV Director - Lyric Segmentation] completed; elapsed=22.225s; status=resolved=64; unplaced=0; source_ms=138760; plan_ms=139042; scenes=16; cache=miss[0m
+[32m[INFO][0m [MV Director - Audio Pad Pair (PCM Silence)] started
+[32m[INFO][0m [36m[MV Director - Audio Pad Pair (PCM Silence)] completed; elapsed=0.020s; status=pad=end; target_samples_a=6738000; target_samples_b=6738000; plan_ms=139042; timeline_frames=3337; plan_frames=3369; requested_target_frames=0; target_frames=3369; reference_alignment=source_scenes_to_plan; scene_gap_samples=13520[0m
+[32m[INFO][0m [MV Director - Scene Debug Splitter] started
+[32m[INFO][0m [36m[MV Director - Scene Debug Splitter] completed; elapsed=0.003s; status=enabled=yes; scenes=2..4; skip_frames=226; source_frames=714; output_frames=736; fps=24; vocal_end_padding_samples=44000; full_mix_end_padding_samples=44000[0m
+[32m[INFO][0m [MV Director - 32-bit Seed] started
+[32m[INFO][0m [36m[MV Director - 32-bit Seed] completed; elapsed=0.000s[0m
+[32m[INFO][0m Found quantization metadata version 1
+[32m[INFO][0m Detected mixed precision quantization
+[32m[INFO][0m Using mixed precision operations
+[32m[INFO][0m Native ops: nvfp4, int8_tensorwise, float8_e4m3fn, convrot_w4a4, asym_w4a8_int8, mxfp8, float8_e5m2 
+[32m[INFO][0m model weight dtype torch.bfloat16, manual cast: torch.bfloat16
+[32m[INFO][0m model_type FLOW_AV
+[32m[INFO][0m [MiniMaxH3Hybrid] base=minimax_h3_fl2va_pruned_int8_convrot.safetensors overlay=minimax_h3_ref2va_pruned_int8_convrot.safetensors preset=block_range_adaln blocks=25..49
+[32m[INFO][0m VAE load device: cuda:0, offload device: cpu, dtype: torch.float16
+[32m[INFO][0m Found quantization metadata version 1
+[32m[INFO][0m Using MixedPrecisionOps for text encoder
+[32m[INFO][0m CLIP/text encoder model load device: cuda:0, offload device: cpu, current: cpu, dtype: torch.float16
+[32m[INFO][0m VAE load device: cuda:0, offload device: cpu, dtype: torch.float32
+[32m[INFO][0m Requested to load MiniMaxH3VideoVAE
+[32m[INFO][0m Model MiniMaxH3VideoVAE prepared for dynamic VRAM loading. 4965MB Staged. 0 patches attached. Force pre-loaded 128 weights: 352 KB.
+[32m[INFO][0m Model MiniMaxH3VideoVAE prepared for dynamic VRAM loading. 4965MB Staged. 0 patches attached. Force pre-loaded 128 weights: 352 KB.
+[32m[INFO][0m Requested to load MiniMaxH3AudioVAE
+[32m[INFO][0m Model MiniMaxH3AudioVAE prepared for dynamic VRAM loading. 576MB Staged. 0 patches attached. Force pre-loaded 401 weights: 539 KB.
+[32m[INFO][0m Requested to load MiniMaxH3TEModel_
+[32m[INFO][0m Model MiniMaxH3TEModel_ prepared for dynamic VRAM loading. 14956MB Staged. 0 patches attached. Force pre-loaded 410 weights: 4572 KB.
+[32m[INFO][0m Requested to load MiniMaxH3
+[32m[INFO][0m Model MiniMaxH3 prepared for dynamic VRAM loading. 19995MB Staged. 208 patches attached. Force pre-loaded 210 weights: 1175 KB.
+  0%|          | 0/8 [00:00<?, ?it/s]  0%|          | 0/8 [00:00<?, ?it/s,   Model Initializing ...  ]  0%|          | 0/8 [00:13<?, ?it/s,  Model Initialization complete!  ] 12%|█▎        | 1/8 [00:13<01:36, 13.73s/it,  Model Initialization complete!  ] 12%|█▎        | 1/8 [00:22<01:36, 13.73s/it]                                    25%|██�       | 2/8 [00:22<01:06, 11.03s/it] 38%|███▊      | 3/8 [00:33<00:55, 11.02s/it] 50%|████�     | 4/8 [00:44<00:44, 11.12s/it] 62%|██████�   | 5/8 [00:55<00:33, 11.06s/it] 75%|███████▌  | 6/8 [01:06<00:22, 11.12s/it] 88%|████████� | 7/8 [01:17<00:11, 11.10s/it]100%|██████████| 8/8 [01:28<00:00, 11.10s/it]100%|██████████| 8/8 [01:28<00:00, 11.07s/it]
+[32m[INFO][0m Comfy model compiler graph breaks: 1, rogues: 0
+[32m[INFO][0m Model MiniMaxH3VideoVAE prepared for dynamic VRAM loading. 4965MB Staged. 0 patches attached. Force pre-loaded 128 weights: 352 KB.
+[32m[INFO][0m Model MiniMaxH3AudioVAE prepared for dynamic VRAM loading. 576MB Staged. 0 patches attached. Force pre-loaded 401 weights: 539 KB.
+[32m[INFO][0m h3_motion_context: decoded 277-frame full audio time-conformed 369600 -> 369333 audio samples (-0.0722%) to match the exact video timeline
+[32m[INFO][0m h3_motion_context: 277 frames / 11.5417s picture, 11.5417s sound, drift 0.01ms
+[32m[INFO][0m [ComfyUI-Manager] default cache updated: https://api.comfy.org/nodes
+[32m[INFO][0m [ComfyUI-Manager] All startup tasks have been completed.
+[32m[INFO][0m H3 Chain saved clip 1/3 revision bbf4719741854adb8d7ad6559939f121: C:\Software\ComfyUI\output\h3_chains\gemma4_31b_body_s2_4_20260925\segments\clip_0001.bbf4719741854adb8d7ad6559939f121.mp4 + checkpoint C:\Software\ComfyUI\output\h3_chains\gemma4_31b_body_s2_4_20260925\checkpoints\clip_0001.bbf4719741854adb8d7ad6559939f121.safetensors + generated WAV C:\Software\ComfyUI\output\h3_chains\gemma4_31b_body_s2_4_20260925\generated_audio\clip_0001.bbf4719741854adb8d7ad6559939f121.wav
+[32m[INFO][0m Model MiniMaxH3VideoVAE prepared for dynamic VRAM loading. 4965MB Staged. 0 patches attached. Force pre-loaded 128 weights: 352 KB.
+[32m[INFO][0m Model MiniMaxH3VideoVAE prepared for dynamic VRAM loading. 4965MB Staged. 0 patches attached. Force pre-loaded 128 weights: 352 KB.
+[32m[INFO][0m Model MiniMaxH3AudioVAE prepared for dynamic VRAM loading. 576MB Staged. 0 patches attached. Force pre-loaded 401 weights: 539 KB.
+[32m[INFO][0m Model MiniMaxH3TEModel_ prepared for dynamic VRAM loading. 14956MB Staged. 0 patches attached. Force pre-loaded 410 weights: 4572 KB.
+[32m[INFO][0m H3 Chain Motion Context uses its internal compatibility engine for upstream Motion Context is not installed.
+[32m[INFO][0m Model MiniMaxH3VideoVAE prepared for dynamic VRAM loading. 4965MB Staged. 0 patches attached. Force pre-loaded 128 weights: 352 KB.
+[32m[INFO][0m h3_motion_context: video/head, 22 frames at target 0 -> 1 cond blocks at indices 0..0, 243 frame clip at 864x480, trim 22, audio off
+[32m[INFO][0m Model MiniMaxH3 prepared for dynamic VRAM loading. 19995MB Staged. 208 patches attached. Force pre-loaded 210 weights: 1175 KB.
+  0%|          | 0/8 [00:00<?, ?it/s]  0%|          | 0/8 [00:00<?, ?it/s,   Model Initializing ...  ]  0%|          | 0/8 [00:11<?, ?it/s,  Model Initialization complete!  ] 12%|█▎        | 1/8 [00:11<01:22, 11.85s/it,  Model Initialization complete!  ] 12%|█▎        | 1/8 [00:21<01:22, 11.85s/it]                                    25%|██�       | 2/8 [00:21<01:03, 10.62s/it] 38%|███▊      | 3/8 [00:31<00:53, 10.66s/it] 50%|████�     | 4/8 [00:42<00:42, 10.63s/it] 62%|██████�   | 5/8 [00:53<00:32, 10.71s/it] 75%|███████▌  | 6/8 [01:03<00:21, 10.70s/it] 88%|████████� | 7/8 [01:14<00:10, 10.64s/it]100%|██████████| 8/8 [01:25<00:00, 10.67s/it]100%|██████████| 8/8 [01:25<00:00, 10.66s/it]
+[32m[INFO][0m Comfy model compiler graph breaks: 2, rogues: 0
+[32m[INFO][0m Model MiniMaxH3VideoVAE prepared for dynamic VRAM loading. 4965MB Staged. 0 patches attached. Force pre-loaded 128 weights: 352 KB.
+[32m[INFO][0m Model MiniMaxH3AudioVAE prepared for dynamic VRAM loading. 576MB Staged. 0 patches attached. Force pre-loaded 401 weights: 539 KB.
+[32m[INFO][0m h3_motion_context: 221 frames / 9.2083s picture, 9.2083s sound, drift 0.01ms
+[32m[INFO][0m H3 Chain saved Guide tone carry for clip 2: generated frame 2, luma jump -2.586, percentile shifts +0.354,+4.888,+0.765.
+[32m[INFO][0m H3 Chain saved clip 2/3 revision f9218822391048689195fc0676f0412a: C:\Software\ComfyUI\output\h3_chains\gemma4_31b_body_s2_4_20260925\segments\clip_0002.f9218822391048689195fc0676f0412a.mp4 + checkpoint C:\Software\ComfyUI\output\h3_chains\gemma4_31b_body_s2_4_20260925\checkpoints\clip_0002.f9218822391048689195fc0676f0412a.safetensors + generated WAV C:\Software\ComfyUI\output\h3_chains\gemma4_31b_body_s2_4_20260925\generated_audio\clip_0002.f9218822391048689195fc0676f0412a.wav
+[32m[INFO][0m Model MiniMaxH3VideoVAE prepared for dynamic VRAM loading. 4965MB Staged. 0 patches attached. Force pre-loaded 128 weights: 352 KB.
+[32m[INFO][0m Model MiniMaxH3VideoVAE prepared for dynamic VRAM loading. 4965MB Staged. 0 patches attached. Force pre-loaded 128 weights: 352 KB.
+[32m[INFO][0m Model MiniMaxH3AudioVAE prepared for dynamic VRAM loading. 576MB Staged. 0 patches attached. Force pre-loaded 401 weights: 539 KB.
+[32m[INFO][0m Model MiniMaxH3TEModel_ prepared for dynamic VRAM loading. 14956MB Staged. 0 patches attached. Force pre-loaded 410 weights: 4572 KB.
+[32m[INFO][0m Model MiniMaxH3VideoVAE prepared for dynamic VRAM loading. 4965MB Staged. 0 patches attached. Force pre-loaded 128 weights: 352 KB.
+[32m[INFO][0m h3_motion_context: video/head, 22 frames at target 0 -> 1 cond blocks at indices 0..0, 260 frame clip at 864x480, trim 22, audio off
+[32m[INFO][0m Model MiniMaxH3 prepared for dynamic VRAM loading. 19995MB Staged. 208 patches attached. Force pre-loaded 210 weights: 1175 KB.
+  0%|          | 0/8 [00:00<?, ?it/s]  0%|          | 0/8 [00:00<?, ?it/s,   Model Initializing ...  ]  0%|          | 0/8 [00:13<?, ?it/s,  Model Initialization complete!  ] 12%|█▎        | 1/8 [00:13<01:32, 13.23s/it,  Model Initialization complete!  ] 12%|█▎        | 1/8 [00:23<01:32, 13.23s/it]                                    25%|██�       | 2/8 [00:23<01:11, 11.94s/it] 38%|███▊      | 3/8 [00:35<00:59, 11.86s/it] 50%|████�     | 4/8 [00:47<00:47, 11.86s/it] 62%|██████�   | 5/8 [00:59<00:35, 11.85s/it] 75%|███████▌  | 6/8 [01:11<00:23, 11.63s/it] 88%|████████� | 7/8 [01:22<00:11, 11.48s/it]100%|██████████| 8/8 [01:34<00:00, 11.55s/it]100%|██████████| 8/8 [01:34<00:00, 11.77s/it]
+[32m[INFO][0m Comfy model compiler graph breaks: 2, rogues: 0
+[32m[INFO][0m Model MiniMaxH3VideoVAE prepared for dynamic VRAM loading. 4965MB Staged. 0 patches attached. Force pre-loaded 128 weights: 352 KB.
+[32m[INFO][0m Model MiniMaxH3AudioVAE prepared for dynamic VRAM loading. 576MB Staged. 0 patches attached. Force pre-loaded 401 weights: 539 KB.
+[32m[INFO][0m h3_motion_context: decoded 260-frame full audio time-conformed 346400 -> 346667 audio samples (+0.0771%) to match the exact video timeline
+[32m[INFO][0m h3_motion_context: decoded 238-frame audio time-conformed 317334 -> 317333 audio samples (-0.0003%) to match the exact video timeline
+[32m[INFO][0m h3_motion_context: 238 frames / 9.9167s picture, 9.9167s sound, drift 0.01ms
+[32m[INFO][0m H3 Chain saved Guide tone carry for clip 3: generated frame 1, luma jump -3.376, percentile shifts +0.004,+2.417,+5.787.
+[32m[INFO][0m H3 Chain saved clip 3/3 revision 11500944bcfc478095e62ee273bffd2b: C:\Software\ComfyUI\output\h3_chains\gemma4_31b_body_s2_4_20260925\segments\clip_0003.11500944bcfc478095e62ee273bffd2b.mp4 + checkpoint C:\Software\ComfyUI\output\h3_chains\gemma4_31b_body_s2_4_20260925\checkpoints\clip_0003.11500944bcfc478095e62ee273bffd2b.safetensors + generated WAV C:\Software\ComfyUI\output\h3_chains\gemma4_31b_body_s2_4_20260925\generated_audio\clip_0003.11500944bcfc478095e62ee273bffd2b.wav
+[32m[INFO][0m H3 Chain assembled 3 generated clips with ffmpeg; hard cuts -> C:\Software\ComfyUI\output\h3_chains\gemma4_31b_body_s2_4_20260925\final\gemma4_31b_body_s2_4_20260925.mp4; generated audio -> C:\Software\ComfyUI\output\h3_chains\gemma4_31b_body_s2_4_20260925\final\gemma4_31b_body_s2_4_20260925.generated.wav
+[32m[INFO][0m [32mPrompt executed in 402.79 seconds[0m

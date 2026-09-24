@@ -1,0 +1,3 @@
+CAMERA	1	Tracking Shot with large amplitude at fast speed from the lower front right to the upper back left, capturing the movement of the character's body and the falling leaf in the background
+CAMERA	2	Arc Shot with large amplitude at fast speed from the lower front right to the upper back left, focusing on the character's upper body while showing the red leaves falling around them
+CAMERA	3	Zoom In on the character's face with a smooth transition from the head-shoulder composition, highlighting the closed eyes and the subtle expression during the pause

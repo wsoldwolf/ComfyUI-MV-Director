@@ -1,0 +1,99 @@
+[START] Security scan
+[DONE] Security scan
+## ComfyUI-Manager: installing dependencies done.
+** ComfyUI startup time: 2026-09-25 02:06:15.686
+** Platform: Windows
+** Python version: 3.13.14 (tags/v3.13.14:fd17997, Jun 10 2026, 13:03:48) [MSC v.1944 64 bit (AMD64)]
+** Python executable: C:\Software\ComfyUI\venv\Scripts\python.exe
+** ComfyUI Path: C:\Software\ComfyUI
+** ComfyUI Base Folder Path: C:\Software\ComfyUI
+** User directory: C:\Software\ComfyUI\user
+** ComfyUI-Manager config path: C:\Software\ComfyUI\user\__manager\config.ini
+** Log path: C:\Software\ComfyUI\user\comfyui.log
+[Crystools [0;32mINFO[0m] Crystools version: 1.27.4
+[Crystools [0;32mINFO[0m] Platform release: 11
+[Crystools [0;32mINFO[0m] JETSON: Not detected.
+[Crystools [0;32mINFO[0m] CPU: AMD Ryzen 9 9950X 16-Core Processor - Arch: AMD64 - OS: Windows 11
+[Crystools [0;32mINFO[0m] pynvml (NVIDIA) initialized.
+[Crystools [0;32mINFO[0m] GPU/s:
+[Crystools [0;32mINFO[0m] 0) NVIDIA GeForce RTX 5090
+[Crystools [0;32mINFO[0m] NVIDIA Driver: 616.86
+[ComfyUI-Easy-Use] server: v1.3.6 Loaded
+[ComfyUI-Easy-Use] web root: C:\Software\ComfyUI\custom_nodes\comfyui-easy-use\web_version/v2 Loaded
+ComfyUI-Multiband loaded: 15 nodes registered
+[QwenVL] Loaded 507 cached prompts
+[QwenVL] Discovered 4 local GGUF model(s) on disk
+⚡ SeedVR2 optimizations check: SageAttention � | Flash Attention � | Triton �
+💡 Optional: pip install flash-attn
+🔧 Conv3d workaround active: PyTorch 2.13.0, cuDNN 92000 (fixing VAE 3x memory bug)
+📊 Initial CUDA memory: 30.18GB free / 31.82GB total
+[ComfyUI-Upscaler-Tensorrt|INFO] - Successfully loaded configuration from load_upscaler_config.json
+
+### [START] ComfyUI AlekPet Nodes v1.1.7 ###
+Node -> ArgosTranslateNode: ArgosTranslateCLIPTextEncodeNode, ArgosTranslateTextNode [Loading]
+Node -> ChatGLMNode: ChatGLM4TranslateCLIPTextEncodeNode, ChatGLM4TranslateTextNode, ChatGLM4InstructNode, ChatGLM4InstructMediaNode, ChatGLMImageGenerateNode, ChatGLMVideoGenerateNode [Loading]
+Node -> DeepTranslatorNode: DeepTranslatorCLIPTextEncodeNode, DeepTranslatorTextNode [Loading]
+Node -> ExtrasNode: PreviewTextNode, HexToHueNode, ColorsCorrectNode [Loading]
+Node -> GoogleTranslateNode: GoogleTranslateCLIPTextEncodeNode, GoogleTranslateTextNode [Loading]
+Node -> IDENode: IDENode [Loading]
+Node -> PainterNode: PainterNode [Loading]
+Node -> PoseNode: PoseNode [Loading]
+### [END] ComfyUI AlekPet Nodes ###
+Minimax Hybrid Loader: loaded!
+
+
+[rgthree-comfy] Loaded 48 magnificent nodes. 🎉
+
+[rgthree-comfy] ComfyUI's new Node 2.0 rendering may be incompatible with some rgthree-comfy nodes and features, breaking some rendering as well as losing the ability to access a node's properties (a vital part of many nodes). It also appears to run MUCH more slowly spiking CPU usage and causing jankiness and unresponsiveness, especially with large workflows. Personally I am not planning to use the new Nodes 2.0 and, unfortunately, am not able to invest the time to investigate and overhaul rgthree-comfy where needed. If you have issues when Nodes 2.0 is enabled, I'd urge you to switch it off as well and join me in hoping ComfyUI is not planning to deprecate the existing, stable canvas rendering all together.
+
+[save_image_extended] AVIF is supported! Woohoo!
+[save_image_extended] JXL is not supported. To add it: pip install jxlpy
+[save_image_extended]                       You will need a valid MSVC env to build the wheel
+[save_image_extended] version: 2.64
+📊 Initial CUDA memory: 30.18GB free / 31.82GB total
+WAS Node Suite: OpenCV Python FFMPEG support is enabled
+WAS Node Suite: `ffmpeg_bin_path` is set to: C:\Software\ffmpeg\bin\ffmpeg.exe
+WAS Node Suite: Finished. Loaded 220 nodes successfully.
+
+	"Art is the triumph over chaos." - John Cheever
+
+FETCH ComfyRegistry Data: 5/191
+FETCH ComfyRegistry Data: 10/191
+FETCH ComfyRegistry Data: 15/191
+FETCH ComfyRegistry Data: 20/191
+FETCH ComfyRegistry Data: 25/191
+FETCH ComfyRegistry Data: 30/191
+FETCH ComfyRegistry Data: 35/191
+FETCH ComfyRegistry Data: 40/191
+FETCH ComfyRegistry Data: 45/191
+FETCH ComfyRegistry Data: 50/191
+FETCH ComfyRegistry Data: 55/191
+FETCH ComfyRegistry Data: 60/191
+FETCH ComfyRegistry Data: 65/191
+FETCH ComfyRegistry Data: 70/191
+FETCH ComfyRegistry Data: 75/191
+FETCH ComfyRegistry Data: 80/191
+FETCH ComfyRegistry Data: 85/191
+FETCH ComfyRegistry Data: 90/191
+FETCH ComfyRegistry Data: 95/191
+FETCH ComfyRegistry Data: 100/191
+FETCH ComfyRegistry Data: 105/191
+FETCH ComfyRegistry Data: 110/191
+FETCH ComfyRegistry Data: 115/191
+FETCH ComfyRegistry Data: 120/191
+FETCH ComfyRegistry Data: 125/191
+FETCH ComfyRegistry Data: 130/191
+FETCH ComfyRegistry Data: 135/191
+FETCH ComfyRegistry Data: 140/191
+FETCH ComfyRegistry Data: 145/191
+FETCH ComfyRegistry Data: 150/191
+FETCH ComfyRegistry Data: 155/191
+FETCH ComfyRegistry Data: 160/191
+FETCH ComfyRegistry Data: 165/191
+FETCH ComfyRegistry Data: 170/191
+FETCH ComfyRegistry Data: 175/191
+FETCH ComfyRegistry Data: 180/191
+FETCH ComfyRegistry Data: 185/191
+FETCH ComfyRegistry Data: 190/191
+FETCH ComfyRegistry Data [DONE]
+FETCH DATA from: https://raw.githubusercontent.com/ltdrdata/ComfyUI-Manager/main/custom-node-list.json [DONE]
