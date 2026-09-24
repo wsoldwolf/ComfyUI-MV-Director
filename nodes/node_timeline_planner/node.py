@@ -332,12 +332,17 @@ class _LlamaPlannerBackend:
                 )
         count = self.lifecycle.count_serialized_prompt(system_prompt + "\n" + model_payload)
         slot_count, scene_label, retry_label = self._request_summary(payload)
-        # A finite Camera record is a short, grammar-constrained line. Its
-        # minimum reservation should scale with the number of requested lines,
-        # not with a user-configured ceiling intended for longer Planner tasks.
-        # Keep the conservative floor for free-text and other request types.
-        if finite_camera or scene_author_stage:
-            minimum_output = min(config.max_tokens, max(512, 384 * slot_count))
+        # One constrained Action, audit verdict, or Camera record does not
+        # need 75% of a user-configured ceiling reserved for generation.
+        # Scale the floor with requested lines; keep the conservative floor
+        # for unconstrained free-text Planner tasks.
+        constrained_action = task in {"actions", "action-audit"} and bool(grammar_kwargs)
+        if finite_camera or scene_author_stage or constrained_action:
+            per_slot_floor = 512 if constrained_action else 384
+            minimum_output = min(
+                config.max_tokens,
+                max(1024 if constrained_action else 512, per_slot_floor * slot_count),
+            )
         else:
             minimum_output = min(config.max_tokens, max(
                 256 * max(1, slot_count), (config.max_tokens * 3 + 3) // 4,

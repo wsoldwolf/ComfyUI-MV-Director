@@ -184,6 +184,61 @@ class AudioPadPairTests(unittest.TestCase):
         self.assertEqual(values[900:], [0] * 100)
         self.assertEqual(aligned["tag"], "vocal")
 
+    def test_reference_alignment_borrows_prior_quantization_slack_for_scene_three(self) -> None:
+        # Scene 3 holds 9,680 source samples but only 9,208 delivered-frame
+        # samples. Cumulative H3 quantization left enough unused PCM time in
+        # preceding Scenes, so no source samples need to be discarded.
+        waveform = FakeWaveform((1, 1, 29_680), range(29_680))
+        aligned, gaps = align_audio_to_plan_scenes(
+            {"waveform": waveform, "sample_rate": 1000},
+            (
+                SceneAudioWindow(0, 10_000, 243),
+                SceneAudioWindow(10_000, 20_000, 255),
+                SceneAudioWindow(20_000, 29_680, 221),
+            ),
+            target_samples=29_958,
+            fps=24,
+        )
+        values = aligned["waveform"].data
+        self.assertEqual(gaps, (125, 153, 0))
+        self.assertEqual(values[:10_000], list(range(10_000)))
+        self.assertEqual(values[10_000:10_125], [0] * 125)
+        self.assertEqual(values[10_125:20_125], list(range(10_000, 20_000)))
+        self.assertEqual(values[20_125:20_278], [0] * 153)
+        self.assertEqual(values[20_278:29_958], list(range(20_000, 29_680)))
+
+    def test_audio_reference_node_accepts_cumulative_scene_three_overflow(self) -> None:
+        class TimelineStub:
+            plan_duration_ms = 29_958
+            scenes = (
+                SimpleNamespace(source_start_ms=0, source_end_ms=10_000, delivered_frames=243),
+                SimpleNamespace(source_start_ms=10_000, source_end_ms=20_000, delivered_frames=255),
+                SimpleNamespace(source_start_ms=20_000, source_end_ms=29_680, delivered_frames=221),
+            )
+
+            def validate(self) -> None:
+                return None
+
+        audio = {"waveform": FakeWaveform((1, 1, 29_680), range(29_680)), "sample_rate": 1000}
+        plan = json.dumps({"shots": [
+            {"length": 243, "context_length": 0},
+            {"length": 277, "context_length": 22},
+            {"length": 243, "context_length": 22},
+        ]})
+        _mix, _vocal, status, reference = MVDirectorAudioPadPair().pad_pair(
+            audio, audio,
+            extra_padding_ms=0,
+            target_h3_frames=0,
+            pad_position="end",
+            reference_alignment="source_scenes_to_plan",
+            timeline=TimelineStub(),
+            plan_json=plan,
+        )
+        self.assertIn("scene_gap_samples=278", status)
+        self.assertEqual(reference["waveform"].shape[-1], 29_959)
+        self.assertEqual(reference["waveform"].data[20_278:29_958], list(range(20_000, 29_680)))
+        self.assertEqual(reference["waveform"].data[-1], 0)
+
     def test_reference_alignment_refuses_to_truncate_a_source_scene(self) -> None:
         waveform = FakeWaveform((1, 1, 600), range(600))
         with self.assertRaisesRegex(ValueError, "not truncated"):

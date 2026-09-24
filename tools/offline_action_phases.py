@@ -21,8 +21,9 @@ from nodes.node_timeline_planner.node import _LlamaPlannerBackend
 
 
 PROMPT_PATH = ROOT / "prompts/timeline_planner_actions_dance_phrase_system_prompt.txt"
-OLD_RULE = "一Shotには現在の一段階と読める結果だけを具体的な動詞で書く。短尺へ無関係な動作を詰めない。"
+OLD_RULE = "短尺へ無関係な動作を詰めない。"
 NEW_RULE = (
+    OLD_RULE +
     "4秒以上の通常Shotでは、一つの感情的意図の中で、予備動作から主動作、"
     "読める到達姿勢まで二つ以上の異なる身体段階を時間順に書く。"
     "支持と重心の変化は体幹と腕へ伝え、同じ手の上下を二段階として数えない。"

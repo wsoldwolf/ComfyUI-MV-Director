@@ -36,6 +36,48 @@ def request(slots=4, **extra):
 
 
 class PlannerContextBudgetTests(unittest.TestCase):
+    def test_grounded_action_singleton_fits_reported_audio_reference_overflow(self):
+        lifecycle = CountingLifecycle(lambda _: 12882)
+        backend = _LlamaPlannerBackend(lifecycle)
+        original = request(1)
+        original["task"] = "actions"
+        original["planner_policy_contract"] = {"policy_id": "anime_emotional_mv"}
+        original["slots"][0]["required_spatial_anchor"] = "大樹の根元"
+        payload = canonical_json(original)
+        with self.assertLogs("mv_director.nodes", level="INFO") as logs:
+            backend.complete_planner(
+                task="actions", system_prompt="system", payload=payload,
+                config=LlamaRuntimeConfig(max_tokens=4096),
+            )
+        self.assertEqual(len(lifecycle.calls), 1)
+        messages, actual_config, actual = lifecycle.calls[0]
+        self.assertEqual(actual, original)
+        self.assertEqual(messages[1]["content"], "/no_think\n" + payload)
+        self.assertEqual(actual_config.max_tokens, 2191)
+        self.assertIn("context output fitted", "\n".join(logs.output))
+
+    def test_grounded_action_batch_splits_then_fits_both_singletons(self):
+        lifecycle = CountingLifecycle(
+            lambda request: 20615 if len(request["slots"]) == 2 else 12882
+        )
+        original = request(2)
+        original["task"] = "actions"
+        original["planner_policy_contract"] = {"policy_id": "anime_emotional_mv"}
+        original["slots"][0]["required_spatial_anchor"] = "大樹の根元"
+        original["slots"][1]["required_visible_development"] = "苔に触れる"
+        with self.assertLogs("mv_director.nodes", level="INFO") as logs:
+            complete_with_context_recovery(
+                _LlamaPlannerBackend(lifecycle), task="actions",
+                system_prompt="system", payload=canonical_json(original),
+                config=LlamaRuntimeConfig(max_tokens=4096),
+            )
+        self.assertEqual(len(lifecycle.calls), 2)
+        self.assertEqual(
+            [call[2]["slots"][0]["slot"] for call in lifecycle.calls], [1, 2]
+        )
+        self.assertTrue(all(call[1].max_tokens == 2191 for call in lifecycle.calls))
+        self.assertIn("context request split", "\n".join(logs.output))
+
     def test_finite_camera_singleton_fits_reported_220_token_overflow(self):
         lifecycle = CountingLifecycle(lambda _: 12221)
         backend = _LlamaPlannerBackend(lifecycle)

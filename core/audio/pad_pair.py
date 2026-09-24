@@ -155,10 +155,13 @@ def align_audio_to_plan_scenes(
     target_samples: int,
     fps: int = 24,
 ) -> tuple[dict[str, Any], tuple[int, ...]]:
-    """Place each source Scene at its cumulative H3 delivered-frame position.
+    """Place source PCM on the cumulative H3 grid without altering samples.
 
-    Source content is copied without resampling or truncation. Quantization
-    surplus inside each delivered Scene remains PCM zero.
+    A Scene's delivered interval can be shorter than its source interval when
+    an earlier Scene already accumulated H3 quantization surplus. Defer silence
+    insertion until it cannot cause a later Scene to overflow. This may put the
+    beginning of a source Scene in the preceding Plan Scene's unused tail, but
+    never overlaps, resamples, or drops source PCM.
     """
 
     waveform, shape = _audio_parts(audio, "audio")
@@ -171,10 +174,9 @@ def align_audio_to_plan_scenes(
     if target_samples < shape.samples:
         raise ValueError("target_samples must not truncate the source audio")
 
-    aligned = waveform.new_zeros((*tuple(waveform.shape[:-1]), target_samples))
     previous_source_end = 0
     delivered_start_frame = 0
-    gap_samples: list[int] = []
+    windows: list[tuple[int, int, int, int]] = []
     for index, window in enumerate(scene_windows, 1):
         window.validate()
         if window.source_start_ms != previous_source_end:
@@ -187,6 +189,12 @@ def align_audio_to_plan_scenes(
         )
         source_start = min(max(source_start, 0), shape.samples)
         source_end = min(max(source_end, source_start), shape.samples)
+        if index == len(scene_windows) and shape.samples - source_end < _ceil_fraction(
+            Fraction(shape.sample_rate, 1000)
+        ):
+            # The artifact serializes integer milliseconds, while the PCM may
+            # contain a final fractional millisecond. Preserve those samples.
+            source_end = shape.samples
 
         destination_start = _round_fraction(
             Fraction(delivered_start_frame * shape.sample_rate, fps)
@@ -195,18 +203,13 @@ def align_audio_to_plan_scenes(
         destination_end = _round_fraction(
             Fraction(delivered_end_frame * shape.sample_rate, fps)
         )
-        source_length = source_end - source_start
-        capacity = destination_end - destination_start
-        if source_length > capacity:
+        if source_end > destination_end:
             raise ValueError(
-                f"source Scene {index} has {source_length} samples but its "
-                f"Plan delivered interval holds {capacity}; audio is not truncated"
+                f"source Scene {index} ends at {source_end} samples but its "
+                f"cumulative Plan boundary holds {destination_end}; "
+                "audio is not truncated"
             )
-        copy_end = destination_start + source_length
-        if copy_end > target_samples:
-            raise ValueError("aligned Scene exceeds target audio duration")
-        aligned[..., destination_start:copy_end] = waveform[..., source_start:source_end]
-        gap_samples.append(capacity - source_length)
+        windows.append((source_start, source_end, destination_start, destination_end))
         previous_source_end = window.source_end_ms
         delivered_start_frame = delivered_end_frame
 
@@ -218,6 +221,29 @@ def align_audio_to_plan_scenes(
         )
         if uncovered >= _ceil_fraction(Fraction(shape.sample_rate, 1000)):
             raise ValueError("source Scene windows do not cover the source audio")
+
+    if windows[-1][3] > target_samples:
+        raise ValueError("target_samples is shorter than the cumulative Plan")
+
+    # At boundary i, at most (Plan end - source end) samples of silence may
+    # have been inserted. The suffix minimum is the greatest safe cumulative
+    # padding that still leaves room for every later source Scene.
+    surplus = [0, *(plan_end - source_end for _, source_end, _, plan_end in windows)]
+    cumulative_padding = [0] * (len(windows) + 1)
+    future_minimum = surplus[-1]
+    for index in range(len(windows), 0, -1):
+        future_minimum = min(future_minimum, surplus[index])
+        cumulative_padding[index] = future_minimum
+
+    aligned = waveform.new_zeros((*tuple(waveform.shape[:-1]), target_samples))
+    gap_samples: list[int] = []
+    for index, (source_start, source_end, _plan_start, plan_end) in enumerate(windows):
+        destination_start = source_start + cumulative_padding[index]
+        copy_end = destination_start + source_end - source_start
+        if copy_end > plan_end or copy_end > target_samples:
+            raise ValueError("aligned Scene exceeds its cumulative Plan boundary")
+        aligned[..., destination_start:copy_end] = waveform[..., source_start:source_end]
+        gap_samples.append(cumulative_padding[index + 1] - cumulative_padding[index])
 
     result = dict(audio)
     result["waveform"] = aligned

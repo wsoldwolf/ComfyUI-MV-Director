@@ -42,6 +42,10 @@ Compilerの日本語→英語翻訳には8B級Text GGUFを推奨します。`tem
 
 H3はframe境界を正本にするため、表示上ほぼ同じ長さでも不足する場合があります。さらにPlannerがカット／継続を変更すると、合法なH3格子への再配分によりLyric Segmentationの初期timelineより最終Planが長くなることがあります。Audio Pad PairへTimeline、H3 Timing Profile及びCompiler出力と同じ`plan_json`を接続し、full mixとvocalの両方を最終Planの正確なdelivered frame尺まで末尾PCM無音でそろえます。
 
+## Audio参照方式でsource SceneがPlan区間より長い
+
+Lyric SegmentationのH3量子化はScene単体ではなく累積frame位置を基準にします。このため、あるSceneの元音声がそのSceneのPlan区間より長くても、前Sceneの未使用余白を含めれば収まる場合があります。Audio Pad Pairの`source_scenes_to_plan`は無音挿入を繰り延べ、元音声を切らずに保持します。旧版で`source Scene ... Plan delivered interval holds ...`と停止した場合は最新版を適用してComfyUIを再起動してください。累積Plan境界を越えるエラーが残る場合は、vocal、Timeline、Plan JSONが同じ曲・同じ生成結果の組か確認してください。音声を手動で切り詰めないでください。
+
 ## workflowのwidget値がずれている
 
 ノードsocket追加後の古いworkflowでは、ComfyUIの保存済みwidget配列が別項目へずれることがあります。配布workflowを最新版へ更新するか、問題ノードを削除して作り直します。

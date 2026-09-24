@@ -171,9 +171,7 @@ unrequested_lower_body_detail_maximum. Feet, toes, footwear and the ground
 under them are not a Camera subject unless the original lyric or author body
 explicitly selects that detail. Ordinary locomotion must be covered as a
 whole-body, medium, upper-body, over-shoulder or environmental relationship,
-not as repeated foot-level tracking. Prefer the face, eyes, complete singing
-mouth, shoulders, hands and intentional gesture when no lyric-selected detail
-requires another region.
+not as repeated foot-level tracking.
 arc_permission is a per-slot hard assignment. `required` means this record must
 begin with Arc Shot and satisfy its supplied transition or long-Arc contract.
 `forbidden` means Arc Shot must not appear anywhere in that record; choose a

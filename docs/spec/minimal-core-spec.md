@@ -769,8 +769,8 @@ boundedのBeat/Action生成には以前の採用自然文履歴を再掲しな�
 - 短い側だけを各sample rateで無音補完し、`pad_position=end`を既定にする。
 - `padded_audio_a`と`padded_audio_b`はH3 Audio Tracksへ渡す。Lyric SegmentationのVAD / WhisperとH3 Lip-Sync Optionsにはpadding前の元vocalを渡す。
 - 既存二出力と`status`の後ろへ参照専用`reference_audio_b: AUDIO`を追加する。`reference_alignment=off`（既定）では`padded_audio_b`と同じ値を返し、通常Pairの意味を変えない。
-- `reference_alignment=source_scenes_to_plan`では`MVD_TIMELINE_V1`を必須とし、padding前`audio_b`の各`source_start_ms`～`source_end_ms`を順番のまま取り出して、累積`delivered_frames`を24fpsでsample位置へ変換したPlan区間の先頭へ配置する。各Sceneの量子化余剰はScene末尾PCM無音とし、Scene内の無音を保持する。
-- Scene alignmentでもresample、mix又は音声内容のtruncateを行わない。source Sceneが対応Plan delivered区間へ収まらない、source区間が非連続、又はtimelineがない場合は明示エラーにする。`reference_audio_b`だけをAudio参照workflowのH3 Audio Tracks／Source Timelineへ渡し、最終full mixには使わない。
+- `reference_alignment=source_scenes_to_plan`では`MVD_TIMELINE_V1`を必須とし、padding前`audio_b`の各`source_start_ms`～`source_end_ms`を順番に配置する。累積`delivered_frames`を24fpsでsample位置へ変換し、各source Sceneの終端が対応する累積Plan境界までに収まることを検査する。単独Sceneの元音声が対応するPlan区間より長い場合は、先行Sceneの未使用余白を利用し、後続Sceneの収容を妨げない範囲で無音挿入を繰り延べる。このためsource Sceneの開始は対応Plan境界より早まる場合がある。元音声のScene内無音と全サンプルの順序は保持する。
+- Scene alignmentでもresample、mix又は音声内容のtruncateを行わない。source Scene終端が対応する累積Plan境界を越える、source区間が非連続、又はtimelineがない場合は明示エラーにする。`reference_audio_b`だけをAudio参照workflowのH3 Audio Tracks／Source Timelineへ渡し、最終full mixには使わない。
 - 単体Audio Padの公開classは再利用しない。入力検証とPCM paddingに必要な処理だけをPair module内のprivate helperへ抽出する。
 
 ### 7.8 Scene Debug Splitter

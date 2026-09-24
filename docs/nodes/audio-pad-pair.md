@@ -25,7 +25,7 @@ full mixとvocal stemを混合せず、必要な末尾だけPCM値ゼロでpaddi
 | `status` | sample数、Plan ms、frame、alignment情報 |
 | `reference_audio_b` | Audio参照方式用のScene配置済みvocal |
 
-`reference_alignment=source_scenes_to_plan`ではTimelineが必須です。元vocalの各source SceneをH3累積frame位置へコピーし、量子化で生じる隙間だけをPCM無音にします。この処理は`reference_audio_b`だけへ適用し、通常の二つのpadded出力は末尾paddingのままです。
+`reference_alignment=source_scenes_to_plan`ではTimelineが必須です。H3の累積frame量子化では、単独Sceneの元音声が対応するPlan区間より長くても、それ以前に確保された余白と合わせれば累積境界までに収まる場合があります。このとき無音挿入を後ろへ繰り延べ、前Sceneの未使用末尾から次Sceneの元音声を配置します。元vocalの全サンプルと順序を保持し、切断・伸縮・重複は行いません。参照音声のScene開始がPlan境界より早くなる場合があります。累積境界でも収まらない場合はエラーです。この処理は`reference_audio_b`だけへ適用し、通常の二つのpadded出力は末尾paddingのままです。
 
 `source_scenes_to_plan`を使うAudio Reference方式では、Lyric Segmentationへpadding前の元vocalを接続してください。Context Loop方式とLyrics方式の動画WFでは`timeline`は不要です。
 
