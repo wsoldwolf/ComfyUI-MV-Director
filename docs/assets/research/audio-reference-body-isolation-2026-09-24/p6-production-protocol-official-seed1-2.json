@@ -1,0 +1,135 @@
+{
+  "scope": "research_only_saved_scene_author_performance_replay",
+  "model": "E:\\ComfyUI\\models\\LLM\\GGUF\\Qwen3-8B-Official\\Qwen3-8B-Q4_K_M.gguf",
+  "model_size": 5027783488,
+  "prompt_sha256": "9e4de5687e9951aabe740ed9b17eb51ea4cfac02f40f126fc84faab858c4d505",
+  "runtime": {
+    "chat_format": "",
+    "max_tokens": 1536,
+    "temperature": 0.1,
+    "top_p": 0.9,
+    "repetition_penalty": 1.05,
+    "gpu_layers": -1,
+    "n_batch": 512,
+    "n_ctx": 8192,
+    "flash_attn": true,
+    "kv_cache_type": "q8_0",
+    "op_offload": true,
+    "keep_model_loaded": false,
+    "seed": 1
+  },
+  "runs": [
+    {
+      "scene": 1,
+      "seed": 1,
+      "source": "docs\\assets\\research\\scene-author-2026-09-23\\scene5-v5\\summary.json",
+      "source_sha256": "25b5046c2b1ceef58f600023314029f109c9442ef160471e4cf8250b3f0b3e3e",
+      "payload_sha256": "cd19f89bee50e5111664f38e5d0dc429cd5565ea3a1eb6612c3d9fa8722cff17",
+      "response": "PERFORMANCE\t1\t右足を左に向け、左膝を曲げながら左手を胸の位置に当て、右手を顔の横に置く。口を閉じる。END_STATE=左膝が曲がり、右手が顔の横にあり、左腕が胸の位置にある。\nPERFORMANCE\t2\t右足を前に踏み出し、左足を後ろに引く。左手を上げ、右手を胸の位置に当て、顔を下向ける。END_STATE=右足が前進し、左足が後退し、右手が胸の位置にある。\n",
+      "parsed": {
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "records": [
+          {
+            "record_type": "PERFORMANCE",
+            "slot": 1,
+            "text": "右足を左に向け、左膝を曲げながら左手を胸の位置に当て、右手を顔の横に置く。口を閉じる。END_STATE=左膝が曲がり、右手が顔の横にあり、左腕が胸の位置にある。",
+            "line_number": 1
+          },
+          {
+            "record_type": "PERFORMANCE",
+            "slot": 2,
+            "text": "右足を前に踏み出し、左足を後ろに引く。左手を上げ、右手を胸の位置に当て、顔を下向ける。END_STATE=右足が前進し、左足が後退し、右手が胸の位置にある。",
+            "line_number": 2
+          }
+        ],
+        "issues": [],
+        "missing": []
+      },
+      "elapsed_seconds": 4.642
+    },
+    {
+      "scene": 1,
+      "seed": 2,
+      "source": "docs\\assets\\research\\scene-author-2026-09-23\\scene5-v5\\summary.json",
+      "source_sha256": "25b5046c2b1ceef58f600023314029f109c9442ef160471e4cf8250b3f0b3e3e",
+      "payload_sha256": "cd19f89bee50e5111664f38e5d0dc429cd5565ea3a1eb6612c3d9fa8722cff17",
+      "response": "PERFORMANCE\t1\t右足を軽く踏み出し、左足を後ろに引いて重心を左へ移動。右手を胸の位置に当て、左手を顔の横に置き、口を閉じる。視線は下を向いている。END_STATE=左足が前方、右手が胸の位置、左手が顔の横、視線は下\nPERFORMANCE\t2\t右肩を下げ、左肩を上げて体幹を傾ける。右手を胸の上に上げ、左手を顔の横に置き、口を閉じる。視線は正面を向いている。END_STATE=左肩が上がっている、右手が胸の上、左手が顔の横、視線は正面\n",
+      "parsed": {
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "records": [
+          {
+            "record_type": "PERFORMANCE",
+            "slot": 1,
+            "text": "右足を軽く踏み出し、左足を後ろに引いて重心を左へ移動。右手を胸の位置に当て、左手を顔の横に置き、口を閉じる。視線は下を向いている。END_STATE=左足が前方、右手が胸の位置、左手が顔の横、視線は下",
+            "line_number": 1
+          },
+          {
+            "record_type": "PERFORMANCE",
+            "slot": 2,
+            "text": "右肩を下げ、左肩を上げて体幹を傾ける。右手を胸の上に上げ、左手を顔の横に置き、口を閉じる。視線は正面を向いている。END_STATE=左肩が上がっている、右手が胸の上、左手が顔の横、視線は正面",
+            "line_number": 2
+          }
+        ],
+        "issues": [],
+        "missing": []
+      },
+      "elapsed_seconds": 5.753
+    },
+    {
+      "scene": 1,
+      "seed": 1,
+      "source": "docs\\assets\\research\\motion-composition-2026-09-23\\scene9-on\\summary.json",
+      "source_sha256": "4cc733b7e55f37d5805e6973666693afc390e4304fbcaec71444512a7ee5e2a0",
+      "payload_sha256": "51bb82738249bd0410b51e01e5dbf890ac5bd6ae3e27872f279f27ba9e53b54f",
+      "response": "PERFORMANCE\t1\t右足を軽く踏み出し、左足を斜め前方へ大きく踏み込む。右手を胸の前でゆっくり広げ、左手は腰の位置に置き、身体を斜め前方へ傾ける。視線は斜め前方に向け、表情は優しくも不安げに。END_STATE=右足を軽く踏み出した状態で、左足が斜め前方へ大きく踏み込んだ位置。身体は斜め前方へ傾き、右手は胸の前で広がり、左手は腰の位置に置かれたまま。\nPERFORMANCE\t2\t右足を軸に身体を回転させながら、左足をさらに斜め前方へ進める。右手はゆっくり上へ上げ、左手は腰の位置から前に伸ばす。視線は斜め前方に向け、表情は不安と希望が混ざったもの。END_STATE=右足を軸に回転した状態で、左足が斜め前方へ進んだ位置。右手は上へ上げたまま、左手は前へ伸ばされた状態。\n",
+      "parsed": {
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "records": [
+          {
+            "record_type": "PERFORMANCE",
+            "slot": 1,
+            "text": "右足を軽く踏み出し、左足を斜め前方へ大きく踏み込む。右手を胸の前でゆっくり広げ、左手は腰の位置に置き、身体を斜め前方へ傾ける。視線は斜め前方に向け、表情は優しくも不安げに。END_STATE=右足を軽く踏み出した状態で、左足が斜め前方へ大きく踏み込んだ位置。身体は斜め前方へ傾き、右手は胸の前で広がり、左手は腰の位置に置かれたまま。",
+            "line_number": 1
+          },
+          {
+            "record_type": "PERFORMANCE",
+            "slot": 2,
+            "text": "右足を軸に身体を回転させながら、左足をさらに斜め前方へ進める。右手はゆっくり上へ上げ、左手は腰の位置から前に伸ばす。視線は斜め前方に向け、表情は不安と希望が混ざったもの。END_STATE=右足を軸に回転した状態で、左足が斜め前方へ進んだ位置。右手は上へ上げたまま、左手は前へ伸ばされた状態。",
+            "line_number": 2
+          }
+        ],
+        "issues": [],
+        "missing": []
+      },
+      "elapsed_seconds": 8.587
+    },
+    {
+      "scene": 1,
+      "seed": 2,
+      "source": "docs\\assets\\research\\motion-composition-2026-09-23\\scene9-on\\summary.json",
+      "source_sha256": "4cc733b7e55f37d5805e6973666693afc390e4304fbcaec71444512a7ee5e2a0",
+      "payload_sha256": "51bb82738249bd0410b51e01e5dbf890ac5bd6ae3e27872f279f27ba9e53b54f",
+      "response": "PERFORMANCE\t1\t左足を軸に身体を斜め前方へ傾け、右手を胸の高さで広げて空を向く。左腕は下向きに揺れる。視線は上を向いている。END_STATE=体幹が前傾し、右手が胸の高さに広がり、左腕が下向きに揺れている。\nPERFORMANCE\t2\t右足を軸に身体を斜め前方へ傾け、左手を胸の高さで広げて空を向く。右腕は下向きに揺れる。視線は上を向いている。END_STATE=体幹が前傾し、左手が胸の高さに広がり、右腕が下向きに揺れている。\n",
+      "parsed": {
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "records": [
+          {
+            "record_type": "PERFORMANCE",
+            "slot": 1,
+            "text": "左足を軸に身体を斜め前方へ傾け、右手を胸の高さで広げて空を向く。左腕は下向きに揺れる。視線は上を向いている。END_STATE=体幹が前傾し、右手が胸の高さに広がり、左腕が下向きに揺れている。",
+            "line_number": 1
+          },
+          {
+            "record_type": "PERFORMANCE",
+            "slot": 2,
+            "text": "右足を軸に身体を斜め前方へ傾け、左手を胸の高さで広げて空を向く。右腕は下向きに揺れる。視線は上を向いている。END_STATE=体幹が前傾し、左手が胸の高さに広がり、右腕が下向きに揺れている。",
+            "line_number": 2
+          }
+        ],
+        "issues": [],
+        "missing": []
+      },
+      "elapsed_seconds": 5.522
+    }
+  ]
+}

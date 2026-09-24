@@ -1,0 +1,135 @@
+{
+  "scope": "research_only_saved_scene_author_performance_replay",
+  "model": "E:\\ComfyUI\\models\\LLM\\GGUF\\Qwen3-8B-Abliterated\\qwen3-8b-abliterated-Q4_K_M.gguf",
+  "model_size": 5027784032,
+  "prompt_sha256": "9e4de5687e9951aabe740ed9b17eb51ea4cfac02f40f126fc84faab858c4d505",
+  "runtime": {
+    "chat_format": "",
+    "max_tokens": 1536,
+    "temperature": 0.1,
+    "top_p": 0.9,
+    "repetition_penalty": 1.05,
+    "gpu_layers": -1,
+    "n_batch": 512,
+    "n_ctx": 8192,
+    "flash_attn": true,
+    "kv_cache_type": "q8_0",
+    "op_offload": true,
+    "keep_model_loaded": false,
+    "seed": 1
+  },
+  "runs": [
+    {
+      "scene": 1,
+      "seed": 1,
+      "source": "docs\\assets\\research\\scene-author-2026-09-23\\scene5-v5\\summary.json",
+      "source_sha256": "25b5046c2b1ceef58f600023314029f109c9442ef160471e4cf8250b3f0b3e3e",
+      "payload_sha256": "cd19f89bee50e5111664f38e5d0dc429cd5565ea3a1eb6612c3d9fa8722cff17",
+      "response": "PERFORMANCE\t1\t口を閉じる。右手を胸の位置に当て、左手を顔の横に置く。視線は下を向いている。END_STATE=体幹を前傾させた姿勢で、右手を胸の前へ下げ、左手を顔の横から少し離す。\nPERFORMANCE\t2\t胸の古傷は。右手を腰に当て、左手を顔の上部に置く。視線は正面を向いている。END_STATE=体幹を直立させ、右手を腰から少し上げ、左手を顔の上部から少し下げる。\n",
+      "parsed": {
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "records": [
+          {
+            "record_type": "PERFORMANCE",
+            "slot": 1,
+            "text": "口を閉じる。右手を胸の位置に当て、左手を顔の横に置く。視線は下を向いている。END_STATE=体幹を前傾させた姿勢で、右手を胸の前へ下げ、左手を顔の横から少し離す。",
+            "line_number": 1
+          },
+          {
+            "record_type": "PERFORMANCE",
+            "slot": 2,
+            "text": "胸の古傷は。右手を腰に当て、左手を顔の上部に置く。視線は正面を向いている。END_STATE=体幹を直立させ、右手を腰から少し上げ、左手を顔の上部から少し下げる。",
+            "line_number": 2
+          }
+        ],
+        "issues": [],
+        "missing": []
+      },
+      "elapsed_seconds": 4.261
+    },
+    {
+      "scene": 1,
+      "seed": 2,
+      "source": "docs\\assets\\research\\scene-author-2026-09-23\\scene5-v5\\summary.json",
+      "source_sha256": "25b5046c2b1ceef58f600023314029f109c9442ef160471e4cf8250b3f0b3e3e",
+      "payload_sha256": "cd19f89bee50e5111664f38e5d0dc429cd5565ea3a1eb6612c3d9fa8722cff17",
+      "response": "PERFORMANCE\t1\t口にする　→　右手を唇に添え、指で唇をなぞる。口を開き、閉じる動作を繰り返す。　END_STATE=右腕を下に下げ、顔を少し前へ向けた状態。\nPERFORMANCE\t2\t胸の古傷は　→　右手を胸の位置に当て、左手を腰に添える。体をやや前傾させる。　END_STATE=右手を胸の上に上げ、左手を腰に添えた姿勢。\n",
+      "parsed": {
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "records": [
+          {
+            "record_type": "PERFORMANCE",
+            "slot": 1,
+            "text": "口にする　→　右手を唇に添え、指で唇をなぞる。口を開き、閉じる動作を繰り返す。　END_STATE=右腕を下に下げ、顔を少し前へ向けた状態。",
+            "line_number": 1
+          },
+          {
+            "record_type": "PERFORMANCE",
+            "slot": 2,
+            "text": "胸の古傷は　→　右手を胸の位置に当て、左手を腰に添える。体をやや前傾させる。　END_STATE=右手を胸の上に上げ、左手を腰に添えた姿勢。",
+            "line_number": 2
+          }
+        ],
+        "issues": [],
+        "missing": []
+      },
+      "elapsed_seconds": 3.892
+    },
+    {
+      "scene": 1,
+      "seed": 1,
+      "source": "docs\\assets\\research\\motion-composition-2026-09-23\\scene9-on\\summary.json",
+      "source_sha256": "4cc733b7e55f37d5805e6973666693afc390e4304fbcaec71444512a7ee5e2a0",
+      "payload_sha256": "51bb82738249bd0410b51e01e5dbf890ac5bd6ae3e27872f279f27ba9e53b54f",
+      "response": "PERFORMANCE\t1\t身体を斜め前方へ大きく移動し、その方向へ動き続ける。右手を上げて空を指す。左腕を体の側面に添え、顔を上向きに向けた姿勢で、朱の空を背景に舞う。END_STATE=前傾姿勢で右手を上げたまま、左腕を体側に添えた状態。\nPERFORMANCE\t2\t身体を斜め前方へ大きく移動し、その方向へ動き続ける。右手を上げて空を指す。左腕を体の側面に添え、顔を上向きに向けた姿勢で、朱の空を背景に舞う。END_STATE=前傾姿勢で右手を上げたまま、左腕を体側に添えた状態。\n",
+      "parsed": {
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "records": [
+          {
+            "record_type": "PERFORMANCE",
+            "slot": 1,
+            "text": "身体を斜め前方へ大きく移動し、その方向へ動き続ける。右手を上げて空を指す。左腕を体の側面に添え、顔を上向きに向けた姿勢で、朱の空を背景に舞う。END_STATE=前傾姿勢で右手を上げたまま、左腕を体側に添えた状態。",
+            "line_number": 1
+          },
+          {
+            "record_type": "PERFORMANCE",
+            "slot": 2,
+            "text": "身体を斜め前方へ大きく移動し、その方向へ動き続ける。右手を上げて空を指す。左腕を体の側面に添え、顔を上向きに向けた姿勢で、朱の空を背景に舞う。END_STATE=前傾姿勢で右手を上げたまま、左腕を体側に添えた状態。",
+            "line_number": 2
+          }
+        ],
+        "issues": [],
+        "missing": []
+      },
+      "elapsed_seconds": 5.761
+    },
+    {
+      "scene": 1,
+      "seed": 2,
+      "source": "docs\\assets\\research\\motion-composition-2026-09-23\\scene9-on\\summary.json",
+      "source_sha256": "4cc733b7e55f37d5805e6973666693afc390e4304fbcaec71444512a7ee5e2a0",
+      "payload_sha256": "51bb82738249bd0410b51e01e5dbf890ac5bd6ae3e27872f279f27ba9e53b54f",
+      "response": "PERFORMANCE\t1\t身体を斜め前方へ大きく移動し、その方向へ動き続ける。右手を上げて空を指す。左腕は体の側面に沿って下がる。顔は前を向いている。END_STATE=右足を前に出して前傾姿勢。右手を上向きに挙げたまま。左腕は体の側面に沿って下がったまま。顔は前を向いている。\nPERFORMANCE\t2\t身体を斜め前方へ大きく移動し、その方向へ動き続ける。右手を上げて空を指す。左腕は体の側面に沿って下がる。顔は前を向いている。END_STATE=右足を前に出して前傾姿勢。右手を上向きに挙げたまま。左腕は体の側面に沿って下がったまま。顔は前を向いている。\n",
+      "parsed": {
+        "protocol": "MVD_LLM_RECORDS_V1",
+        "records": [
+          {
+            "record_type": "PERFORMANCE",
+            "slot": 1,
+            "text": "身体を斜め前方へ大きく移動し、その方向へ動き続ける。右手を上げて空を指す。左腕は体の側面に沿って下がる。顔は前を向いている。END_STATE=右足を前に出して前傾姿勢。右手を上向きに挙げたまま。左腕は体の側面に沿って下がったまま。顔は前を向いている。",
+            "line_number": 1
+          },
+          {
+            "record_type": "PERFORMANCE",
+            "slot": 2,
+            "text": "身体を斜め前方へ大きく移動し、その方向へ動き続ける。右手を上げて空を指す。左腕は体の側面に沿って下がる。顔は前を向いている。END_STATE=右足を前に出して前傾姿勢。右手を上向きに挙げたまま。左腕は体の側面に沿って下がったまま。顔は前を向いている。",
+            "line_number": 2
+          }
+        ],
+        "issues": [],
+        "missing": []
+      },
+      "elapsed_seconds": 6.511
+    }
+  ]
+}

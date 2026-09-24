@@ -2,8 +2,14 @@
 
 | 文書 | 内容 |
 |---|---|
+| [作者演出候補とPython動作補完の2×2比較](author-candidate-vs-python-motion-p7-2026-09-25.md) | 保存済みScene 5・9で候補・補完・seedを切り分け。候補は身体語彙を増やすが採用・Shot進行は不安定で、作者短文の原文保持を次の検証対象にした |
+| [簡潔Scene仕様 P6：公式8Bと現行8Bの形式・本文・推論設定](compact-scene-spec-p6-official-8b-protocol-sampling-2026-09-25.md) | 保存Sceneを本番grammarで再生し、両モデルの形式4/4と、反復・自転など本文の未解決を分離。公式推奨寄りsamplingも小範囲で比較 |
+| [簡潔Scene仕様 P5：8Bの意味ラベル比較](compact-scene-spec-p5-semantic-field-labels-2026-09-25.md) | `SCENE_EVENT`は主題の焦点を改善したが、`PERFORMER_BODY_ACTION`は振付を増やさず、`PERFORMER_POSE_CHANGE`は主語混同。欄名単独の本番採用を見送った |
+| [簡潔Scene仕様 P4：不透明ラベルだけの対照比較](compact-scene-spec-p4-opaque-label-control-2026-09-25.md) | 8BのScene 6・9×2 seedで出力ラベルのみ変更。両条件4/4形式合格だが不透明ラベルは本文の意味が消え、一律導入を見送った |
 | [Shot接続・全身演技の全編H3検証](shot-linkage-body-full-validation-2026-09-24.md) | Scene 3・4・9の手作業候補を同seed・同尺で全編比較。全身演技と狐火の改善、花の配置、16 Scene再開とScene間メモリ解放、途中動画での人による判定を記録 |
 | [Scene Event：Shot連続句・境界句の焦点選択判定](scene-phrase-focus-validation-2026-09-24.md) | Scene 3〜6・9×2 seedで句の束ね方を検証。候補は正しいが後半Shotの選択とEventへの対象維持に失敗し、追加二段経路を不採用と判定 |
+| [簡潔Scene仕様 P2：8Bの能力と情報受け渡しの境界](compact-scene-spec-p2-model-boundary-2026-09-24.md) | 御神木・狐火を実8B/14Bで局所比較。Eventだけでは対象は保てても人物演技・Camera連携が戻らないことを確認 |
+| [簡潔Scene仕様 P3：8B system promptの役割分担](compact-scene-spec-p3-8b-prompt-2026-09-24.md) | Eventを固定し、一文／BODY＋CAMERA／PERFORMER＋CAMERAを比較。表現は部分改善したが8Bの意味・形式安定性は不足 |
 | [Scene Event：歌詞だけの焦点選択→出来事生成の短区間試験](scene-lyric-focus-two-stage-2026-09-24.md) | 背景・候補を伏せた選択を5 Scene×2 seedで検証。苔は改善したが花・御神木は欠落、狐火は退行し、grammar順の影響も切り分けて本番採用を見送った |
 | [Scene Event根拠宣言 P0–P2：固定入力と8B判定](scene-event-source-p0-p2-validation-2026-09-24.md) | Scene 3–6・9の歌詞出典を固定し、現行EventとSOURCE付きEventを20回比較。形式は成立したが花・御神木の採用は改善せず、P2伝播を品質ゲートで停止 |
 | [Scene Eventの対象選択：任意候補と作者固定指示の間](scene-event-source-selection-design-2026-09-24.md) | 花の過去成功例と現在の落葉選択を比較。作者固定・歌詞・任意候補・背景の優先境界を追跡し、追加呼出しなしの根拠宣言と小範囲8B評価を設計 |

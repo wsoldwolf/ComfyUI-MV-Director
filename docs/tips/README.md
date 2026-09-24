@@ -4,6 +4,7 @@
 
 | TIPS | 内容 |
 |---|---|
+| [「演技するLLM」と三行補完・状態機械という思考実験](llm-acting-and-three-line-automaton-hypothesis.md) | 旧Python三行の事実と未証明の因果、有限状態の仮説、作者指示とLLM演技の境界を整理。FSMは採用案ではない |
 | [H3へ渡す文と映像の因果関係](compact-h3-visual-spec.md) | 対象・可視変化・人物の反応・Cameraの関係を簡潔に示す考え方と、短区間A/Bで確認すべきこと |
 | [機械的な補完文が演技に見えること](mechanical-motion-and-perceived-performance.md) | 旧版の固定文補完の発見、確認事実と仮説、AS ISの限定的見直し、比較用profileとユーザー指定方法 |
 | [試行錯誤で生まれた良さを仕様化する難しさ](prototype-discovery-and-reproducibility.md) | バイブコーディングのプロトタイプから良い表現を移す費用と、後から再現できるよう残すべき証跡 |

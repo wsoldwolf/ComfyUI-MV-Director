@@ -1,0 +1,571 @@
+{
+  "scope": "research_only_no_generated_action_or_camera_in_input",
+  "emd_sha256": "eb0201e06d2897d5280e602af8488bbe74143e0d01ee7f67279d897e1e956e10",
+  "model_path": "E:\\ComfyUI\\models\\LLM\\GGUF\\Qwen3-8B-Abliterated\\qwen3-8b-abliterated-Q4_K_M.gguf",
+  "model_size": 5027784032,
+  "runtime": {
+    "chat_format": "",
+    "max_tokens": 512,
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "repetition_penalty": 1.05,
+    "gpu_layers": -1,
+    "n_batch": 512,
+    "n_ctx": 8192,
+    "flash_attn": true,
+    "kv_cache_type": "q8_0",
+    "op_offload": true,
+    "keep_model_loaded": false,
+    "seed": 1
+  },
+  "system_prompts": {
+    "neutral": "あなたはMVの映像監督です。与えられた歌詞とScene資料から、短い日本語の映像仕様を作ってください。Sceneの一文と各Shotの一文を返します。出力形式はSCENE|本文、次にSHOT|1|本文、必要ならSHOT|2|本文です。余分な説明やMarkdownは不要です。",
+    "linked": "あなたはMVの映像監督です。一つのSceneを連続する出来事として設計します。歌詞から映す対象と場所を選び、対象の可視変化、人物の身体・表情の反応、その関係を見せるCameraを時間順に結び付けます。短い日本語でScene一文と各Shot一文を返してください。出力形式はSCENE|本文、次にSHOT|1|本文、必要ならSHOT|2|本文です。余分な説明やMarkdownは不要です。"
+  },
+  "runs": [
+    {
+      "scene": 6,
+      "seed": 1,
+      "variant": "neutral",
+      "payload": {
+        "scene_number": 6,
+        "scene_start_ms": 48375,
+        "scene_end_ms": 56167,
+        "continuation": true,
+        "environment": [
+          "夜の森の中の神社境内",
+          "鳥居",
+          "石灯籠",
+          "参道",
+          "木々",
+          "紅葉"
+        ],
+        "time_lighting": [
+          "夜、曇り",
+          "暗い夜空と灯りの照らし出された石畳の道"
+        ],
+        "shots": [
+          {
+            "shot": 1,
+            "start_ms": 48375,
+            "end_ms": 56167,
+            "lyrics": [
+              {
+                "text": "長さなのか",
+                "section": "PRE-CHORUS"
+              },
+              {
+                "text": "燃えた日の",
+                "section": "PRE-CHORUS"
+              },
+              {
+                "text": "深さなのか",
+                "section": "PRE-CHORUS"
+              },
+              {
+                "text": "答えを問うても",
+                "section": "PRE-CHORUS"
+              },
+              {
+                "text": "御神木は",
+                "section": "PRE-CHORUS"
+              }
+            ]
+          }
+        ]
+      },
+      "response_after_lifecycle": "SCENE|夜の森の中の神社境内、暗い夜空と灯りの照らし出された石畳の道。  \nSHOT|1|御神木の下で、紅葉が揺れる中、謎めいた雰囲気の中で歌詞が展開する。",
+      "parsed": {
+        "protocol_ok": true,
+        "record_count": 2,
+        "lines": [
+          "SCENE|夜の森の中の神社境内、暗い夜空と灯りの照らし出された石畳の道。",
+          "SHOT|1|御神木の下で、紅葉が揺れる中、謎めいた雰囲気の中で歌詞が展開する。"
+        ]
+      },
+      "elapsed_seconds": 0.424
+    },
+    {
+      "scene": 6,
+      "seed": 1,
+      "variant": "linked",
+      "payload": {
+        "scene_number": 6,
+        "scene_start_ms": 48375,
+        "scene_end_ms": 56167,
+        "continuation": true,
+        "environment": [
+          "夜の森の中の神社境内",
+          "鳥居",
+          "石灯籠",
+          "参道",
+          "木々",
+          "紅葉"
+        ],
+        "time_lighting": [
+          "夜、曇り",
+          "暗い夜空と灯りの照らし出された石畳の道"
+        ],
+        "shots": [
+          {
+            "shot": 1,
+            "start_ms": 48375,
+            "end_ms": 56167,
+            "lyrics": [
+              {
+                "text": "長さなのか",
+                "section": "PRE-CHORUS"
+              },
+              {
+                "text": "燃えた日の",
+                "section": "PRE-CHORUS"
+              },
+              {
+                "text": "深さなのか",
+                "section": "PRE-CHORUS"
+              },
+              {
+                "text": "答えを問うても",
+                "section": "PRE-CHORUS"
+              },
+              {
+                "text": "御神木は",
+                "section": "PRE-CHORUS"
+              }
+            ]
+          }
+        ]
+      },
+      "response_after_lifecycle": "SCENE|夜の森の中の神社境内で、参道を歩く人物が紅葉の木々の下を歩く。暗い夜空と灯りの照らし出された石畳の道を背景に、御神木の影が揺れる。\n\nSHOT|1|人物が鳥居の下を歩き、石灯籠の光が足元を照らしながら進む。紅葉の木々が風に揺れ、影が地面に揺れる。",
+      "parsed": {
+        "protocol_ok": true,
+        "record_count": 2,
+        "lines": [
+          "SCENE|夜の森の中の神社境内で、参道を歩く人物が紅葉の木々の下を歩く。暗い夜空と灯りの照らし出された石畳の道を背景に、御神木の影が揺れる。",
+          "SHOT|1|人物が鳥居の下を歩き、石灯籠の光が足元を照らしながら進む。紅葉の木々が風に揺れ、影が地面に揺れる。"
+        ]
+      },
+      "elapsed_seconds": 0.599
+    },
+    {
+      "scene": 6,
+      "seed": 2,
+      "variant": "neutral",
+      "payload": {
+        "scene_number": 6,
+        "scene_start_ms": 48375,
+        "scene_end_ms": 56167,
+        "continuation": true,
+        "environment": [
+          "夜の森の中の神社境内",
+          "鳥居",
+          "石灯籠",
+          "参道",
+          "木々",
+          "紅葉"
+        ],
+        "time_lighting": [
+          "夜、曇り",
+          "暗い夜空と灯りの照らし出された石畳の道"
+        ],
+        "shots": [
+          {
+            "shot": 1,
+            "start_ms": 48375,
+            "end_ms": 56167,
+            "lyrics": [
+              {
+                "text": "長さなのか",
+                "section": "PRE-CHORUS"
+              },
+              {
+                "text": "燃えた日の",
+                "section": "PRE-CHORUS"
+              },
+              {
+                "text": "深さなのか",
+                "section": "PRE-CHORUS"
+              },
+              {
+                "text": "答えを問うても",
+                "section": "PRE-CHORUS"
+              },
+              {
+                "text": "御神木は",
+                "section": "PRE-CHORUS"
+              }
+            ]
+          }
+        ]
+      },
+      "response_after_lifecycle": "SCENE|夜の森の中の神社境内。暗い夜空と灯りの照らし出された石畳の道。  \nSHOT|1|御神木の下で、紅葉が揺れる。暗闇に浮かび上がる灯りの光の中で、影が揺れている。",
+      "parsed": {
+        "protocol_ok": true,
+        "record_count": 2,
+        "lines": [
+          "SCENE|夜の森の中の神社境内。暗い夜空と灯りの照らし出された石畳の道。",
+          "SHOT|1|御神木の下で、紅葉が揺れる。暗闇に浮かび上がる灯りの光の中で、影が揺れている。"
+        ]
+      },
+      "elapsed_seconds": 0.402
+    },
+    {
+      "scene": 6,
+      "seed": 2,
+      "variant": "linked",
+      "payload": {
+        "scene_number": 6,
+        "scene_start_ms": 48375,
+        "scene_end_ms": 56167,
+        "continuation": true,
+        "environment": [
+          "夜の森の中の神社境内",
+          "鳥居",
+          "石灯籠",
+          "参道",
+          "木々",
+          "紅葉"
+        ],
+        "time_lighting": [
+          "夜、曇り",
+          "暗い夜空と灯りの照らし出された石畳の道"
+        ],
+        "shots": [
+          {
+            "shot": 1,
+            "start_ms": 48375,
+            "end_ms": 56167,
+            "lyrics": [
+              {
+                "text": "長さなのか",
+                "section": "PRE-CHORUS"
+              },
+              {
+                "text": "燃えた日の",
+                "section": "PRE-CHORUS"
+              },
+              {
+                "text": "深さなのか",
+                "section": "PRE-CHORUS"
+              },
+              {
+                "text": "答えを問うても",
+                "section": "PRE-CHORUS"
+              },
+              {
+                "text": "御神木は",
+                "section": "PRE-CHORUS"
+              }
+            ]
+          }
+        ]
+      },
+      "response_after_lifecycle": "SCENE|夜の森の中の神社境内で、参道を歩く人物が紅葉の木々の陰に隠れる。御神木に向かって進む様子を映す。\n\nSHOT|1|暗い夜空と灯りの照らし出された石畳の道をバックに、人物が参道を歩き、紅葉の木々の陰に隠れながらも御神木へ向かう姿をカメラで追う。",
+      "parsed": {
+        "protocol_ok": true,
+        "record_count": 2,
+        "lines": [
+          "SCENE|夜の森の中の神社境内で、参道を歩く人物が紅葉の木々の陰に隠れる。御神木に向かって進む様子を映す。",
+          "SHOT|1|暗い夜空と灯りの照らし出された石畳の道をバックに、人物が参道を歩き、紅葉の木々の陰に隠れながらも御神木へ向かう姿をカメラで追う。"
+        ]
+      },
+      "elapsed_seconds": 0.586
+    },
+    {
+      "scene": 9,
+      "seed": 1,
+      "variant": "neutral",
+      "payload": {
+        "scene_number": 9,
+        "scene_start_ms": 74792,
+        "scene_end_ms": 84708,
+        "continuation": true,
+        "environment": [
+          "夜の森の中の神社境内",
+          "鳥居",
+          "石灯籠",
+          "参道",
+          "木々",
+          "紅葉"
+        ],
+        "time_lighting": [
+          "夜、曇り",
+          "暗い夜空と灯りの照らし出された石畳の道"
+        ],
+        "shots": [
+          {
+            "shot": 1,
+            "start_ms": 74792,
+            "end_ms": 79750,
+            "lyrics": [
+              {
+                "text": "永遠と呼べるなら",
+                "section": "CHORUS"
+              },
+              {
+                "text": "この手を離すことも",
+                "section": "CHORUS"
+              },
+              {
+                "text": "愛なのだろうか",
+                "section": "CHORUS"
+              },
+              {
+                "text": "朱の空に舞う",
+                "section": "CHORUS"
+              }
+            ]
+          },
+          {
+            "shot": 2,
+            "start_ms": 79750,
+            "end_ms": 84708,
+            "lyrics": [
+              {
+                "text": "狐火へ問う",
+                "section": "CHORUS"
+              },
+              {
+                "text": "忘れぬことは",
+                "section": "CHORUS"
+              }
+            ]
+          }
+        ]
+      },
+      "response_after_lifecycle": "SCENE|夜の森の中の神社境内。鳥居と石灯籠が静かにそびえ、参道を歩く人の足音が聞こえる。木々は紅葉を咲かせ、暗い夜空と灯りの照らし出された石畳の道が続く。\nSHOT|1|朱の空に舞う。紅葉が風に揺れ、神社の鳥居や石灯籠の光が木々に反射して揺れる。手を離すこともないような、永遠を感じさせるシーン。\nSHOT|2|狐火へ問う。参道を歩く人の影が伸び、暗闇に浮かぶ狐火が彼を照らす。忘れぬことは、この夜の森の中で問う。",
+      "parsed": {
+        "protocol_ok": true,
+        "record_count": 3,
+        "lines": [
+          "SCENE|夜の森の中の神社境内。鳥居と石灯籠が静かにそびえ、参道を歩く人の足音が聞こえる。木々は紅葉を咲かせ、暗い夜空と灯りの照らし出された石畳の道が続く。",
+          "SHOT|1|朱の空に舞う。紅葉が風に揺れ、神社の鳥居や石灯籠の光が木々に反射して揺れる。手を離すこともないような、永遠を感じさせるシーン。",
+          "SHOT|2|狐火へ問う。参道を歩く人の影が伸び、暗闇に浮かぶ狐火が彼を照らす。忘れぬことは、この夜の森の中で問う。"
+        ]
+      },
+      "elapsed_seconds": 0.925
+    },
+    {
+      "scene": 9,
+      "seed": 1,
+      "variant": "linked",
+      "payload": {
+        "scene_number": 9,
+        "scene_start_ms": 74792,
+        "scene_end_ms": 84708,
+        "continuation": true,
+        "environment": [
+          "夜の森の中の神社境内",
+          "鳥居",
+          "石灯籠",
+          "参道",
+          "木々",
+          "紅葉"
+        ],
+        "time_lighting": [
+          "夜、曇り",
+          "暗い夜空と灯りの照らし出された石畳の道"
+        ],
+        "shots": [
+          {
+            "shot": 1,
+            "start_ms": 74792,
+            "end_ms": 79750,
+            "lyrics": [
+              {
+                "text": "永遠と呼べるなら",
+                "section": "CHORUS"
+              },
+              {
+                "text": "この手を離すことも",
+                "section": "CHORUS"
+              },
+              {
+                "text": "愛なのだろうか",
+                "section": "CHORUS"
+              },
+              {
+                "text": "朱の空に舞う",
+                "section": "CHORUS"
+              }
+            ]
+          },
+          {
+            "shot": 2,
+            "start_ms": 79750,
+            "end_ms": 84708,
+            "lyrics": [
+              {
+                "text": "狐火へ問う",
+                "section": "CHORUS"
+              },
+              {
+                "text": "忘れぬことは",
+                "section": "CHORUS"
+              }
+            ]
+          }
+        ]
+      },
+      "response_after_lifecycle": "SCENE|夜の森の中の神社境内を舞台に、紅葉が舞う中で、参道を歩く人物の姿と狐火の光が交錯する。\nSHOT|1|人物は朱の空に舞う紅葉を仰ぎ、手を広げるようにしてその流れに合わせる。カメラは低角度から追いかけて、紅葉が肩にまとわりつく様子を捉える。\nSHOT|2|人物は参道を進み、狐火の光に向かって歩く。カメラは横から追いかけ、狐火が人物の顔を照らしながら揺れる様子を映す。",
+      "parsed": {
+        "protocol_ok": true,
+        "record_count": 3,
+        "lines": [
+          "SCENE|夜の森の中の神社境内を舞台に、紅葉が舞う中で、参道を歩く人物の姿と狐火の光が交錯する。",
+          "SHOT|1|人物は朱の空に舞う紅葉を仰ぎ、手を広げるようにしてその流れに合わせる。カメラは低角度から追いかけて、紅葉が肩にまとわりつく様子を捉える。",
+          "SHOT|2|人物は参道を進み、狐火の光に向かって歩く。カメラは横から追いかけ、狐火が人物の顔を照らしながら揺れる様子を映す。"
+        ]
+      },
+      "elapsed_seconds": 0.778
+    },
+    {
+      "scene": 9,
+      "seed": 2,
+      "variant": "neutral",
+      "payload": {
+        "scene_number": 9,
+        "scene_start_ms": 74792,
+        "scene_end_ms": 84708,
+        "continuation": true,
+        "environment": [
+          "夜の森の中の神社境内",
+          "鳥居",
+          "石灯籠",
+          "参道",
+          "木々",
+          "紅葉"
+        ],
+        "time_lighting": [
+          "夜、曇り",
+          "暗い夜空と灯りの照らし出された石畳の道"
+        ],
+        "shots": [
+          {
+            "shot": 1,
+            "start_ms": 74792,
+            "end_ms": 79750,
+            "lyrics": [
+              {
+                "text": "永遠と呼べるなら",
+                "section": "CHORUS"
+              },
+              {
+                "text": "この手を離すことも",
+                "section": "CHORUS"
+              },
+              {
+                "text": "愛なのだろうか",
+                "section": "CHORUS"
+              },
+              {
+                "text": "朱の空に舞う",
+                "section": "CHORUS"
+              }
+            ]
+          },
+          {
+            "shot": 2,
+            "start_ms": 79750,
+            "end_ms": 84708,
+            "lyrics": [
+              {
+                "text": "狐火へ問う",
+                "section": "CHORUS"
+              },
+              {
+                "text": "忘れぬことは",
+                "section": "CHORUS"
+              }
+            ]
+          }
+        ]
+      },
+      "response_after_lifecycle": "SCENE|夜の森の中の神社境内。暗い夜空と灯りの照らし出された石畳の道。木々が紅葉している。  \nSHOT|1|朱の空に舞う。狐火が夜の森を照らす。  \nSHOT|2|狐火へ問う。忘れぬことは。神社境内の灯りが静かに揺れる。",
+      "parsed": {
+        "protocol_ok": true,
+        "record_count": 3,
+        "lines": [
+          "SCENE|夜の森の中の神社境内。暗い夜空と灯りの照らし出された石畳の道。木々が紅葉している。",
+          "SHOT|1|朱の空に舞う。狐火が夜の森を照らす。",
+          "SHOT|2|狐火へ問う。忘れぬことは。神社境内の灯りが静かに揺れる。"
+        ]
+      },
+      "elapsed_seconds": 0.498
+    },
+    {
+      "scene": 9,
+      "seed": 2,
+      "variant": "linked",
+      "payload": {
+        "scene_number": 9,
+        "scene_start_ms": 74792,
+        "scene_end_ms": 84708,
+        "continuation": true,
+        "environment": [
+          "夜の森の中の神社境内",
+          "鳥居",
+          "石灯籠",
+          "参道",
+          "木々",
+          "紅葉"
+        ],
+        "time_lighting": [
+          "夜、曇り",
+          "暗い夜空と灯りの照らし出された石畳の道"
+        ],
+        "shots": [
+          {
+            "shot": 1,
+            "start_ms": 74792,
+            "end_ms": 79750,
+            "lyrics": [
+              {
+                "text": "永遠と呼べるなら",
+                "section": "CHORUS"
+              },
+              {
+                "text": "この手を離すことも",
+                "section": "CHORUS"
+              },
+              {
+                "text": "愛なのだろうか",
+                "section": "CHORUS"
+              },
+              {
+                "text": "朱の空に舞う",
+                "section": "CHORUS"
+              }
+            ]
+          },
+          {
+            "shot": 2,
+            "start_ms": 79750,
+            "end_ms": 84708,
+            "lyrics": [
+              {
+                "text": "狐火へ問う",
+                "section": "CHORUS"
+              },
+              {
+                "text": "忘れぬことは",
+                "section": "CHORUS"
+              }
+            ]
+          }
+        ]
+      },
+      "response_after_lifecycle": "SCENE|夜の森の中の神社境内を舞台に、紅葉が舞う中で、参道を歩く人物の姿と狐火が浮かび上がる場面を描く。\nSHOT|1|暗い夜空の下、朱色の空に紅葉が舞い、人物は鳥居の前で立ち止まり、手を上げる。石畳の道が灯りで照らされている。\nSHOT|2|人物が参道を進み、狐火が浮かび上がる。その光に引き寄せられるように、人物の顔に驚きと戸惑いの表情が現れる。",
+      "parsed": {
+        "protocol_ok": true,
+        "record_count": 3,
+        "lines": [
+          "SCENE|夜の森の中の神社境内を舞台に、紅葉が舞う中で、参道を歩く人物の姿と狐火が浮かび上がる場面を描く。",
+          "SHOT|1|暗い夜空の下、朱色の空に紅葉が舞い、人物は鳥居の前で立ち止まり、手を上げる。石畳の道が灯りで照らされている。",
+          "SHOT|2|人物が参道を進み、狐火が浮かび上がる。その光に引き寄せられるように、人物の顔に驚きと戸惑いの表情が現れる。"
+        ]
+      },
+      "elapsed_seconds": 0.781
+    }
+  ]
+}
