@@ -1,0 +1,193 @@
+{
+  "purpose": "lyric-only focus then frozen Scene Event comparison",
+  "source": "E:\\ComfyUI\\projects\\ComfyUI-MV-Director\\docs\\assets\\research\\scene-composition-full-sequence-2026-09-23\\p1b-six-scenes-seed2-v2\\summary.json",
+  "source_sha256": "f07d38f1169c428cadd85b51cc230460c08ee7dbec6c76f4e5c16045252874d8",
+  "model": "E:\\ComfyUI\\models\\LLM\\GGUF\\Qwen3-8B-Abliterated\\qwen3-8b-abliterated-Q4_K_M.gguf",
+  "config": {
+    "chat_format": "",
+    "max_tokens": 3072,
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "repetition_penalty": 1.05,
+    "gpu_layers": -1,
+    "n_batch": 512,
+    "n_ctx": 16384,
+    "flash_attn": true,
+    "kv_cache_type": "q8_0",
+    "op_offload": true,
+    "keep_model_loaded": false,
+    "seed": 2
+  },
+  "results": [
+    {
+      "scene": 4,
+      "seed": 2,
+      "stage": "baseline",
+      "payload_sha256": "4d7fb6ac0afe288f5c59956596d9a66f0b4ba9f6ec0689182360cd8016e30caf",
+      "prompt_tokens": 2701,
+      "elapsed_seconds": 1.209135700002662,
+      "response": "EVENT\t1\tSHOT=1｜紅葉の木々から落ちる葉が、狐巫女の足元に積もる\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉の木々から落ちる葉が、狐巫女の足元に積もる"
+      }
+    },
+    {
+      "scene": 4,
+      "seed": 2,
+      "stage": "focus",
+      "payload_sha256": "f993f595b3b7ad48504c50a6247b0369e912556985a36d7f93a002bbde8b4d35",
+      "prompt_tokens": 336,
+      "elapsed_seconds": 0.33112899999832734,
+      "response": "SOURCE\t1\tLYRIC:shot1:line70\n",
+      "parsed": {
+        "id": "LYRIC:shot1:line70",
+        "shot": 1,
+        "source_line": 70,
+        "text": "色褪せた契り"
+      }
+    },
+    {
+      "scene": 4,
+      "seed": 2,
+      "stage": "selected_event",
+      "payload_sha256": "6479e64998865ecb2ed91160922f3c26635a4d91e71e122998026180a86d7c32",
+      "prompt_tokens": 2861,
+      "elapsed_seconds": 1.4095245000062278,
+      "response": "EVENT\t1\tSHOT=1｜紅葉の木々から落ちる葉が、風に揺られて神社の鳥居の上へ舞う\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉の木々から落ちる葉が、風に揺られて神社の鳥居の上へ舞う"
+      }
+    },
+    {
+      "scene": 6,
+      "seed": 2,
+      "stage": "baseline",
+      "payload_sha256": "09943ecd5b6d643dc44b1bfc1084a32d66252e51a889509078448a85e656afcb",
+      "prompt_tokens": 2275,
+      "elapsed_seconds": 1.261073600006057,
+      "response": "EVENT\t1\tSHOT=1｜紅葉の木々から落ちる葉が、神社の鳥居の上に積もる\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉の木々から落ちる葉が、神社の鳥居の上に積もる"
+      }
+    },
+    {
+      "scene": 6,
+      "seed": 2,
+      "stage": "focus",
+      "payload_sha256": "0644098530451dfd9fd124a2a725700e90a8bb03a206db22ae4a01b06b6465ea",
+      "prompt_tokens": 312,
+      "elapsed_seconds": 0.3660955999948783,
+      "response": "SOURCE\t1\tLYRIC:shot1:line136\n",
+      "parsed": {
+        "id": "LYRIC:shot1:line136",
+        "shot": 1,
+        "source_line": 136,
+        "text": "長さなのか"
+      }
+    },
+    {
+      "scene": 6,
+      "seed": 2,
+      "stage": "selected_event",
+      "payload_sha256": "2d7525a298182b75ca4a04eb3522bf8d70b058ae89b4300dfa8a0c1e38bf07f7",
+      "prompt_tokens": 2434,
+      "elapsed_seconds": 1.2676225999894086,
+      "response": "EVENT\t1\tSHOT=1｜紅葉の木々が風に揺れ、落ち葉が石畳の道を覆う\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉の木々が風に揺れ、落ち葉が石畳の道を覆う"
+      }
+    },
+    {
+      "scene": 4,
+      "seed": 3,
+      "stage": "baseline",
+      "payload_sha256": "4d7fb6ac0afe288f5c59956596d9a66f0b4ba9f6ec0689182360cd8016e30caf",
+      "prompt_tokens": 2701,
+      "elapsed_seconds": 1.1880415999912657,
+      "response": "EVENT\t1\tSHOT=1｜紅葉の木々から落ちる葉が、狐巫女の足元に積もる\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉の木々から落ちる葉が、狐巫女の足元に積もる"
+      }
+    },
+    {
+      "scene": 4,
+      "seed": 3,
+      "stage": "focus",
+      "payload_sha256": "f993f595b3b7ad48504c50a6247b0369e912556985a36d7f93a002bbde8b4d35",
+      "prompt_tokens": 336,
+      "elapsed_seconds": 0.38051860000996385,
+      "response": "SOURCE\t1\tLYRIC:shot1:line70\n",
+      "parsed": {
+        "id": "LYRIC:shot1:line70",
+        "shot": 1,
+        "source_line": 70,
+        "text": "色褪せた契り"
+      }
+    },
+    {
+      "scene": 4,
+      "seed": 3,
+      "stage": "selected_event",
+      "payload_sha256": "6479e64998865ecb2ed91160922f3c26635a4d91e71e122998026180a86d7c32",
+      "prompt_tokens": 2861,
+      "elapsed_seconds": 1.1824551999889081,
+      "response": "EVENT\t1\tSHOT=1｜紅葉の木々が揺れ、落ち葉が石畳に積もる\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉の木々が揺れ、落ち葉が石畳に積もる"
+      }
+    },
+    {
+      "scene": 6,
+      "seed": 3,
+      "stage": "baseline",
+      "payload_sha256": "09943ecd5b6d643dc44b1bfc1084a32d66252e51a889509078448a85e656afcb",
+      "prompt_tokens": 2275,
+      "elapsed_seconds": 1.468068799993489,
+      "response": "EVENT\t1\tSHOT=1｜紅葉した木々の影が石畳の道に揺れて、葉の模様が刻まれるように光る\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉した木々の影が石畳の道に揺れて、葉の模様が刻まれるように光る"
+      }
+    },
+    {
+      "scene": 6,
+      "seed": 3,
+      "stage": "focus",
+      "payload_sha256": "0644098530451dfd9fd124a2a725700e90a8bb03a206db22ae4a01b06b6465ea",
+      "prompt_tokens": 312,
+      "elapsed_seconds": 0.37849209998967126,
+      "response": "SOURCE\t1\tLYRIC:shot1:line136\n",
+      "parsed": {
+        "id": "LYRIC:shot1:line136",
+        "shot": 1,
+        "source_line": 136,
+        "text": "長さなのか"
+      }
+    },
+    {
+      "scene": 6,
+      "seed": 3,
+      "stage": "selected_event",
+      "payload_sha256": "2d7525a298182b75ca4a04eb3522bf8d70b058ae89b4300dfa8a0c1e38bf07f7",
+      "prompt_tokens": 2434,
+      "elapsed_seconds": 1.261623200000031,
+      "response": "EVENT\t1\tSHOT=1｜紅葉の木々が風に揺れ、落ち葉が石畳の道を覆う\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉の木々が風に揺れ、落ち葉が石畳の道を覆う"
+      }
+    }
+  ],
+  "reverse_focus_choices": true,
+  "prompts_sha256": {
+    "baseline": "0405a09587edbb14e29b7904ad54080bb15cb9d170a1fd88f373c09812bd77af",
+    "focus": "ceeb8c10b2d7768fcb99bfd56b19af68ebc67e092cd4c02e16ec1d1ac32affc4",
+    "selected_event": "cbf3b83db17c39750bdc64085aff6db6a9996bc10381b1f0ed941d65c77f66ec"
+  }
+}

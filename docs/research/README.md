@@ -2,6 +2,12 @@
 
 | 文書 | 内容 |
 |---|---|
+| [Scene Event：Shot連続句・境界句の焦点選択判定](scene-phrase-focus-validation-2026-09-24.md) | Scene 3〜6・9×2 seedで句の束ね方を検証。候補は正しいが後半Shotの選択とEventへの対象維持に失敗し、追加二段経路を不採用と判定 |
+| [Scene Event：歌詞だけの焦点選択→出来事生成の短区間試験](scene-lyric-focus-two-stage-2026-09-24.md) | 背景・候補を伏せた選択を5 Scene×2 seedで検証。苔は改善したが花・御神木は欠落、狐火は退行し、grammar順の影響も切り分けて本番採用を見送った |
+| [Scene Event根拠宣言 P0–P2：固定入力と8B判定](scene-event-source-p0-p2-validation-2026-09-24.md) | Scene 3–6・9の歌詞出典を固定し、現行EventとSOURCE付きEventを20回比較。形式は成立したが花・御神木の採用は改善せず、P2伝播を品質ゲートで停止 |
+| [Scene Eventの対象選択：任意候補と作者固定指示の間](scene-event-source-selection-design-2026-09-24.md) | 花の過去成功例と現在の落葉選択を比較。作者固定・歌詞・任意候補・背景の優先境界を追跡し、追加呼出しなしの根拠宣言と小範囲8B評価を設計 |
+| [Shot接続器 P1：演出候補の寄与と歌詞Shotの位置](shot-linkage-p1-candidate-comparison-2026-09-24.md) | 苔・狐火の候補あり/なし、花の完結句3条件と花のユーザー演出候補追加を実8Bで比較。歌詞Shotへの配置改善と対象欠落を分離し、補完の単純なShot移動では不足する根拠を整理 |
+| [Shot接続器 P0：採用Plan・EMD・H3映像の出典と時間軸](shot-linkage-p0-provenance-2026-09-24.md) | MP4内Planのハッシュで正しいEMD系列を特定。苔・花・狐火の歌詞より早い配置をEMD→Compiler→H3→映像で追い、未取得のLLM生出力と候補採否を分離したP1の固定条件 |
 | [旧8B三要素の現行統合を踏まえた改善計画](legacy-8b-integration-next-plan-2026-09-23.md) | 歌詞単位・非thinking開始・身体補完が既に映像へ届く前提で、ユーザー演出候補とモーション原文合成の寄与を分け、短区間の出典追跡からH3比較までの採用条件を計画 |
 | [全編EMD 00002：演技の持ち越し・補完の累積と次の改修計画](scene-composition-full-sequence-review-2026-09-23.md) | 34 Shotと採用キャッシュを照合。31 Shotの同一基礎演技、補完のLLM原文への混入、歌詞対象の欠落を分析し、担当別の終端状態と連続Scene比較によるP0〜P3を計画 |
 | [明示モーション合成の実装・8B検証](motion-composition-2026-09-23.md) | 原文保持と外部template合成、作者優先、541件回帰、実効seed固定を含む24呼出し。残る静止・移動競合を記録 |

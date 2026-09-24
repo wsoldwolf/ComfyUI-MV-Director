@@ -278,19 +278,21 @@ class SceneDebugSplitterTests(unittest.TestCase):
         self.assertEqual(parsed["defaults"], {"steps": 8})
         self.assertEqual(parsed["prompt_prefix"], ["keep"])
         # Scene 1 delivers 10 frames, so 1000 samples are skipped at 24 fps.
-        # Scenes 2 and 3 deliver (12-2)+(15-3)=22 frames = 2200 samples.
-        self.assertEqual(vocal["waveform"].shape[-1], 2200)
+        # The first selected Scene needs its 2 context frames at the end of
+        # the isolated H3 render: 22 delivered + 2 context = 24 frames.
+        self.assertEqual(vocal["waveform"].shape[-1], 2400)
         self.assertEqual(vocal["waveform"].data[:1800], list(range(1000, 2800)))
-        self.assertEqual(vocal["waveform"].data[1800:], [0] * 400)
-        self.assertEqual(mix["waveform"].shape[-1], 2200)
-        self.assertEqual(mix["waveform"].data, list(range(1000, 3200)))
+        self.assertEqual(vocal["waveform"].data[1800:], [0] * 600)
+        self.assertEqual(mix["waveform"].shape[-1], 2400)
+        self.assertEqual(mix["waveform"].data, list(range(1000, 3200)) + [0] * 200)
         self.assertEqual(vocal["tag"], "vocal")
         self.assertEqual(mix["tag"], "mix")
         status = output["ui"]["status"][0]
         self.assertIn("scenes=2..3", status)
         self.assertIn("skip_frames=10", status)
-        self.assertIn("output_frames=22", status)
-        self.assertIn("vocal_end_padding_samples=400", status)
+        self.assertIn("source_frames=22", status)
+        self.assertIn("output_frames=24", status)
+        self.assertIn("vocal_end_padding_samples=600", status)
 
     def test_scene_range_must_fit_the_plan(self) -> None:
         audio = {

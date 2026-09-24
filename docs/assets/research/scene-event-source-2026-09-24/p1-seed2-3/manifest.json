@@ -1,0 +1,455 @@
+{
+  "purpose": "P0/P1 source-aware Event contract comparison",
+  "source": "E:\\ComfyUI\\projects\\ComfyUI-MV-Director\\docs\\assets\\research\\scene-composition-full-sequence-2026-09-23\\p1b-six-scenes-seed2-v2\\summary.json",
+  "source_sha256": "f07d38f1169c428cadd85b51cc230460c08ee7dbec6c76f4e5c16045252874d8",
+  "model": "E:\\ComfyUI\\models\\LLM\\GGUF\\Qwen3-8B-Abliterated\\qwen3-8b-abliterated-Q4_K_M.gguf",
+  "seeds": [
+    2,
+    3
+  ],
+  "baseline_prompt_sha256": "0405a09587edbb14e29b7904ad54080bb15cb9d170a1fd88f373c09812bd77af",
+  "source_prompt_sha256": "cf4a8a5033af42cee58457220cb787de23199841a42fb9f096db202e73b8e46d",
+  "cases": [
+    {
+      "scene": 3,
+      "lyrics": [
+        {
+          "shot": 1,
+          "source_line": 42,
+          "text": "石段に積もる"
+        },
+        {
+          "shot": 2,
+          "source_line": 48,
+          "text": "名もなき季節"
+        },
+        {
+          "shot": 2,
+          "source_line": 52,
+          "text": "昨日の願いは"
+        },
+        {
+          "shot": 2,
+          "source_line": 56,
+          "text": "苔へと還る"
+        },
+        {
+          "shot": 2,
+          "source_line": 60,
+          "text": "幼い手で結んだ"
+        }
+      ],
+      "candidate_count": 7,
+      "source_ids": [
+        "LYRIC:shot1:line42",
+        "LYRIC:shot2:line48",
+        "LYRIC:shot2:line52",
+        "LYRIC:shot2:line56",
+        "LYRIC:shot2:line60",
+        "CANDIDATE:1",
+        "CANDIDATE:2",
+        "CANDIDATE:3",
+        "CANDIDATE:4",
+        "CANDIDATE:5",
+        "CANDIDATE:6",
+        "CANDIDATE:7",
+        "NONE"
+      ],
+      "payload_sha256": "3a04b12e1c734847630f457910f47472eee5b590b275b6014e17410e9607fe41"
+    },
+    {
+      "scene": 4,
+      "lyrics": [
+        {
+          "shot": 1,
+          "source_line": 70,
+          "text": "色褪せた契り"
+        },
+        {
+          "shot": 1,
+          "source_line": 74,
+          "text": "覚えているのは"
+        },
+        {
+          "shot": 2,
+          "source_line": 80,
+          "text": "わらわだけ"
+        },
+        {
+          "shot": 2,
+          "source_line": 84,
+          "text": "人は花より"
+        },
+        {
+          "shot": 2,
+          "source_line": 88,
+          "text": "短く咲いて"
+        },
+        {
+          "shot": 3,
+          "source_line": 94,
+          "text": "それでも永遠を"
+        }
+      ],
+      "candidate_count": 7,
+      "source_ids": [
+        "LYRIC:shot1:line70",
+        "LYRIC:shot1:line74",
+        "LYRIC:shot2:line80",
+        "LYRIC:shot2:line84",
+        "LYRIC:shot2:line88",
+        "LYRIC:shot3:line94",
+        "CANDIDATE:1",
+        "CANDIDATE:2",
+        "CANDIDATE:3",
+        "CANDIDATE:4",
+        "CANDIDATE:5",
+        "CANDIDATE:6",
+        "CANDIDATE:7",
+        "NONE"
+      ],
+      "payload_sha256": "4d7fb6ac0afe288f5c59956596d9a66f0b4ba9f6ec0689182360cd8016e30caf"
+    },
+    {
+      "scene": 5,
+      "lyrics": [
+        {
+          "shot": 1,
+          "source_line": 104,
+          "text": "口にする"
+        },
+        {
+          "shot": 1,
+          "source_line": 108,
+          "text": "見送ることに"
+        },
+        {
+          "shot": 1,
+          "source_line": 112,
+          "text": "慣れたはずなのに"
+        },
+        {
+          "shot": 2,
+          "source_line": 118,
+          "text": "胸の古傷は"
+        },
+        {
+          "shot": 2,
+          "source_line": 122,
+          "text": "増えてゆく"
+        },
+        {
+          "shot": 2,
+          "source_line": 126,
+          "text": "命とは"
+        }
+      ],
+      "candidate_count": 7,
+      "source_ids": [
+        "LYRIC:shot1:line104",
+        "LYRIC:shot1:line108",
+        "LYRIC:shot1:line112",
+        "LYRIC:shot2:line118",
+        "LYRIC:shot2:line122",
+        "LYRIC:shot2:line126",
+        "CANDIDATE:1",
+        "CANDIDATE:2",
+        "CANDIDATE:3",
+        "CANDIDATE:4",
+        "CANDIDATE:5",
+        "CANDIDATE:6",
+        "CANDIDATE:7",
+        "NONE"
+      ],
+      "payload_sha256": "98a0c90beba345cf929891daddcf5455c29a317dec60574331231edd0d51b6a1"
+    },
+    {
+      "scene": 6,
+      "lyrics": [
+        {
+          "shot": 1,
+          "source_line": 136,
+          "text": "長さなのか"
+        },
+        {
+          "shot": 1,
+          "source_line": 140,
+          "text": "燃えた日の"
+        },
+        {
+          "shot": 2,
+          "source_line": 146,
+          "text": "深さなのか"
+        },
+        {
+          "shot": 2,
+          "source_line": 150,
+          "text": "答えを問うても"
+        },
+        {
+          "shot": 2,
+          "source_line": 154,
+          "text": "御神木は"
+        }
+      ],
+      "candidate_count": 7,
+      "source_ids": [
+        "LYRIC:shot1:line136",
+        "LYRIC:shot1:line140",
+        "LYRIC:shot2:line146",
+        "LYRIC:shot2:line150",
+        "LYRIC:shot2:line154",
+        "CANDIDATE:1",
+        "CANDIDATE:2",
+        "CANDIDATE:3",
+        "CANDIDATE:4",
+        "CANDIDATE:5",
+        "CANDIDATE:6",
+        "CANDIDATE:7",
+        "NONE"
+      ],
+      "payload_sha256": "09943ecd5b6d643dc44b1bfc1084a32d66252e51a889509078448a85e656afcb"
+    }
+  ],
+  "results": [
+    {
+      "scene": 3,
+      "seed": 2,
+      "condition": "legacy",
+      "prompt_tokens": 2626,
+      "elapsed_seconds": 1.358774699998321,
+      "response": "EVENT\t1\tSHOT=2｜紅葉した木々の影が石畳に揺れて、苔の上を滑るように流れる\n",
+      "parsed": {
+        "shot": 2,
+        "body": "紅葉した木々の影が石畳に揺れて、苔の上を滑るように流れる"
+      },
+      "parse_error": ""
+    },
+    {
+      "scene": 3,
+      "seed": 2,
+      "condition": "source",
+      "prompt_tokens": 2766,
+      "elapsed_seconds": 2.9639003000047524,
+      "response": "EVENT\t1\tSOURCE=LYRIC:shot1:line42｜FOCUS=石段の積み重ね｜SHOT=1｜石段に積もるという歌詞に応じて、石段の積み重ねが見せる。石段の段差に沿って、葉が落ちるような動きで苔が広がるように見える。\n",
+      "parsed": {
+        "source": "LYRIC:shot1:line42",
+        "focus": "石段の積み重ね",
+        "shot": 1,
+        "body": "石段に積もるという歌詞に応じて、石段の積み重ねが見せる。石段の段差に沿って、葉が落ちるような動きで苔が広がるように見える。"
+      },
+      "parse_error": ""
+    },
+    {
+      "scene": 4,
+      "seed": 2,
+      "condition": "legacy",
+      "prompt_tokens": 2701,
+      "elapsed_seconds": 1.1922803000052227,
+      "response": "EVENT\t1\tSHOT=1｜紅葉の木々から落ちる葉が、狐巫女の足元に積もる\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉の木々から落ちる葉が、狐巫女の足元に積もる"
+      },
+      "parse_error": ""
+    },
+    {
+      "scene": 4,
+      "seed": 2,
+      "condition": "source",
+      "prompt_tokens": 2841,
+      "elapsed_seconds": 1.9159956000075908,
+      "response": "EVENT\t1\tSOURCE=LYRIC:shot1:line70｜FOCUS=色褪せた契り｜SHOT=1｜色褪せた契りが石畳の上に広がり、その色が薄まっていく。\n",
+      "parsed": {
+        "source": "LYRIC:shot1:line70",
+        "focus": "色褪せた契り",
+        "shot": 1,
+        "body": "色褪せた契りが石畳の上に広がり、その色が薄まっていく。"
+      },
+      "parse_error": ""
+    },
+    {
+      "scene": 5,
+      "seed": 2,
+      "condition": "legacy",
+      "prompt_tokens": 2894,
+      "elapsed_seconds": 1.1720606999879237,
+      "response": "EVENT\t1\tSHOT=1｜紅葉の木々から落ちる葉が、狐巫女の足元に積もる\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉の木々から落ちる葉が、狐巫女の足元に積もる"
+      },
+      "parse_error": ""
+    },
+    {
+      "scene": 5,
+      "seed": 2,
+      "condition": "source",
+      "prompt_tokens": 3034,
+      "elapsed_seconds": 2.4230531999928644,
+      "response": "EVENT\t1\tSOURCE=LYRIC:shot2:line122｜FOCUS=胸の古傷｜SHOT=2｜紅葉した木々の陰に隠れていた胸の古傷が、狐巫女の歩くたびに光と影が揺れて、痛みを伴うように見える。\n",
+      "parsed": {
+        "source": "LYRIC:shot2:line122",
+        "focus": "胸の古傷",
+        "shot": 2,
+        "body": "紅葉した木々の陰に隠れていた胸の古傷が、狐巫女の歩くたびに光と影が揺れて、痛みを伴うように見える。"
+      },
+      "parse_error": ""
+    },
+    {
+      "scene": 6,
+      "seed": 2,
+      "condition": "legacy",
+      "prompt_tokens": 2275,
+      "elapsed_seconds": 1.211948799988022,
+      "response": "EVENT\t1\tSHOT=1｜紅葉の木々から落ちる葉が、神社の鳥居の上に積もる\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉の木々から落ちる葉が、神社の鳥居の上に積もる"
+      },
+      "parse_error": ""
+    },
+    {
+      "scene": 6,
+      "seed": 2,
+      "condition": "source",
+      "prompt_tokens": 2415,
+      "elapsed_seconds": 1.8052395000122488,
+      "response": "EVENT\t1\tSOURCE=LYRIC:shot1:line136｜FOCUS=長さ｜SHOT=1｜紅葉した木々の影が石畳の道に揺れて、長さを示すように伸びる。\n",
+      "parsed": {
+        "source": "LYRIC:shot1:line136",
+        "focus": "長さ",
+        "shot": 1,
+        "body": "紅葉した木々の影が石畳の道に揺れて、長さを示すように伸びる。"
+      },
+      "parse_error": ""
+    },
+    {
+      "scene": 3,
+      "seed": 3,
+      "condition": "legacy",
+      "prompt_tokens": 2626,
+      "elapsed_seconds": 1.3748611999908462,
+      "response": "EVENT\t1\tSHOT=2｜紅葉の木々から落ちる葉が、石段に積もる苔の上を滑るように流れる\n",
+      "parsed": {
+        "shot": 2,
+        "body": "紅葉の木々から落ちる葉が、石段に積もる苔の上を滑るように流れる"
+      },
+      "parse_error": ""
+    },
+    {
+      "scene": 3,
+      "seed": 3,
+      "condition": "source",
+      "prompt_tokens": 2766,
+      "elapsed_seconds": 1.9765984999976354,
+      "response": "EVENT\t1\tSOURCE=LYRIC:shot1:line42｜FOCUS=石段の積もる紅葉｜SHOT=1｜石段に積もる紅葉が風に揺れて、一枚一枚がゆっくりと地面へ落ちていく。\n",
+      "parsed": {
+        "source": "LYRIC:shot1:line42",
+        "focus": "石段の積もる紅葉",
+        "shot": 1,
+        "body": "石段に積もる紅葉が風に揺れて、一枚一枚がゆっくりと地面へ落ちていく。"
+      },
+      "parse_error": ""
+    },
+    {
+      "scene": 4,
+      "seed": 3,
+      "condition": "legacy",
+      "prompt_tokens": 2701,
+      "elapsed_seconds": 1.167739000011352,
+      "response": "EVENT\t1\tSHOT=1｜紅葉の木々から落ちる葉が、狐巫女の足元に積もる\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉の木々から落ちる葉が、狐巫女の足元に積もる"
+      },
+      "parse_error": ""
+    },
+    {
+      "scene": 4,
+      "seed": 3,
+      "condition": "source",
+      "prompt_tokens": 2841,
+      "elapsed_seconds": 2.1057921000028728,
+      "response": "EVENT\t1\tSOURCE=LYRIC:shot1:line70｜FOCUS=色褪せた契り｜SHOT=1｜紅葉した木々の葉が風に揺れ、色褪せた契りを象徴するように一枚一枚地面へ落ちる。\n",
+      "parsed": {
+        "source": "LYRIC:shot1:line70",
+        "focus": "色褪せた契り",
+        "shot": 1,
+        "body": "紅葉した木々の葉が風に揺れ、色褪せた契りを象徴するように一枚一枚地面へ落ちる。"
+      },
+      "parse_error": ""
+    },
+    {
+      "scene": 5,
+      "seed": 3,
+      "condition": "legacy",
+      "prompt_tokens": 2894,
+      "elapsed_seconds": 1.1831479999964358,
+      "response": "EVENT\t1\tSHOT=1｜紅葉の木々から落ちる葉が、狐巫女の足元に積もる\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉の木々から落ちる葉が、狐巫女の足元に積もる"
+      },
+      "parse_error": ""
+    },
+    {
+      "scene": 5,
+      "seed": 3,
+      "condition": "source",
+      "prompt_tokens": 3034,
+      "elapsed_seconds": 3.777788100007456,
+      "response": "EVENT\t1\tSOURCE=LYRIC:shot2:line122｜FOCUS=胸の古傷｜SHOT=2｜紅葉した木々の陰に隠れていた傷跡が、胸の古傷が増えてゆくという歌詞に合わせて、葉の隙間から光が漏れ込むたびに赤みが浮かび上がる。葉が揺れるたびにその赤みが揺らいで、痛みを伴うような視覚的表現。\n",
+      "parsed": {
+        "source": "LYRIC:shot2:line122",
+        "focus": "胸の古傷",
+        "shot": 2,
+        "body": "紅葉した木々の陰に隠れていた傷跡が、胸の古傷が増えてゆくという歌詞に合わせて、葉の隙間から光が漏れ込むたびに赤みが浮かび上がる。葉が揺れるたびにその赤みが揺らいで、痛みを伴うような視覚的表現。"
+      },
+      "parse_error": ""
+    },
+    {
+      "scene": 6,
+      "seed": 3,
+      "condition": "legacy",
+      "prompt_tokens": 2275,
+      "elapsed_seconds": 1.349999400001252,
+      "response": "EVENT\t1\tSHOT=1｜紅葉した木々の影が石畳の道に揺れて、葉の模様が刻まれるように動く\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉した木々の影が石畳の道に揺れて、葉の模様が刻まれるように動く"
+      },
+      "parse_error": ""
+    },
+    {
+      "scene": 6,
+      "seed": 3,
+      "condition": "source",
+      "prompt_tokens": 2415,
+      "elapsed_seconds": 2.8271034999925178,
+      "response": "EVENT\t1\tSOURCE=LYRIC:shot1:line136｜FOCUS=長さ｜SHOT=1｜長さを問うる歌詞に応じて、紅葉した木々の影が石畳の道に伸びる。枝の間から漏れる月光が、影を揺らして長さを視覚的に強調する。\n",
+      "parsed": {
+        "source": "LYRIC:shot1:line136",
+        "focus": "長さ",
+        "shot": 1,
+        "body": "長さを問うる歌詞に応じて、紅葉した木々の影が石畳の道に伸びる。枝の間から漏れる月光が、影を揺らして長さを視覚的に強調する。"
+      },
+      "parse_error": ""
+    }
+  ],
+  "config": {
+    "chat_format": "",
+    "max_tokens": 3072,
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "repetition_penalty": 1.05,
+    "gpu_layers": -1,
+    "n_batch": 512,
+    "n_ctx": 16384,
+    "flash_attn": true,
+    "kv_cache_type": "q8_0",
+    "op_offload": true,
+    "keep_model_loaded": false,
+    "seed": 2
+  }
+}

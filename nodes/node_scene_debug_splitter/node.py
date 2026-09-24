@@ -69,6 +69,7 @@ class MVDirectorSceneDebugSplitter:
             vocal_audio,
             skipped_frames=selection.skipped_frames,
             selected_frames=selection.selected_frames,
+            output_frames=selection.output_frames,
             fps=profile.fps,
             name="vocal_audio",
         )
@@ -76,6 +77,7 @@ class MVDirectorSceneDebugSplitter:
             full_mix_audio,
             skipped_frames=selection.skipped_frames,
             selected_frames=selection.selected_frames,
+            output_frames=selection.output_frames,
             fps=profile.fps,
             name="full_mix_audio",
         )
@@ -83,7 +85,8 @@ class MVDirectorSceneDebugSplitter:
         status = (
             f"enabled=yes; scenes={scene_start}..{end_scene}; "
             f"skip_frames={selection.skipped_frames}; "
-            f"output_frames={selection.selected_frames}; fps={profile.fps}; "
+            f"source_frames={selection.selected_frames}; "
+            f"output_frames={selection.output_frames}; fps={profile.fps}; "
             f"vocal_end_padding_samples={vocal_padding}; "
             f"full_mix_end_padding_samples={mix_padding}"
         )

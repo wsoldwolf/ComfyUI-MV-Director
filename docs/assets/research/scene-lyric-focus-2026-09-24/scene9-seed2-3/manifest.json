@@ -1,0 +1,110 @@
+{
+  "purpose": "lyric-only focus then frozen Scene Event comparison",
+  "source": "docs\\assets\\research\\scene-composition-full-sequence-2026-09-23\\no-previous-state-full-seed2\\summary.json",
+  "source_sha256": "6ef25afa7df69d25f71d223d8b5d03dd0e03b4b3fbb1eb146869e88e71981247",
+  "model": "E:\\ComfyUI\\models\\LLM\\GGUF\\Qwen3-8B-Abliterated\\qwen3-8b-abliterated-Q4_K_M.gguf",
+  "config": {
+    "chat_format": "",
+    "max_tokens": 3072,
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "repetition_penalty": 1.05,
+    "gpu_layers": -1,
+    "n_batch": 512,
+    "n_ctx": 16384,
+    "flash_attn": true,
+    "kv_cache_type": "q8_0",
+    "op_offload": true,
+    "keep_model_loaded": false,
+    "seed": 2
+  },
+  "results": [
+    {
+      "scene": 9,
+      "seed": 2,
+      "stage": "baseline",
+      "payload_sha256": "b03cdc3532cb61a2f66146a50f97f1c8743f9d2eb2e69fe4933685193d6167c7",
+      "prompt_tokens": 2933,
+      "elapsed_seconds": 1.5806868999934522,
+      "response": "EVENT\t1\tSHOT=2｜朱の空に舞う　狐火が赤い帯を照らし、帯の結び目から光が漏れる\n",
+      "parsed": {
+        "shot": 2,
+        "body": "朱の空に舞う　狐火が赤い帯を照らし、帯の結び目から光が漏れる"
+      }
+    },
+    {
+      "scene": 9,
+      "seed": 2,
+      "stage": "focus",
+      "payload_sha256": "2f5a4e7d3371d0e3f96658500d5d2fee189c89b182f7e8001ca34dee6629db5c",
+      "prompt_tokens": 348,
+      "elapsed_seconds": 0.3223786999878939,
+      "response": "SOURCE\t1\tLYRIC:shot2:line236\n",
+      "parsed": {
+        "id": "LYRIC:shot2:line236",
+        "shot": 2,
+        "source_line": 236,
+        "text": "朱の空に舞う"
+      }
+    },
+    {
+      "scene": 9,
+      "seed": 2,
+      "stage": "selected_event",
+      "payload_sha256": "f3356a292501bf9b0384495f14010d75e5126e29bc2e2718edd472d31a60abd6",
+      "prompt_tokens": 3095,
+      "elapsed_seconds": 1.289985199997318,
+      "response": "EVENT\t1\tSHOT=2｜朱の空に舞う　赤い葉が風に揺れて空中を漂う\n",
+      "parsed": {
+        "shot": 2,
+        "body": "朱の空に舞う　赤い葉が風に揺れて空中を漂う"
+      }
+    },
+    {
+      "scene": 9,
+      "seed": 3,
+      "stage": "baseline",
+      "payload_sha256": "b03cdc3532cb61a2f66146a50f97f1c8743f9d2eb2e69fe4933685193d6167c7",
+      "prompt_tokens": 2933,
+      "elapsed_seconds": 1.4432331999996677,
+      "response": "EVENT\t1\tSHOT=1｜朱の空に舞う狐火が、紅葉した木々の間を流れるように広がる\n",
+      "parsed": {
+        "shot": 1,
+        "body": "朱の空に舞う狐火が、紅葉した木々の間を流れるように広がる"
+      }
+    },
+    {
+      "scene": 9,
+      "seed": 3,
+      "stage": "focus",
+      "payload_sha256": "2f5a4e7d3371d0e3f96658500d5d2fee189c89b182f7e8001ca34dee6629db5c",
+      "prompt_tokens": 348,
+      "elapsed_seconds": 0.35275809999438934,
+      "response": "SOURCE\t1\tLYRIC:shot2:line236\n",
+      "parsed": {
+        "id": "LYRIC:shot2:line236",
+        "shot": 2,
+        "source_line": 236,
+        "text": "朱の空に舞う"
+      }
+    },
+    {
+      "scene": 9,
+      "seed": 3,
+      "stage": "selected_event",
+      "payload_sha256": "f3356a292501bf9b0384495f14010d75e5126e29bc2e2718edd472d31a60abd6",
+      "prompt_tokens": 3095,
+      "elapsed_seconds": 1.2080255000037141,
+      "response": "EVENT\t1\tSHOT=2｜朱の空に舞う　赤い葉が風に揺れて空中を漂う\n",
+      "parsed": {
+        "shot": 2,
+        "body": "朱の空に舞う　赤い葉が風に揺れて空中を漂う"
+      }
+    }
+  ],
+  "prompts_sha256": {
+    "baseline": "0405a09587edbb14e29b7904ad54080bb15cb9d170a1fd88f373c09812bd77af",
+    "focus": "ceeb8c10b2d7768fcb99bfd56b19af68ebc67e092cd4c02e16ec1d1ac32affc4",
+    "selected_event": "cbf3b83db17c39750bdc64085aff6db6a9996bc10381b1f0ed941d65c77f66ec"
+  }
+}

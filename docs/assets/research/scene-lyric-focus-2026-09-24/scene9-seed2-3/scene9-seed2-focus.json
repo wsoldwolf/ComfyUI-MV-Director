@@ -1,0 +1,60 @@
+{
+  "scene": 9,
+  "seed": 2,
+  "stage": "focus",
+  "payload": {
+    "original_lyrics": [
+      {
+        "lyrics": [
+          {
+            "id": "LYRIC:shot1:line222",
+            "text": "永遠と呼べるなら"
+          },
+          {
+            "id": "LYRIC:shot1:line226",
+            "text": "この手を離すことも"
+          }
+        ],
+        "shot": 1
+      },
+      {
+        "lyrics": [
+          {
+            "id": "LYRIC:shot2:line232",
+            "text": "愛なのだろうか"
+          },
+          {
+            "id": "LYRIC:shot2:line236",
+            "text": "朱の空に舞う"
+          }
+        ],
+        "shot": 2
+      },
+      {
+        "lyrics": [
+          {
+            "id": "LYRIC:shot3:line242",
+            "text": "狐火へ問う"
+          },
+          {
+            "id": "LYRIC:shot3:line246",
+            "text": "忘れぬことは"
+          }
+        ],
+        "shot": 3
+      }
+    ],
+    "scene_number": 9
+  },
+  "payload_sha256": "2f5a4e7d3371d0e3f96658500d5d2fee189c89b182f7e8001ca34dee6629db5c",
+  "prompt_sha256": "ceeb8c10b2d7768fcb99bfd56b19af68ebc67e092cd4c02e16ec1d1ac32affc4",
+  "prompt_tokens": 348,
+  "elapsed_seconds": 0.3223786999878939,
+  "response": "SOURCE\t1\tLYRIC:shot2:line236\n",
+  "parsed": {
+    "id": "LYRIC:shot2:line236",
+    "shot": 2,
+    "source_line": 236,
+    "text": "朱の空に舞う"
+  }
+}

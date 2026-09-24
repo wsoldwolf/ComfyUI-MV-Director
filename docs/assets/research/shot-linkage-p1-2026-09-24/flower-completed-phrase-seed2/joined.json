@@ -1,0 +1,297 @@
+{
+  "condition": "joined",
+  "scene": 4,
+  "shot": 2,
+  "payload": {
+    "continuation": true,
+    "current_lyric_focus": [
+      {
+        "lines": [
+          "色褪せた契り",
+          "覚えているのは"
+        ],
+        "shot": 1
+      },
+      {
+        "lines": [
+          "わらわだけ",
+          "人は花より",
+          "短く咲いて"
+        ],
+        "shot": 2
+      },
+      {
+        "lines": [
+          "それでも永遠を"
+        ],
+        "shot": 3
+      }
+    ],
+    "event_position_retry": false,
+    "original_lyrics": [
+      {
+        "lyrics": [
+          {
+            "end_ms": 30700,
+            "section": "VERSE",
+            "source_line": 70,
+            "start_ms": 29060,
+            "text": "色褪せた契り"
+          },
+          {
+            "end_ms": 32200,
+            "section": "VERSE",
+            "source_line": 74,
+            "start_ms": 30700,
+            "text": "覚えているのは"
+          }
+        ],
+        "shot": 1
+      },
+      {
+        "lyrics": [
+          {
+            "end_ms": 33400,
+            "section": "VERSE",
+            "source_line": 80,
+            "start_ms": 32200,
+            "text": "わらわだけ"
+          },
+          {
+            "end_ms": 35060,
+            "section": "VERSE",
+            "source_line": 84,
+            "start_ms": 33400,
+            "text": "人は花より"
+          },
+          {
+            "end_ms": 36480,
+            "section": "VERSE",
+            "source_line": 88,
+            "start_ms": 35060,
+            "text": "短く咲いて"
+          }
+        ],
+        "shot": 2
+      },
+      {
+        "lyrics": [
+          {
+            "end_ms": 38600,
+            "section": "VERSE",
+            "source_line": 94,
+            "start_ms": 36480,
+            "text": "それでも永遠を"
+          }
+        ],
+        "shot": 3
+      }
+    ],
+    "protocol": "MVD_LLM_RECORDS_V1",
+    "scene_descriptions": [],
+    "scene_emd": "# シーン設定\n## 環境\n* 夜の森の中の神社境内\n* 鳥居\n* 石灯籠\n* 石畳の道\n* 紅葉した木々\n* 神社の建物\n\n## 時間・照明\n* 夜、曇り\n* 暗い夜空と灯りの照らし出された石畳の道\n\n## 背景参照\n* `画像2`\n",
+    "scene_end_ms": 39167,
+    "scene_environment": [
+      "夜の森の中の神社境内。鳥居、石灯籠、石畳の道、紅葉した木々、神社の建物が存在する。夜、曇り。暗い夜空と灯りの照らし出された石畳の道。"
+    ],
+    "scene_number": 4,
+    "scene_other": [
+      "狐巫女が白い足袋と黒い木製台の下駄を着用する。赤い鼻緒は黒い木製台の上に正しく装着し、足元を接写の主題にしない。尾の先端は白く、狐尻尾。髪の色と同色の眉毛。目尻に赤い化粧あり。耳の先端は黒く、髪の色と同色。白い着物に赤い帯と袖口の結び目。"
+    ],
+    "scene_start_ms": 29250,
+    "scene_time_lighting": [
+      "夜、曇り。暗い夜空と灯りの照らし出された石畳の道。月光や逆光は穏やかな反射光として表現し、耳内部の露出を周囲の毛並みから不自然に上げない。"
+    ],
+    "section_lyric_context": [
+      {
+        "boundary_source": "template_label_run",
+        "coverage": "available_run",
+        "lines": [
+          {
+            "end_ms": 22780,
+            "scene": 3,
+            "source_line": 42,
+            "start_ms": 21117,
+            "text": "石段に積もる"
+          },
+          {
+            "end_ms": 24160,
+            "scene": 3,
+            "source_line": 48,
+            "start_ms": 22780,
+            "text": "名もなき季節"
+          },
+          {
+            "end_ms": 25380,
+            "scene": 3,
+            "source_line": 52,
+            "start_ms": 24600,
+            "text": "昨日の願いは"
+          },
+          {
+            "end_ms": 26680,
+            "scene": 3,
+            "source_line": 56,
+            "start_ms": 25380,
+            "text": "苔へと還る"
+          },
+          {
+            "end_ms": 29060,
+            "scene": 3,
+            "source_line": 60,
+            "start_ms": 27560,
+            "text": "幼い手で結んだ"
+          },
+          {
+            "end_ms": 30700,
+            "scene": 4,
+            "source_line": 70,
+            "start_ms": 29060,
+            "text": "色褪せた契り"
+          },
+          {
+            "end_ms": 32200,
+            "scene": 4,
+            "source_line": 74,
+            "start_ms": 30700,
+            "text": "覚えているのは"
+          },
+          {
+            "end_ms": 33400,
+            "scene": 4,
+            "source_line": 80,
+            "start_ms": 32200,
+            "text": "わらわだけ"
+          },
+          {
+            "end_ms": 35060,
+            "scene": 4,
+            "source_line": 84,
+            "start_ms": 33400,
+            "text": "人は花より"
+          },
+          {
+            "end_ms": 36480,
+            "scene": 4,
+            "source_line": 88,
+            "start_ms": 35060,
+            "text": "短く咲いて"
+          },
+          {
+            "end_ms": 38600,
+            "scene": 4,
+            "source_line": 94,
+            "start_ms": 36480,
+            "text": "それでも永遠を"
+          },
+          {
+            "end_ms": 39840,
+            "scene": 5,
+            "source_line": 104,
+            "start_ms": 38600,
+            "text": "口にする"
+          },
+          {
+            "end_ms": 41380,
+            "scene": 5,
+            "source_line": 108,
+            "start_ms": 39840,
+            "text": "見送ることに"
+          },
+          {
+            "end_ms": 42900,
+            "scene": 5,
+            "source_line": 112,
+            "start_ms": 41380,
+            "text": "慣れたはずなのに"
+          },
+          {
+            "end_ms": 44900,
+            "scene": 5,
+            "source_line": 118,
+            "start_ms": 42900,
+            "text": "胸の古傷は"
+          },
+          {
+            "end_ms": 46380,
+            "scene": 5,
+            "source_line": 122,
+            "start_ms": 44900,
+            "text": "増えてゆく"
+          }
+        ],
+        "occurrence": 1,
+        "section": "VERSE"
+      }
+    ],
+    "shot_positions": [
+      {
+        "author_body": [],
+        "end_ms": 32375,
+        "fixed_camera": "",
+        "fixed_event": "",
+        "fixed_performance": "",
+        "shot": 1,
+        "start_ms": 29250
+      },
+      {
+        "author_body": [],
+        "end_ms": 36667,
+        "fixed_camera": "",
+        "fixed_event": "",
+        "fixed_performance": "",
+        "shot": 2,
+        "start_ms": 32375
+      },
+      {
+        "author_body": [],
+        "end_ms": 39167,
+        "fixed_camera": "",
+        "fixed_event": "",
+        "fixed_performance": "",
+        "shot": 3,
+        "start_ms": 36667
+      }
+    ],
+    "slots": [
+      {
+        "scene": 4,
+        "scene_number": 4,
+        "scope": "one_scene_event",
+        "shot_numbers": [
+          1,
+          2,
+          3
+        ],
+        "slot": 1
+      }
+    ],
+    "staging_candidates_optional": [
+      "歌詞「苔へと還る」を扱うSceneで、参道脇に立つ大樹と根元の苔を同じ場所として確立する。人物が大樹へ寄り、幹の根元に生えた苔を指先で一度撫で、手を離して余韻を表情に残す。",
+      "歌詞に「狐火」が現れるSceneで、複数の狐火が人物の胸前の空間に現れる。人物は両手を異なる高さに構え、片手で大きな円弧を描き、もう片手で流れを受け渡す。手の振付に呼応して狐火が人物の周囲を勢いよく旋回し、人物が両手を開くと樹間へ広がる。人物は地面に立ち、視線と表情も狐火の動きに合わせて変化する。",
+      "始点は両足で安定し、片手は体側、もう片手は肘を曲げて低く置く。片側へ短く荷重し、骨盤の移動より遅れて胸郭を斜めへ向ける。低い手を視線の先へ弧状に差し出し、反対の腕は肘を緩めて釣り合いを取る。差し出した手を開いたまま一拍止め、呼吸と視線を戻し、両足支持で静かに収める。物を持つ・渡す動作は歌詞に明示された時だけ。",
+      "始点は膝を伸ばし切らず胸郭を正面に保つ。後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せ、一拍のアクセント後、肩と肘を緩めて前足支持で終える。移動を伴う歩行や人物の全身回転にはしない。",
+      "始点は両足を地面に置き、両腕を体側の異なる高さに置く。短く膝を緩めて重心を落とし、胸郭をわずかに畳み、片腕だけを胴の前へ横断させる。目を伏せた後、支持を戻しながら横断した腕を外側へほどき、胸郭を開いて視線を結ぶ。終点は開始より直立し、両腕は開き切らず異なる高さで静止する。",
+      "始点は両足支持で腕を低く置く。短い膝の弾みで重心を一度下げ、片足へ受け渡して骨盤を横へ送る。胸郭の遅れに合わせて片腕を横から斜め上へ、反対の腕を腰より低く逆方向へ通す。顔と歌唱口が見える瞬間にアクセントを合わせ、両腕を体側へ落とし切らず、支持足を保って余韻で終える。跳躍や全身回転はしない。",
+      "始点は片足に軽く荷重し、肩と腕を緩める。支持は変えず胸郭だけを小さく斜めへ向け、片肘を体側から前へほどく。半開きの目から短く閉眼し、歌詞の変化で視線を戻す。手は顔を隠さず肩より下で止め、胸郭を正面へ戻しながら同じ支持のまま終える。静かな歌詞用で、大きな踏み替えを要求しない。"
+    ],
+    "start_condition": {
+      "continuation": true,
+      "source": "previous_video_frame"
+    },
+    "task": "scene-author-event",
+    "completed_lyric_phrase": [
+      {
+        "shot": 2,
+        "source_lines": [
+          "人は花より",
+          "短く咲いて"
+        ],
+        "text": "人は花より短く咲いて"
+      }
+    ]
+  },
+  "payload_sha256": "b527d001c7ace5876ddb31824f1e9726b34088a2923f4d20b38e1275345bac6c",
+  "response": "EVENT\t1\tSHOT=2｜紅葉した木々の影が石畳に揺れて、光と影が舞う\n",
+  "elapsed_seconds": 1.1328096000070218
+}

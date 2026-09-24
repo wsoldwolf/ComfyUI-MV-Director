@@ -15,6 +15,7 @@ class SceneDebugPlanSlice:
     scene_length: int
     skipped_frames: int
     selected_frames: int
+    output_frames: int
 
 
 def _positive_integer(value: Any, path: str) -> int:
@@ -99,6 +100,11 @@ def split_context_loop_plan(
         scene_length=scene_length,
         skipped_frames=sum(delivered_frames[:start_index]),
         selected_frames=sum(delivered_frames[start_index:end_index]),
+        # The first selected Scene has no preceding local Context Loop Scene.
+        # Its context frames therefore remain in the H3 render, while the
+        # original source timeline advances by delivered frames only.
+        output_frames=sum(delivered_frames[start_index:end_index])
+        + (shots[start_index]["length"] - delivered_frames[start_index]),
     )
 
 
@@ -107,10 +113,11 @@ def slice_audio_frame_window(
     *,
     skipped_frames: int,
     selected_frames: int,
+    output_frames: int | None = None,
     fps: int,
     name: str,
 ) -> tuple[dict[str, Any], int]:
-    """Slice one ComfyUI AUDIO object and end-pad to an exact frame duration."""
+    """Slice delivered source audio and silence-pad to the H3 render duration."""
 
     if not isinstance(audio, Mapping):
         raise ValueError(f"{name} must be a ComfyUI AUDIO object")
@@ -134,13 +141,21 @@ def slice_audio_frame_window(
             raise ValueError(f"{field} must be an integer")
     if skipped_frames < 0 or selected_frames < 1 or fps < 1:
         raise ValueError("frame offsets must be valid and fps must be positive")
+    if output_frames is None:
+        output_frames = selected_frames
+    if isinstance(output_frames, bool) or not isinstance(output_frames, int):
+        raise ValueError("output_frames must be an integer")
+    if output_frames < selected_frames:
+        raise ValueError("output_frames cannot be shorter than selected_frames")
 
     source_samples = int(shape[-1])
     start_sample = round(Fraction(skipped_frames * sample_rate, fps))
     end_sample = round(
         Fraction((skipped_frames + selected_frames) * sample_rate, fps)
     )
-    target_samples = end_sample - start_sample
+    target_samples = round(
+        Fraction((skipped_frames + output_frames) * sample_rate, fps)
+    ) - start_sample
     if target_samples < 1:
         raise ValueError(f"{name} frame window resolves to zero samples")
 

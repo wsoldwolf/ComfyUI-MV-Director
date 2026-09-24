@@ -1,0 +1,356 @@
+{
+  "purpose": "lyric-only focus then frozen Scene Event comparison",
+  "source": "E:\\ComfyUI\\projects\\ComfyUI-MV-Director\\docs\\assets\\research\\scene-composition-full-sequence-2026-09-23\\p1b-six-scenes-seed2-v2\\summary.json",
+  "source_sha256": "f07d38f1169c428cadd85b51cc230460c08ee7dbec6c76f4e5c16045252874d8",
+  "model": "E:\\ComfyUI\\models\\LLM\\GGUF\\Qwen3-8B-Abliterated\\qwen3-8b-abliterated-Q4_K_M.gguf",
+  "config": {
+    "chat_format": "",
+    "max_tokens": 3072,
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "repetition_penalty": 1.05,
+    "gpu_layers": -1,
+    "n_batch": 512,
+    "n_ctx": 16384,
+    "flash_attn": true,
+    "kv_cache_type": "q8_0",
+    "op_offload": true,
+    "keep_model_loaded": false,
+    "seed": 2
+  },
+  "results": [
+    {
+      "scene": 3,
+      "seed": 2,
+      "stage": "baseline",
+      "payload_sha256": "3a04b12e1c734847630f457910f47472eee5b590b275b6014e17410e9607fe41",
+      "prompt_tokens": 2626,
+      "elapsed_seconds": 1.3397899999981746,
+      "response": "EVENT\t1\tSHOT=2｜紅葉した木々の影が石畳に揺れて、苔の上を滑るように流れる\n",
+      "parsed": {
+        "shot": 2,
+        "body": "紅葉した木々の影が石畳に揺れて、苔の上を滑るように流れる"
+      }
+    },
+    {
+      "scene": 3,
+      "seed": 2,
+      "stage": "focus",
+      "payload_sha256": "108c2688d6354fb023d0d5ebc4531163f8fec74527207dd4b8594da578069a22",
+      "prompt_tokens": 317,
+      "elapsed_seconds": 0.35348819999489933,
+      "response": "SOURCE\t1\tLYRIC:shot2:line56\n",
+      "parsed": {
+        "id": "LYRIC:shot2:line56",
+        "shot": 2,
+        "source_line": 56,
+        "text": "苔へと還る"
+      }
+    },
+    {
+      "scene": 3,
+      "seed": 2,
+      "stage": "selected_event",
+      "payload_sha256": "29cd7e5bd00717e7953653655d66469cd1d6d63fff0dab63b376f2f85ff1f3a3",
+      "prompt_tokens": 2785,
+      "elapsed_seconds": 2.2953376000077697,
+      "response": "EVENT\t1\tSHOT=2｜苔が石段の上を覆い尽くし、手で撫でると、その表面に淡い光が広がり、葉の陰に隠れた小さな花びらが浮かび上がる。\n",
+      "parsed": {
+        "shot": 2,
+        "body": "苔が石段の上を覆い尽くし、手で撫でると、その表面に淡い光が広がり、葉の陰に隠れた小さな花びらが浮かび上がる。"
+      }
+    },
+    {
+      "scene": 4,
+      "seed": 2,
+      "stage": "baseline",
+      "payload_sha256": "4d7fb6ac0afe288f5c59956596d9a66f0b4ba9f6ec0689182360cd8016e30caf",
+      "prompt_tokens": 2701,
+      "elapsed_seconds": 1.2909815999882994,
+      "response": "EVENT\t1\tSHOT=1｜紅葉した木々の影が石畳に揺れて、葉が一枚地面へ落ちる\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉した木々の影が石畳に揺れて、葉が一枚地面へ落ちる"
+      }
+    },
+    {
+      "scene": 4,
+      "seed": 2,
+      "stage": "focus",
+      "payload_sha256": "f993f595b3b7ad48504c50a6247b0369e912556985a36d7f93a002bbde8b4d35",
+      "prompt_tokens": 336,
+      "elapsed_seconds": 0.38876790000358596,
+      "response": "SOURCE\t1\tLYRIC:shot1:line70\n",
+      "parsed": {
+        "id": "LYRIC:shot1:line70",
+        "shot": 1,
+        "source_line": 70,
+        "text": "色褪せた契り"
+      }
+    },
+    {
+      "scene": 4,
+      "seed": 2,
+      "stage": "selected_event",
+      "payload_sha256": "6479e64998865ecb2ed91160922f3c26635a4d91e71e122998026180a86d7c32",
+      "prompt_tokens": 2861,
+      "elapsed_seconds": 1.412793800001964,
+      "response": "EVENT\t1\tSHOT=1｜紅葉の木々から落ちる葉が、風に揺られて神社の鳥居の上へ舞う\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉の木々から落ちる葉が、風に揺られて神社の鳥居の上へ舞う"
+      }
+    },
+    {
+      "scene": 5,
+      "seed": 2,
+      "stage": "baseline",
+      "payload_sha256": "98a0c90beba345cf929891daddcf5455c29a317dec60574331231edd0d51b6a1",
+      "prompt_tokens": 2894,
+      "elapsed_seconds": 1.1788790999999037,
+      "response": "EVENT\t1\tSHOT=1｜紅葉の木々から落ちる葉が、狐巫女の足元に積もる\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉の木々から落ちる葉が、狐巫女の足元に積もる"
+      }
+    },
+    {
+      "scene": 5,
+      "seed": 2,
+      "stage": "focus",
+      "payload_sha256": "312e54a69ed0bc5044e2269a3496c52d50ea690878841bb4d4fbf9fa7a0cd44d",
+      "prompt_tokens": 331,
+      "elapsed_seconds": 0.3889682000008179,
+      "response": "SOURCE\t1\tLYRIC:shot1:line104\n",
+      "parsed": {
+        "id": "LYRIC:shot1:line104",
+        "shot": 1,
+        "source_line": 104,
+        "text": "口にする"
+      }
+    },
+    {
+      "scene": 5,
+      "seed": 2,
+      "stage": "selected_event",
+      "payload_sha256": "f6fd96a24771c34ddd3cb3736e8df39d0cebe706a1d9ec5bca484c967803dd9f",
+      "prompt_tokens": 3052,
+      "elapsed_seconds": 1.176436099995044,
+      "response": "EVENT\t1\tSHOT=1｜紅葉の木々から落ちる葉が、口元にそっと触れる\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉の木々から落ちる葉が、口元にそっと触れる"
+      }
+    },
+    {
+      "scene": 6,
+      "seed": 2,
+      "stage": "baseline",
+      "payload_sha256": "09943ecd5b6d643dc44b1bfc1084a32d66252e51a889509078448a85e656afcb",
+      "prompt_tokens": 2275,
+      "elapsed_seconds": 1.1866193000023486,
+      "response": "EVENT\t1\tSHOT=1｜紅葉の木々から落ちる葉が、神社の鳥居の上に積もる\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉の木々から落ちる葉が、神社の鳥居の上に積もる"
+      }
+    },
+    {
+      "scene": 6,
+      "seed": 2,
+      "stage": "focus",
+      "payload_sha256": "0644098530451dfd9fd124a2a725700e90a8bb03a206db22ae4a01b06b6465ea",
+      "prompt_tokens": 312,
+      "elapsed_seconds": 0.37453659999300726,
+      "response": "SOURCE\t1\tLYRIC:shot1:line136\n",
+      "parsed": {
+        "id": "LYRIC:shot1:line136",
+        "shot": 1,
+        "source_line": 136,
+        "text": "長さなのか"
+      }
+    },
+    {
+      "scene": 6,
+      "seed": 2,
+      "stage": "selected_event",
+      "payload_sha256": "2d7525a298182b75ca4a04eb3522bf8d70b058ae89b4300dfa8a0c1e38bf07f7",
+      "prompt_tokens": 2434,
+      "elapsed_seconds": 1.2408350000041537,
+      "response": "EVENT\t1\tSHOT=1｜紅葉の木々が風に揺れ、落ち葉が石畳の道を覆う\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉の木々が風に揺れ、落ち葉が石畳の道を覆う"
+      }
+    },
+    {
+      "scene": 3,
+      "seed": 3,
+      "stage": "baseline",
+      "payload_sha256": "3a04b12e1c734847630f457910f47472eee5b590b275b6014e17410e9607fe41",
+      "prompt_tokens": 2626,
+      "elapsed_seconds": 1.4726809999992838,
+      "response": "EVENT\t1\tSHOT=2｜紅葉の木々から落ちる紅葉が、石段に積もる苔の上を軽やかに舞う\n",
+      "parsed": {
+        "shot": 2,
+        "body": "紅葉の木々から落ちる紅葉が、石段に積もる苔の上を軽やかに舞う"
+      }
+    },
+    {
+      "scene": 3,
+      "seed": 3,
+      "stage": "focus",
+      "payload_sha256": "108c2688d6354fb023d0d5ebc4531163f8fec74527207dd4b8594da578069a22",
+      "prompt_tokens": 317,
+      "elapsed_seconds": 0.3551058000011835,
+      "response": "SOURCE\t1\tLYRIC:shot2:line56\n",
+      "parsed": {
+        "id": "LYRIC:shot2:line56",
+        "shot": 2,
+        "source_line": 56,
+        "text": "苔へと還る"
+      }
+    },
+    {
+      "scene": 3,
+      "seed": 3,
+      "stage": "selected_event",
+      "payload_sha256": "29cd7e5bd00717e7953653655d66469cd1d6d63fff0dab63b376f2f85ff1f3a3",
+      "prompt_tokens": 2785,
+      "elapsed_seconds": 2.32681600000069,
+      "response": "EVENT\t1\tSHOT=2｜苔が石段の上を覆い尽くし、手で撫でると、その表面に光る小さな粒々が浮かび上がる。指の動きに応じて、粒々は空へと舞い上がる。\n",
+      "parsed": {
+        "shot": 2,
+        "body": "苔が石段の上を覆い尽くし、手で撫でると、その表面に光る小さな粒々が浮かび上がる。指の動きに応じて、粒々は空へと舞い上がる。"
+      }
+    },
+    {
+      "scene": 4,
+      "seed": 3,
+      "stage": "baseline",
+      "payload_sha256": "4d7fb6ac0afe288f5c59956596d9a66f0b4ba9f6ec0689182360cd8016e30caf",
+      "prompt_tokens": 2701,
+      "elapsed_seconds": 1.1380664999887813,
+      "response": "EVENT\t1\tSHOT=1｜紅葉の木々から落ちる葉が、狐巫女の足元に積もる\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉の木々から落ちる葉が、狐巫女の足元に積もる"
+      }
+    },
+    {
+      "scene": 4,
+      "seed": 3,
+      "stage": "focus",
+      "payload_sha256": "f993f595b3b7ad48504c50a6247b0369e912556985a36d7f93a002bbde8b4d35",
+      "prompt_tokens": 336,
+      "elapsed_seconds": 0.33612940000602975,
+      "response": "SOURCE\t1\tLYRIC:shot1:line70\n",
+      "parsed": {
+        "id": "LYRIC:shot1:line70",
+        "shot": 1,
+        "source_line": 70,
+        "text": "色褪せた契り"
+      }
+    },
+    {
+      "scene": 4,
+      "seed": 3,
+      "stage": "selected_event",
+      "payload_sha256": "6479e64998865ecb2ed91160922f3c26635a4d91e71e122998026180a86d7c32",
+      "prompt_tokens": 2861,
+      "elapsed_seconds": 1.1419536999892443,
+      "response": "EVENT\t1\tSHOT=1｜紅葉の木々が揺れ、落ち葉が石畳に積もる\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉の木々が揺れ、落ち葉が石畳に積もる"
+      }
+    },
+    {
+      "scene": 5,
+      "seed": 3,
+      "stage": "baseline",
+      "payload_sha256": "98a0c90beba345cf929891daddcf5455c29a317dec60574331231edd0d51b6a1",
+      "prompt_tokens": 2894,
+      "elapsed_seconds": 1.1601478999946266,
+      "response": "EVENT\t1\tSHOT=1｜紅葉の木々から落ちる葉が、狐巫女の足元に積もる\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉の木々から落ちる葉が、狐巫女の足元に積もる"
+      }
+    },
+    {
+      "scene": 5,
+      "seed": 3,
+      "stage": "focus",
+      "payload_sha256": "312e54a69ed0bc5044e2269a3496c52d50ea690878841bb4d4fbf9fa7a0cd44d",
+      "prompt_tokens": 331,
+      "elapsed_seconds": 0.3587219000037294,
+      "response": "SOURCE\t1\tLYRIC:shot1:line104\n",
+      "parsed": {
+        "id": "LYRIC:shot1:line104",
+        "shot": 1,
+        "source_line": 104,
+        "text": "口にする"
+      }
+    },
+    {
+      "scene": 5,
+      "seed": 3,
+      "stage": "selected_event",
+      "payload_sha256": "f6fd96a24771c34ddd3cb3736e8df39d0cebe706a1d9ec5bca484c967803dd9f",
+      "prompt_tokens": 3052,
+      "elapsed_seconds": 1.1545719999994617,
+      "response": "EVENT\t1\tSHOT=1｜紅葉の木々から落ちる葉が、口元にそっと触れる\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉の木々から落ちる葉が、口元にそっと触れる"
+      }
+    },
+    {
+      "scene": 6,
+      "seed": 3,
+      "stage": "baseline",
+      "payload_sha256": "09943ecd5b6d643dc44b1bfc1084a32d66252e51a889509078448a85e656afcb",
+      "prompt_tokens": 2275,
+      "elapsed_seconds": 1.3410618000052636,
+      "response": "EVENT\t1\tSHOT=1｜紅葉した木々の影が石畳の道に揺れて、葉の模様が刻まれるように光る\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉した木々の影が石畳の道に揺れて、葉の模様が刻まれるように光る"
+      }
+    },
+    {
+      "scene": 6,
+      "seed": 3,
+      "stage": "focus",
+      "payload_sha256": "0644098530451dfd9fd124a2a725700e90a8bb03a206db22ae4a01b06b6465ea",
+      "prompt_tokens": 312,
+      "elapsed_seconds": 0.3744529999967199,
+      "response": "SOURCE\t1\tLYRIC:shot1:line136\n",
+      "parsed": {
+        "id": "LYRIC:shot1:line136",
+        "shot": 1,
+        "source_line": 136,
+        "text": "長さなのか"
+      }
+    },
+    {
+      "scene": 6,
+      "seed": 3,
+      "stage": "selected_event",
+      "payload_sha256": "2d7525a298182b75ca4a04eb3522bf8d70b058ae89b4300dfa8a0c1e38bf07f7",
+      "prompt_tokens": 2434,
+      "elapsed_seconds": 1.2239471999928355,
+      "response": "EVENT\t1\tSHOT=1｜紅葉の木々が風に揺れ、落ち葉が石畳の道を覆う\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉の木々が風に揺れ、落ち葉が石畳の道を覆う"
+      }
+    }
+  ],
+  "prompts_sha256": {
+    "baseline": "0405a09587edbb14e29b7904ad54080bb15cb9d170a1fd88f373c09812bd77af",
+    "focus": "ceeb8c10b2d7768fcb99bfd56b19af68ebc67e092cd4c02e16ec1d1ac32affc4",
+    "selected_event": "cbf3b83db17c39750bdc64085aff6db6a9996bc10381b1f0ed941d65c77f66ec"
+  }
+}

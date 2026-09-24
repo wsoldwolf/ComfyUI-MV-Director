@@ -1,0 +1,41 @@
+{
+  "purpose": "Controlled Scene 3-4 and 9 H3 probe, not a production Planner result",
+  "scenes": {
+    "3": {
+      "shots": [
+        {
+          "action": "At the edge of the stone path beside a large tree, the single singer starts upright on both feet. She transfers weight toward the tree, softens both knees, lets the pelvis lead and the chest follow, and lowers the right arm in an arc toward the roots while the left arm balances at a different height. Her singing face stays visible. She ends in a grounded reach with both feet on the path.",
+          "camera": "Push In at fast speed. Begin in a full-body three-quarter view and keep the feet, pelvis, torso, both arms and singing face visible throughout the weight transfer. End at a medium-wide view beside the tree, with the roots beside the open stone path."
+        },
+        {
+          "action": "At the base of that same tree, moss becomes visible about 0.7 seconds after this Shot begins. From the grounded reach, she brushes the moss once with her right fingertips while the left arm counterbalances. Her weight moves from the rear foot to the front foot; the torso follows the hand, then she releases the touch, straightens and turns her gaze toward the path. End with the right hand free at her side and both feet supported.",
+          "camera": "Arc Shot with large amplitude at fast speed. Continue on a leftward orbit from medium-wide to medium, keeping the singer's feet and weight transfer readable during the touch and keeping the hand and tree root in one frame. End with her released hand and face visible; maintain the same orbit direction."
+        }
+      ]
+    },
+    "4": {
+      "shots": [
+        {
+          "action": "Continue from the prior Scene: her right hand is free and both feet are supported beside the tree. She takes one grounded side step back onto the stone path; her pelvis leads, chest follows, and her left arm crosses low while the right arm opens to balance. She sings with a brief half-closed gaze, then raises her eyes. End facing the roadside at a new stable stance.",
+          "camera": "Arc Shot with large amplitude at fast speed. Continue the preceding leftward camera orbit in a full-body three-quarter view. Track the one grounded side step without changing orbit direction, and keep the face, both arms and feet readable."
+        },
+        {
+          "action": "A small flower is revealed at the side of the same open stone path. From the stable stance, she shifts weight toward that side, opens her chest and traces one low arc with the right hand beside the petals while the left arm balances behind. The petals stir once as she sings; she lets both arms settle at different heights and the emotion remains in her eyes and mouth. Her feet stay grounded at the path edge.",
+          "camera": "Arc Shot with large amplitude at fast speed. Continue the leftward orbit in a medium-wide full-body view through the weight shift and arm accent, keeping the singer and roadside flower in one spatial frame. In the final third, Push In to a face-and-shoulders view showing both eyes, brows and singing mouth; hold the resulting expression briefly."
+        }
+      ]
+    },
+    "9": {
+      "shots": [
+        {
+          "action": "The single singer stands on the stone path. She settles into a low supported stance, shifts weight across both legs and starts a circular phrase: the pelvis moves first, chest follows, right arm sweeps a broad circle at chest height, and the left arm travels low in the opposite direction. She sings through the movement and pauses with the two arms at different heights, ready for the next accent.",
+          "camera": "Arc Shot with large amplitude at fast speed. Travel on a smooth leftward orbit in a full-body three-quarter view with strong parallax. Keep both feet, pelvis, torso, arms and face visible for the entire circular phrase, and end on the same orbit direction."
+        },
+        {
+          "action": "For the first 1.7 seconds the singer completes the circular motion with a clear weight transfer and opens both hands. Then several independent foxfire lights enter the space from the trees and sweep around her in one wide circular flow. She follows their path with her gaze, turns her chest slightly while keeping both feet supported, and lowers her arms to finish the phrase. The lights travel outward through the trees as her face settles into an expressive singing close view.",
+          "camera": "Arc Shot with large amplitude at fast speed. Continue the same smooth leftward orbit from a full-body three-quarter view; keep the full body and the circling foxfire visible together through the main accent. During the final third Push In to a readable face close-up with both eyes, brows and singing mouth, while the lights continue outward in the background. Finish the leftward orbit without a sudden reverse."
+        }
+      ]
+    }
+  }
+}

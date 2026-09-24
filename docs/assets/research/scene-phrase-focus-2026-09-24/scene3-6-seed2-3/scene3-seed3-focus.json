@@ -1,0 +1,108 @@
+{
+  "scene": 3,
+  "seed": 3,
+  "stage": "focus",
+  "payload": {
+    "scene_number": 3,
+    "shot_lyrics": [
+      {
+        "shot": 1,
+        "lines": [
+          "石段に積もる"
+        ]
+      },
+      {
+        "shot": 2,
+        "lines": [
+          "名もなき季節",
+          "昨日の願いは",
+          "苔へと還る",
+          "幼い手で結んだ"
+        ]
+      }
+    ],
+    "phrase_candidates": [
+      {
+        "id": "SHOT:1",
+        "first_shot": 1,
+        "last_shot": 1,
+        "lines": [
+          {
+            "shot": 1,
+            "source_line": 42,
+            "text": "石段に積もる"
+          }
+        ]
+      },
+      {
+        "id": "BRIDGE:1-2",
+        "first_shot": 1,
+        "last_shot": 2,
+        "lines": [
+          {
+            "shot": 1,
+            "source_line": 42,
+            "text": "石段に積もる"
+          },
+          {
+            "shot": 2,
+            "source_line": 48,
+            "text": "名もなき季節"
+          }
+        ]
+      },
+      {
+        "id": "SHOT:2",
+        "first_shot": 2,
+        "last_shot": 2,
+        "lines": [
+          {
+            "shot": 2,
+            "source_line": 48,
+            "text": "名もなき季節"
+          },
+          {
+            "shot": 2,
+            "source_line": 52,
+            "text": "昨日の願いは"
+          },
+          {
+            "shot": 2,
+            "source_line": 56,
+            "text": "苔へと還る"
+          },
+          {
+            "shot": 2,
+            "source_line": 60,
+            "text": "幼い手で結んだ"
+          }
+        ]
+      }
+    ]
+  },
+  "payload_sha256": "982e1db93e84c501271f9cf3259fdc5cc2ab43c21fcf8dfda690888c06a52904",
+  "prompt_sha256": "96ff2d9db3b757725ce0f2c86ba54c85d18eb4fba57f01df084005ae2410bacd",
+  "prompt_tokens": 496,
+  "elapsed_seconds": 2.557515599997714,
+  "response": "EVAL\t1\tYES｜石段の積み重ねが可視化可能。EVAL    2    YES｜季節の変化と苔の成長が連続して描写できる。SELECT    2    2\nEVAL\t2\tYES｜季節の変化と苔の成長が連続して描写できる。SELECT    2    2\nSELECT\t1\tNONE\n",
+  "parsed": {
+    "evaluations": [
+      {
+        "shot": 1,
+        "visual": "YES",
+        "reason": "石段の積み重ねが可視化可能。EVAL    2    YES｜季節の変化と苔の成長が連続して描写できる。SELECT    2    2"
+      },
+      {
+        "shot": 2,
+        "visual": "YES",
+        "reason": "季節の変化と苔の成長が連続して描写できる。SELECT    2    2"
+      }
+    ],
+    "selected": {
+      "id": "NONE",
+      "first_shot": null,
+      "last_shot": null,
+      "lines": []
+    }
+  }
+}

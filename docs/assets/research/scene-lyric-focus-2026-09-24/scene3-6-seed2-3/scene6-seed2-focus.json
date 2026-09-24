@@ -1,0 +1,51 @@
+{
+  "scene": 6,
+  "seed": 2,
+  "stage": "focus",
+  "payload": {
+    "original_lyrics": [
+      {
+        "lyrics": [
+          {
+            "id": "LYRIC:shot1:line136",
+            "text": "長さなのか"
+          },
+          {
+            "id": "LYRIC:shot1:line140",
+            "text": "燃えた日の"
+          }
+        ],
+        "shot": 1
+      },
+      {
+        "lyrics": [
+          {
+            "id": "LYRIC:shot2:line146",
+            "text": "深さなのか"
+          },
+          {
+            "id": "LYRIC:shot2:line150",
+            "text": "答えを問うても"
+          },
+          {
+            "id": "LYRIC:shot2:line154",
+            "text": "御神木は"
+          }
+        ],
+        "shot": 2
+      }
+    ],
+    "scene_number": 6
+  },
+  "payload_sha256": "0644098530451dfd9fd124a2a725700e90a8bb03a206db22ae4a01b06b6465ea",
+  "prompt_sha256": "ceeb8c10b2d7768fcb99bfd56b19af68ebc67e092cd4c02e16ec1d1ac32affc4",
+  "prompt_tokens": 312,
+  "elapsed_seconds": 0.37453659999300726,
+  "response": "SOURCE\t1\tLYRIC:shot1:line136\n",
+  "parsed": {
+    "id": "LYRIC:shot1:line136",
+    "shot": 1,
+    "source_line": 136,
+    "text": "長さなのか"
+  }
+}

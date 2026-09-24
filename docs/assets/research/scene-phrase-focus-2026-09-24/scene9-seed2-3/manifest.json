@@ -1,0 +1,159 @@
+{
+  "purpose": "per-Shot lyric phrase evaluation then one Event",
+  "source": "docs\\assets\\research\\scene-composition-full-sequence-2026-09-23\\no-previous-state-full-seed2\\summary.json",
+  "source_sha256": "6ef25afa7df69d25f71d223d8b5d03dd0e03b4b3fbb1eb146869e88e71981247",
+  "model": "E:\\ComfyUI\\models\\LLM\\GGUF\\Qwen3-8B-Abliterated\\qwen3-8b-abliterated-Q4_K_M.gguf",
+  "config": {
+    "chat_format": "",
+    "max_tokens": 3072,
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "repetition_penalty": 1.05,
+    "gpu_layers": -1,
+    "n_batch": 512,
+    "n_ctx": 16384,
+    "flash_attn": true,
+    "kv_cache_type": "q8_0",
+    "op_offload": true,
+    "keep_model_loaded": false,
+    "seed": 2
+  },
+  "results": [
+    {
+      "scene": 9,
+      "seed": 2,
+      "stage": "baseline",
+      "payload_sha256": "b03cdc3532cb61a2f66146a50f97f1c8743f9d2eb2e69fe4933685193d6167c7",
+      "prompt_tokens": 2933,
+      "elapsed_seconds": 1.5828789000079269,
+      "response": "EVENT\t1\tSHOT=2｜朱の空に舞う　狐火が赤い帯を照らし、帯の結び目から光が漏れる\n",
+      "parsed": {
+        "shot": 2,
+        "body": "朱の空に舞う　狐火が赤い帯を照らし、帯の結び目から光が漏れる"
+      }
+    },
+    {
+      "scene": 9,
+      "seed": 2,
+      "stage": "focus",
+      "payload_sha256": "8f5fa10e140cb7f0b6aabec1d38160ed7844aa8723fb31ee754a857c4d79955d",
+      "prompt_tokens": 608,
+      "elapsed_seconds": 3.2001917000015965,
+      "response": "EVAL\t1\tYES｜「この手を離すことも」は手の動きや離れる動作に応じて可視化可能。  \nEVAL\t2\tYES｜「愛なのだろうか」と「朱の空に舞う」は感情と自然現象の連続で映像化可能。  \nEVAL\t3\tYES｜「狐火へ問う」は光の動きや質感に応じて可視化可能。  \nSELECT\t1\tSHOT:2\n",
+      "parsed": {
+        "evaluations": [
+          {
+            "shot": 1,
+            "visual": "YES",
+            "reason": "「この手を離すことも」は手の動きや離れる動作に応じて可視化可能。  "
+          },
+          {
+            "shot": 2,
+            "visual": "YES",
+            "reason": "「愛なのだろうか」と「朱の空に舞う」は感情と自然現象の連続で映像化可能。  "
+          },
+          {
+            "shot": 3,
+            "visual": "YES",
+            "reason": "「狐火へ問う」は光の動きや質感に応じて可視化可能。  "
+          }
+        ],
+        "selected": {
+          "id": "SHOT:2",
+          "first_shot": 2,
+          "last_shot": 2,
+          "lines": [
+            {
+              "shot": 2,
+              "source_line": 232,
+              "text": "愛なのだろうか"
+            },
+            {
+              "shot": 2,
+              "source_line": 236,
+              "text": "朱の空に舞う"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "scene": 9,
+      "seed": 2,
+      "stage": "selected_event",
+      "payload_sha256": "59d0f19a8b78a68380aac2b8fa61ee5bc584e3b53eef6d69a3900a9c616a15d1",
+      "prompt_tokens": 3140,
+      "elapsed_seconds": 2.0297982999909436,
+      "response": "EVENT\t1\tSHOT=2｜朱の空に舞うと同時に、赤い鼻緒の黒い木製台の下駄が風に揺れ、紅葉した木々の葉が一つ舞い上がる。\n",
+      "parsed": {
+        "shot": 2,
+        "body": "朱の空に舞うと同時に、赤い鼻緒の黒い木製台の下駄が風に揺れ、紅葉した木々の葉が一つ舞い上がる。"
+      }
+    },
+    {
+      "scene": 9,
+      "seed": 3,
+      "stage": "baseline",
+      "payload_sha256": "b03cdc3532cb61a2f66146a50f97f1c8743f9d2eb2e69fe4933685193d6167c7",
+      "prompt_tokens": 2933,
+      "elapsed_seconds": 1.2993048000062117,
+      "response": "EVENT\t1\tSHOT=1｜朱の空に舞う狐火が、紅葉した木々の間を流れるように広がる\n",
+      "parsed": {
+        "shot": 1,
+        "body": "朱の空に舞う狐火が、紅葉した木々の間を流れるように広がる"
+      }
+    },
+    {
+      "scene": 9,
+      "seed": 3,
+      "stage": "focus",
+      "payload_sha256": "8f5fa10e140cb7f0b6aabec1d38160ed7844aa8723fb31ee754a857c4d79955d",
+      "prompt_tokens": 608,
+      "elapsed_seconds": 6.029006600001594,
+      "response": "EVAL\t1\tYES｜「この手を離すことも」は手の動きや離れる動作に応じた視覚表現が可能EVAL    2    YES｜「朱の空に舞う」は空の色と舞う動作の可視化に適するEVAL    3    YES｜「忘れぬことは」は記憶や感情の変化を映像化できるSELECT    1    2\nEVAL\t2\tYES｜「朱の空に舞う」は空の色と舞う動作の可視化に適するEVAL    3    YES｜「忘れぬことは」は記憶や感情の変化を映像化できるSELECT    2    2\nEVAL\t3\tYES｜「忘れぬことは」は記憶や感情の変化を映像化できるSELECT    3    2\nSELECT\t1\tNONE\n",
+      "parsed": {
+        "evaluations": [
+          {
+            "shot": 1,
+            "visual": "YES",
+            "reason": "「この手を離すことも」は手の動きや離れる動作に応じた視覚表現が可能EVAL    2    YES｜「朱の空に舞う」は空の色と舞う動作の可視化に適するEVAL    3    YES｜「忘れぬことは」は記憶や感情の変化を映像化できるSELECT    1    2"
+          },
+          {
+            "shot": 2,
+            "visual": "YES",
+            "reason": "「朱の空に舞う」は空の色と舞う動作の可視化に適するEVAL    3    YES｜「忘れぬことは」は記憶や感情の変化を映像化できるSELECT    2    2"
+          },
+          {
+            "shot": 3,
+            "visual": "YES",
+            "reason": "「忘れぬことは」は記憶や感情の変化を映像化できるSELECT    3    2"
+          }
+        ],
+        "selected": {
+          "id": "NONE",
+          "first_shot": null,
+          "last_shot": null,
+          "lines": []
+        }
+      }
+    },
+    {
+      "scene": 9,
+      "seed": 3,
+      "stage": "selected_event",
+      "payload_sha256": "a9170ce33e895915339fca429d3c49b04fed299e55743c2d9dc334f99b9a8279",
+      "prompt_tokens": 3100,
+      "elapsed_seconds": 1.351349399992614,
+      "response": "EVENT\t1\tSHOT=1｜朱の空に舞う狐火が、紅葉した木々の間を流れるように広がる\n",
+      "parsed": {
+        "shot": 1,
+        "body": "朱の空に舞う狐火が、紅葉した木々の間を流れるように広がる"
+      }
+    }
+  ],
+  "prompts_sha256": {
+    "baseline": "0405a09587edbb14e29b7904ad54080bb15cb9d170a1fd88f373c09812bd77af",
+    "focus": "96ff2d9db3b757725ce0f2c86ba54c85d18eb4fba57f01df084005ae2410bacd",
+    "event": "6d02a12c9b10f55c6f47b403c7edb2d139177e5bebe1098fcb8d5dc945d988e7"
+  }
+}

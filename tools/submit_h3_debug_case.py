@@ -1,4 +1,4 @@
-"""Submit one isolated H3 scene using a video's saved API graph.
+"""Submit an isolated H3 Scene range or a full-plan comparison.
 
 The metadata JSON must contain prompt/workflow/h3_plan (extracted from ffprobe
 tags). The server must already be running; this tool never starts/stops it.
@@ -18,6 +18,8 @@ def main():
     parser.add_argument("--plan", type=Path, required=True)
     parser.add_argument("--case", required=True)
     parser.add_argument("--scene", type=int, default=1)
+    parser.add_argument("--scene-length", type=int, default=1)
+    parser.add_argument("--full", action="store_true", help="render the complete Plan without splitting")
     parser.add_argument("--scheduler", choices=("simple", "beta"), default="simple")
     parser.add_argument("--url", default="http://127.0.0.1:8191")
     parser.add_argument("--evidence", type=Path, required=True)
@@ -26,8 +28,8 @@ def main():
         parser.error("case must be a safe unique run name")
     metadata = json.loads(args.metadata.read_text(encoding="utf-8-sig"))
     plan = json.loads(args.plan.read_text(encoding="utf-8-sig"))
-    if not 1 <= args.scene <= len(plan["shots"]):
-        parser.error("scene is outside the input plan")
+    if not args.full and (not 1 <= args.scene <= len(plan["shots"]) or not 1 <= args.scene_length <= len(plan["shots"]) - args.scene + 1):
+        parser.error("scene range is outside the input plan")
     graph = copy.deepcopy(metadata["prompt"])
     required = {"48": "MVDirectorSceneDebugSplitter", "24": "MiniMaxH3ChainPlanModern",
                 "37": "MVDirectorAudioPadPair", "15": "BasicScheduler"}
@@ -37,7 +39,11 @@ def main():
     for index, shot in enumerate(plan["shots"]):
         shot["seed"] = metadata["h3_plan"]["shots"][index]["seed"]
     text = json.dumps(plan, ensure_ascii=False)
-    graph["48"]["inputs"].update(plan_json=text, enable=True, scene_start=args.scene, scene_length=1)
+    graph["48"]["inputs"].update(
+        plan_json=text, enable=not args.full,
+        scene_start=1 if args.full else args.scene,
+        scene_length=len(plan["shots"]) if args.full else args.scene_length,
+    )
     graph["37"]["inputs"]["plan_json"] = text
     graph["24"]["inputs"].update(run_name=args.case, plan_json=text)
     graph["15"]["inputs"]["scheduler"] = args.scheduler
@@ -56,7 +62,9 @@ def main():
                 visit(value[0])
     visit("21")
     args.evidence.parent.mkdir(parents=True, exist_ok=True)
-    evidence = {"case": args.case, "scene": args.scene, "scheduler": args.scheduler,
+    evidence = {"case": args.case, "scene": "all" if args.full else args.scene,
+                "scene_length": len(plan["shots"]) if args.full else args.scene_length,
+                "scheduler": args.scheduler,
                 "plan_source": str(args.plan), "prompt": selected}
     request = urllib.request.Request(args.url + "/prompt",
         data=json.dumps({"prompt": selected}).encode(), headers={"Content-Type": "application/json"})

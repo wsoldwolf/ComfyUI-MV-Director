@@ -1,0 +1,564 @@
+{
+  "purpose": "per-Shot lyric phrase evaluation then one Event",
+  "source": "E:\\ComfyUI\\projects\\ComfyUI-MV-Director\\docs\\assets\\research\\scene-composition-full-sequence-2026-09-23\\p1b-six-scenes-seed2-v2\\summary.json",
+  "source_sha256": "f07d38f1169c428cadd85b51cc230460c08ee7dbec6c76f4e5c16045252874d8",
+  "model": "E:\\ComfyUI\\models\\LLM\\GGUF\\Qwen3-8B-Abliterated\\qwen3-8b-abliterated-Q4_K_M.gguf",
+  "config": {
+    "chat_format": "",
+    "max_tokens": 3072,
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "repetition_penalty": 1.05,
+    "gpu_layers": -1,
+    "n_batch": 512,
+    "n_ctx": 16384,
+    "flash_attn": true,
+    "kv_cache_type": "q8_0",
+    "op_offload": true,
+    "keep_model_loaded": false,
+    "seed": 2
+  },
+  "results": [
+    {
+      "scene": 3,
+      "seed": 2,
+      "stage": "baseline",
+      "payload_sha256": "3a04b12e1c734847630f457910f47472eee5b590b275b6014e17410e9607fe41",
+      "prompt_tokens": 2626,
+      "elapsed_seconds": 1.3109107999916887,
+      "response": "EVENT\t1\tSHOT=2｜紅葉した木々の影が石畳に揺れて、苔の上を滑るように流れる\n",
+      "parsed": {
+        "shot": 2,
+        "body": "紅葉した木々の影が石畳に揺れて、苔の上を滑るように流れる"
+      }
+    },
+    {
+      "scene": 3,
+      "seed": 2,
+      "stage": "focus",
+      "payload_sha256": "982e1db93e84c501271f9cf3259fdc5cc2ab43c21fcf8dfda690888c06a52904",
+      "prompt_tokens": 496,
+      "elapsed_seconds": 2.756051899996237,
+      "response": "EVAL\t1\tYES｜石段の積み重ねが可視化可能。EVAL    2    YES｜季節の変化と苔の成長が連続して描写できる。SELECT    2    2\nEVAL\t2\tYES｜季節の変化と苔の成長が連続して描写できる。SELECT    2    2\nSELECT\t1\tNONE\n",
+      "parsed": {
+        "evaluations": [
+          {
+            "shot": 1,
+            "visual": "YES",
+            "reason": "石段の積み重ねが可視化可能。EVAL    2    YES｜季節の変化と苔の成長が連続して描写できる。SELECT    2    2"
+          },
+          {
+            "shot": 2,
+            "visual": "YES",
+            "reason": "季節の変化と苔の成長が連続して描写できる。SELECT    2    2"
+          }
+        ],
+        "selected": {
+          "id": "NONE",
+          "first_shot": null,
+          "last_shot": null,
+          "lines": []
+        }
+      }
+    },
+    {
+      "scene": 3,
+      "seed": 2,
+      "stage": "selected_event",
+      "payload_sha256": "540c8bf7d0f15ae051246009b91b9a727470b7ed011934ee714102c8ee016d19",
+      "prompt_tokens": 2793,
+      "elapsed_seconds": 1.320731900006649,
+      "response": "EVENT\t1\tSHOT=1｜紅葉した木々の葉が、石段に積もる歌詞に合わせて揺れて落ちる\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉した木々の葉が、石段に積もる歌詞に合わせて揺れて落ちる"
+      }
+    },
+    {
+      "scene": 4,
+      "seed": 2,
+      "stage": "baseline",
+      "payload_sha256": "4d7fb6ac0afe288f5c59956596d9a66f0b4ba9f6ec0689182360cd8016e30caf",
+      "prompt_tokens": 2701,
+      "elapsed_seconds": 1.1800051999889547,
+      "response": "EVENT\t1\tSHOT=1｜紅葉した木々の影が石畳に揺れて、葉が一枚地面へ落ちる\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉した木々の影が石畳に揺れて、葉が一枚地面へ落ちる"
+      }
+    },
+    {
+      "scene": 4,
+      "seed": 2,
+      "stage": "focus",
+      "payload_sha256": "f3680ab7bb6ac06253151fba54427853ed4700668742548a424db26dabdf1f0d",
+      "prompt_tokens": 580,
+      "elapsed_seconds": 4.359363299998222,
+      "response": "EVAL\t1\tYES｜色褪せた契りは可視化可能。EVAL    2    YES｜「人は花より短く咲いて」は可視化可能。EVAL    3    YES｜「それでも永遠を」は可視化可能。SELECT    1    2\nEVAL\t2\tYES｜「人は花より短く咲いて」は可視化可能。EVAL    3    YES｜「それでも永遠を」は可視化可能。SELECT    1    2\nEVAL\t3\tYES｜「それでも永遠を」は可視化可能。SELECT    1    2\nSELECT\t1\tSHOT:2\n",
+      "parsed": {
+        "evaluations": [
+          {
+            "shot": 1,
+            "visual": "YES",
+            "reason": "色褪せた契りは可視化可能。EVAL    2    YES｜「人は花より短く咲いて」は可視化可能。EVAL    3    YES｜「それでも永遠を」は可視化可能。SELECT    1    2"
+          },
+          {
+            "shot": 2,
+            "visual": "YES",
+            "reason": "「人は花より短く咲いて」は可視化可能。EVAL    3    YES｜「それでも永遠を」は可視化可能。SELECT    1    2"
+          },
+          {
+            "shot": 3,
+            "visual": "YES",
+            "reason": "「それでも永遠を」は可視化可能。SELECT    1    2"
+          }
+        ],
+        "selected": {
+          "id": "SHOT:2",
+          "first_shot": 2,
+          "last_shot": 2,
+          "lines": [
+            {
+              "shot": 2,
+              "source_line": 80,
+              "text": "わらわだけ"
+            },
+            {
+              "shot": 2,
+              "source_line": 84,
+              "text": "人は花より"
+            },
+            {
+              "shot": 2,
+              "source_line": 88,
+              "text": "短く咲いて"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "scene": 4,
+      "seed": 2,
+      "stage": "selected_event",
+      "payload_sha256": "2cd880c4b6a1ff2f6ac56e028bdaf43f1b57cbc6d2e65b2690ae31f999b6a10e",
+      "prompt_tokens": 2921,
+      "elapsed_seconds": 1.8273226999881444,
+      "response": "EVENT\t1\tSHOT=2｜紅葉の木々の間から、狐巫女が歩くたびに光が揺れて、その足元に散らばる紅葉が舞い上がる\n",
+      "parsed": {
+        "shot": 2,
+        "body": "紅葉の木々の間から、狐巫女が歩くたびに光が揺れて、その足元に散らばる紅葉が舞い上がる"
+      }
+    },
+    {
+      "scene": 5,
+      "seed": 2,
+      "stage": "baseline",
+      "payload_sha256": "98a0c90beba345cf929891daddcf5455c29a317dec60574331231edd0d51b6a1",
+      "prompt_tokens": 2894,
+      "elapsed_seconds": 1.143710699994699,
+      "response": "EVENT\t1\tSHOT=1｜紅葉の木々から落ちる葉が、狐巫女の足元に積もる\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉の木々から落ちる葉が、狐巫女の足元に積もる"
+      }
+    },
+    {
+      "scene": 5,
+      "seed": 2,
+      "stage": "focus",
+      "payload_sha256": "ba84e52e20c4dc16646628f5113ca923491e78f2dabd9dfc024af13dca84facd",
+      "prompt_tokens": 501,
+      "elapsed_seconds": 4.113119700006791,
+      "response": "EVAL\t1\tYES｜「口にする」は口の動きで可視化可能。EVAL    2    YES｜「胸の古傷は」は胸の状態変化に使える。EVAL    3    YES｜「命とは」は命の流れや光の変化に使える。SELECT    1    2\nEVAL\t2\tYES｜「胸の古草は」は胸の状態変化に使える。EVAL    3    YES｜「命とは」は命の流れや光の変化に使える。SELECT    1    2\nSELECT\t1\tSHOT:2\n",
+      "parsed": {
+        "evaluations": [
+          {
+            "shot": 1,
+            "visual": "YES",
+            "reason": "「口にする」は口の動きで可視化可能。EVAL    2    YES｜「胸の古傷は」は胸の状態変化に使える。EVAL    3    YES｜「命とは」は命の流れや光の変化に使える。SELECT    1    2"
+          },
+          {
+            "shot": 2,
+            "visual": "YES",
+            "reason": "「胸の古草は」は胸の状態変化に使える。EVAL    3    YES｜「命とは」は命の流れや光の変化に使える。SELECT    1    2"
+          }
+        ],
+        "selected": {
+          "id": "SHOT:2",
+          "first_shot": 2,
+          "last_shot": 2,
+          "lines": [
+            {
+              "shot": 2,
+              "source_line": 118,
+              "text": "胸の古傷は"
+            },
+            {
+              "shot": 2,
+              "source_line": 122,
+              "text": "増えてゆく"
+            },
+            {
+              "shot": 2,
+              "source_line": 126,
+              "text": "命とは"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "scene": 5,
+      "seed": 2,
+      "stage": "selected_event",
+      "payload_sha256": "e032dcab160bd70be7602c3ec296b2fd2679a9ba5a5acd5de2ae13e3a8d7fe47",
+      "prompt_tokens": 3116,
+      "elapsed_seconds": 1.3137484999897424,
+      "response": "EVENT\t1\tSHOT=1｜紅葉の木々が風に揺れ、一枚の紅葉が石畳の道へ落ちる\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉の木々が風に揺れ、一枚の紅葉が石畳の道へ落ちる"
+      }
+    },
+    {
+      "scene": 6,
+      "seed": 2,
+      "stage": "baseline",
+      "payload_sha256": "09943ecd5b6d643dc44b1bfc1084a32d66252e51a889509078448a85e656afcb",
+      "prompt_tokens": 2275,
+      "elapsed_seconds": 1.1292973999952665,
+      "response": "EVENT\t1\tSHOT=1｜紅葉の木々から落ちる葉が、神社の鳥居の上に積もる\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉の木々から落ちる葉が、神社の鳥居の上に積もる"
+      }
+    },
+    {
+      "scene": 6,
+      "seed": 2,
+      "stage": "focus",
+      "payload_sha256": "db2189138339be9cde9abfd7ff27ae03a02314741a56686848b47bdb881100e5",
+      "prompt_tokens": 477,
+      "elapsed_seconds": 1.7186154999944847,
+      "response": "EVAL\t1\tYES｜「燃えた日の」は火の進む様子を映すことができる。　\nEVAL\t2\tNO｜「深さなのか」は抽象的な問いであり、具体的な可視変化には使えない。　\nSELECT\t1\tSHOT:1\n",
+      "parsed": {
+        "evaluations": [
+          {
+            "shot": 1,
+            "visual": "YES",
+            "reason": "「燃えた日の」は火の進む様子を映すことができる。　"
+          },
+          {
+            "shot": 2,
+            "visual": "NO",
+            "reason": "「深さなのか」は抽象的な問いであり、具体的な可視変化には使えない。　"
+          }
+        ],
+        "selected": {
+          "id": "SHOT:1",
+          "first_shot": 1,
+          "last_shot": 1,
+          "lines": [
+            {
+              "shot": 1,
+              "source_line": 136,
+              "text": "長さなのか"
+            },
+            {
+              "shot": 1,
+              "source_line": 140,
+              "text": "燃えた日の"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "scene": 6,
+      "seed": 2,
+      "stage": "selected_event",
+      "payload_sha256": "b43b0dfd153359d3a8f9ef406d8eb6affe828d779bb784ec4e06bffbdf45598d",
+      "prompt_tokens": 2478,
+      "elapsed_seconds": 1.0080403000029037,
+      "response": "EVENT\t1\tSHOT=1｜紅葉の木々が揺れ、落ち葉が地面に積もる\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉の木々が揺れ、落ち葉が地面に積もる"
+      }
+    },
+    {
+      "scene": 3,
+      "seed": 3,
+      "stage": "baseline",
+      "payload_sha256": "3a04b12e1c734847630f457910f47472eee5b590b275b6014e17410e9607fe41",
+      "prompt_tokens": 2626,
+      "elapsed_seconds": 1.38154050000594,
+      "response": "EVENT\t1\tSHOT=2｜紅葉の木々から落ちる紅葉が、石段に積もる苔の上を軽やかに舞う\n",
+      "parsed": {
+        "shot": 2,
+        "body": "紅葉の木々から落ちる紅葉が、石段に積もる苔の上を軽やかに舞う"
+      }
+    },
+    {
+      "scene": 3,
+      "seed": 3,
+      "stage": "focus",
+      "payload_sha256": "982e1db93e84c501271f9cf3259fdc5cc2ab43c21fcf8dfda690888c06a52904",
+      "prompt_tokens": 496,
+      "elapsed_seconds": 2.557515599997714,
+      "response": "EVAL\t1\tYES｜石段の積み重ねが可視化可能。EVAL    2    YES｜季節の変化と苔の成長が連続して描写できる。SELECT    2    2\nEVAL\t2\tYES｜季節の変化と苔の成長が連続して描写できる。SELECT    2    2\nSELECT\t1\tNONE\n",
+      "parsed": {
+        "evaluations": [
+          {
+            "shot": 1,
+            "visual": "YES",
+            "reason": "石段の積み重ねが可視化可能。EVAL    2    YES｜季節の変化と苔の成長が連続して描写できる。SELECT    2    2"
+          },
+          {
+            "shot": 2,
+            "visual": "YES",
+            "reason": "季節の変化と苔の成長が連続して描写できる。SELECT    2    2"
+          }
+        ],
+        "selected": {
+          "id": "NONE",
+          "first_shot": null,
+          "last_shot": null,
+          "lines": []
+        }
+      }
+    },
+    {
+      "scene": 3,
+      "seed": 3,
+      "stage": "selected_event",
+      "payload_sha256": "540c8bf7d0f15ae051246009b91b9a727470b7ed011934ee714102c8ee016d19",
+      "prompt_tokens": 2793,
+      "elapsed_seconds": 1.511678099996061,
+      "response": "EVENT\t1\tSHOT=1｜紅葉の木々の間から、石段に積もる落ち葉が風に揺れて、一枚ずつゆっくりと舞い上がる\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉の木々の間から、石段に積もる落ち葉が風に揺れて、一枚ずつゆっくりと舞い上がる"
+      }
+    },
+    {
+      "scene": 4,
+      "seed": 3,
+      "stage": "baseline",
+      "payload_sha256": "4d7fb6ac0afe288f5c59956596d9a66f0b4ba9f6ec0689182360cd8016e30caf",
+      "prompt_tokens": 2701,
+      "elapsed_seconds": 1.1553571000113152,
+      "response": "EVENT\t1\tSHOT=1｜紅葉の木々から落ちる葉が、狐巫女の足元に積もる\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉の木々から落ちる葉が、狐巫女の足元に積もる"
+      }
+    },
+    {
+      "scene": 4,
+      "seed": 3,
+      "stage": "focus",
+      "payload_sha256": "f3680ab7bb6ac06253151fba54427853ed4700668742548a424db26dabdf1f0d",
+      "prompt_tokens": 580,
+      "elapsed_seconds": 4.286790300000575,
+      "response": "EVAL\t1\tYES｜色褪せた契りは可視化可能。EVAL    2    YES｜「人は花より短く咲いて」は可視化可能。EVAL    3    YES｜「それでも永遠を」は可視化可能。SELECT    1    2\nEVAL\t2\tYES｜「人は花より短く咲いて」は可視化可能。EVAL    3    YES｜「それでも永遠を」は可視化可能。SELECT    1    2\nEVAL\t3\tYES｜「それでも永遠を」は可視化可能。SELECT    1    2\nSELECT\t1\tSHOT:2\n",
+      "parsed": {
+        "evaluations": [
+          {
+            "shot": 1,
+            "visual": "YES",
+            "reason": "色褪せた契りは可視化可能。EVAL    2    YES｜「人は花より短く咲いて」は可視化可能。EVAL    3    YES｜「それでも永遠を」は可視化可能。SELECT    1    2"
+          },
+          {
+            "shot": 2,
+            "visual": "YES",
+            "reason": "「人は花より短く咲いて」は可視化可能。EVAL    3    YES｜「それでも永遠を」は可視化可能。SELECT    1    2"
+          },
+          {
+            "shot": 3,
+            "visual": "YES",
+            "reason": "「それでも永遠を」は可視化可能。SELECT    1    2"
+          }
+        ],
+        "selected": {
+          "id": "SHOT:2",
+          "first_shot": 2,
+          "last_shot": 2,
+          "lines": [
+            {
+              "shot": 2,
+              "source_line": 80,
+              "text": "わらわだけ"
+            },
+            {
+              "shot": 2,
+              "source_line": 84,
+              "text": "人は花より"
+            },
+            {
+              "shot": 2,
+              "source_line": 88,
+              "text": "短く咲いて"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "scene": 4,
+      "seed": 3,
+      "stage": "selected_event",
+      "payload_sha256": "2cd880c4b6a1ff2f6ac56e028bdaf43f1b57cbc6d2e65b2690ae31f999b6a10e",
+      "prompt_tokens": 2921,
+      "elapsed_seconds": 1.0462075999967055,
+      "response": "EVENT\t1\tSHOT=2｜紅葉の木々が揺れ、落ち葉が地面に積もる\n",
+      "parsed": {
+        "shot": 2,
+        "body": "紅葉の木々が揺れ、落ち葉が地面に積もる"
+      }
+    },
+    {
+      "scene": 5,
+      "seed": 3,
+      "stage": "baseline",
+      "payload_sha256": "98a0c90beba345cf929891daddcf5455c29a317dec60574331231edd0d51b6a1",
+      "prompt_tokens": 2894,
+      "elapsed_seconds": 1.151725499992608,
+      "response": "EVENT\t1\tSHOT=1｜紅葉の木々から落ちる葉が、狐巫女の足元に積もる\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉の木々から落ちる葉が、狐巫女の足元に積もる"
+      }
+    },
+    {
+      "scene": 5,
+      "seed": 3,
+      "stage": "focus",
+      "payload_sha256": "ba84e52e20c4dc16646628f5113ca923491e78f2dabd9dfc024af13dca84facd",
+      "prompt_tokens": 501,
+      "elapsed_seconds": 1.7174305000080494,
+      "response": "EVAL\t1\tYES｜「見送ることに」は人物の行動として可視化可能。　\nEVAL\t2\tNO｜「胸の古傷は」は抽象的な概念で、直接的な可視変化に使えない。　\nSELECT\t1\tSHOT:1\n",
+      "parsed": {
+        "evaluations": [
+          {
+            "shot": 1,
+            "visual": "YES",
+            "reason": "「見送ることに」は人物の行動として可視化可能。　"
+          },
+          {
+            "shot": 2,
+            "visual": "NO",
+            "reason": "「胸の古傷は」は抽象的な概念で、直接的な可視変化に使えない。　"
+          }
+        ],
+        "selected": {
+          "id": "SHOT:1",
+          "first_shot": 1,
+          "last_shot": 1,
+          "lines": [
+            {
+              "shot": 1,
+              "source_line": 104,
+              "text": "口にする"
+            },
+            {
+              "shot": 1,
+              "source_line": 108,
+              "text": "見送ることに"
+            },
+            {
+              "shot": 1,
+              "source_line": 112,
+              "text": "慣れたはずなのに"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "scene": 5,
+      "seed": 3,
+      "stage": "selected_event",
+      "payload_sha256": "fe9aa7fe5e6b55e734f4d126dc7c2e13525f0a9cef04623173b131722068f085",
+      "prompt_tokens": 3115,
+      "elapsed_seconds": 1.397567899999558,
+      "response": "EVENT\t1\tSHOT=1｜紅葉の木々から零れ落ちる紅葉が、狐巫女の足元に積もるように降り注ぐ。\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉の木々から零れ落ちる紅葉が、狐巫女の足元に積もるように降り注ぐ。"
+      }
+    },
+    {
+      "scene": 6,
+      "seed": 3,
+      "stage": "baseline",
+      "payload_sha256": "09943ecd5b6d643dc44b1bfc1084a32d66252e51a889509078448a85e656afcb",
+      "prompt_tokens": 2275,
+      "elapsed_seconds": 1.3204391000035685,
+      "response": "EVENT\t1\tSHOT=1｜紅葉した木々の影が石畳の道に揺れて、葉の模様が刻まれるように光る\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉した木々の影が石畳の道に揺れて、葉の模様が刻まれるように光る"
+      }
+    },
+    {
+      "scene": 6,
+      "seed": 3,
+      "stage": "focus",
+      "payload_sha256": "db2189138339be9cde9abfd7ff27ae03a02314741a56686848b47bdb881100e5",
+      "prompt_tokens": 477,
+      "elapsed_seconds": 1.780379100004211,
+      "response": "EVAL\t1\tYES｜「燃えた日の」は火の進む様子を映すことができる。　\nEVAL\t2\tNO｜「深さなのか」は抽象的な問いなので、外部の物体・現象の可視変化には使えない。　\nSELECT\t1\tSHOT:1\n",
+      "parsed": {
+        "evaluations": [
+          {
+            "shot": 1,
+            "visual": "YES",
+            "reason": "「燃えた日の」は火の進む様子を映すことができる。　"
+          },
+          {
+            "shot": 2,
+            "visual": "NO",
+            "reason": "「深さなのか」は抽象的な問いなので、外部の物体・現象の可視変化には使えない。　"
+          }
+        ],
+        "selected": {
+          "id": "SHOT:1",
+          "first_shot": 1,
+          "last_shot": 1,
+          "lines": [
+            {
+              "shot": 1,
+              "source_line": 136,
+              "text": "長さなのか"
+            },
+            {
+              "shot": 1,
+              "source_line": 140,
+              "text": "燃えた日の"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "scene": 6,
+      "seed": 3,
+      "stage": "selected_event",
+      "payload_sha256": "b43b0dfd153359d3a8f9ef406d8eb6affe828d779bb784ec4e06bffbdf45598d",
+      "prompt_tokens": 2478,
+      "elapsed_seconds": 1.3569974999991246,
+      "response": "EVENT\t1\tSHOT=1｜紅葉の木々から落ちる葉が、燃えた日の歌詞に合わせてゆっくりと地面へ降り注ぐ\n",
+      "parsed": {
+        "shot": 1,
+        "body": "紅葉の木々から落ちる葉が、燃えた日の歌詞に合わせてゆっくりと地面へ降り注ぐ"
+      }
+    }
+  ],
+  "prompts_sha256": {
+    "baseline": "0405a09587edbb14e29b7904ad54080bb15cb9d170a1fd88f373c09812bd77af",
+    "focus": "96ff2d9db3b757725ce0f2c86ba54c85d18eb4fba57f01df084005ae2410bacd",
+    "event": "6d02a12c9b10f55c6f47b403c7edb2d139177e5bebe1098fcb8d5dc945d988e7"
+  }
+}

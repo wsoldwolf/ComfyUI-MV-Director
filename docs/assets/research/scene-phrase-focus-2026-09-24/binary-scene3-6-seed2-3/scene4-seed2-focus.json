@@ -1,0 +1,156 @@
+{
+  "scene": 4,
+  "seed": 2,
+  "stage": "focus",
+  "payload": {
+    "scene_number": 4,
+    "shot_lyrics": [
+      {
+        "shot": 1,
+        "lines": [
+          "色褪せた契り",
+          "覚えているのは"
+        ]
+      },
+      {
+        "shot": 2,
+        "lines": [
+          "わらわだけ",
+          "人は花より",
+          "短く咲いて"
+        ]
+      },
+      {
+        "shot": 3,
+        "lines": [
+          "それでも永遠を"
+        ]
+      }
+    ],
+    "phrase_candidates": [
+      {
+        "id": "SHOT:1",
+        "first_shot": 1,
+        "last_shot": 1,
+        "lines": [
+          {
+            "shot": 1,
+            "source_line": 70,
+            "text": "色褪せた契り"
+          },
+          {
+            "shot": 1,
+            "source_line": 74,
+            "text": "覚えているのは"
+          }
+        ]
+      },
+      {
+        "id": "BRIDGE:1-2",
+        "first_shot": 1,
+        "last_shot": 2,
+        "lines": [
+          {
+            "shot": 1,
+            "source_line": 74,
+            "text": "覚えているのは"
+          },
+          {
+            "shot": 2,
+            "source_line": 80,
+            "text": "わらわだけ"
+          }
+        ]
+      },
+      {
+        "id": "SHOT:2",
+        "first_shot": 2,
+        "last_shot": 2,
+        "lines": [
+          {
+            "shot": 2,
+            "source_line": 80,
+            "text": "わらわだけ"
+          },
+          {
+            "shot": 2,
+            "source_line": 84,
+            "text": "人は花より"
+          },
+          {
+            "shot": 2,
+            "source_line": 88,
+            "text": "短く咲いて"
+          }
+        ]
+      },
+      {
+        "id": "BRIDGE:2-3",
+        "first_shot": 2,
+        "last_shot": 3,
+        "lines": [
+          {
+            "shot": 2,
+            "source_line": 88,
+            "text": "短く咲いて"
+          },
+          {
+            "shot": 3,
+            "source_line": 94,
+            "text": "それでも永遠を"
+          }
+        ]
+      },
+      {
+        "id": "SHOT:3",
+        "first_shot": 3,
+        "last_shot": 3,
+        "lines": [
+          {
+            "shot": 3,
+            "source_line": 94,
+            "text": "それでも永遠を"
+          }
+        ]
+      }
+    ]
+  },
+  "payload_sha256": "f3680ab7bb6ac06253151fba54427853ed4700668742548a424db26dabdf1f0d",
+  "prompt_sha256": "feb91eef093981ea97d5ee86eadea09a61fe08be9c3716f718acb89f5b118e98",
+  "prompt_tokens": 576,
+  "elapsed_seconds": 0.5985246000054758,
+  "response": "EVAL\t1\tYES\nEVAL\t2\tNO\nEVAL\t3\tYES\nSELECT\t1\tSHOT:1\n",
+  "parsed": {
+    "evaluations": [
+      {
+        "shot": 1,
+        "visual": "YES"
+      },
+      {
+        "shot": 2,
+        "visual": "NO"
+      },
+      {
+        "shot": 3,
+        "visual": "YES"
+      }
+    ],
+    "selected": {
+      "id": "SHOT:1",
+      "first_shot": 1,
+      "last_shot": 1,
+      "lines": [
+        {
+          "shot": 1,
+          "source_line": 70,
+          "text": "色褪せた契り"
+        },
+        {
+          "shot": 1,
+          "source_line": 74,
+          "text": "覚えているのは"
+        }
+      ]
+    }
+  }
+}

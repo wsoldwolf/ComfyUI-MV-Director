@@ -1,0 +1,17 @@
+{
+  "kind": "manual_offline_probe_not_planner_output",
+  "source_emd": "C:\\Software\\ComfyUI\\output\\mv_director-5\\context_loop_emd_00001.md",
+  "source_emd_sha256": "46894f43a2acd92033076daf081d9fead43cf02e36bb1f4bb39fb1c5117a0b77",
+  "source_plan": "C:\\Software\\ComfyUI\\output\\mv_director-5\\context_loop_plan_00001.txt",
+  "source_plan_sha256": "7a1b6307b89fc0cbfedfc2c923ea13d7109d8a4928bde9880a05df771eb26ec5",
+  "treatment": "docs\\assets\\research\\shot-linkage-body-2026-09-24\\treatment.json",
+  "treatment_sha256": "8b0704430f1be3307a41fff6894797155ae20e9d65ce6d97efc79ff91c63bd7f",
+  "candidate_emd_sha256": "f16ebfac74359537b9179e7991d4203ad29cecd590588df7bc4fd83464a9dc14",
+  "candidate_plan_sha256": "caba5eaf26ee41eeed45305bd4b422c05b13d7c02c9924122a0c217cf5c43398",
+  "changed_scenes": [
+    3,
+    4,
+    9
+  ],
+  "compiler_used": false
+}

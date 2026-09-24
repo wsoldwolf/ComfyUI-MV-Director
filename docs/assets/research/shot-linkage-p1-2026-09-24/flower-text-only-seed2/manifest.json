@@ -1,0 +1,31 @@
+{
+  "purpose": "P1 completed lyric phrase, empty versus joined",
+  "source": "docs\\assets\\research\\scene-composition-full-sequence-2026-09-23\\p1b-six-scenes-seed2-v2\\summary.json",
+  "source_sha256": "f07d38f1169c428cadd85b51cc230460c08ee7dbec6c76f4e5c16045252874d8",
+  "system_prompt": "prompts\\experiments\\scene_author_completed_phrase_event.txt",
+  "system_prompt_sha256": "2700570119f45cd464fea8d4705e73e77938dceab0219000da95e98bd0219867",
+  "model": "E:\\ComfyUI\\models\\LLM\\GGUF\\Qwen3-8B-Abliterated\\qwen3-8b-abliterated-Q4_K_M.gguf",
+  "config": {
+    "chat_format": "",
+    "max_tokens": 3072,
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "repetition_penalty": 1.05,
+    "gpu_layers": -1,
+    "n_batch": 512,
+    "n_ctx": 16384,
+    "flash_attn": true,
+    "kv_cache_type": "q8_0",
+    "op_offload": true,
+    "keep_model_loaded": false,
+    "seed": 2
+  },
+  "cases": [
+    {
+      "condition": "text_only",
+      "payload_sha256": "3f572bbaa3eff1a5e94bf57b3b6f959ccaff043699932d29ee2c06bb687db1d1",
+      "response": "EVENT\t1\tSHOT=2｜紅葉の木々が揺れ、落ち葉が石畳に積もる\n",
+      "elapsed_seconds": 1.2209679999941727
+    }
+  ]
+}
