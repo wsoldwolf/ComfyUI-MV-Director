@@ -2,7 +2,8 @@
 
 The metadata JSON must contain prompt/workflow/h3_plan (extracted from ffprobe
 tags). The server must already be running; this tool never starts/stops it.
-All generated output uses a unique run name. Existing plans/media are untouched.
+Use a unique run name for a new comparison. A full-plan run may resume its own
+durable checkpoint prefix by repeating the run name with --start-clip N.
 """
 import argparse
 import copy
@@ -20,6 +21,10 @@ def main():
     parser.add_argument("--scene", type=int, default=1)
     parser.add_argument("--scene-length", type=int, default=1)
     parser.add_argument("--full", action="store_true", help="render the complete Plan without splitting")
+    parser.add_argument("--start-clip", type=int, default=1,
+                        help="resume a full-plan run from this one-based Scene")
+    parser.add_argument("--between-scene-cleanup", choices=("off", "unload_models", "fresh_scene"),
+                        default="off")
     parser.add_argument("--scheduler", choices=("simple", "beta"), default="simple")
     parser.add_argument("--url", default="http://127.0.0.1:8191")
     parser.add_argument("--evidence", type=Path, required=True)
@@ -30,9 +35,16 @@ def main():
     plan = json.loads(args.plan.read_text(encoding="utf-8-sig"))
     if not args.full and (not 1 <= args.scene <= len(plan["shots"]) or not 1 <= args.scene_length <= len(plan["shots"]) - args.scene + 1):
         parser.error("scene range is outside the input plan")
+    if not 1 <= args.start_clip <= len(plan["shots"]):
+        parser.error("start-clip is outside the input plan")
+    if not args.full and args.start_clip != 1:
+        parser.error("start-clip requires --full")
     graph = copy.deepcopy(metadata["prompt"])
     required = {"48": "MVDirectorSceneDebugSplitter", "24": "MiniMaxH3ChainPlanModern",
-                "37": "MVDirectorAudioPadPair", "15": "BasicScheduler"}
+                "37": "MVDirectorAudioPadPair", "15": "BasicScheduler",
+                "7": "MiniMaxH3ChainLoopStart", "29": "MiniMaxH3ChainPreflight",
+                "23": "MiniMaxH3ChainLoopEnd", "28": "MiniMaxH3ChainReview",
+                "21": "MiniMaxH3ChainAssemble"}
     if any(graph.get(key, {}).get("class_type") != kind for key, kind in required.items()):
         parser.error("this saved graph does not have the expected splitter/plan wiring")
     # Seed is explicitly inherited, independent of a different output run name.
@@ -46,6 +58,9 @@ def main():
     )
     graph["37"]["inputs"]["plan_json"] = text
     graph["24"]["inputs"].update(run_name=args.case, plan_json=text)
+    graph["7"]["inputs"]["start_clip"] = args.start_clip
+    graph["29"]["inputs"]["start_clip"] = args.start_clip
+    graph["23"]["inputs"]["between_scene_cleanup"] = args.between_scene_cleanup
     graph["15"]["inputs"]["scheduler"] = args.scheduler
     graph["28"]["inputs"]["enabled"] = False
     graph["21"]["inputs"]["filename"] = args.case
@@ -64,6 +79,8 @@ def main():
     args.evidence.parent.mkdir(parents=True, exist_ok=True)
     evidence = {"case": args.case, "scene": "all" if args.full else args.scene,
                 "scene_length": len(plan["shots"]) if args.full else args.scene_length,
+                "start_clip": args.start_clip,
+                "between_scene_cleanup": args.between_scene_cleanup,
                 "scheduler": args.scheduler,
                 "plan_source": str(args.plan), "prompt": selected}
     request = urllib.request.Request(args.url + "/prompt",

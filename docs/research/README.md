@@ -2,6 +2,7 @@
 
 | 文書 | 内容 |
 |---|---|
+| [Shot接続・全身演技の全編H3検証](shot-linkage-body-full-validation-2026-09-24.md) | Scene 3・4・9の手作業候補を同seed・同尺で全編比較。全身演技と狐火の改善、花の配置、16 Scene再開とScene間メモリ解放、途中動画での人による判定を記録 |
 | [Scene Event：Shot連続句・境界句の焦点選択判定](scene-phrase-focus-validation-2026-09-24.md) | Scene 3〜6・9×2 seedで句の束ね方を検証。候補は正しいが後半Shotの選択とEventへの対象維持に失敗し、追加二段経路を不採用と判定 |
 | [Scene Event：歌詞だけの焦点選択→出来事生成の短区間試験](scene-lyric-focus-two-stage-2026-09-24.md) | 背景・候補を伏せた選択を5 Scene×2 seedで検証。苔は改善したが花・御神木は欠落、狐火は退行し、grammar順の影響も切り分けて本番採用を見送った |
 | [Scene Event根拠宣言 P0–P2：固定入力と8B判定](scene-event-source-p0-p2-validation-2026-09-24.md) | Scene 3–6・9の歌詞出典を固定し、現行EventとSOURCE付きEventを20回比較。形式は成立したが花・御神木の採用は改善せず、P2伝播を品質ゲートで停止 |
