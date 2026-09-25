@@ -11,7 +11,7 @@ from tools.offline_scene_body_chain import model_input, parse_response
 class OfflineSceneBodyChainTests(unittest.TestCase):
     def setUp(self):
         path = Path(__file__).resolve().parents[1] / (
-            "docs/assets/research/scene-body-chain-2026-09-22/fixture.json"
+            "tests/fixtures/research/scene-body-chain-2026-09-22/fixture.json"
         )
         self.scenes = json.loads(path.read_text(encoding="utf-8"))["scenes"]
 
@@ -26,7 +26,7 @@ class OfflineSceneBodyChainTests(unittest.TestCase):
 
     def test_camera_guided_request_preserves_fixed_slots_without_baseline_leakage(self):
         scaffold_path = Path(__file__).resolve().parents[1] / (
-            "docs/assets/research/scene-body-chain-2026-09-22/camera-scaffold.json"
+            "tests/fixtures/research/scene-body-chain-2026-09-22/camera-scaffold.json"
         )
         scaffold = json.loads(scaffold_path.read_text(encoding="utf-8"))
         for scene in self.scenes:
@@ -43,7 +43,7 @@ class OfflineSceneBodyChainTests(unittest.TestCase):
                 camera_coverage=["only one Shot"],
             )
         brief_path = Path(__file__).resolve().parents[1] / (
-            "docs/assets/research/scene-body-chain-2026-09-22/performance-brief.json"
+            "tests/fixtures/research/scene-body-chain-2026-09-22/performance-brief.json"
         )
         briefs = json.loads(brief_path.read_text(encoding="utf-8"))
         for scene in self.scenes:

@@ -9,11 +9,11 @@ from tools.offline_shot_linkage_p1_candidate_addition_probe import candidate_add
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = (
-    ROOT / "docs/assets/research/scene-composition-full-sequence-2026-09-23"
+    ROOT / "tests/fixtures/research/scene-composition-full-sequence-2026-09-23"
     / "p1b-six-scenes-seed2-v2/summary.json"
 )
 CANDIDATE = (
-    ROOT / "docs/assets/research/shot-linkage-p1-2026-09-24"
+    ROOT / "tests/fixtures/research/shot-linkage-p1-2026-09-24"
     / "flower-staging-candidate.txt"
 )
 

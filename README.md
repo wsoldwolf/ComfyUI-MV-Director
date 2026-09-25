@@ -35,7 +35,7 @@ protocol不整合が発生した場合は、32-bit Seedノードを`random`に�
 | [`docs/nodes/`](docs/nodes/README.md) | 公開12ノードの操作マニュアル |
 | [`docs/spec/`](docs/spec/README.md) | EMD、protocol、最小コアの規範仕様 |
 | [`docs/implementation/`](docs/implementation/README.md) | 内部構造、公開surface、実装順序 |
-| [`docs/research/`](docs/research/README.md) | Context Loop調査と仕様監査の記録 |
+| 研究記録（リポジトリ外） | 実験ログ・調査レポートはローカルの`ComfyUI-MV-Director-research`へ保存。配布リポジトリには含めない |
 | [`docs/assets/`](docs/assets/README.md) | READMEや文書で使うPNG/SVG図版 |
 | [`profiles/`](profiles/README.md) | ユーザー拡張可能なStyle、Motion、Camera profile EMD |
 | [Direction / Planner処理フロー](docs/architecture/direction-planner-flow.md) | LLM task、Python所有処理、AS IS境界の図解 |

@@ -9,7 +9,7 @@ from tools.offline_shot_linkage_p1_phrase_probe import completed_phrase_cases
 
 ROOT = Path(__file__).resolve().parents[1]
 SUMMARY = (
-    ROOT / "docs/assets/research/scene-composition-full-sequence-2026-09-23"
+    ROOT / "tests/fixtures/research/scene-composition-full-sequence-2026-09-23"
     / "p1b-six-scenes-seed2-v2/summary.json"
 )
 

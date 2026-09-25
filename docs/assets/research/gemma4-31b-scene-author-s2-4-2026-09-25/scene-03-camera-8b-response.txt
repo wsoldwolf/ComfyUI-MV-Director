@@ -1,2 +1,0 @@
-CAMERA	1	Tracking Shot from the lower front right to the side, following the movement of the character's legs as they walk up the stone steps. The camera moves at a moderate speed, capturing the light reflecting off the moss on the stones.
-CAMERA	2	Arc Shot with large amplitude at fast speed from the lower front right to the upper back, emphasizing the character's upward movement and the glowing moss. The camera transitions smoothly through different angles, highlighting the emotional shift in the lyrics.

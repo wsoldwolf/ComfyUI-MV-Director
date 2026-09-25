@@ -1,2 +1,0 @@
-CAMERA	1	Tracking Shot with large amplitude at fast speed from the lower front to the side, following the movement of the character's body as they shift direction while moving horizontally
-CAMERA	2	Arc Shot with large amplitude at fast speed from the back third to the front oblique, capturing the character's dynamic motion and the falling leaves in the background

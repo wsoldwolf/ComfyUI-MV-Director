@@ -7,7 +7,7 @@ import unittest
 from tools.offline_shot_linkage_body_plan import checked_treatment, replace_plan
 
 
-TREATMENT = Path("docs/assets/research/shot-linkage-body-2026-09-24/treatment.json")
+TREATMENT = Path("tests/fixtures/research/shot-linkage-body-2026-09-24/treatment.json")
 
 
 class ShotLinkageBodyPlanTests(unittest.TestCase):

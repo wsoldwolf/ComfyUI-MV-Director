@@ -21,7 +21,7 @@
 |---|---|
 | [`spec/`](spec/README.md) | EMD、行protocol、Ref2VA変換等の規範仕様 |
 | [`implementation/`](implementation/README.md) | repository構造、公開node surface、実装判断、バージョン・Git運用 |
-| [`research/`](research/README.md) | Context Loopの挙動調査、仕様漏れ監査 |
+| 研究記録（リポジトリ外） | 実験ログ・調査レポートはローカルの`ComfyUI-MV-Director-research`へ保存。配布文書には含めない |
 | [`assets/`](assets/README.md) | 文書へ埋め込むPNG/SVG図版 |
 | [`architecture/`](architecture/direction-planner-flow.md) | コア間の処理フロー図と責務境界 |
 

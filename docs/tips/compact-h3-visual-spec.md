@@ -13,9 +13,9 @@ H3用のPlanを読むと、Cameraの軌道や画角を長く説明する一方�
 
 ## 確認できたことと、まだ仮説であること
 
-- 保存済みEMD `C:\Software\ComfyUI\output\mv_director\audio_reference_emd_00001.md`では、御神木・狐火の人物動作は短いが、Cameraには長い数値・軌道指示がある。[追加比較](../research/audio-reference-compact-tree-fire-stability-2026-09-24.md)に該当SceneとPlan変更を記録した。
-- 苔・花の短区間では、同一Planの局所文だけを簡潔にした比較で、足元の極端な接写を避けつつ花の散る表現が得られた。ただしユーザー評価では元の静かな表現にも良さがあった。[比較レポート](../research/audio-reference-compact-visual-spec-ab-2026-09-24.md)を参照。
-- 狐火の短区間比較では、ユーザーは簡潔版の人物動作とCameraを高く評価し、総合でも簡潔版を好んだ。一方、基準版では比較的落ち着いたCameraのもとで狐火自体の旋回が強く印象に残った。**Cameraとeffectの両方を激しく動かすことが常に最良とは限らない**。御神木でも同じ前Scene Guideから比較し、ユーザーは簡潔版を選んだ。[追加比較](../research/audio-reference-compact-tree-fire-stability-2026-09-24.md)を参照。
+- 保存済みEMD `C:\Software\ComfyUI\output\mv_director\audio_reference_emd_00001.md`では、御神木・狐火の人物動作は短いが、Cameraには長い数値・軌道指示がある。追加比較（外部研究アーカイブ: `audio-reference-compact-tree-fire-stability-2026-09-24.md`）に該当SceneとPlan変更を記録した。
+- 苔・花の短区間では、同一Planの局所文だけを簡潔にした比較で、足元の極端な接写を避けつつ花の散る表現が得られた。ただしユーザー評価では元の静かな表現にも良さがあった。比較レポート（外部研究アーカイブ: `audio-reference-compact-visual-spec-ab-2026-09-24.md`）を参照。
+- 狐火の短区間比較では、ユーザーは簡潔版の人物動作とCameraを高く評価し、総合でも簡潔版を好んだ。一方、基準版では比較的落ち着いたCameraのもとで狐火自体の旋回が強く印象に残った。**Cameraとeffectの両方を激しく動かすことが常に最良とは限らない**。御神木でも同じ前Scene Guideから比較し、ユーザーは簡潔版を選んだ。追加比較（外部研究アーカイブ: `audio-reference-compact-tree-fire-stability-2026-09-24.md`）を参照。
 - これらは手作業で英語Planの局所文を変更したH3実験であり、Plannerの8Bが同じ文を安定して出せるという証明ではない。
 
 実運用へ反映する前に、同じseed・参照画像・音声・前Scene Guideで対象SceneだけをA/B生成し、対象の位置、人物の反応、Cameraの連携、映像の楽しさを人が連続再生で評価する。effectの運動を見せる時間とCameraが動く時間を分ける選択肢もある。静かな演出と勢いのある演出は優劣を一律に決めず、歌詞やSceneの役割で選ぶ。共通promptに「全Sceneで短く」「足を映さない」などの全域制約を足すことは、この実験の結論ではない。
@@ -24,6 +24,6 @@ H3用のPlanを読むと、Cameraの軌道や画角を長く説明する一方�
 
 現在のPlannerでは、CameraのMotion・画角・経路・coverageを有限の選択肢として扱い、`core/planner/engine.py`の`_render_camera_plan`が長い英文へ展開する。Compilerは`core/compiler/ref2va.py`でScene概要とShot本文を組み立て、英訳Planへ渡す。したがって、完成したJSONを後から文字列置換する方式に固定する必要はない。
 
-P0では、Camera profileの`camera_render_style=compact`を選んだ場合だけ、既存の有限Camera選択結果を簡潔な文へ展開する経路を追加した。元の構造化選択とEMDのAction、歌詞時刻、作者の直接指定は保持する。[実装とH3比較](../research/compact-visual-spec-pipeline-p0-2026-09-24.md)を参照。**Cameraだけを短くしても、手書き簡潔版の良さは安定して再現しなかった**。御神木のCamera-only版にはコミカルな左右の揺れが出たため、付属profileの既定は`detailed`のままとした。狐火の発生源も、基準版では人物の手から、Camera-only版では空中からに見え、ユーザーは両方を許容した。次はPlannerが元から持つ出来事・人物反応とCameraの関係を短いScene仕様として一緒に表せるか、追加のLLM段を増やさず比較する。自由文への事後的な正規表現書換えや、全profileへの一律適用は避ける。
+P0では、Camera profileの`camera_render_style=compact`を選んだ場合だけ、既存の有限Camera選択結果を簡潔な文へ展開する経路を追加した。元の構造化選択とEMDのAction、歌詞時刻、作者の直接指定は保持する。実装とH3比較（外部研究アーカイブ: `compact-visual-spec-pipeline-p0-2026-09-24.md`）を参照。**Cameraだけを短くしても、手書き簡潔版の良さは安定して再現しなかった**。御神木のCamera-only版にはコミカルな左右の揺れが出たため、付属profileの既定は`detailed`のままとした。狐火の発生源も、基準版では人物の手から、Camera-only版では空中からに見え、ユーザーは両方を許容した。次はPlannerが元から持つ出来事・人物反応とCameraの関係を短いScene仕様として一緒に表せるか、追加のLLM段を増やさず比較する。自由文への事後的な正規表現書換えや、全profileへの一律適用は避ける。
 
-[P1の追加比較](../research/compact-visual-spec-pipeline-p1-2026-09-24.md)では、Cameraを保持したままScene概要だけ、または概要とActionを手書きで短くした。御神木は**基準版が最良**、狐火は**概要のみ短縮が最良**だった。実8Bでも保存済みActionの短文化を小範囲で試したが、これはH3比較に投入した短縮Planとは異なる。したがって文章量だけを全曲で削る規則にはしない。
+P1の追加比較（外部研究アーカイブ: `compact-visual-spec-pipeline-p1-2026-09-24.md`）では、Cameraを保持したままScene概要だけ、または概要とActionを手書きで短くした。御神木は**基準版が最良**、狐火は**概要のみ短縮が最良**だった。実8Bでも保存済みActionの短文化を小範囲で試したが、これはH3比較に投入した短縮Planとは異なる。したがって文章量だけを全曲で削る規則にはしない。

@@ -2,7 +2,7 @@
 
 2026-09-25。この文書は設計決定や実装予定ではなく、プロトタイプと現行版の比較から生まれた**思考実験**である。ユーザーが「LLMより有限ステートマシンの方が自然に見えるかもしれない」と冗談を交えて指摘したことを、そのまま「Pythonへ置き換えるべき」という要件に読み替えない。最終的な目標は、歌詞を理解して人物を**演じさせるAI**の可能性を引き出すことである。
 
-関連する実測と使用法は[三行の機械的補完](mechanical-motion-and-perceived-performance.md)、[旧8B再現実験](../research/legacy-action-replay-2026-09-23.md)、[補完オン・オフ](../research/motion-composition-2026-09-23.md)、[ユーザー候補との2×2比較](../research/author-candidate-vs-python-motion-p7-2026-09-25.md)にある。ここではそれらを一つの因果説明にまとめず、何が分かり、何がまだ分からないかを考える。
+関連する実測と使用法は[三行の機械的補完](mechanical-motion-and-perceived-performance.md)、旧8B再現実験（外部研究アーカイブ: `legacy-action-replay-2026-09-23.md`）、補完オン・オフ（外部研究アーカイブ: `motion-composition-2026-09-23.md`）、ユーザー候補との2×2比較（外部研究アーカイブ: `author-candidate-vs-python-motion-p7-2026-09-25.md`）にある。ここではそれらを一つの因果説明にまとめず、何が分かり、何がまだ分からないかを考える。
 
 ## まず「演技」を四つに分ける
 

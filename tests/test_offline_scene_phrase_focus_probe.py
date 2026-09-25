@@ -1,10 +1,11 @@
 """CPU contracts for the per-Shot continuous-phrase experiment."""
 
 import json
+from pathlib import Path
 import unittest
 
 from tools.offline_scene_event_source_probe import (
-    BASE_PROMPT, DEFAULT_SOURCE, event_requests,
+    BASE_PROMPT, event_requests,
 )
 from tools.offline_scene_phrase_focus_probe import (
     focus_grammar, focus_payload, parse_focus_response, phrase_candidates,
@@ -15,7 +16,12 @@ from tools.offline_scene_phrase_focus_probe import (
 class ScenePhraseFocusProbeTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        source = json.loads(DEFAULT_SOURCE.read_text(encoding="utf-8"))
+        fixture = (
+            Path(__file__).resolve().parents[1]
+            / "tests/fixtures/research/scene-composition-full-sequence-2026-09-23"
+            / "p1b-six-scenes-seed2-v2/summary.json"
+        )
+        source = json.loads(fixture.read_text(encoding="utf-8"))
         cls.request = event_requests(source, (4,))[4]
 
     def test_consecutive_flower_phrase_and_lyrics_only(self):
@@ -52,7 +58,7 @@ class ScenePhraseFocusProbeTests(unittest.TestCase):
         from pathlib import Path
 
         source = Path(
-            "docs/assets/research/scene-composition-full-sequence-2026-09-23/"
+            "tests/fixtures/research/scene-composition-full-sequence-2026-09-23/"
             "no-previous-state-full-seed2/summary.json"
         )
         request = event_requests(json.loads(source.read_text(encoding="utf-8")), (9,))[9]

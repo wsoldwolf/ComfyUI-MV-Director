@@ -19,7 +19,7 @@ class OfflineActionPhaseTests(unittest.TestCase):
     def test_original_action_never_enters_request(self):
         root = Path(__file__).resolve().parents[1]
         fixture = json.loads((root /
-            "docs/assets/research/scene-body-chain-2026-09-22/fixture.json"
+            "tests/fixtures/research/scene-body-chain-2026-09-22/fixture.json"
         ).read_text(encoding="utf-8"))
         request = model_request(fixture)
         serialized = json.dumps(request, ensure_ascii=False)

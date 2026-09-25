@@ -8,3 +8,7 @@ __pycache__/
 htmlcov/
 desktop.ini
 AGENTS.md
+
+# Local research records are archived outside this repository.
+/docs/assets/research/
+/docs/research/

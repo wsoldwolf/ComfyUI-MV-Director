@@ -30,9 +30,9 @@ Templateでは元見出しIDが失われるため、連続するセクション�
 完成済み`# サブジェクト`全文を`template_emd`へ入力すれば、Plannerは構文検証後に
 モデル選択・推論を省略してそのまま返します。入力不正は自動修復しません。
 この経路のCPU契約試験は通過しています。8B短区間は形式上完成したものの、
-身体演技と歌詞対象の発現時刻は[第一次判定](../research/scene-author-pilot-2026-09-23.md)で
+身体演技と歌詞対象の発現時刻は第一次判定（外部研究アーカイブ: `scene-author-pilot-2026-09-23.md`）で
 不合格であり、H3比較は未実施です。
-続く[P0〜P2試験](../research/section-performance-p0-p2-2026-09-23.md)でも、
+続くP0〜P2試験（外部研究アーカイブ: `section-performance-p0-p2-2026-09-23.md`）でも、
 セクション全文と演技指示の変更による安定した振付改善は確認できていません。
 従来profileの挙動は変更しません。実装順と未検証項目は
 [実行計画](../implementation/scene-choreography-execution-2026-09-23.md)に記録しています。
@@ -45,7 +45,7 @@ v60ではMotionの`performance_mode=dance_phrase`に演技phase・前Cue終端�
 内部境界候補を追加しました。emotionalの有限Cameraでは前終端から画角・視点を接続します。
 有限値の構造処理は、下記の自由文Cameraに関するAS IS説明とは区別してください。
 Motion/Cameraの計画本文とEMD描画文は任意`render_prompt`で分離できます。
-[profile仕様](../../profiles/README.md)と[実装・検証結果](../research/planner-v60-scope-phrase-camera-validation-2026-09-20.md)を参照してください。
+[profile仕様](../../profiles/README.md)と実装・検証結果（外部研究アーカイブ: `planner-v60-scope-phrase-camera-validation-2026-09-20.md`）を参照してください。
 
 Planner v60は、v54で導入した`anime_emotional_mv`の歌詞Cue Discoveryを引き継ぎます。プロファイル内の
 `lyric_interpretation=bounded`と`lyric_cue_mode=automatic`で歌詞行Discoveryを
@@ -53,7 +53,7 @@ Planner v60は、v54で導入した`anime_emotional_mv`の歌詞Cue Discoveryを
 抽出します。Scene内の原文順で最後の非body候補を選び、対象・根拠をVisual Beatへ
 結び付けます。候補と選択はINFOへ出ます。新しいUI・EMD項目・Vision実行はありません。
 詳しくは[Direction / Planner処理フロー](../architecture/direction-planner-flow.md)、[プロファイル設定](../../profiles/README.md)と
-[実装・実8B検証](../research/planner-v54-lyric-cue-discovery-2026-09-20.md)を参照してください。
+実装・実8B検証（外部研究アーカイブ: `planner-v54-lyric-cue-discovery-2026-09-20.md`）を参照してください。
 
 boundedでは以前のBeat/Action自然文履歴を生成requestへ再掲せず、監査と反復検査に
 保持します。現在の修復候補・違反理由とDirectionの明示制約は残します。
@@ -91,7 +91,7 @@ Lyric Segmentationが確定したScene/Shot枠へ、歌詞解釈、人物動作�
 
 既定の`max_tokens=4096`、`temperature=0.1`、`n_ctx=16384`等は[GGUF共通設定](gguf-settings.md)を参照してください。
 
-人物振付のScene一括実験はMotion profile `anime_scene_phrase_mv`を選んだ時だけ有効です。対象のないSceneでは専用の短いScene Spine promptで一度の身体転換点を作り、CameraはそのShotを全身画角で撮ります。対象への接触・外部effectは別の出来事として残し、生成済みAction本文をPythonで書き換えません。現時点の8B短区間試験ではScene Spine単独の改善は見られましたが、完成EMDのActionでは維持できていないため、既定`anime_emotional_mv`からの切替を推奨する段階ではありません。検証記録は[Scene身体フレーズP0–P3](../research/scene-phrase-p0-p3-2026-09-23.md)を参照してください。
+人物振付のScene一括実験はMotion profile `anime_scene_phrase_mv`を選んだ時だけ有効です。対象のないSceneでは専用の短いScene Spine promptで一度の身体転換点を作り、CameraはそのShotを全身画角で撮ります。対象への接触・外部effectは別の出来事として残し、生成済みAction本文をPythonで書き換えません。現時点の8B短区間試験ではScene Spine単独の改善は見られましたが、完成EMDのActionでは維持できていないため、既定`anime_emotional_mv`からの切替を推奨する段階ではありません。検証記録はScene身体フレーズP0–P3（外部研究アーカイブ: `scene-phrase-p0-p3-2026-09-23.md`）を参照してください。
 
 ## コンテキスト超過時の自動調整
 

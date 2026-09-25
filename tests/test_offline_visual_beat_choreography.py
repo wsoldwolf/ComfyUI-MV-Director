@@ -12,7 +12,7 @@ from tools.offline_visual_beat_choreography import model_request, parse_response
 class OfflineVisualBeatChoreographyTests(unittest.TestCase):
     def setUp(self):
         path = Path(__file__).resolve().parents[1] / (
-            "docs/assets/research/visual-beat-choreography-2026-09-22/fixture.json"
+            "tests/fixtures/research/visual-beat-choreography-2026-09-22/fixture.json"
         )
         self.fixture = json.loads(path.read_text(encoding="utf-8"))
 
