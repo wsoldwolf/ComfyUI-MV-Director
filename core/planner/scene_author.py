@@ -13,7 +13,7 @@ import re
 from typing import Any, Mapping, Sequence
 
 from ..artifacts import DirectionArtifact
-from ..direction.profiles import (MOTION_COMPOSITION_RESELECTIONS,
+from ..direction.profiles import (CAMERA_ARC_ROLL_POLICIES, MOTION_COMPOSITION_RESELECTIONS,
                                   MOTION_COMPOSITION_TIMINGS, MOTION_TEMPLATES)
 from ..emd.ast import Scene, Shot
 from ..inference import LlamaRuntimeConfig
@@ -433,6 +433,9 @@ def generate_scene_author_content(
                 shared={
                     **shared,
                     "scene_camera": list(direction.camera_direction),
+                    "arc_roll_policy": CAMERA_ARC_ROLL_POLICIES.get(
+                        direction.camera_profile_id, "off"
+                    ),
                     "staging_candidates_optional": list(direction.staging_candidates),
                     "scene_other": list(direction.other_direction),
                     "fixed_cameras": {

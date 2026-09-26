@@ -12,6 +12,13 @@
 
 ## 実験用モーション合成
 
+Scene AuthorのCamera担当には、Camera profileの`arc_roll_policy`も渡します。
+`selective_arc`ではArcの一部に「回り込み開始→旋回中の短いRoll→水平へ復帰」を
+選択的に計画させます。旧有限Cameraの割り当て処理とは別で、全Shotへ強制せず、
+固定Cameraと歌唱口・対象・身体の可視性を優先します。`off`ではprofileによる
+Roll追加を求めません。Rollは画面の傾きであり、上下を見渡すTiltとは異なります。
+映像での再現はH3の生成結果を確認してください。
+
 Direction EnhancerのMotionを `anime_scene_composed_mv` にすると、Scene author経路で
 profileの `# モーション補完` をSceneごとに最大一文、Camera計画後に合成する。
 この実験用profileは`composition_timing=post_author`を指定しており、人物演技とCameraを

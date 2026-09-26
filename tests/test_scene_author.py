@@ -65,6 +65,33 @@ def _runtime():
 
 
 class SceneAuthorTests(unittest.TestCase):
+    def test_arc_roll_policy_reaches_camera_only_and_preserves_fixed_fields(self):
+        for profile, expected in (("anime_emotional_mv", "selective_arc"),
+                                  ("anime_story_mv", "off")):
+            with self.subTest(profile=profile):
+                backend = Backend()
+                result = plan_timeline(
+                    backend, template_emd=TEMPLATE, concept_emd=CONCEPT,
+                    direction=DirectionArtifact(motion_profile_id="anime_scene_author_mv",
+                                                camera_profile_id=profile),
+                    lip_sync_mode="off", lip_sync_target="サブジェクト1",
+                    lip_sync_audio_slot=1, scenes_per_batch=1,
+                    system_prompts=_system_prompts(), runtime_config=_runtime(),
+                )
+                self.assertTrue(result.complete)
+                for task, payload in backend.calls:
+                    if task == "scene-author-camera":
+                        self.assertEqual(payload["arc_roll_policy"], expected)
+                        self.assertEqual(payload["fixed_cameras"], {"1": "目と口が見える正面。"})
+                    else:
+                        self.assertNotIn("arc_roll_policy", payload)
+                self.assertIn("`カメラ` 目と口が見える正面。", result.emd.text)
+        prompt = _system_prompts()["scene-author-camera"]
+        self.assertIn("Roll Clockwise", prompt)
+        self.assertIn("Roll Counterclockwise", prompt)
+        self.assertIn("Tiltではなく", prompt)
+        self.assertIn("水平への復帰", prompt)
+
     def test_matched_candidate_policy_is_advisory_and_preserves_author_fields(self):
         backend = Backend()
         result = plan_timeline(
