@@ -424,6 +424,7 @@ def generate_scene_author_content(
                 shared={
                     **shared,
                     "scene_camera": list(direction.camera_direction),
+                    "staging_candidates_optional": list(direction.staging_candidates),
                     "scene_other": list(direction.other_direction),
                     "fixed_cameras": {
                         str(index): value for index, value in fixed_cameras.items()

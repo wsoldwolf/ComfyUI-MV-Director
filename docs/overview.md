@@ -22,7 +22,7 @@ ComfyUI-MV-Directorは、利用者が完成promptを手書きしなくても、�
 
 人物参照と背景参照は別系統です。計画時は背景Visionが`scene_only`時に`emd_fragment`へ出すScene EMDをDirection EnhancerとPlannerの`scene_emd`へ渡し、動画生成時は同じ背景画像をH3の対応slotへ直接渡します。理由と推奨配線は[人物参照と背景参照を分ける](tips/separate-subject-and-background-references.md)を参照してください。
 
-Direction EnhancerとTimeline Planner内部の詳しい流れは[処理フロー図](architecture/direction-planner-flow.md)を参照してください。DirectionのStyle、Motion、Cameraは[`profiles/`](../profiles/README.md)の外部EMDとして追加できます。現在の配布workflowは三項とも`anime_emotional_mv`を既定とし、profile metadataからPlannerの感情演技、歌詞Cue、長尺Arc、顔Zoom及びScene継続方針も切り替えます。
+Direction EnhancerとTimeline Planner内部の詳しい流れは[処理フロー図](architecture/direction-planner-flow.md)を参照してください。DirectionのStyle、Motion、Cameraは[`profiles/`](../profiles/README.md)の外部EMDとして追加できます。現在の31B向け配布workflowはStyleとCameraに`anime_emotional_mv`、Motionに`anime_scene_composed_mv`を指定し、Scene Author経路を使用します。profile metadataからPlannerの感情演技、歌詞Cue、長尺Arc、顔Zoom及びScene継続方針も切り替えます。
 
 Lyric Segmentationはこの経路と独立して歌詞、SRT、typed timelineを生成できます。Audio Pad Pairはfull mixとvocalを混合せず、PCM無音で必要尺へそろえます。
 

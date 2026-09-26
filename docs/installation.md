@@ -148,8 +148,8 @@ Text生成と英訳は8B級を推奨します。Visionだけは4B級でも比較
 
 | 用途 / 使用ノード | workflowで選択されるファイル | 取得元 |
 | --- | --- | --- |
-| 人物・背景の画像認識 / Image to Subject EMD | `Qwen3-VL-4B-Instruct/Qwen3-VL-4B-Instruct-Q4_K_M.gguf`と`mmproj-F16.gguf` | [Unsloth配布ページ](https://huggingface.co/unsloth/Qwen3-VL-4B-Instruct-GGUF)、[本体GGUFを取得](https://huggingface.co/unsloth/Qwen3-VL-4B-Instruct-GGUF/resolve/main/Qwen3-VL-4B-Instruct-Q4_K_M.gguf?download=true)、[mmprojを取得](https://huggingface.co/unsloth/Qwen3-VL-4B-Instruct-GGUF/resolve/main/mmproj-F16.gguf?download=true) |
-| Direction生成・Timeline計画・EMD英訳 / Direction Enhancer、Timeline Planner、EMD Compiler (Ref2VA) | `Qwen3-8B-Abliterated/qwen3-8b-abliterated-Q4_K_M.gguf` | [richardyoung配布ページ](https://huggingface.co/richardyoung/Qwen3-8B-Abliterated-GGUF)、[GGUFを取得](https://huggingface.co/richardyoung/Qwen3-8B-Abliterated-GGUF/resolve/main/qwen3-8b-abliterated-Q4_K_M.gguf?download=true) |
+| 人物・背景の画像認識 / Image to Subject EMD | `gemma-4-31b-it-heretic-ara-GGUF/gemma-4-31b-it-heretic-ara.Q4_K_S.gguf`と同じフォルダの`gemma-4-31b-it-heretic-ara.mmproj-f16.gguf` | [mradermacher配布ページ](https://huggingface.co/mradermacher/gemma-4-31b-it-heretic-ara-GGUF)、[mmprojを取得](https://huggingface.co/mradermacher/gemma-4-31b-it-heretic-ara-GGUF/resolve/main/gemma-4-31b-it-heretic-ara.mmproj-f16.gguf?download=true) |
+| Direction生成・Timeline計画・EMD英訳 / Direction Enhancer、Timeline Planner、EMD Compiler (Ref2VA) | `gemma-4-31b-it-heretic-ara-GGUF/gemma-4-31b-it-heretic-ara.Q4_K_S.gguf` | [mradermacher配布ページ](https://huggingface.co/mradermacher/gemma-4-31b-it-heretic-ara-GGUF)、[GGUFを取得](https://huggingface.co/mradermacher/gemma-4-31b-it-heretic-ara-GGUF/resolve/main/gemma-4-31b-it-heretic-ara.Q4_K_S.gguf?download=true) |
 | 歌詞と音声の同期 / Lyric Segmentation | `medium.pt` | [OpenAI Whisper公式リポジトリ](https://github.com/openai/whisper)、[medium.ptを取得](https://openaipublic.azureedge.net/main/whisper/models/345ae4da62f9b3d59415adc60127b97c714f32e89e936602e85993674d08dcb1/medium.pt) |
 
 次の配置にすると、workflowに保存された選択値を変更せず使用できます。
@@ -157,21 +157,21 @@ Text生成と英訳は8B級を推奨します。Visionだけは4B級でも比較
 ```text
 C:\Software\ComfyUI\models\
 ├─ LLM\GGUF\
-│  ├─ Qwen3-VL-4B-Instruct\
-│  │  ├─ Qwen3-VL-4B-Instruct-Q4_K_M.gguf
-│  │  └─ mmproj-F16.gguf
-│  └─ Qwen3-8B-Abliterated\
-│     └─ qwen3-8b-abliterated-Q4_K_M.gguf
+│  └─ gemma-4-31b-it-heretic-ara-GGUF\
+│     ├─ gemma-4-31b-it-heretic-ara.Q4_K_S.gguf
+│     └─ gemma-4-31b-it-heretic-ara.mmproj-f16.gguf
 └─ whisper\
    └─ medium.pt
 ```
 
 配置先のサブディレクトリ名を変更した場合は、ComfyUI再起動後に各ノードのcomboで実ファイルを選び直し、workflowを保存してください。
 
+現在のdev workflowはテキスト推論3ノードと人物・背景Visionを同一のGemma4 31B Q4_K_Sへ揃えている。Visionはさらに対応mmprojを必要とする。これはRTX 5090級の開発環境向けで、RTX 5060の8GB VRAM向け設定ではない。各ノードのコンテキスト・サンプリング設定と検証上の注意は[workflow設定](../workflows/README.md#共通入力)を参照する。以前の8GB向け構成では[Qwen3-VL-4B](https://huggingface.co/unsloth/Qwen3-VL-4B-Instruct-GGUF)と[Qwen3 8B](https://huggingface.co/richardyoung/Qwen3-8B-Abliterated-GGUF)を使用していた。これらのハッシュは下表に比較用として残している。
+
 ダウンロードの破損や同名の別quantを判別する場合は、`cmd.exe`で次のようにSHA-256を表示し、表の値と比較できます。
 
 ```bat
-certutil -hashfile "C:\Software\ComfyUI\models\LLM\GGUF\Qwen3-VL-4B-Instruct\Qwen3-VL-4B-Instruct-Q4_K_M.gguf" SHA256
+certutil -hashfile "C:\Software\ComfyUI\models\LLM\GGUF\gemma-4-31b-it-heretic-ara-GGUF\gemma-4-31b-it-heretic-ara.Q4_K_S.gguf" SHA256
 ```
 
 `certutil`はハッシュ値の前後に説明行を表示します。中央の64桁の16進数を比較してください。
@@ -181,6 +181,8 @@ certutil -hashfile "C:\Software\ComfyUI\models\LLM\GGUF\Qwen3-VL-4B-Instruct\Qwe
 | `Qwen3-VL-4B-Instruct-Q4_K_M.gguf` | `d4dcd426bfba75752a312b266b80fec8136fbaca13c62d93b7ac41fa67f0492b` |
 | `mmproj-F16.gguf` | `1b9f4e92f0fbda14d7d7b58baed86039b8a980fe503d9d6a9393f25c0028f1fc` |
 | `qwen3-8b-abliterated-Q4_K_M.gguf` | `8625e48da4c4be9bcba2414fd8cad4095ff3a538d5b0111c2b26b5f6209538b9` |
+| `gemma-4-31b-it-heretic-ara.Q4_K_S.gguf` | `2fa55d46083775b3b308b41b0c255f1d44466fd9f9df8308f7545b369494e858` |
+| `gemma-4-31b-it-heretic-ara.mmproj-f16.gguf` | `6e3ba7c2d16bebe91812b3ce03ac819b3fc988093021f10388e5ddef141dd695` |
 | `medium.pt` | `345ae4da62f9b3d59415adc60127b97c714f32e89e936602e85993674d08dcb1` |
 
 ### 動画workflowの既定H3 Hybrid Loader

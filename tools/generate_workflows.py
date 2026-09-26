@@ -50,14 +50,32 @@ OUTPUT_MULTIPLE = 32
 TURBO_LORA_NAME = (
     "MiniMaxH3\\minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors"
 )
-TEXT_MODEL = "Qwen3-8B-Abliterated/qwen3-8b-abliterated-Q4_K_M.gguf"
-VISION_MODEL = "Qwen3-VL-4B-Instruct/Qwen3-VL-4B-Instruct-Q4_K_M.gguf"
+TEXT_MODEL = (
+    "gemma-4-31b-it-heretic-ara-GGUF/gemma-4-31b-it-heretic-ara.Q4_K_S.gguf"
+)
+# Planner settings follow the 31B scene-author trials. Compiler settings follow
+# P2g's successful whole-EMD translation. Use the GGUF's own chat template;
+# forcing the legacy llama.cpp "gemma" formatter is not equivalent.
+PLANNER_N_CTX = 24576
+PLANNER_TEMPERATURE = 0.2
+COMPILER_N_CTX = 16384
+# Direction synthesis is newly under test with 31B, not a proven 8B preset.
+ENHANCER_N_CTX = 24576
+ENHANCER_MAX_TOKENS = 4096
+VISION_MODEL = TEXT_MODEL
 WHISPER_MODEL = "medium.pt"
 CHARACTER_IMAGE = "image001_mikofox_ref.jpg"
 BACKGROUND_IMAGE = "image002_keinai.jpg"
 FULL_MIX_AUDIO = "bgm_millennium_torii.mp3"
 VOCAL_AUDIO = "bgm_millennium_torii_vocal.mp3"
 LYRICS_BASENAME = "bgm_millennium_torii_lyrics.txt"
+DEFAULT_MOTION_PROFILE = "anime_scene_composed_mv"
+LOCAL_FACE_CANDIDATE = (
+    "サビの感情が高まる歌唱句で、人物は視線を正面へ結び、有声句に合わせて歌う。"
+    "カメラは人物の周囲を回り込んで斜め正面から正面へ入り、顔が画面の大部分を占める接写へ近づく。"
+    "両眉、両目、鼻、口全体を収め、目の表情と歌唱口を一つの短い歌唱句の間見せる。"
+    "歌唱句の終わりでカメラが引き、上半身の演技へ滑らかにつなぐ。"
+)
 DEFAULT_USER_PROMPT = (
     "# 演出候補\n"
     "* 歌詞「苔へと還る」を扱うSceneで、参道脇に立つ大樹と根元の苔を同じ場所として確立する。人物が大樹へ寄り、幹の根元に生えた苔を指先で一度撫で、手を離して余韻を表情に残す。\n"
@@ -68,7 +86,8 @@ DEFAULT_USER_PROMPT = (
     "* 始点は膝を伸ばし切らず胸郭を正面に保つ。後ろ足から前足へ短く荷重を移し、骨盤が先行して胸郭が遅れて起きる。片腕は体の横から斜め前へ通し、もう一方は低い位置で反対方向へ開く。顔を上げて歌唱口を見せ、一拍のアクセント後、肩と肘を緩めて前足支持で終える。移動を伴う歩行や人物の全身回転にはしない。\n"
     "* 始点は両足を地面に置き、両腕を体側の異なる高さに置く。短く膝を緩めて重心を落とし、胸郭をわずかに畳み、片腕だけを胴の前へ横断させる。目を伏せた後、支持を戻しながら横断した腕を外側へほどき、胸郭を開いて視線を結ぶ。終点は開始より直立し、両腕は開き切らず異なる高さで静止する。\n"
     "* 始点は両足支持で腕を低く置く。短い膝の弾みで重心を一度下げ、片足へ受け渡して骨盤を横へ送る。胸郭の遅れに合わせて片腕を横から斜め上へ、反対の腕を腰より低く逆方向へ通す。顔と歌唱口が見える瞬間にアクセントを合わせ、両腕を体側へ落とし切らず、支持足を保って余韻で終える。跳躍や全身回転はしない。\n"
-    "* 始点は片足に軽く荷重し、肩と腕を緩める。支持は変えず胸郭だけを小さく斜めへ向け、片肘を体側から前へほどく。半開きの目から短く閉眼し、歌詞の変化で視線を戻す。手は顔を隠さず肩より下で止め、胸郭を正面へ戻しながら同じ支持のまま終える。静かな歌詞用で、大きな踏み替えを要求しない。"
+    "* 始点は片足に軽く荷重し、肩と腕を緩める。支持は変えず胸郭だけを小さく斜めへ向け、片肘を体側から前へほどく。半開きの目から短く閉眼し、歌詞の変化で視線を戻す。手は顔を隠さず肩より下で止め、胸郭を正面へ戻しながら同じ支持のまま終える。静かな歌詞用で、大きな踏み替えを要求しない。\n"
+    "* " + LOCAL_FACE_CANDIDATE
 )
 CHARACTER_HINT = (
     "狐巫女。狐耳、耳の先端は黒い。狐尻尾、尾の先端は白。"
@@ -635,17 +654,17 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
                 "profile",
                 "",
                 "anime_emotional_mv",
-                "anime_emotional_mv",
+                DEFAULT_MOTION_PROFILE,
                 "anime_emotional_mv",
                 TEXT_MODEL,
                 "",
-                768,
+                ENHANCER_MAX_TOKENS,
                 0.2,
                 0.9,
                 1.05,
                 -1,
-                512,
-                16384,
+                256,
+                ENHANCER_N_CTX,
                 True,
                 "q8_0",
                 True,
@@ -682,12 +701,12 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
                 TEXT_MODEL,
                 "auto",
                 4096,
-                0.1,
+                PLANNER_TEMPERATURE,
                 0.9,
                 1.05,
                 -1,
                 256,
-                16384,
+                PLANNER_N_CTX,
                 True,
                 "q8_0",
                 True,
@@ -725,7 +744,7 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
                 1.05,
                 -1,
                 256,
-                16384,
+                COMPILER_N_CTX,
                 True,
                 "q8_0",
                 True,
@@ -1633,7 +1652,80 @@ def validate_workflow(workflow: dict[str, Any]) -> None:
             raise ValueError(f"link {link_id} origin type mismatch")
 
 
-def write_workflows(context_loop_root: Path, output_dir: Path) -> None:
+def sync_model_runtime(workflow: dict[str, Any], mode: str) -> None:
+    """Update model settings, preserving UI metadata and saved media Plan."""
+    generated = build_plan_workflow(mode)
+    text_types = {
+        "MVDirectorDirectionEnhancer",
+        "MVDirectorTimelinePlanner",
+        "MVDirectorEMDCompiler",
+    }
+    runtime_fields = (
+        "model_name", "chat_format", "max_tokens", "temperature", "top_p",
+        "repetition_penalty", "gpu_layers", "n_batch", "n_ctx", "flash_attn",
+        "kv_cache_type", "op_offload", "keep_model_loaded",
+    )
+    for node in workflow["nodes"]:
+        if node["type"] == "MVDirectorImageToSubjectEMD":
+            node["widgets_values"][0] = VISION_MODEL
+            named = node.get("widgets_values_named")
+            if isinstance(named, dict) and "model_name" in named:
+                named["model_name"] = VISION_MODEL
+            continue
+        if node["type"] not in text_types:
+            continue
+        source = next(n for n in generated["nodes"] if n["type"] == node["type"])
+        # UI-only upload/seed controls can differ; all runtime widgets precede
+        # those controls and occupy stable positions for these three nodes.
+        start, stop = {
+            "MVDirectorDirectionEnhancer": (5, 18),
+            "MVDirectorTimelinePlanner": (3, 16),
+            "MVDirectorEMDCompiler": (1, 15),
+        }[node["type"]]
+        # Preserve the compiler's user-selected denoising steps as well.
+        indexes = [start, start + 1] + list(range(
+            start + (3 if node["type"] == "MVDirectorEMDCompiler" else 2), stop
+        ))
+        named = node.get("widgets_values_named")
+        for field, index in zip(runtime_fields, indexes, strict=True):
+            node["widgets_values"][index] = source["widgets_values"][index]
+            if isinstance(named, dict) and field in named:
+                named[field] = node["widgets_values"][index]
+
+
+def sync_direction_settings(workflow: dict[str, Any]) -> None:
+    """Apply the current 31B experiment without rebuilding the user's layout."""
+    for node in workflow["nodes"]:
+        if node["type"] == "MVDirectorDirectionEnhancer":
+            node["widgets_values"][3] = DEFAULT_MOTION_PROFILE
+            named = node.get("widgets_values_named")
+            if isinstance(named, dict) and "motion_profile" in named:
+                named["motion_profile"] = DEFAULT_MOTION_PROFILE
+        elif node.get("title") == "ユーザープロンプト" and node["type"] == "PrimitiveStringMultiline":
+            node["widgets_values"][0] = DEFAULT_USER_PROMPT
+            named = node.get("widgets_values_named")
+            if isinstance(named, dict) and "value" in named:
+                named["value"] = DEFAULT_USER_PROMPT
+
+
+def write_workflows(context_loop_root: Path, output_dir: Path, *, runtime_only: bool = False,
+                    direction_only: bool = False) -> None:
+    if runtime_only or direction_only:
+        for mode, spec in MODES.items():
+            path = output_dir / f"{int(spec['number']) * 2 - 1:02d}_plan_compiler_{mode}.json"
+            original_text = path.read_text(encoding="utf-8")
+            workflow = json.loads(original_text)
+            if runtime_only:
+                sync_model_runtime(workflow, mode)
+            if direction_only:
+                sync_direction_settings(workflow)
+            validate_workflow(workflow)
+            formatted = (
+                json.dumps(workflow, ensure_ascii=False, separators=(",", ":"))
+                if len(original_text.splitlines()) == 1 else _json_text(workflow)
+            )
+            path.write_text(formatted + "\n", encoding="utf-8")
+        return
     base_path = (
         context_loop_root
         / "example_workflows"
@@ -1664,8 +1756,13 @@ def main() -> None:
         ),
     )
     parser.add_argument("--output-dir", type=Path, default=ROOT / "workflows")
+    parser.add_argument("--sync-model-runtime", action="store_true",
+                        help="Update model settings without rebuilding layout or saved Plan")
+    parser.add_argument("--sync-direction-settings", action="store_true",
+                        help="Apply current motion profile and user prompt, preserving layout and video Plan")
     args = parser.parse_args()
-    write_workflows(args.context_loop_root, args.output_dir)
+    write_workflows(args.context_loop_root, args.output_dir, runtime_only=args.sync_model_runtime,
+                    direction_only=args.sync_direction_settings)
 
 
 if __name__ == "__main__":

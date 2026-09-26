@@ -30,6 +30,23 @@
 
 ## 共通入力
 
+Plan/Compilerのテキスト推論3ノード（Direction Enhancer・Timeline Planner・EMD Compiler）と人物・背景Visionは、`gemma-4-31b-it-heretic-ara-GGUF/gemma-4-31b-it-heretic-ara.Q4_K_S.gguf`を既定とする。ComfyUIの`models/LLM/GGUF`以下へ配置し、Vision用の`gemma-4-31b-it-heretic-ara.mmproj-f16.gguf`も同じフォルダへ置く。この31B設定は大容量VRAMの開発環境向けであり、RTX 5060向け8B設定とは異なる。
+
+| ノード | n_ctx | max_tokens | temperature | n_batch |
+| --- | ---: | ---: | ---: | ---: |
+| Direction Enhancer（31B検証用） | 24576 | 4096 | 0.2 | 256 |
+| Timeline Planner | 24576 | 4096 | 0.2 | 256 |
+| EMD Compiler | 16384 | 4096 | 0.0 | 256 |
+| 人物・背景Vision | 16384 | 1024 | 0.1 | 512 |
+
+`max_tokens`は要求上限であり、各backendのタスク別予算で調整される。Direction Enhancerは現行実装で1回の応答を最大1024 tokenに制限しているため、UIに4096を指定しても4096 tokenを毎回生成するわけではない。
+
+共通設定は`top_p=0.9`、`repetition_penalty=1.05`、`gpu_layers=-1`、Flash Attention有効、KV cache `q8_0`、`keep_model_loaded=false`。チャット形式は自動（Enhancerでは空欄）でGGUF内のテンプレートを使い、旧`gemma`フォーマッタは強制しない。Planner・Compilerの数値と量子化は既存31B検証に合わせているが、過去の成功映像はUnsloth版Gemma4 31B Q4_K_Sによるものであり、このhereticモデルの同等性を保証しない。Enhancerの31B設定も検証対象である。
+
+設定だけを同期するときは`python tools/generate_workflows.py --sync-model-runtime`を使う。保存済みの動画Plan、レイアウト、配色、非LLMパラメータ及びComfyUIの入力メタデータを保持し、前段3WFのテキスト推論設定とVisionモデル選択を更新する。
+
+Visionは既存MTMD backendで人物・背景それぞれのEMD出力を確認済みで、モデル固有の追加シスプロや自然文修復は導入していない。各ノードの`keep_model_loaded=false`で実行後にモデルを解放する。同一GGUFへの統一は、別ノード間で同じロード済みインスタンスを共有することを意味しない。WhisperとH3本体・TE・VAEは用途が異なるため、引き続き別モデルを使用する。
+
 - `image001_mikofox_ref.jpg`: `<Picture 1>`用の人物リファレンスシート（足袋の拡大を含む）
 - `image002_keinai.jpg`: 前段では背景Visionから場所・空間構成、建築、植生、時刻、天候及び環境照明をDirectionへ渡し、動画生成時には`<Picture 2>`の環境専用参照としてH3へ渡す
 - `bgm_millennium_torii.mp3`: 完成動画へ使うfull mix
@@ -76,6 +93,21 @@ CompilerがShotへ展開した歌詞directiveだけで口形を誘導する。`M
 Lyric SegmentationのSRT本文は前段workflowで同じcanonical segment列から生成する。ComfyUI標準Save Textは`.srt`拡張子を持たないため、workflowではUTF-8 `.txt`として保存する。外部利用時は内容を変更せず拡張子だけ`.srt`へ変更する。
 
 ## 再生成
+
+現在の31B検証用前段WFは、StyleとCameraが`anime_emotional_mv`、Motionが
+`anime_scene_composed_mv`です。Event→人物演技→CameraのScene Author経路を使い、
+既存の題材・身体演技候補に短い歌唱顔接写の候補を1件追加しています。
+顔接写の候補は任意であり、全Sceneへの強制指示ではありません。
+手動検証ではComfyUIを再起動して01を開き直し、新しいEMD・Planを生成してから
+02のPlan入力へ渡してください。02に保存済みのPlanは自動で差し替えません。
+
+レイアウト・配色・動画Planを維持して、前段3WFのMotionとユーザープロンプトだけを
+現在のジェネレーター既定値へ同期する場合は次を使います。このコマンドは
+前段WFのユーザープロンプトを置き換えるため、独自入力は先に保存してください。
+
+```cmd
+python tools/generate_workflows.py --sync-direction-settings
+```
 
 6本は次で決定論的に再生成できる。
 

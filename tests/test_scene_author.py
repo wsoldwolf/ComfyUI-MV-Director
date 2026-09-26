@@ -240,6 +240,37 @@ class SceneAuthorTests(unittest.TestCase):
         self.assertIn("その演技を保ち、歌唱口と近くの手・小物を同時に読める", prompts["scene-author-camera"])
         self.assertIn("一律の顔アップを要求しない", prompts["scene-author-camera"])
 
+    def test_local_face_candidate_reaches_camera_without_overwriting_fixed_shot(self):
+        candidate = "サビの短い有声句を、両眉・両目・鼻・口全体が見える顔いっぱいの接写で見せる。"
+        backend = Backend()
+        prompts = _system_prompts()
+        result = plan_timeline(
+            backend, template_emd=TEMPLATE, concept_emd=CONCEPT,
+            direction=DirectionArtifact(
+                motion_profile_id="anime_scene_author_mv",
+                staging_candidates=(candidate,),
+            ),
+            lip_sync_mode="off", lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1, scenes_per_batch=1,
+            system_prompts=prompts, runtime_config=_runtime(),
+        )
+        self.assertTrue(result.complete)
+        self.assertEqual(len(backend.calls), 3)
+        camera = next(payload for task, payload in backend.calls
+                      if task == "scene-author-camera")
+        self.assertEqual(camera["staging_candidates_optional"], [candidate])
+        self.assertEqual(camera["fixed_cameras"], {"1": "目と口が見える正面。"})
+        self.assertEqual([slot["shot"] for slot in camera["slots"]], [2])
+        self.assertIn("* `カメラ` 目と口が見える正面。", result.emd.text)
+        self.assertIn("* `演技` 人物が片手を胸元に置く。", result.emd.text)
+        self.assertNotIn(candidate, result.emd.text)
+        self.assertIn("肩・手を画面に収めることを必須にせず", prompts["scene-author-camera"])
+        self.assertIn("現在Sceneの歌詞・有声句と採用済み演技に合う撮影意図だけ", prompts["scene-author-camera"])
+        self.assertIn("候補を全Sceneへ反復する共通命令にしない", prompts["scene-author-camera"])
+        profile = Path("profiles/camera/anime_emotional_mv.md").read_text(encoding="utf-8")
+        self.assertIn("顔が画面の大部分を占める接写", profile)
+        self.assertIn("必要な身体と対象の可視範囲を保つ", profile)
+
     def test_section_context_reaches_model_without_changing_lyrics_or_timing(self):
         source = (
             "> `シーン` 1\n# シーン 00:00.000 --> 00:01.000\n* `H3長` 22\n"
@@ -268,7 +299,7 @@ class SceneAuthorTests(unittest.TestCase):
             self.assertEqual([(x.text, x.start_ms, x.end_ms) for x in original.shots[0].lyric_annotations],
                              [(x.text, x.start_ms, x.end_ms) for x in generated.shots[0].lyric_annotations])
 
-    def test_optional_candidates_reach_event_and_performance_not_camera(self):
+    def test_optional_candidates_reach_all_three_authors_without_global_injection(self):
         backend = Backend()
         template = TEMPLATE.replace(
             "* `演出` 木の根元に苔がある。\n"
@@ -292,7 +323,7 @@ class SceneAuthorTests(unittest.TestCase):
         self.assertEqual(backend.calls[0][0], "scene-author-event")
         self.assertEqual(backend.calls[0][1]["staging_candidates_optional"], ["任意の候補。"])
         self.assertEqual(backend.calls[1][1]["staging_candidates_optional"], ["任意の候補。"])
-        self.assertNotIn("staging_candidates_optional", backend.calls[2][1])
+        self.assertEqual(backend.calls[2][1]["staging_candidates_optional"], ["任意の候補。"])
         self.assertNotIn("任意の候補。", result.emd.text)
         for _, payload in backend.calls:
             self.assertEqual(payload["scene_environment"], ["広い舞台。"])

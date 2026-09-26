@@ -1,10 +1,13 @@
+import copy
 import json
 from pathlib import Path
+import tempfile
 import unittest
 
 from core.lyrics import parse_plain_lyrics
 from core.utilities import decode_embedded_text
-from tools.generate_workflows import CHARACTER_HINT, DEFAULT_USER_PROMPT
+from tools.generate_workflows import (CHARACTER_HINT, DEFAULT_USER_PROMPT, LOCAL_FACE_CANDIDATE,
+                                      sync_direction_settings, sync_model_runtime, write_workflows)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -67,6 +70,68 @@ def input_link(workflow: dict, node: dict, input_name: str) -> list:
 
 
 class DistributableWorkflowTests(unittest.TestCase):
+    def test_direction_sync_preserves_layout_and_video_plan(self) -> None:
+        workflow = load("01_plan_compiler_context_loop.json")
+        enhancer = only_type(workflow, "MVDirectorDirectionEnhancer")
+        enhancer["widgets_values"][3] = "anime_emotional_mv"
+        enhancer["widgets_values_named"] = {"motion_profile": "anime_emotional_mv"}
+        prompt = titled_node(workflow, "ユーザープロンプト")
+        prompt["widgets_values"] = ["old input"]
+        prompt["widgets_values_named"] = {"value": "old input"}
+        before = copy.deepcopy(workflow)
+        sync_direction_settings(workflow)
+        self.assertEqual(enhancer["widgets_values"][3], "anime_scene_composed_mv")
+        self.assertEqual(enhancer["widgets_values_named"]["motion_profile"], "anime_scene_composed_mv")
+        self.assertEqual(prompt["widgets_values_named"]["value"], DEFAULT_USER_PROMPT)
+        self.assertEqual(DEFAULT_USER_PROMPT.count(LOCAL_FACE_CANDIDATE), 1)
+        self.assertEqual(len([x for x in DEFAULT_USER_PROMPT.splitlines() if x.startswith("* ")]), 10)
+        for actual, original in zip(workflow["nodes"], before["nodes"]):
+            if actual["id"] not in {enhancer["id"], prompt["id"]}:
+                self.assertEqual(actual, original)
+            else:
+                for key in set(actual) | set(original):
+                    if key not in {"widgets_values", "widgets_values_named"}:
+                        self.assertEqual(actual.get(key), original.get(key))
+        video = load("02_video_context_loop.json")
+        original_video = copy.deepcopy(video)
+        sync_direction_settings(video)
+        self.assertEqual(video, original_video)
+
+    def test_runtime_sync_preserves_layout_metadata_and_non_runtime_settings(self) -> None:
+        workflow = load("01_plan_compiler_context_loop.json")
+        node = only_type(workflow, "MVDirectorEMDCompiler")
+        node["widgets_values"][1] = "old-model.gguf"
+        node["widgets_values"][3] = 12
+        node["widgets_values_named"] = {"model_name": "old-model.gguf", "n_ctx": 8, "denoising_steps": 12}
+        before = copy.deepcopy(workflow)
+        sync_model_runtime(workflow, "context_loop")
+        self.assertEqual(node["widgets_values_named"]["model_name"], node["widgets_values"][1])
+        self.assertEqual(node["widgets_values_named"]["n_ctx"], 16384)
+        self.assertEqual(node["widgets_values"][3], 12)
+        self.assertEqual(node["widgets_values_named"]["denoising_steps"], 12)
+        for actual, original in zip(workflow["nodes"], before["nodes"]):
+            for key in set(actual) | set(original):
+                if key not in {"widgets_values", "widgets_values_named"}:
+                    self.assertEqual(actual.get(key), original.get(key), (actual["id"], key))
+            if actual["type"] not in {"MVDirectorEMDCompiler", "MVDirectorTimelinePlanner", "MVDirectorDirectionEnhancer"}:
+                self.assertEqual(actual, original)
+        video = load("02_video_context_loop.json")
+        original = copy.deepcopy(video)
+        sync_model_runtime(video, "context_loop")
+        self.assertEqual(video, original)
+
+    def test_runtime_sync_keeps_compact_json_and_video_bytes(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            output_dir = Path(temporary)
+            for pair in FILES.values():
+                for name in pair:
+                    (output_dir / name).write_text(json.dumps(load(name), ensure_ascii=False), encoding="utf-8")
+            original_video = {pair[1]: (output_dir / pair[1]).read_bytes() for pair in FILES.values()}
+            write_workflows(Path("unused-context-loop-root"), output_dir, runtime_only=True)
+            for plan_name, video_name in FILES.values():
+                self.assertEqual(len((output_dir / plan_name).read_text(encoding="utf-8").splitlines()), 1)
+                self.assertEqual((output_dir / video_name).read_bytes(), original_video[video_name])
+
     def test_exact_six_workflows_are_present(self) -> None:
         actual = {
             path.name
@@ -215,7 +280,7 @@ class DistributableWorkflowTests(unittest.TestCase):
                 compiler["widgets_values"],
                 [
                     "ja_to_en",
-                    "Qwen3-8B-Abliterated/qwen3-8b-abliterated-Q4_K_M.gguf",
+                    "gemma-4-31b-it-heretic-ara-GGUF/gemma-4-31b-it-heretic-ara.Q4_K_S.gguf",
                     "auto",
                     8,
                     4096,
@@ -243,17 +308,26 @@ class DistributableWorkflowTests(unittest.TestCase):
                 self.assertEqual(values[seed_index], 1)
                 self.assertEqual(values[control_index], "fixed")
             for vision in (character_vision, background_vision):
+                self.assertEqual(vision["widgets_values"][0], compiler["widgets_values"][1])
                 self.assertEqual(vision["widgets_values"][21], 1)
                 self.assertEqual(vision["widgets_values"][22], "fixed")
                 self.assertEqual(vision["widgets_values"][16], 16384)
             self.assertEqual(planner["widgets_values"][1], "サブジェクト1")
             self.assertEqual(planner["widgets_values"][5], 4096)
-            self.assertEqual(planner["widgets_values"][11], 16384)
+            self.assertEqual(planner["widgets_values"][3], compiler["widgets_values"][1])
+            self.assertEqual(planner["widgets_values"][4], "auto")
+            self.assertEqual(planner["widgets_values"][6], 0.2)
+            self.assertEqual(planner["widgets_values"][11], 24576)
             self.assertEqual(
                 direction["widgets_values"][2:5],
-                ["anime_emotional_mv"] * 3,
+                ["anime_emotional_mv", "anime_scene_composed_mv", "anime_emotional_mv"],
             )
-            self.assertEqual(direction["widgets_values"][13], 16384)
+            self.assertEqual(direction["widgets_values"][5], compiler["widgets_values"][1])
+            self.assertEqual(direction["widgets_values"][6], "")
+            self.assertEqual(direction["widgets_values"][7], 4096)
+            self.assertEqual(direction["widgets_values"][8], 0.2)
+            self.assertEqual(direction["widgets_values"][12], 256)
+            self.assertEqual(direction["widgets_values"][13], 24576)
             self.assertEqual(character_vision["widgets_values"][2], CHARACTER_HINT)
             if "widgets_values_named" in character_vision:
                 self.assertEqual(
@@ -312,7 +386,7 @@ class DistributableWorkflowTests(unittest.TestCase):
             documented,
         )
         self.assertIn(
-            "https://huggingface.co/richardyoung/Qwen3-8B-Abliterated-GGUF",
+            "https://huggingface.co/mradermacher/gemma-4-31b-it-heretic-ara-GGUF",
             documented,
         )
         self.assertIn(
