@@ -1,5 +1,4 @@
 # プロファイル
-* `performance_mode` scene_author
 * `composition_timing` post_author
 * `composition_reselection` guarded_no_drop
 * `render_prompt` 人物の動きは各Shotの演技に従い、連続した身体フレーズとして描く。

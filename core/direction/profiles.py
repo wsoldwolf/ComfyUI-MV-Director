@@ -9,23 +9,14 @@ _CATALOG = load_direction_profiles(PROFILE_ROOT)
 
 STYLE_PROFILES = _CATALOG.style
 MOTION_PROFILES = _CATALOG.motion
-MOTION_PERFORMANCE_MODES = _CATALOG.motion_performance_mode
-MOTION_BODY_ACCENT_POLICIES = _CATALOG.motion_body_accent_policy
-MOTION_CHOREOGRAPHY_POLICIES = _CATALOG.motion_choreography_policy
 MOTION_COMPOSITION_TIMINGS = _CATALOG.motion_composition_timing
 MOTION_COMPOSITION_RESELECTIONS = _CATALOG.motion_composition_reselection
-MOTION_CHOREOGRAPHY_PHRASES = _CATALOG.motion_choreography_phrases
 MOTION_TEMPLATES = _CATALOG.motion_templates
 CAMERA_PROFILES = _CATALOG.camera
 LOCKED_STYLE_PROFILES = _CATALOG.locked_style
 STYLE_RETENTION_POLICIES = _CATALOG.style_retention
 STYLE_SCENE_REINFORCEMENTS = _CATALOG.style_scene_reinforcement
-CAMERA_PLANNER_POLICIES = _CATALOG.camera_planner_policy
 CAMERA_ARC_ROLL_POLICIES = _CATALOG.camera_arc_roll_policy
-CAMERA_RENDER_STYLES = _CATALOG.camera_render_style
-CAMERA_LYRIC_CUE_MODES = _CATALOG.camera_lyric_cue_mode
-CAMERA_LYRIC_INTERPRETATIONS = _CATALOG.camera_lyric_interpretation
-CAMERA_PRIORITY_LYRIC_CUES = _CATALOG.camera_priority_lyric_cues
 RENDER_PROMPTS = _CATALOG.render_prompts
 
 
@@ -40,31 +31,15 @@ def render_profile_direction(kind: str, profile_id: str, values: tuple[str, ...]
 
 def planner_profile_metadata(profile_id: str, motion_profile_id: str = "") -> dict[str, object]:
     """Cache identity includes metadata that is not part of Direction prose."""
-    cues = CAMERA_PRIORITY_LYRIC_CUES.get(profile_id, ())
     metadata = {
+        "strategy": "scene_author",
         "render_prompts": {
             "camera": RENDER_PROMPTS.get("camera", {}).get(profile_id, ""),
             "motion": RENDER_PROMPTS.get("motion", {}).get(motion_profile_id, ""),
         },
-        "performance_mode": MOTION_PERFORMANCE_MODES.get(motion_profile_id, "event_based"),
         "motion_templates": list(MOTION_TEMPLATES.get(motion_profile_id, ())),
         "composition_timing": MOTION_COMPOSITION_TIMINGS.get(motion_profile_id, "pre_author"),
-        "body_accent_policy": MOTION_BODY_ACCENT_POLICIES.get(motion_profile_id, "off"),
-        "choreography_policy": MOTION_CHOREOGRAPHY_POLICIES.get(motion_profile_id, "off"),
-        "choreography_phrases": [
-            {"id": phrase_id, "body_path": body_path}
-            for phrase_id, body_path in MOTION_CHOREOGRAPHY_PHRASES.get(motion_profile_id, ())
-        ],
-        "planner_policy": CAMERA_PLANNER_POLICIES.get(profile_id, ""),
         "arc_roll_policy": CAMERA_ARC_ROLL_POLICIES.get(profile_id, "off"),
-        "camera_render_style": CAMERA_RENDER_STYLES.get(profile_id, "detailed"),
-        "lyric_cue_mode": CAMERA_LYRIC_CUE_MODES.get(
-            profile_id, "priority_only" if cues else "off"
-        ),
-        "lyric_interpretation": CAMERA_LYRIC_INTERPRETATIONS.get(profile_id, "literal"),
-        "priority_lyric_cues": [
-            {"token": token, "kind": kind} for token, kind in cues
-        ],
     }
     reselection = MOTION_COMPOSITION_RESELECTIONS.get(motion_profile_id, "off")
     if reselection != "off":

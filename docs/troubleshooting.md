@@ -24,7 +24,7 @@ Lyric Segmentationは、入力した全atomic lyric segmentが音源内に歌わ
 
 ## LLMの行protocol不整合が発生する
 
-本プロジェクトは、プロンプト生成にLLMの確率的な出力を使用するため、行protocol、必須slot又は出力規約への違反を完全には排除できません。特に既定のQwen 8B級モデルは性能とinstruction追従性に制約があり、system prompt及びprofileで規約を明示しても、未知record、欠落slot、重複slot、field数違反又は自然文の混入を返す場合があります。
+本プロジェクトは、プロンプト生成にLLMの確率的な出力を使用するため、行protocol、必須slot又は出力規約への違反を完全には排除できません。既定のGemma4 31Bもinstruction追従を保証するものではなく、system prompt及びprofileで規約を明示しても、未知record、欠落slot、重複slot、field数違反又は自然文の混入を返す場合があります。
 
 parserによる一意なwrapper復元、局所retry及び監査は既知の表記揺れを有限範囲で回復しますが、欠落又は破損したcreative textの意味を決定論的に推測して合成することはできません。AS IS原則を保ったまま、あらゆるLLM出力を必ず成功へ変換する決定論的な仕組みを構築することは不可能です。復元できない応答を黙って採用せず、該当ノードは停止します。
 
@@ -36,7 +36,7 @@ parserによる一意なwrapper復元、局所retry及び監査は既知の表�
 
 ## 翻訳行protocolで停止する
 
-Compilerの日本語→英語翻訳には8B級Text GGUFを推奨します。`temperature=0`、`cache_mode=refresh`で確認してください。すでに全promptが英語なら`translation_mode=already_english`にするとGGUFをloadしません。
+Compilerの日本語→英語翻訳にも配布WFと同じGemma4 31Bを使用します。`temperature=0`、`cache_mode=refresh`で確認してください。すでに全promptが英語なら`translation_mode=already_english`にするとGGUFをloadしません。
 
 ## Context Loopが音声長不足で停止する
 

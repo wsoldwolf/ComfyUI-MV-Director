@@ -13,55 +13,7 @@ from core.planner.scene_author import build_scene_author_grammar, _split_termina
 from nodes.node_timeline_planner.node import _system_prompts
 
 
-CONCEPT = "# サブジェクト\n* 一人の歌手。\n"
-TEMPLATE = (
-    "> `シーン` 1\n"
-    "# シーン 00:00.000 --> 00:01.000\n"
-    "* `H3長` 22\n"
-    "## ショット 00:00.000\n"
-    "* `演出` 木の根元に苔がある。\n"
-    "* `演技` 人物が片手を胸元に置く。\n"
-    "* `カメラ` 目と口が見える正面。\n"
-    "## ショット 00:00.500\n"
-    "* 未計画\n"
-)
-
-
-class Backend:
-    def __init__(self):
-        self.calls = []
-
-    def complete_planner(self, *, task, payload, **_kwargs):
-        request = json.loads(payload)
-        self.calls.append((task, request))
-        if task == "scene-author-composition-choice":
-            return f"CHOICE\t1\t{request['current_choice']}"
-        kind = {
-            "scene-author-event": "EVENT",
-            "scene-author-performance": "PERFORMANCE",
-            "scene-author-camera": "CAMERA",
-        }[task]
-        return "\n".join(
-            f"{kind}\t{slot['slot']}\t"
-            + {
-                "EVENT": (
-                    "歌詞に応じて花が揺れる。"
-                    if slot.get("shot") == 1 else "なし"
-                ),
-                "PERFORMANCE": "胸から腕へ動きを渡し、手を離す。",
-                "CAMERA": "Arc Shotで腕と表情を追う。",
-            }[kind]
-            + {
-                "EVENT": "｜END_STATE=花は風に揺れている。",
-                "PERFORMANCE": "｜END_STATE=両足支持、右腕は低く、視線は前。",
-                "CAMERA": "｜END_STATE=正面寄り、右回りのArc終点。",
-            }[kind]
-            for slot in request["slots"]
-        )
-
-
-def _runtime():
-    return LlamaRuntimeConfig(max_tokens=512, n_ctx=8192)
+from scene_author_fixtures import Backend, CONCEPT, TEMPLATE, _runtime
 
 
 class SceneAuthorTests(unittest.TestCase):
@@ -75,7 +27,7 @@ class SceneAuthorTests(unittest.TestCase):
                     direction=DirectionArtifact(motion_profile_id="anime_scene_author_mv",
                                                 camera_profile_id=profile),
                     lip_sync_mode="off", lip_sync_target="サブジェクト1",
-                    lip_sync_audio_slot=1, scenes_per_batch=1,
+                    lip_sync_audio_slot=1,
                     system_prompts=_system_prompts(), runtime_config=_runtime(),
                 )
                 self.assertTrue(result.complete)
@@ -101,7 +53,7 @@ class SceneAuthorTests(unittest.TestCase):
                 staging_candidates=("花の場面で花びらが舞う。",),
             ),
             lip_sync_mode="off", lip_sync_target="サブジェクト1",
-            lip_sync_audio_slot=1, scenes_per_batch=1,
+            lip_sync_audio_slot=1,
             system_prompts=_system_prompts(), runtime_config=_runtime(),
             staging_candidate_policy="prefer_matched",
         )
@@ -170,7 +122,7 @@ class SceneAuthorTests(unittest.TestCase):
     def test_profile_and_prompt_load(self):
         from core.direction.profile_loader import load_direction_profile
         path = Path(__file__).resolve().parents[1] / "profiles/motion/anime_scene_author_mv.md"
-        self.assertEqual(load_direction_profile(path, "motion").performance_mode, "scene_author")
+        self.assertEqual(load_direction_profile(path, "motion").kind, "motion")
         prompts = _system_prompts()
         self.assertTrue(all(prompts[f"scene-author-{kind}"] for kind in ("event", "performance", "camera")))
         self.assertIn("候補全体の対象・場所・変化", prompts["scene-author-event"])
@@ -214,7 +166,7 @@ class SceneAuthorTests(unittest.TestCase):
             backend, template_emd=TEMPLATE, concept_emd=CONCEPT,
             direction=direction, lip_sync_mode="off",
             lip_sync_target="サブジェクト1", lip_sync_audio_slot=1,
-            scenes_per_batch=1, system_prompts=_system_prompts(),
+            system_prompts=_system_prompts(),
             runtime_config=_runtime(),
         )
         self.assertTrue(planned.complete)
@@ -232,7 +184,7 @@ class SceneAuthorTests(unittest.TestCase):
                 staging_candidates=("使わなくてもよい候補。",),
             ),
             lip_sync_mode="off", lip_sync_target="サブジェクト1",
-            lip_sync_audio_slot=1, scenes_per_batch=1,
+            lip_sync_audio_slot=1,
             system_prompts=_system_prompts(), runtime_config=_runtime(),
         )
         self.assertTrue(result.complete)
@@ -266,7 +218,7 @@ class SceneAuthorTests(unittest.TestCase):
             backend, template_emd=source, concept_emd=CONCEPT,
             direction=DirectionArtifact(motion_profile_id="anime_scene_author_mv"),
             lip_sync_mode="off", lip_sync_target="サブジェクト1",
-            lip_sync_audio_slot=1, scenes_per_batch=1,
+            lip_sync_audio_slot=1,
             system_prompts=_system_prompts(), runtime_config=_runtime(),
         )
         self.assertTrue(result.complete)
@@ -286,7 +238,7 @@ class SceneAuthorTests(unittest.TestCase):
             backend, template_emd=source, concept_emd=CONCEPT,
             direction=DirectionArtifact(motion_profile_id="anime_scene_author_mv"),
             lip_sync_mode="context_loop", lip_sync_target="サブジェクト1",
-            lip_sync_audio_slot=1, scenes_per_batch=1,
+            lip_sync_audio_slot=1,
             system_prompts=prompts, runtime_config=_runtime(),
         )
         self.assertTrue(result.complete)
@@ -312,7 +264,7 @@ class SceneAuthorTests(unittest.TestCase):
                 staging_candidates=(candidate,),
             ),
             lip_sync_mode="off", lip_sync_target="サブジェクト1",
-            lip_sync_audio_slot=1, scenes_per_batch=1,
+            lip_sync_audio_slot=1,
             system_prompts=prompts, runtime_config=_runtime(),
         )
         self.assertTrue(result.complete)
@@ -346,7 +298,7 @@ class SceneAuthorTests(unittest.TestCase):
             backend, template_emd=source, concept_emd=CONCEPT,
             direction=DirectionArtifact(motion_profile_id="anime_scene_author_mv"),
             lip_sync_mode="off", lip_sync_target="サブジェクト1",
-            lip_sync_audio_slot=1, scenes_per_batch=1,
+            lip_sync_audio_slot=1,
             system_prompts=_system_prompts(), runtime_config=_runtime(),
         )
         self.assertTrue(result.complete)
@@ -377,7 +329,7 @@ class SceneAuthorTests(unittest.TestCase):
                 time_lighting_direction=("夜。",),
             ),
             lip_sync_mode="off", lip_sync_target="サブジェクト1",
-            lip_sync_audio_slot=1, scenes_per_batch=1,
+            lip_sync_audio_slot=1,
             system_prompts=_system_prompts(), runtime_config=_runtime(),
         )
         self.assertTrue(result.complete)
@@ -410,7 +362,7 @@ class SceneAuthorTests(unittest.TestCase):
             backend, template_emd=template, concept_emd=CONCEPT,
             direction=DirectionArtifact(motion_profile_id="anime_scene_author_mv"),
             lip_sync_mode="off", lip_sync_target="サブジェクト1",
-            lip_sync_audio_slot=1, scenes_per_batch=1,
+            lip_sync_audio_slot=1,
             system_prompts=_system_prompts(), runtime_config=_runtime(),
         )
         self.assertTrue(result.complete)
@@ -444,7 +396,7 @@ class SceneAuthorTests(unittest.TestCase):
             backend, template_emd=template, concept_emd=CONCEPT,
             direction=DirectionArtifact(motion_profile_id="anime_scene_author_mv"),
             lip_sync_mode="off", lip_sync_target="サブジェクト1",
-            lip_sync_audio_slot=1, scenes_per_batch=1,
+            lip_sync_audio_slot=1,
             system_prompts=_system_prompts(), runtime_config=_runtime(),
         )
         self.assertTrue(result.complete)
@@ -485,7 +437,7 @@ class SceneAuthorTests(unittest.TestCase):
             backend, template_emd=TEMPLATE, concept_emd=CONCEPT,
             direction=DirectionArtifact(motion_profile_id="anime_scene_author_mv"),
             lip_sync_mode="off", lip_sync_target="サブジェクト1",
-            lip_sync_audio_slot=1, scenes_per_batch=1,
+            lip_sync_audio_slot=1,
             system_prompts=_system_prompts(), runtime_config=_runtime(),
         )
         self.assertTrue(result.complete)
@@ -504,8 +456,8 @@ class SceneAuthorTests(unittest.TestCase):
         )
 
     def test_continuation_receives_only_role_specific_terminal_state(self):
-        from test_timeline_planner import TEMPLATE as LONG_TEMPLATE
-        from test_timeline_planner import INSTRUMENTAL_TAIL
+        from planner_fixtures import TEMPLATE as LONG_TEMPLATE
+        from planner_fixtures import INSTRUMENTAL_TAIL
 
         backend = Backend()
         result = plan_timeline(
@@ -513,7 +465,7 @@ class SceneAuthorTests(unittest.TestCase):
             concept_emd=CONCEPT,
             direction=DirectionArtifact(motion_profile_id="anime_scene_author_mv"),
             lip_sync_mode="off", lip_sync_target="サブジェクト1",
-            lip_sync_audio_slot=1, scenes_per_batch=1,
+            lip_sync_audio_slot=1,
             system_prompts=_system_prompts(), runtime_config=_runtime(),
         )
         self.assertTrue(result.complete)
@@ -537,8 +489,8 @@ class SceneAuthorTests(unittest.TestCase):
         self.assertTrue(parse_emd(result.emd.text).scenes[1].continuation)
 
     def test_missing_terminal_state_does_not_restore_prior_prose(self):
-        from test_timeline_planner import TEMPLATE as LONG_TEMPLATE
-        from test_timeline_planner import INSTRUMENTAL_TAIL
+        from planner_fixtures import TEMPLATE as LONG_TEMPLATE
+        from planner_fixtures import INSTRUMENTAL_TAIL
 
         class BareBackend(Backend):
             def complete_planner(self, **kwargs):
@@ -556,7 +508,7 @@ class SceneAuthorTests(unittest.TestCase):
             concept_emd=CONCEPT,
             direction=DirectionArtifact(motion_profile_id="anime_scene_author_mv"),
             lip_sync_mode="off", lip_sync_target="サブジェクト1",
-            lip_sync_audio_slot=1, scenes_per_batch=1,
+            lip_sync_audio_slot=1,
             system_prompts=_system_prompts(), runtime_config=_runtime(),
         )
         self.assertTrue(result.complete)
@@ -585,7 +537,7 @@ class SceneAuthorTests(unittest.TestCase):
                 temperature=0.1, top_p=0.9, repetition_penalty=1.05,
                 gpu_layers=-1, n_batch=256, n_ctx=8192, flash_attn=True,
                 kv_cache_type="q8_0", op_offload=True,
-                keep_model_loaded=False, seed=1, scenes_per_batch=1,
+                keep_model_loaded=False, seed=1,
                 cache_mode="disabled",
             )
         self.assertEqual(text, artifact.text)
@@ -614,7 +566,7 @@ class SceneAuthorTests(unittest.TestCase):
                 top_p=0.9, repetition_penalty=1.05, gpu_layers=-1,
                 n_batch=256, n_ctx=8192, flash_attn=True,
                 kv_cache_type="q8_0", op_offload=True,
-                keep_model_loaded=False, seed=1, scenes_per_batch=1,
+                keep_model_loaded=False, seed=1,
                 cache_mode="disabled",
             )
         self.assertEqual(text, artifact.text)

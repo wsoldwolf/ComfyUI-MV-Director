@@ -98,12 +98,28 @@ tokenはdescriptionより前に置く。同じSubject行で同じH3参照を重�
 * 夜明け前の海岸。
 ```
 
-Compilerはこれを、概念的に次のSubject定義へ変換する。
+本文と参照tokenの対応は次のとおりである。英訳の文言は翻訳backendに依存するが、
+Subject番号と参照番号は原文から機械的に決まる。
+
+| 原文のSubject行 | H3 Subject | descriptionの英訳例 | 接続参照 |
+|---|---|---|---|
+| 白いコートを着たダンサー。 | `<Subject 1>` | A dancer wearing a white coat. | `<Picture 2>`, `<Video 1>` |
+| 夜明け前の海岸。 | `<Subject 2>` | A coast before dawn. | なし |
+
+Compiler出力のうち、本文と参照の対応だけを抜粋すると次のようになる。
+識別保持・単一instance・参照構図非継承等の固定付加文は、この例では省略している。
 
 ```text
-<Subject 1> is described here: ... Use these connected references only for its visual identity and design: <Picture 2>, <Video 1>. Treat every panel or alternate view as identity material for the same single physical instance. Render exactly one physical instance of this Subject, with one head and one body. Never show a duplicate, twin, clone, reflection, background lookalike, inset view, split-screen copy, or second representation of this Subject. Do not copy a reference pose, framing, composition, panel layout, or background; follow the current Shot instead. The reference is identity evidence, not a storyboard, montage, or layout template. Render one unified full-frame continuous camera view that fills the entire image. Never create an internal border, seam, divider, panel, inset, picture-in-picture, side-by-side view, or simultaneous alternate angle. If the reference contains multiple views, fuse only compatible identity features into this one view. Camera angle and framing changes must happen over time or at a scene cut, never simultaneously within one frame. The current Scene environment and time-lighting directions are the sole authority for the rendered world and fully replace every background and illumination visible inside this identity reference. Treat any blank or white studio field, daylight, backdrop, panel-specific setting, or other conflicting reference environment as non-renderable source residue. Continue the specified Scene environment across the entire frame, including behind and around the Subject. Generate a newly staged Shot from the current action and camera instructions. The first output frame must already use the new Shot-specific body pose, gaze, blocking, framing, viewpoint, camera height, and camera distance. Never show, reconstruct, paste, hold, or transition from the reference image itself as a frame, still, plate, poster, inset, background, or composition. Keep visible skin and clothing clean and intact unless an author-written Shot explicitly requires a physical condition. Lyric text inside <d> is vocal content only: figurative words about wounds, scars, pain, blood, or a broken heart never authorize a visible cut, scar, bruise, bleeding, bandage, lesion, stain, tattoo-like mark, torn skin, or damaged clothing.
-<Subject 2> is described here: ...
+<Subject 1> is described here: A dancer wearing a white coat.
+Use these connected references only for its visual identity and design: <Picture 2>, <Video 1>.
+<Subject 2> is described here: A coast before dawn.
 ```
+
+上例の改行は説明用であり、実際の定義の行分割を規定しない。
+参照は一行目のSubjectだけに属し、二行目へ継承しない。
+二行目は原文で`# サブジェクト`に書かれているため、場所の記述であっても
+`<Subject 2>`となる。共通背景として扱いたい場合は、その行を
+`# シーン設定`の`## 環境`へ記述する。
 
 ### 3.3 内部ID
 
@@ -163,7 +179,7 @@ Shot、保持分析及びlip-syncでSubjectを参照する場合は、派生ID `
 
 ### 計画入力だけで使う演出候補ディレクティブ
 
-Direction Enhancerの既存`user_request`には、`# 演出候補`セクションの箇条書きを任意に記述できる。最大12行、各本文500文字までとし、行の順序と自然文を保持する。これは**完成`MVD_EMD_V1`には存在しない計画入力専用section**である。Directionがユーザー入力から構文だけを抽出してtyped artifactへ保持し、通常の共通プロンプトへ混ぜない。PlannerはSceneごとのLLM選択で出来事候補一件又は不採用を決め、具体的な出来事候補を採用した場合は別の身体演技候補一件を選べる。対象と配置を伴う候補はVisual Beatへ、身体候補はScene spineとActionへ着想として渡す。LLMが記した空間関係はCue Cardの`配置`に保持し、接触Shotでも同じ関係を要求する。具体的な出来事に使用した候補は後続Sceneへ再配布しないが、身体演技だけの候補は再選択できる。候補の採用・変形・不採用はいずれも有効であり、Pythonは対象や動詞を辞書で選ばない。候補の原文はCompiler及びH3の全Scene共通`prompt_prefix`へ渡らない。別のPlanner入力ソケットは設けない。
+Direction Enhancerの既存`user_request`には、`# 演出候補`セクションの箇条書きを任意に記述できる。最大12行、各本文500文字までとし、行の順序と自然文を保持する。これは**完成`MVD_EMD_V1`には存在しない計画入力専用section**である。Directionがユーザー入力から構文だけを抽出してtyped artifactへ保持し、通常の共通プロンプトへ混ぜない。Plannerは現在SceneのEvent、Performance、Cameraへ候補を原文のまま渡し、局所的な着想として扱う。候補の採用・変形・不採用はいずれも有効であり、Pythonは対象や動詞を辞書で選ばない。候補の原文はCompiler及びH3の全Scene共通`prompt_prefix`へ渡らない。別のPlanner入力ソケットは設けない。
 
 ```markdown
 # 共通プロンプト
@@ -249,7 +265,7 @@ Scene内の後続Shotは一回のH3生成に含まれる時刻付きprompt変化
 
 Compilerは最初を`[Shot 1]`、後続をScene相対時刻の`[Shot N] At MM:SS.mmm,`へ変換する。
 
-### 8.1 用途を明示したShot本文（次期Scene author経路）
+### 8.1 用途を明示したShot本文（Scene Author）
 
 通常の箇条書きに加え、各Shotは``演出``、``演技``、``カメラ``の
 いずれかを先頭tokenに持つことができる。ここで`演出`は対象・空間・外部現象の
@@ -269,7 +285,7 @@ Compilerは本文を英訳し、構造を使って局所的な優先順位を解
 これらの共通項目が継承される。作者が明記したShot本文をCompilerが創作・置換
 することはない。ラベルなし箇条書きは従来どおり有効だが、その責務は自動推定しない。
 
-Motion profileの`performance_mode=scene_author`を選んだPlanner経路では、
+現行Plannerは全profileでScene Authorを使用し、
 元TemplateのShot境界・Sceneの継続指定を保ち、作者が書いた用途別項目は固定する。
 未指定の出来事、人物演技、撮影だけをScene単位で順に生成する。演出候補は出来事
 担当と人物演技担当へ原文のまま渡す任意の着想で、必須条件ではない。

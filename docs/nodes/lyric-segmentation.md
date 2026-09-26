@@ -19,7 +19,7 @@ Whisperが一部の短窓だけで文字列を返しながらword timestampを�
 | `max_scene_duration_ms` | `10000` | H3 Scene分割の最大目安 |
 | `srt_time_offset_ms` | `0` | SRT出力だけへ加えるoffset |
 | `cache_mode` | `reuse` | 成功結果の再利用方針 |
-| `keep_whisper_loaded` | `false` | 8GB VRAMではfalse推奨 |
+| `keep_whisper_loaded` | `false` | 後段のGGUF/H3へGPUを解放する |
 | `h3_timing_profile` | 任意 | 未接続時も固定既定profileを使う |
 
 ## lyrics形式

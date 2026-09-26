@@ -1,5 +1,4 @@
 # プロファイル
-* `performance_mode` scene_author
 * `render_prompt` 手描きセルアニメのScene単位歌唱演技。人物の動きは各Shotの`演技`に従い、同じ始点姿勢やアクセントをShotごとに再開せず、連続した身体フレーズとして描く。
 
 # 共通プロンプト

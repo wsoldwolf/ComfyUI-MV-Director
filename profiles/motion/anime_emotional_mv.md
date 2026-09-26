@@ -1,6 +1,4 @@
 # プロファイル
-* `performance_mode` dance_phrase
-* `body_accent_policy` sparse_chorus_prechorus_verse_contact
 * `render_prompt` 手描きセルアニメの歌唱演技。全身演技を指定されたShotでは、支持脚の踏み替えと重心移動から骨盤・体幹・両腕・表情へ伝わる連続した全身フレーズとして描き、溜め、明瞭なアクセント、余韻へ進む。顔Shotではそのフレーズの目・眉・口の反応だけを見せる。足元だけを主題にせず、接地と関節を安定させ、人物の正面方向を保つ。具体的な動作は各Shotの指示に従う。
 
 # 共通プロンプト

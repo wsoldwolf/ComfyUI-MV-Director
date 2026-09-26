@@ -175,7 +175,7 @@ class MVDirectorDirectionEnhancer:
                 "repetition_penalty": ("FLOAT", {"default": 1.05, "min": 0.1, "max": 2.0, "step": 0.05}),
                 "gpu_layers": ("INT", {"default": -1, "min": -1, "max": 1000}),
                 "n_batch": ("INT", {"default": 512, "min": 1, "max": 4096, "step": 32}),
-                "n_ctx": ("INT", {"default": 16384, "min": 0, "max": 131072, "step": 1024}),
+                "n_ctx": ("INT", {"default": 24576, "min": 0, "max": 131072, "step": 1024}),
                 "flash_attn": ("BOOLEAN", {"default": True}),
                 "kv_cache_type": (["q8_0", "q4_0", "f16"], {"default": "q8_0"}),
                 "op_offload": ("BOOLEAN", {"default": True}),

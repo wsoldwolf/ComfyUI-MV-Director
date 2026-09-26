@@ -68,7 +68,7 @@ def build() -> str:
 
     box(40, 1000, 830, 150, "llm", "EMD Compiler · 31B", ["翻訳対象fieldのみ英訳 / 予約directiveは機械処理", "構造検証 → Context Loop Plan JSON → .txt保存境界", "Video段階：H3 Hybrid Loader + Context Loop標準Lip Sync"])
     edge("M225 900V1000")
-    box(930, 1000, 1020, 150, "artifact", "経路の区別", ["図は現行Scene Author経路。旧Cue / Visual Beat / Actions / Auditは別経路", "任意の候補再選択は監査分類器ではなく、既存の補完候補を選び直す処理", "必須protocol回復不能時は停止。自然さ・演出・同期の最終判定は人間"])
+    box(930, 1000, 1020, 150, "artifact", "現行の単一経路", ["全profileでScene Authorを使用。旧Cue / Actions / Audit経路は撤去済み", "任意の候補再選択は監査分類器ではなく、既存の補完候補を選び直す処理", "必須protocol回復不能時は停止。自然さ・演出・同期の最終判定は人間"])
     text(1000, 1190, "時刻契約：Context Loop 0.7.0 @ d80304f / ComfyUI 0.37.2 @ 830232b", 18)
     return "\n".join(rows + ["</svg>"]) + "\n"
 

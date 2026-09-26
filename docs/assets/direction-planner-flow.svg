@@ -101,8 +101,8 @@
 <text x="455.0" y="1118" font-size="19" font-weight="400">Video段階：H3 Hybrid Loader + Context Loop標準Lip Sync</text>
 <path class="edge" d="M225 900V1000"/>
 <rect x="930" y="1000" width="1020" height="150" rx="14" fill="#f2eafe" stroke="#7950a8" stroke-width="2"/>
-<text x="1440.0" y="1034" font-size="23" font-weight="700">経路の区別</text>
-<text x="1440.0" y="1064" font-size="19" font-weight="400">図は現行Scene Author経路。旧Cue / Visual Beat / Actions / Auditは別経路</text>
+<text x="1440.0" y="1034" font-size="23" font-weight="700">現行の単一経路</text>
+<text x="1440.0" y="1064" font-size="19" font-weight="400">全profileでScene Authorを使用。旧Cue / Actions / Audit経路は撤去済み</text>
 <text x="1440.0" y="1091" font-size="19" font-weight="400">任意の候補再選択は監査分類器ではなく、既存の補完候補を選び直す処理</text>
 <text x="1440.0" y="1118" font-size="19" font-weight="400">必須protocol回復不能時は停止。自然さ・演出・同期の最終判定は人間</text>
 <text x="1000" y="1190" font-size="18" font-weight="400">時刻契約：Context Loop 0.7.0 @ d80304f / ComfyUI 0.37.2 @ 830232b</text>

@@ -1,192 +1,72 @@
-# Direction profile EMD
+# Directionプロファイル
 
-## 明示モーション合成の比較用profile
+Style・Motion・CameraはこのディレクトリのUTF-8 EMDファイルから読み込みます。
+PlannerはGemma 4 31Bを基準にしたScene Authorへ一本化しました。
+プロファイルは表現方針を選ぶものであり、旧8B向けの別生成経路を選ぶものではありません。
 
-[motion/anime_scene_composed_mv.md](motion/anime_scene_composed_mv.md)はScene authorに
-接地・荷重移動を含む三種類の全身移動を合成する実験用profile。既定profileではない。
-`# モーション補完` の通常箇条書きを外部EMDに置き、ユーザー入力の同名sectionで
-全置換できる。`* 無効` で停止する。最大12件・各500文字、scene_author専用。
-このsectionは共通promptへ入らない。適用条件と操作例は
-[TIPS](../docs/tips/mechanical-motion-and-perceived-performance.md)、
-実8Bで残る静止・移動の競合は外部研究アーカイブの
-`docs/research/motion-composition-2026-09-23.md`を参照。
-このprofileの`composition_timing=post_author`では、補完文を人物演技とCameraの
-LLM入力へ先に見せず、両者の生成後に完成EMDへ一度だけ合成する。
-`composition_reselection=guarded_no_drop`は、確定したEvent・Performance・Cameraを
-読んで候補番号だけをSceneごとに一回選び直す実験設定。元のLLM本文・作者確定指示は
-変えず、補完なしにもできない。不正な選択応答は一回だけ再試行し、それでも不正なら
-従来のScene番号で選ばれた候補を維持する。現時点の評価対象はGemma 4 31Bであり、
-小型モデルへの有効性や全編H3での画質改善は未確認。省略時は`off`。
-`pre_author`が省略時の従来動作であり、他profileの挙動は変えない。
-作者がShotに演技を書いた場合は、どちらの方式でも機械的な補完を追加しない。
-この切替は振付と後段補完の意味的な整合を保証せず、実験用である。
-変更後はComfyUIを再起動し、Enhancerから再実行する。
-
-Direction Enhancerの`style_profile`、`motion_profile`、`camera_profile`はPython定数ではなく、このディレクトリのUTF-8 EMDファイルから読み込みます。
-
-| ディレクトリ | 必須subsection | 用途 |
+| ディレクトリ | 必須見出し | 用途 |
 |---|---|---|
-| `style/` | `## スタイル` | 媒体、画風、材質、照明上の全体方針 |
-| `motion/` | `## モーション` | 人物演技と動きの全体方針 |
-| `camera/` | `## カメラ` | Shot固有CameraをPlannerが選ぶための全体方針 |
+| style/ | `## スタイル` | 媒体、画風、材質など |
+| motion/ | `## モーション` | 身体演技の表現方針 |
+| camera/ | `## カメラ` | 撮影の表現方針 |
 
-ファイル名の拡張子を除いた部分がprofile IDです。例えば`profiles/style/my_anime.md`はComfyUIの`style_profile` comboへ`my_anime`として追加されます。IDは小文字英数字とunderscoreだけを使い、先頭は小文字、予約ID `passthrough`は使えません。追加・変更後はComfyUIを再起動してください。
+ファイル名の拡張子を除いた部分がUIのprofile IDです。先頭は小文字、以降は小文字英数字と
+underscoreを使います。予約ID `passthrough`は使えません。変更後はComfyUIを再起動してください。
+未知metadata、種類に合わない見出し、空項目、code fence、NULはエラーになります。
 
 ## 最小形
 
 ```markdown
 # 共通プロンプト
-## スタイル
-* 映画的な手描きセルアニメーションとして描く。
-* 人物の識別要素と衣装配色を保持する。
-```
-
-複数のlist itemは文書順に空白一個で連結され、Direction profileの一つの本文になります。指定ディレクトリとsubsectionは一致しなければなりません。Motion専用の任意`# 振付候補`を除き、別section、空item、code fence、NUL及び未知metadataは起動時エラーです。
-
-## Style metadata
-
-先頭の任意の`# プロファイル`に、種類ごとのmetadataを置けます。
-
-```markdown
-# プロファイル
-* `locked` true
-* `retention` `partially_preserved` 髪型、配色及び衣装を保持する。
-* `scene_reinforcement` 各Sceneでも同じ媒体表現を維持する。
-
-# 共通プロンプト
-## スタイル
-* 目標媒体を先頭にした固定Style本文。
-```
-
-- `locked`: `true`又は`false`。`true`ではLLMが返したSTYLEを採用せず、この本文をそのまま使います。
-- `retention`: `retention_policy=profile`時にSubjectごとへ出す保持分析です。先頭は`` `fully_preserved` ``又は`` `partially_preserved` ``にします。
-- `scene_reinforcement`: 各Scene最初のShotでも短く再掲するStyle条件です。
-
-## Motion metadata
-
-### 計画用本文と描画用本文の分離
-
-MotionとCameraは任意metadata `render_prompt` を持てます。`# 共通プロンプト`の本文は
-Direction→Plannerの計画用入力として従来どおり使い、EMDへ出す時だけ、選択profileの
-本文と**完全一致する項目**を`render_prompt`へ置き換えます。作者の追記・LLM生成文・
-編集された本文は変更しません。未指定なら従来どおり本文を出します。
-
-```markdown
-# プロファイル
-* `performance_mode` dance_phrase
-* `render_prompt` 動作は一つの意図ある経路を通り、明瞭なアクセントと余韻へ連続する。
-
-# 共通プロンプト
 ## モーション
-* 歌詞に応じて準備・アクセント・解放をShotへ配分する。
+* 歌詞の感情を、人物の支持・体幹・腕・表情がつながる演技で表す。
 ```
 
-配分率・slot・監査等のPlanner向け規則を動画モデルへ送らず、描画に必要な短い全体条件を
-別に記述するための機能です。UI追加はありません。`anime_emotional_mv`のMotionとCameraで
-使用しています。metadataもPlannerキャッシュに含むため、変更後は再起動してPlanを再生成します。
+複数の箇条書きは文書順に空白一個で連結されます。生成はすべて
+Event → Performance → CameraのScene単位で行います。
+作者がShotに指定した確定 `演出`・`演技`・`カメラ`は生成で置換しません。
 
-```markdown
-# プロファイル
-* `performance_mode` dance_phrase
+## 現行metadata
 
-# 共通プロンプト
-## モーション
-* 重心から体幹、腕、表情へつながる演技を、準備・アクセント・解放として描く。
-```
+先頭の任意の `# プロファイル`に記述します。
 
-`performance_mode`は`event_based`（省略時）、`dance_phrase`又は
-`scene_author`です。`scene_author`は次期の実験用経路で、Sceneごとに
-出来事→人物演技→Cameraを順に生成します。既定profileは変更しません。
-対応profileは[anime_scene_author_mv](motion/anime_scene_author_mv.md)です。
-共通`## モーション`をユーザーが書き換えても、選択したMotionのPlanner方式は
-`motion_policy_profile_id`として保持します。本文はユーザーが所有し、profileの
-自然文を重ねません。
-`anime_choreography_mv`は全編比較用の選択可能なMotionであり、既定の`anime_emotional_mv`には適用しません。以前の`scene_palette`とprofile内の`# 振付候補`の一括投入は廃止しました。ユーザー固有の動き又は出来事の候補は、Direction Enhancerの`user_request`に`# 演出候補`として記述します。Motion profileに関係なくPlannerがSceneの歌詞から候補一件又は不採用を選びます。旧`scene_choice`は既存の任意profile用として残りますが、通常の演出候補には不要です。
-`anime_emotional_mv`と、現在その内容を複製した`anime_story_mv`のMotionは`dance_phrase`を選びます。選択したMotionの
-metadataだけで切り替え、UI項目は追加しません。Cameraだけをemotionalにしても
-有効になりません。設定もPlannerのcache keyへ含めます。
+| 種類 | key | 値・用途 |
+|---|---|---|
+| Style | locked | true / false。trueはStyle本文を固定 |
+| Style | retention | `fully_preserved`又は`partially_preserved`で始まる保持分析 |
+| Style | scene_reinforcement | Scene冒頭へ再掲する媒体条件 |
+| Motion・Camera | render_prompt | 計画用のprofile本文と完全一致する項目だけを、描画用本文へ置換 |
+| Motion | composition_timing | pre_author（省略時）/ post_author |
+| Motion | composition_reselection | off（省略時）/ guarded_no_drop |
+| Camera | arc_roll_policy | off（省略時）/ selective_arc |
 
-`dance_phrase`では既存Cue Cardの`身体主導`と`終端`を、一つのつながる全身演技として
-Actionへ渡します。準備・アクセント・解放をScene内のShotへ配分し、短い顔Shotでは
-その演技の表情accentだけを扱います。踏み替えや膝の弾みを全身演技として許可しますが、
-足先の接写、不要な走行、人物の連続回転は求めません。歌詞の具体物・外部effectは
-保持し、身体演技を追加するために対象を置き換えません。静かな場面も残します。
+`render_prompt`は作者の追記やLLM生成文を書き換えません。
+`arc_roll_policy=selective_arc`はCamera段にArcとRollの組合せを選択的に提案します。
+特定のplanner_policy指定は不要です。Rollは画面の傾きで、上下へのTiltとは異なります。
 
-下半身語だけで演技違反と決めるPython検査は、このmodeでは適用せず既存の意味監査へ
-委ねます。足指や履物の細部を主役にする演出は監査promptで引き続き禁止しますが、
-意味監査は品質保証ではありません。生成文の機械的な書換え、追加LLM段階、監査回数の
-増加、音楽beat解析は行いません。実時間での拍同期やCameraの位相制御は別課題です。
+## モーション補完
 
-## Camera metadata
+Motion profileに任意の `# モーション補完`を置けます。通常箇条書きで最大12件、各500文字です。
+ユーザー入力の同名sectionで全置換でき、`* 無効`で停止します。共通promptには入りません。
+作者確定のShot演技には追加しません。
 
-`dance_phrase`では、通常の内部Shot候補の最短間隔を4秒として演技が収まる時間を確保します。
-Sceneや音声の区切りは変えず、4秒未満のSceneも一Shotとして扱えます。Actionには
-`performance_phase`、Scene内の進行位置、継続時の前Cueの終了状態を渡します。終了状態は
-LLMが計画した状態であり、生成動画からの姿勢検出ではありません。
+`anime_scene_author_mv`は補完なし、`anime_scene_composed_mv`は接地・荷重移動を含む補完ありです。
+付属WFのMotion既定は後者です。post_authorでは演技・Camera生成後に補完を合成します。
+guarded_no_dropは確定Event・Performance・Cameraを読み、候補番号だけをSceneごとに選び直します。
+確定本文は書き換えず、補完なしにもできません。不正応答は一回だけ再試行し、
+失敗時は元の巡回選択を維持します。補完による画質・自然さは動画で確認してください。
 
-emotionalの有限Camera契約では、同じ継続グループの前Camera終了画角・視点を開始値として
-接続します。背面・側面から正面顔へ単純Zoomする不可能な接続は、同じ旋回方向のArcとして
-解決し、INFOに接続を記録します。この幾何接続は有限値の構造処理で、Action本文はAS ISです。
-自由文Cameraや作者が書いた演技の意味を書き換える機能ではありません。実画像の連続性は別途検証が必要です。
+## 旧profileからの移行
 
-Cameraは任意の`planner_policy`、
-`lyric_cue_mode`、`lyric_interpretation`及び`priority_lyric_cues` metadataを持てます。
+`performance_mode`、`body_accent_policy`、`choreography_policy`、`planner_policy`、
+`camera_render_style`、`lyric_cue_mode`、`lyric_interpretation`、`priority_lyric_cues`、
+`arc_tilt_policy`は廃止しました。カスタムprofileから削除してください。
+無視して旧経路へフォールバックすることはありません。
 
-```markdown
-# プロファイル
-* `planner_policy` anime_emotional_mv
-* `lyric_cue_mode` automatic
-* `lyric_interpretation` bounded
+ID付き `# 振付候補`も廃止しました。ユーザーの任意演出は `# 演出候補`、
+機械的な身体補完は `# モーション補完`へ分けて記述してください。
+旧実験profile `anime_choreography_mv`・`anime_scene_phrase_mv`は撤去しました。
+付属のStyle・Camera及び他のMotionの表現本文は保持しています。
 
-# 共通プロンプト
-## カメラ
-* 長尺Arcと顔Zoomを連続した演出として使う。
-```
-
-`planner_policy`はUIへ別項目を追加せず、Camera profileを選んだ時にだけTimeline PlannerのShot配分、CUT/CONTINUE方針及びCamera構造予算を切り替える内部policy IDです。本文の自然文をPythonで書き換える機能ではありません。`anime_emotional_mv`では現在Sceneの元歌詞だけを対象triggerとし、scene EMD又はDirectionの環境inventoryをAction sourceにせず、対象の一Scene消費、外部effectの自律性、まぶたを含む全身演技及び曲全体で疎な顔Zoomをplanning stageへ共有します。未知policyは本文だけの通常profileとして動作し、実装済みpolicyだけが追加の構造契約を持ちます。選択したMotion/Camera profile本文は対応するtyped fieldを機械的に所有し、LLMのMOTION/CAMERA言い換えでは置換されません。これによりStyleや履物条件がCameraへ誤分類されることを防ぎます。ユーザーが完全なDirection EMDを直接管理する場合は外部profileではなく、Direction Enhancerの`passthrough`を使います。
-
-`anime_story_mv`はStyle/Motion/Cameraを`anime_emotional_mv`から複製した比較用基準です。Cameraの`planner_policy`は両者とも`anime_emotional_mv`です。現在は`anime_emotional_mv`を開発用とし、そのMotionだけに`body_accent_policy=sparse_chorus_prechorus_verse_contact`、Cameraだけに`arc_roll_policy=selective_arc`を付けています。`anime_story_mv`は両metadataとも省略時の`off`で、従来の上半身roleとCamera経路を保ちます。変更前のstory profileはGit履歴から参照できます。
-
-Motion profileの`body_accent_policy`は`off`（省略時）、`sparse_chorus`、`sparse_chorus_prechorus`又は`sparse_chorus_prechorus_verse_contact`を指定できます。いずれも`performance_mode=dance_phrase`を必要とし、サビ及び最終サビの適格なSceneで最大一Shotだけ`body_phrase_accent`を選びます。後ろ二つはPRE-CHORUSのみ・単一Shot・6秒以上のSceneにも一回のaccentを許可します。最後の方針はさらに、元歌詞から認可された接触を扱う複数ShotのVerseで、接触event以外の一Shotだけに身体accentを置き、そのSceneのShot境界候補を3秒間隔まで広げます。Scene spineが欠落した場合や顔専用Shot・接触event Shotはこの追加accentの対象外です。対象語は固定辞書にしません。本文をPythonで書き換えず、LLMに支持脚から体幹・腕へつながる演技を要求します。監査はこのroleにだけ不足理由を返せますが、再要求上限に達した場合は既存のAS IS候補を警告付きで残します。metadataはPlanner cache keyに含めます。
-
-Camera profileの`arc_roll_policy`は`off`（省略時）又は`selective_arc`です。後者は3.5秒以上の長尺ArcからCamera batchごとに最大一Shotを選び、Arcの中盤で画面を光軸まわりに約10度傾け、終端までに水平へ戻します。これは上下を見上げる`Tilt Up`ではなく、水平線が傾く`Roll Clockwise / Counterclockwise`です。Arcの左右方向は維持し、Roll方向はArc方向に対応させます。固定顔Shotから全身へ抜けるArcも候補に含めますが、顔へ入るArcと顔だけの可視条件は除外します。歌詞対象の必須coverageはそのまま維持します。有限Camera fieldをLLMが選び、Pythonは選択済み経路を固定H3文へ直列化するだけです。`anime_story_mv`では従来どおり無効です。
-
-Camera profileの`camera_render_style`は`detailed`（省略時）又は実験用`compact`です。`compact`は、有限CameraのMotion・開始／終端画角と視点・経路・可視対象を、短いH3向け文へ直列化します。LLMが選んだ有限値、Arcの方向、Roll、必要なcoverage及びCUT/CONTINUEは変えません。作者がEMDへ直接書いたAction、Scene概要、自由文Cameraは書き換えません。短区間H3のP0比較では御神木の不自然な揺れが確認されたため、`anime_emotional_mv`を含む付属profileはすべて従来の`detailed`です。`compact`を試す場合だけカスタムCamera profileに明示してください。設定はPlanner cache keyに含まれるため、変更後はComfyUIを再起動しPlanを再生成します。[P0検証記録](../docs/research/compact-visual-spec-pipeline-p0-2026-09-24.md)を参照してください。
-
-旧`arc_tilt_policy`は上下首振りを意味する別の動きであり廃止しました。カスタムCamera profileで使用している場合は`arc_roll_policy`へ明示的に移行してください。
-
-`lyric_cue_mode`は`automatic`、`priority_only`又は`off`です。
-`automatic`ではVisual Beatが現在Sceneの歌詞又は作者本文を読み、物理的に
-表示できる最も具体的な名詞句又は独立effectを一つ選びます。例えば
-`御神木`を`木`へ短縮せず、Cue Cardの配置・可視展開と共にActionへ渡します。
-固定辞書や追加のLLM呼び出しは使いません。`priority_only`では下記の明示一覧
-だけを使い、`off`ではこの局所Cue契約を無効にします。
-
-`lyric_interpretation`は`literal`（省略時）又は`bounded`です。
-`anime_emotional_mv`は`bounded`を選びます。対象を現在歌詞から選ぶ制約は
-維持し、選択済み対象への非破壊的な接触や自然な支持面の推定をLLMへ許します。
-接触を必須にせず、外部effectの操作や背景設備の主役化は許しません。
-人物の全身演技を毎Shotへ強制しません。Motionの`event_based`では対象自身の動きと
-短い反応でも成立させ、`dance_phrase`では独立した歌唱演技との共存を許します。
-既存九項目を使います。v54の`bounded + automatic`では歌詞行Discoveryを一段
-追加し、16行ずつ最大768出力tokenで具体物候補を抽出します。原文順で最後の
-非body候補をSceneの対象に選ぶため、分類誤りや複数対象の取り落としはあり得ます。
-bounded専用Visual Beat promptと原文に結び付いた生成時文法を使いますが、
-Actionは既存の段階を使用し、v56の`dance_phrase`選択時だけ短い振付向けpromptへ
-切り替えます。他のMotionは通常promptです。意味の正しさを保証する機能ではありません。
-変更後はComfyUIを再起動してください。metadataもPlannerのcache keyへ含まれます。
-
-前後各二行・各256文字までの歌詞をVisual Beatへ読解用に渡しますが、その
-隣接文脈だけにある名詞は対象として選べません。Sceneをまたぐ出来事の新しい
-所有権fieldや複数Cueリストは今回導入していません。
-
-`priority_lyric_cues`は任意の回帰overrideです。`TOKEN:KIND`をカンマ区切りで
-指定し、`KIND`は
-`object`、`symbolic_motif`又は`external_effect`です。設定tokenは現在Sceneの
-歌詞又は作者本文に完全一致する時だけ有効になり、Cue Card、Action及びauditへ
-渡されます。profileに書いたtokenを全Sceneへ出現させる機能ではありません。
-`external_effect`は接触禁止かつ人物から独立した現象として検証されます。
-`anime_emotional_mv`では、automatic又は優先CueのCue Cardが生成した`配置`と`可視展開`を
-Actionへ完全一致で転送します。これはprofile tokenを全Sceneへ展開する処理では
-なく、現在Sceneの歌詞で一致したtokenだけを具体的な場所、状態、軌道又は環境結果
-へ結び付ける局所契約です。
+詳細は[EMD仕様](../docs/spec/emd-spec.md)及び
+[補完と演技のTIPS](../docs/tips/mechanical-motion-and-perceived-performance.md)を参照してください。

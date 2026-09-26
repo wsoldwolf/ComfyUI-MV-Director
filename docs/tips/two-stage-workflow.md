@@ -17,10 +17,10 @@ Video段階では同じPlan JSONを再利用し、前段の演出設計や歌詞
 - Vision GGUFによる人物・背景解析
 - Whisper/VADによる歌詞整列とtargeted retry
 - Direction LLM
-- Lyric Cue、Visual Beat、Song Direction、Shot Layout、Action、Action Audit、CameraのPlanner呼び出し
+- Scene AuthorのEvent、Performance、Camera及び任意の補完候補再選択
 - Compilerの日本語prompt翻訳
 
-これらを先に完了してPlan JSONへ固定すれば、通常は後段だけを再実行できます。Audio Reference方式では上述の歌詞再整列だけがVideo側に残りますが、Vision、Direction、Planner及びCompilerは再実行しません。モデルのload/unload、VRAM、待ち時間及び停止原因も切り分けやすくなります。特に限られたVRAMを想定する本プロジェクトでは、統合による利便性より再開可能性を優先します。
+これらを先に完了してPlan JSONへ固定すれば、通常は後段だけを再実行できます。Audio Reference方式では上述の歌詞再整列だけがVideo側に残りますが、Vision、Direction、Planner及びCompilerは再実行しません。モデルのload/unload、VRAM、待ち時間及び停止原因も切り分けやすくなります。31Bのモデル切替と動画生成を分離するため、統合による利便性より再開可能性を優先します。
 
 ## どこから再実行するか
 

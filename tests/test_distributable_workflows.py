@@ -7,7 +7,7 @@ import unittest
 from core.lyrics import parse_plain_lyrics
 from core.utilities import decode_embedded_text
 from tools.generate_workflows import (CHARACTER_HINT, DEFAULT_USER_PROMPT, LOCAL_FACE_CANDIDATE,
-                                      sync_candidate_policy, sync_direction_settings, sync_model_runtime,
+                                      sync_candidate_policy, sync_direction_settings, sync_model_runtime, sync_planner_schema,
                                       sync_timing_contract, sync_context_loop_runtime,
                                       validate_workflow, write_workflows)
 
@@ -136,7 +136,7 @@ class DistributableWorkflowTests(unittest.TestCase):
     def test_candidate_policy_migration_preserves_existing_settings(self) -> None:
         workflow = load("01_plan_compiler_context_loop.json")
         planner = only_type(workflow, "MVDirectorTimelinePlanner")
-        planner["widgets_values"] = planner["widgets_values"][:21]
+        planner["widgets_values"] = planner["widgets_values"][:20]
         before = copy.deepcopy(workflow)
         sync_candidate_policy(workflow)
         self.assertEqual(planner["widgets_values"], only_type(before, "MVDirectorTimelinePlanner")["widgets_values"] + ["optional"])
@@ -146,9 +146,37 @@ class DistributableWorkflowTests(unittest.TestCase):
             else:
                 self.assertEqual({k:v for k,v in node.items() if k != "widgets_values"},
                                  {k:v for k,v in original.items() if k != "widgets_values"})
-        planner["widgets_values"][21] = "prefer_matched"
+        planner["widgets_values"][20] = "prefer_matched"
         sync_candidate_policy(workflow)
-        self.assertEqual(planner["widgets_values"][21], "prefer_matched")
+        self.assertEqual(planner["widgets_values"][20], "prefer_matched")
+
+    def test_planner_schema_migration_is_idempotent_and_preserves_user_graph(self) -> None:
+        workflow = load("01_plan_compiler_context_loop.json")
+        planner = only_type(workflow, "MVDirectorTimelinePlanner")
+        planner["widgets_values"].insert(18, 3)
+        planner["widgets_values_named"] = {"scenes_per_batch": 3, "seed": 123}
+        before = copy.deepcopy(workflow)
+        sync_planner_schema(workflow)
+        self.assertEqual(workflow["links"], before["links"])
+        self.assertEqual(workflow["groups"], before["groups"])
+        self.assertEqual(planner["widgets_values_named"], {"seed": 123})
+        for node, original in zip(workflow["nodes"], before["nodes"]):
+            for field in ("pos", "size", "color", "bgcolor", "outputs"):
+                self.assertEqual(node.get(field), original.get(field))
+            if node["type"] not in {"MVDirectorTimelinePlanner", "MarkdownNote"}:
+                self.assertEqual(node, original)
+        once = copy.deepcopy(workflow)
+        sync_planner_schema(workflow)
+        self.assertEqual(workflow, once)
+
+    def test_planner_schema_migration_rejects_linked_retired_widget(self) -> None:
+        workflow = load("01_plan_compiler_context_loop.json")
+        planner = only_type(workflow, "MVDirectorTimelinePlanner")
+        planner["inputs"].append({"name": "scenes_per_batch", "link": 123})
+        before = copy.deepcopy(planner)
+        with self.assertRaisesRegex(ValueError, "manual migration"):
+            sync_planner_schema(workflow)
+        self.assertEqual(planner, before)
         video = load("02_video_context_loop.json")
         before_video = copy.deepcopy(video)
         sync_candidate_policy(video)
@@ -422,7 +450,7 @@ class DistributableWorkflowTests(unittest.TestCase):
             self.assertIn("左右それぞれ一つずつ", character_vision["widgets_values"][2])
             self.assertIn("各目の少し上", character_vision["widgets_values"][2])
             self.assertIn("木製台全体は黒色", character_vision["widgets_values"][2])
-            self.assertEqual(planner["widgets_values"][19], "reuse")
+            self.assertEqual(planner["widgets_values"][18], "reuse")
             lyrics = next(
                 node
                 for node in workflow["nodes"]

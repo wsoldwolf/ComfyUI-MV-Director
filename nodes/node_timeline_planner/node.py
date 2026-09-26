@@ -24,14 +24,6 @@ try:
     )
     from ...core.planner import (
         PLANNER_ALGORITHM_VERSION,
-        build_grounded_cue_grammar,
-        build_discovery_grammar,
-        build_action_grammar,
-        build_action_audit_grammar,
-        build_camera_plan_grammar,
-        build_scene_spine_grammar,
-        build_choreography_choice_grammar,
-        build_staging_selection_grammar,
         PlannerContent,
         generate_planner_content,
         normalize_concept_emd,
@@ -53,14 +45,6 @@ except ImportError:  # Standalone repository tests.
     )
     from core.planner import (
         PLANNER_ALGORITHM_VERSION,
-        build_grounded_cue_grammar,
-        build_discovery_grammar,
-        build_action_grammar,
-        build_action_audit_grammar,
-        build_camera_plan_grammar,
-        build_scene_spine_grammar,
-        build_choreography_choice_grammar,
-        build_staging_selection_grammar,
         PlannerContent,
         generate_planner_content,
         normalize_concept_emd,
@@ -86,19 +70,6 @@ CACHE_MODES = ("reuse", "refresh", "disabled")
 CHAT_FORMATS = ("auto", "qwen", "gemma")
 LIP_SYNC_MODES = ("off", "context_loop", "audio_reference", "lyrics")
 _PROMPT_FILES = {
-    "lyric-cues": "timeline_planner_lyric_cues_system_prompt.txt",
-    "staging-selection": "timeline_planner_staging_selection_system_prompt.txt",
-    "visual-beats": "timeline_planner_visual_beats_system_prompt.txt",
-    "visual-beats-bounded": "timeline_planner_visual_beats_bounded_system_prompt.txt",
-    "song-direction": "timeline_planner_song_direction_system_prompt.txt",
-    "shot-layout": "timeline_planner_shot_layout_system_prompt.txt",
-    "scene-spine": "timeline_planner_scene_spine_system_prompt.txt",
-    "scene-spine-body": "timeline_planner_scene_spine_body_system_prompt.txt",
-    "choreography-choice": "timeline_planner_choreography_choice_system_prompt.txt",
-    "actions": "timeline_planner_actions_system_prompt.txt",
-    "actions-dance-phrase": "timeline_planner_actions_dance_phrase_system_prompt.txt",
-    "action-audit": "timeline_planner_action_audit_system_prompt.txt",
-    "cameras": "timeline_planner_cameras_system_prompt.txt",
     "scene-author-event": "timeline_planner_scene_author_event_system_prompt.txt",
     "scene-author-performance": "timeline_planner_scene_author_performance_system_prompt.txt",
     "scene-author-camera": "timeline_planner_scene_author_camera_system_prompt.txt",
@@ -161,30 +132,16 @@ class _LlamaPlannerBackend:
         return int.from_bytes(digest[:8], "big") % 2_147_483_647 + 1
 
     def configure_progress(
-        self, scene_count: int, scenes_per_batch: int, *,
-        scene_author: bool = False,
+        self, scene_count: int, *,
         scene_author_counts: dict[str, int] | None = None,
     ) -> None:
-        scene_batches = max(1, (scene_count + scenes_per_batch - 1) // scenes_per_batch)
         self._expected_primary_calls = (
-            scene_author_counts
-            if scene_author_counts is not None
-            else {
+            scene_author_counts if scene_author_counts is not None else {
                 "scene-author-event": scene_count,
                 "scene-author-performance": scene_count,
                 "scene-author-camera": scene_count,
             }
-        ) if scene_author else {
-            "staging-selection": scene_count,
-            "visual-beats": scene_batches,
-            "song-direction": 1,
-            "shot-layout": scene_batches,
-            "scene-spine": scene_count,
-            "choreography-choice": scene_count,
-            "actions": scene_batches,
-            "action-audit": scene_batches,
-            "cameras": scene_batches,
-        }
+        )
         configure_node_progress(sum(self._expected_primary_calls.values()) + 1)
 
     @staticmethod
@@ -239,7 +196,6 @@ class _LlamaPlannerBackend:
     ) -> str:
         model_payload = f"/no_think\n{payload}"
         grammar_kwargs: dict[str, str] = {}
-        finite_camera = False
         scene_author_stage = task in {
             "scene-author-event", "scene-author-performance",
             "scene-author-camera",
@@ -271,95 +227,13 @@ class _LlamaPlannerBackend:
                 "scene=%d; candidates=%d",
                 request["scene"], len(request["candidates"]),
             )
-        if task == "lyric-cues":
-            request = json.loads(payload)
-            grammar_kwargs["grammar"] = build_discovery_grammar(request["slots"])
-            _LOGGER.info("[MV Director - Timeline Planner] output constraint=lyric_cue_v1; lines=%d", len(request["slots"]))
-        if task == "scene-spine":
-            request = json.loads(payload)
-            grammar_kwargs["grammar"] = build_scene_spine_grammar(
-                request["slots"],
-                allow_target_hands=(
-                    request.get("visual_beat_grounding", {}).get("contact") == "許可"
-                ),
-                track_external_effect=bool(request.get("track_external_effect")),
-                body_phrase_only=(
-                    request.get("body_phrase_policy") == "scene_phrase"
-                    and request.get("visual_beat_grounding", {}).get("target")
-                    in {"なし", "none", "", None}
-                ),
-            )
-            _LOGGER.info(
-                "[MV Director - Timeline Planner] output constraint=%s; "
-                "scene=%s; shots=%d",
-                "scene_spine_v2_effect" if request.get("track_external_effect")
-                else "scene_spine_v1",
-                request.get("scene_number"), len(request["slots"]),
-            )
-        if task == "choreography-choice":
-            request = json.loads(payload)
-            grammar_kwargs["grammar"] = build_choreography_choice_grammar(
-                [entry["id"] for entry in request["candidates"]]
-            )
-            _LOGGER.info(
-                "[MV Director - Timeline Planner] output constraint=choreography_choice_v1; "
-                "scene=%s; candidates=%d",
-                request.get("scene_number"), len(request["candidates"]),
-            )
-        if task == "staging-selection":
-            request = json.loads(payload)
-            grammar_kwargs["grammar"] = build_staging_selection_grammar(
-                [entry["id"] for entry in request["slots"][0]["candidates"]]
-            )
-        if task in {"actions", "action-audit"}:
-            request = json.loads(payload)
-            if task == "action-audit":
-                grammar_kwargs["grammar"] = build_action_audit_grammar(
-                    [slot["slot"] for slot in request["slots"]],
-                    [v.removeprefix("REJECT:") for v in request["audit_contract"]["verdicts"]
-                     if v.startswith("REJECT:")],
-                )
-            elif request.get("planner_policy_contract", {}).get("policy_id") == "anime_emotional_mv":
-                grammar_kwargs["grammar"] = build_action_grammar(request["slots"])
-            if grammar_kwargs:
-                _LOGGER.info(
-                    "[MV Director - Timeline Planner] output constraint=%s; slots=%d; "
-                    "required_fragments=%d",
-                    "audit_verdict_v1" if task == "action-audit" else "action_grounding_v1",
-                    len(request["slots"]),
-                    sum(bool(s.get(f)) for s in request["slots"] for f in (
-                        "required_spatial_anchor", "required_visible_development")),
-                )
-        if task == "visual-beats":
-            request = json.loads(payload)
-            if request.get("planner_policy_contract", {}).get("lyric_interpretation") == "bounded":
-                grammar_kwargs["grammar"] = build_grounded_cue_grammar(request["slots"])
-                _LOGGER.info(
-                    "[MV Director - Timeline Planner] output constraint=cue_spatial_roles_v2; slots=%d",
-                    len(request["slots"]),
-                )
-        if task == "cameras":
-            request = json.loads(payload)
-            finite_camera = request.get("camera_protocol_contract", {}).get("id") == "finite_v1"
-            if finite_camera:
-                grammar_kwargs["grammar"] = build_camera_plan_grammar(request["slots"])
-                _LOGGER.info(
-                    "[MV Director - Timeline Planner] output constraint=camera_plan_v1; slots=%d",
-                    len(request["slots"]),
-                )
+        if not scene_author_stage and task != "scene-author-composition-choice":
+            raise ValueError(f"unsupported Planner task: {task}")
         count = self.lifecycle.count_serialized_prompt(system_prompt + "\n" + model_payload)
         slot_count, scene_label, retry_label = self._request_summary(payload)
-        # One constrained Action, audit verdict, or Camera record does not
-        # need 75% of a user-configured ceiling reserved for generation.
-        # Scale the floor with requested lines; keep the conservative floor
-        # for unconstrained free-text Planner tasks.
-        constrained_action = task in {"actions", "action-audit"} and bool(grammar_kwargs)
-        if finite_camera or scene_author_stage or constrained_action:
-            per_slot_floor = 512 if constrained_action else 384
-            minimum_output = min(
-                config.max_tokens,
-                max(1024 if constrained_action else 512, per_slot_floor * slot_count),
-            )
+        # Reserve output according to the current Scene Author grammar.
+        if scene_author_stage:
+            minimum_output = min(config.max_tokens, max(512, 384 * slot_count))
         else:
             minimum_output = min(config.max_tokens, max(
                 256 * max(1, slot_count), (config.max_tokens * 3 + 3) // 4,
@@ -485,12 +359,12 @@ class MVDirectorTimelinePlanner:
                 "model_name": (models, {"default": models[0]}),
                 "chat_format": (list(CHAT_FORMATS), {"default": "auto"}),
                 "max_tokens": ("INT", {"default": 4096, "min": 32, "max": 16384, "step": 32}),
-                "temperature": ("FLOAT", {"default": 0.1, "min": 0.1, "max": 1.0, "step": 0.05}),
+                "temperature": ("FLOAT", {"default": 0.2, "min": 0.1, "max": 1.0, "step": 0.05}),
                 "top_p": ("FLOAT", {"default": 0.9, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "repetition_penalty": ("FLOAT", {"default": 1.05, "min": 0.5, "max": 2.0, "step": 0.05}),
                 "gpu_layers": ("INT", {"default": -1, "min": -1, "max": 1000}),
                 "n_batch": ("INT", {"default": 256, "min": 32, "max": 4096, "step": 32}),
-                "n_ctx": ("INT", {"default": 16384, "min": 0, "max": 131072, "step": 1024}),
+                "n_ctx": ("INT", {"default": 24576, "min": 0, "max": 131072, "step": 1024}),
                 "flash_attn": ("BOOLEAN", {"default": True}),
                 "kv_cache_type": (["q8_0", "f16"], {"default": "q8_0"}),
                 "op_offload": ("BOOLEAN", {"default": True}),
@@ -504,7 +378,6 @@ class MVDirectorTimelinePlanner:
                         "control_after_generate": "randomize",
                     },
                 ),
-                "scenes_per_batch": ("INT", {"default": 3, "min": 1, "max": 6}),
                 "cache_mode": (list(CACHE_MODES), {"default": "reuse"}),
             },
             "optional": {
@@ -540,7 +413,6 @@ class MVDirectorTimelinePlanner:
         op_offload: bool,
         keep_model_loaded: bool,
         seed: int,
-        scenes_per_batch: int,
         cache_mode: str,
         concept_emd: str = "",
         scene_emd: str = "",
@@ -587,11 +459,6 @@ class MVDirectorTimelinePlanner:
                 seed=seed,
             )
             config.validate()
-            scene_author_mode = planner_profile_metadata(
-                selected_direction.camera_profile_id,
-                selected_direction.motion_policy_profile_id
-                or selected_direction.motion_profile_id,
-            )["performance_mode"] == "scene_author"
             author_counts = {
                 "scene-author-event": sum(
                     any(
@@ -618,19 +485,18 @@ class MVDirectorTimelinePlanner:
                     )
                     for item in template.scenes
                 ),
-            } if scene_author_mode else None
+            }
             if author_counts is not None:
                 author_counts["scene-author-composition-choice"] = count_motion_composition_choices(
                     template, selected_direction, concept,
                 )
-            if scene_author_mode and author_counts is not None and not any(author_counts.values()):
+            if not any(author_counts.values()):
                 content, missing = generate_planner_content(
                     self._backend,
                     template=template, concept_emd=concept, scene_emd=scene,
                     direction=selected_direction,
                     lip_sync_mode=lip_sync_mode,
                     lip_sync_target=lip_sync_target,
-                    scenes_per_batch=scenes_per_batch,
                     system_prompts=_system_prompts(),
                     runtime_config=config,
                     staging_candidate_policy=staging_candidate_policy,
@@ -669,7 +535,6 @@ class MVDirectorTimelinePlanner:
                     ),
                     "lip_sync_active": lip_sync_mode != "off",
                     "lip_sync_target": lip_sync_target,
-                    "scenes_per_batch": scenes_per_batch,
                     "staging_candidate_policy": staging_candidate_policy,
                     "model": {
                         "selection_id": model.selection_id,
@@ -685,8 +550,7 @@ class MVDirectorTimelinePlanner:
             cached = cache.get(key) if cache_mode == "reuse" and cache else None
             self._backend.reset_trace()
             self._backend.configure_progress(
-                len(template.scenes), scenes_per_batch,
-                scene_author=scene_author_mode,
+                len(template.scenes),
                 scene_author_counts=author_counts,
             )
             cache_status = "hit" if cached else (
@@ -712,7 +576,7 @@ class MVDirectorTimelinePlanner:
                         "gpu_layers=%d; n_batch=%d; cache=%s",
                         model.selection_id,
                         len(template.scenes),
-                        max(1, (len(template.scenes) + scenes_per_batch - 1) // scenes_per_batch),
+                        len(template.scenes),
                         config.n_ctx,
                         config.max_tokens,
                         config.gpu_layers,
@@ -735,7 +599,6 @@ class MVDirectorTimelinePlanner:
                         direction=selected_direction,
                         lip_sync_mode=lip_sync_mode,
                         lip_sync_target=lip_sync_target,
-                        scenes_per_batch=scenes_per_batch,
                         system_prompts=prompts,
                         runtime_config=config,
                         staging_candidate_policy=staging_candidate_policy,
@@ -762,60 +625,14 @@ class MVDirectorTimelinePlanner:
                     lip_sync_target=lip_sync_target,
                     lip_sync_audio_slot=lip_sync_audio_slot,
                 )
-                if content.song_direction_fallback:
-                    _LOGGER.warning(
-                        "[MV Director - Timeline Planner] advisory DIRECTION "
-                        "was missing after bounded retries; continued with "
-                        "per-scene visual beats and Direction Artifact"
-                    )
-                planned_shot_count = (
-                    sum(len(scene.shots) for scene in template.scenes)
-                    if content.typed_output
-                    else sum(len(starts) for _, starts in content.shot_layouts)
-                )
-                continued_scene_count = (
-                    sum(scene.continuation for scene in template.scenes)
-                    if content.typed_output
-                    else sum(1 for _, value in content.scene_continuations if value)
-                )
-                fallback_label = (
-                    "none"
-                    if not content.layout_fallback_scenes
-                    else ",".join(
-                        str(scene) for scene in content.layout_fallback_scenes
-                    )
-                )
-                if content.repetition_warning_count:
-                    _LOGGER.warning(
-                        "[MV Director - Timeline Planner] diversity retry left "
-                        "%d similar creative record(s); beat=%d; action=%d; "
-                        "camera=%d; accepted AS IS",
-                        content.repetition_warning_count,
-                        content.beat_repetition_warning_count,
-                        content.action_repetition_warning_count,
-                        content.camera_repetition_warning_count,
-                    )
+                planned_shot_count = sum(len(scene.shots) for scene in template.scenes)
+                continued_scene_count = sum(scene.continuation for scene in template.scenes)
                 status = (
-                    f"complete=yes; scenes={len(template.scenes)}; shots={planned_shot_count}; "
-                    f"cuts={len(template.scenes) - continued_scene_count}; "
-                    f"continuations={continued_scene_count}; "
-                    f"issues={content.issue_count}; retries={len(content.retried_scenes)}; "
-                    f"layout_repaired_scenes="
-                    f"{'none' if not content.layout_repaired_scenes else ','.join(str(scene) for scene in content.layout_repaired_scenes)}; "
-                    f"layout_fallback_scenes={fallback_label}; "
-                    f"layout_mix_retry={'yes' if content.layout_mix_retry else 'no'}; "
-                    f"protocol_recovered={content.protocol_recovered_count}; "
-                    f"scene_spine_shots={len(content.scene_spine_steps)}; "
-                    f"scene_spine_skipped={len(content.scene_spine_skipped_scenes)}; "
-                    "song_direction_fallback="
-                    f"{'yes' if content.song_direction_fallback else 'no'}; "
-                    "repetition_warnings="
-                    f"{content.repetition_warning_count}"
-                    f"(beat={content.beat_repetition_warning_count},"
-                    f"action={content.action_repetition_warning_count},"
-                    f"camera={content.camera_repetition_warning_count}); "
-                    f"removed_dialogue={content.removed_generated_dialogue_count}; "
-                    f"unused_protected={len(content.unused_protected_dialogue_ids)}; cache={cache_status}"
+                    f"complete=yes; strategy=scene_author; scenes={len(template.scenes)}; "
+                    f"shots={planned_shot_count}; cuts={len(template.scenes) - continued_scene_count}; "
+                    f"continuations={continued_scene_count}; issues={content.issue_count}; "
+                    f"retries={len(content.retried_scenes)}; "
+                    f"protocol_recovered={content.protocol_recovered_count}; cache={cache_status}"
                 )
             if save_debug_output:
                 debug_path = _debug_write(

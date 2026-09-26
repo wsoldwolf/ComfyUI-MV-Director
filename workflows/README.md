@@ -30,7 +30,7 @@
 
 ## 共通入力
 
-Plan/Compilerのテキスト推論3ノード（Direction Enhancer・Timeline Planner・EMD Compiler）と人物・背景Visionは、`gemma-4-31b-it-heretic-ara-GGUF/gemma-4-31b-it-heretic-ara.Q4_K_S.gguf`を既定とする。ComfyUIの`models/LLM/GGUF`以下へ配置し、Vision用の`gemma-4-31b-it-heretic-ara.mmproj-f16.gguf`も同じフォルダへ置く。この31B設定は大容量VRAMの開発環境向けであり、RTX 5060向け8B設定とは異なる。
+Plan/Compilerのテキスト推論3ノード（Direction Enhancer・Timeline Planner・EMD Compiler）と人物・背景Visionは、`gemma-4-31b-it-heretic-ara-GGUF/gemma-4-31b-it-heretic-ara.Q4_K_S.gguf`を既定とする。ComfyUIの`models/LLM/GGUF`以下へ配置し、Vision用の`gemma-4-31b-it-heretic-ara.mmproj-f16.gguf`も同じフォルダへ置く。この31B設定は大容量VRAMの開発環境向けであり、旧RTX 5060向け8B設定は配布対象から外している。
 
 | ノード | n_ctx | max_tokens | temperature | n_batch |
 | --- | ---: | ---: | ---: | ---: |
@@ -76,7 +76,7 @@ Plan/Compiler workflowのDirection EnhancerはStyleとCameraを`anime_emotional_
 
 `MiniMaxH3AudioTracks`へfull mixとvocalを分離して渡す。`MiniMaxH3LipSyncOptions`はvocalを受け、optionsをGeneration Profileへ、同じvoiceをChain Contextへ渡す。Generation Profileは`Lip-sync to source audio`で、最終動画にはsource full mixを使用する。Audio Pad PairはCompilerと同じPlan JSONから最終delivered frame尺を取得するため、Plain Lyrics、Whisper及びLyric Segmentationは動画WFに置かない。
 
-これはContext Loop標準方式であり、8GB VRAM環境でモデル初期化停止が起きるかを他方式と分離して検証する。
+これはContext Loop標準方式であり、現在の推奨構成である。VRAM 8 GB向けの代替を目的とした検証は行わない。
 
 ### Audio Reference
 
@@ -136,3 +136,17 @@ python tools/generate_workflows.py
 ```
 
 動画workflowの再帰sampling、checkpoint、review及びassembly部分は、固定したContext Loop checkoutの`Ref2V Basic - MiniMax H3 0.6.json`を基礎にする。
+
+## 31B専用構成への移行
+
+Plannerは全profileでScene Authorを使用する。`scenes_per_batch`は廃止した。
+既存の前段3WFへschema変更だけを適用するには次を使う。
+
+```cmd
+python tools/generate_workflows.py --sync-planner-schema
+```
+
+配置・配色・素材・seed・ユーザープロンプトを保持し、廃止widgetだけを除去する。
+動画3WFとその保存Planは変更しない。旧widgetを外部配線している場合は手動移行が必要。
+ComfyUI再起動後に更新WFを開き直す。profileとcacheの変更は
+[移行ガイド](../docs/implementation/gemma31b-migration.md)を参照する。

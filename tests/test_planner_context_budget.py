@@ -4,7 +4,8 @@ import unittest
 
 from core.artifacts import canonical_json
 from core.inference import ContextBudgetError, LlamaRuntimeConfig, TokenCount
-from core.planner.engine import _Entity, _request_entities
+from core.planner.types import PlannerEntity as _Entity
+from core.planner.requests import request_entities as _request_entities
 from core.planner.request_budget import complete_with_context_recovery
 from nodes.node_timeline_planner.node import _LlamaPlannerBackend
 
@@ -28,7 +29,7 @@ class CountingLifecycle:
 
 
 def request(slots=4, **extra):
-    return {"protocol": "MVD_LLM_RECORDS_V1", "task": "cameras",
+    return {"protocol": "MVD_LLM_RECORDS_V1", "task": "scene-author-camera",
             "direction": {"camera": ["explicit camera direction"]},
             "slots": [{"slot": i, "scene_number": 9, "locked_action": f"動作{i}",
                        "previous_arc_path": "arc_left_60_120_70_90"}
@@ -40,34 +41,33 @@ class PlannerContextBudgetTests(unittest.TestCase):
         lifecycle = CountingLifecycle(lambda _: 12882)
         backend = _LlamaPlannerBackend(lifecycle)
         original = request(1)
-        original["task"] = "actions"
+        original["task"] = "scene-author-performance"
         original["planner_policy_contract"] = {"policy_id": "anime_emotional_mv"}
         original["slots"][0]["required_spatial_anchor"] = "大樹の根元"
         payload = canonical_json(original)
         with self.assertLogs("mv_director.nodes", level="INFO") as logs:
             backend.complete_planner(
-                task="actions", system_prompt="system", payload=payload,
+                task="scene-author-performance", system_prompt="system", payload=payload,
                 config=LlamaRuntimeConfig(max_tokens=4096),
             )
         self.assertEqual(len(lifecycle.calls), 1)
         messages, actual_config, actual = lifecycle.calls[0]
         self.assertEqual(actual, original)
         self.assertEqual(messages[1]["content"], "/no_think\n" + payload)
-        self.assertEqual(actual_config.max_tokens, 2191)
-        self.assertIn("context output fitted", "\n".join(logs.output))
+        self.assertEqual(actual_config.max_tokens, 1536)
 
     def test_grounded_action_batch_splits_then_fits_both_singletons(self):
         lifecycle = CountingLifecycle(
             lambda request: 20615 if len(request["slots"]) == 2 else 12882
         )
         original = request(2)
-        original["task"] = "actions"
+        original["task"] = "scene-author-performance"
         original["planner_policy_contract"] = {"policy_id": "anime_emotional_mv"}
         original["slots"][0]["required_spatial_anchor"] = "大樹の根元"
         original["slots"][1]["required_visible_development"] = "苔に触れる"
         with self.assertLogs("mv_director.nodes", level="INFO") as logs:
             complete_with_context_recovery(
-                _LlamaPlannerBackend(lifecycle), task="actions",
+                _LlamaPlannerBackend(lifecycle), task="scene-author-performance",
                 system_prompt="system", payload=canonical_json(original),
                 config=LlamaRuntimeConfig(max_tokens=4096),
             )
@@ -75,7 +75,7 @@ class PlannerContextBudgetTests(unittest.TestCase):
         self.assertEqual(
             [call[2]["slots"][0]["slot"] for call in lifecycle.calls], [1, 2]
         )
-        self.assertTrue(all(call[1].max_tokens == 2191 for call in lifecycle.calls))
+        self.assertTrue(all(call[1].max_tokens == 1536 for call in lifecycle.calls))
         self.assertIn("context request split", "\n".join(logs.output))
 
     def test_finite_camera_singleton_fits_reported_220_token_overflow(self):
@@ -88,25 +88,24 @@ class PlannerContextBudgetTests(unittest.TestCase):
         payload = canonical_json(original)
         with self.assertLogs("mv_director.nodes", level="INFO") as logs:
             response = complete_with_context_recovery(
-                backend, task="cameras", system_prompt="system",
+                backend, task="scene-author-camera", system_prompt="system",
                 payload=payload, config=LlamaRuntimeConfig(max_tokens=4096),
             )
         self.assertEqual(len(lifecycle.calls), 1)
         messages, actual_config, actual = lifecycle.calls[0]
         self.assertEqual(actual, original)
         self.assertEqual(messages[1]["content"], "/no_think\n" + payload)
-        self.assertEqual(actual_config.max_tokens, 2852)
+        self.assertEqual(actual_config.max_tokens, 1024)
         self.assertIn("CAMERA\t3\t", response)
-        self.assertIn("context output fitted", "\n".join(logs.output))
 
     def test_reported_26_token_overflow_fits_output_and_preserves_input(self):
         lifecycle = CountingLifecycle(lambda _: 13563)
         backend = _LlamaPlannerBackend(lifecycle)
         config = LlamaRuntimeConfig(max_tokens=1536)
-        payload = canonical_json(request(retry="camera_quality_budget"))
+        payload = canonical_json(request(1, retry="camera_quality_budget"))
         with self.assertLogs("mv_director.nodes", level="INFO") as logs:
             response = complete_with_context_recovery(
-                backend, task="cameras", system_prompt="system",
+                backend, task="scene-author-performance", system_prompt="system",
                 payload=payload, config=config)
         self.assertEqual(len(lifecycle.calls), 1)
         messages, actual_config, _ = lifecycle.calls[0]
@@ -114,7 +113,7 @@ class PlannerContextBudgetTests(unittest.TestCase):
         self.assertEqual(config.max_tokens, 1536)
         self.assertEqual(messages[1]["content"], "/no_think\n" + payload)
         self.assertEqual(13563 + actual_config.max_tokens + 1311, 16384)
-        self.assertIn("動作4", response)
+        self.assertIn("動作1", response)
         self.assertIn("context output fitted", "\n".join(logs.output))
         self.assertIn("retry=camera_quality_budget", "\n".join(logs.output))
         self.assertIn("max_tokens=1510", "\n".join(logs.output))
@@ -122,10 +121,10 @@ class PlannerContextBudgetTests(unittest.TestCase):
     def test_normal_request_keeps_requested_output(self):
         lifecycle = CountingLifecycle(lambda _: 1000)
         complete_with_context_recovery(
-            _LlamaPlannerBackend(lifecycle), task="cameras", system_prompt="system",
+            _LlamaPlannerBackend(lifecycle), task="scene-author-camera", system_prompt="system",
             payload=canonical_json(request()), config=LlamaRuntimeConfig(max_tokens=1536))
         self.assertEqual(len(lifecycle.calls), 1)
-        self.assertEqual(lifecycle.calls[0][1].max_tokens, 1536)
+        self.assertEqual(lifecycle.calls[0][1].max_tokens, 1024)
 
     def test_large_initial_and_quality_requests_split_without_repeating_successes(self):
         for retry in ("no", "camera_quality_budget", "repeated_slots_only"):
@@ -136,7 +135,7 @@ class PlannerContextBudgetTests(unittest.TestCase):
                             for i, s in enumerate(request(8)["slots"], 1)]
                 shared = {"retry": retry, "direction": {"camera": ["author text"]}}
                 values, _, _, missing, _ = _request_entities(
-                    backend, task="cameras", record_type="CAMERA", entities=entities,
+                    backend, task="scene-author-camera", record_type="CAMERA", entities=entities,
                     shared=shared, system_prompt="system",
                     runtime_config=LlamaRuntimeConfig(max_tokens=1536),
                     interrupt_callback=None)
@@ -170,7 +169,7 @@ class PlannerContextBudgetTests(unittest.TestCase):
                 return f"CAMERA\t{slots[0]}\tkept{slots[0]}"
         backend = Backend()
         values, _, _, missing, _ = _request_entities(
-            backend, task="cameras", record_type="CAMERA",
+            backend, task="scene-author-camera", record_type="CAMERA",
             entities=[_Entity(9, (9, i), {}) for i in range(1, 5)],
             shared={}, system_prompt="system",
             runtime_config=LlamaRuntimeConfig(), interrupt_callback=None)
@@ -190,7 +189,7 @@ class PlannerContextBudgetTests(unittest.TestCase):
             len(r["recent_camera_history"]) + len(r["recent_action_history"])))
         with self.assertLogs("mv_director.nodes", level="INFO") as logs:
             complete_with_context_recovery(
-                _LlamaPlannerBackend(lifecycle), task="cameras", system_prompt="system",
+                _LlamaPlannerBackend(lifecycle), task="scene-author-camera", system_prompt="system",
                 payload=canonical_json(original), config=LlamaRuntimeConfig(max_tokens=1536))
         self.assertEqual(len(lifecycle.calls), 1)
         actual = lifecycle.calls[0][2]
@@ -204,9 +203,9 @@ class PlannerContextBudgetTests(unittest.TestCase):
     def test_required_singleton_too_large_fails_before_any_inference(self):
         lifecycle = CountingLifecycle(lambda _: 16000)
         backend = _LlamaPlannerBackend(lifecycle)
-        with self.assertRaisesRegex(ContextBudgetError, "task=cameras; retry=no; slots=\\[1\\]"):
+        with self.assertRaisesRegex(ContextBudgetError, "task=scene-author-camera; retry=no; slots=\\[1\\]"):
             complete_with_context_recovery(
-                backend, task="cameras", system_prompt="system",
+                backend, task="scene-author-camera", system_prompt="system",
                 payload=canonical_json(request(1)), config=LlamaRuntimeConfig(max_tokens=1536))
         self.assertFalse(lifecycle.calls)
         self.assertFalse(backend._task_calls)
@@ -217,13 +216,13 @@ class PlannerContextBudgetTests(unittest.TestCase):
                 raise RuntimeError("model failed")
         with self.assertRaisesRegex(RuntimeError, "model failed"):
             complete_with_context_recovery(
-                Backend(), task="cameras", system_prompt="system",
+                Backend(), task="scene-author-camera", system_prompt="system",
                 payload=canonical_json(request()), config=LlamaRuntimeConfig())
         def interrupt():
             raise InterruptedError("stop")
         with self.assertRaises(InterruptedError):
             complete_with_context_recovery(
-                Backend(), task="cameras", system_prompt="system",
+                Backend(), task="scene-author-camera", system_prompt="system",
                 payload=canonical_json(request()), config=LlamaRuntimeConfig(),
                 interrupt_callback=interrupt)
 

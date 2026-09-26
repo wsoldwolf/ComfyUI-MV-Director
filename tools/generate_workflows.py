@@ -714,7 +714,6 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
                 False,
                 1,
                 "fixed",
-                3,
                 "reuse",
                 False,
                 "optional",
@@ -914,8 +913,8 @@ def _decorate_plan_workflow(
     mode_readme = {
         "context_loop": (
             "この版はContext Loop標準リップシンクを使用します。"
-            "VRAM 8GB環境では動画生成段階が停止しやすいため、"
-            "Audio Reference版又はLyrics版も検討してください。"
+            "Gemma4 31B構成が現行の検証対象です。"
+            "Audio Reference版とLyrics版は別の口形誘導方式です。"
         ),
         "audio_reference": (
             "この版はSceneごとのvocal区間を<Audio 1>として参照し、"
@@ -1690,6 +1689,7 @@ def validate_workflow(workflow: dict[str, Any]) -> None:
 
 def sync_model_runtime(workflow: dict[str, Any], mode: str) -> None:
     """Update model settings, preserving UI metadata and saved media Plan."""
+    sync_planner_schema(workflow)
     generated = build_plan_workflow(mode)
     text_types = {
         "MVDirectorDirectionEnhancer",
@@ -1744,19 +1744,52 @@ def sync_direction_settings(workflow: dict[str, Any]) -> None:
                 named["value"] = DEFAULT_USER_PROMPT
 
 
+def sync_planner_schema(workflow: dict[str, Any]) -> None:
+    """Remove the retired batch widget without moving nodes or linked sockets."""
+    for node in workflow["nodes"]:
+        if node["type"] == "MarkdownNote":
+            node["widgets_values"] = [value.replace(
+                "VRAM 8GB環境では動画生成段階が停止しやすいため、"
+                "Audio Reference版又はLyrics版も検討してください。",
+                "Gemma4 31B構成が現行の検証対象です。"
+                "Audio Reference版とLyrics版は別の口形誘導方式です。"
+            ) if isinstance(value, str) else value for value in node.get("widgets_values", [])]
+        if node["type"] != "MVDirectorTimelinePlanner":
+            continue
+        values = node["widgets_values"]
+        inputs = node.get("inputs", [])
+        # Removing a linked widget requires explicit rewiring, not silent loss.
+        if any(item.get("name") == "scenes_per_batch" and item.get("link") is not None
+               for item in inputs):
+            raise ValueError("linked scenes_per_batch requires manual migration")
+        if len(values) in (21, 22) and isinstance(values[18], int):
+            del values[18]
+        if len(values) not in (20, 21) or values[18] not in {"reuse", "refresh", "disabled"}:
+            raise ValueError("unexpected Planner widgets for current schema")
+        named = node.get("widgets_values_named")
+        if isinstance(named, dict):
+            named.pop("scenes_per_batch", None)
+        indexes = {i for i, item in enumerate(inputs) if item.get("name") == "scenes_per_batch"}
+        node["inputs"] = [item for i, item in enumerate(inputs) if i not in indexes]
+        for link in workflow.get("links", []):
+            if link[3] == node["id"]:
+                link[4] -= sum(i < link[4] for i in indexes)
+
+
 def sync_candidate_policy(workflow: dict[str, Any]) -> None:
     """Append the advisory control without changing existing widget positions."""
     for node in workflow["nodes"]:
         if node["type"] != "MVDirectorTimelinePlanner":
             continue
+        sync_planner_schema(workflow)
         values = node["widgets_values"]
-        if len(values) == 21:
+        if len(values) == 20:
             values.append("optional")
-        elif len(values) != 22 or values[21] not in {"optional", "prefer_matched"}:
+        elif len(values) != 21 or values[20] not in {"optional", "prefer_matched"}:
             raise ValueError("unexpected Planner widgets for candidate-policy migration")
         named = node.get("widgets_values_named")
         if isinstance(named, dict):
-            named["staging_candidate_policy"] = values[21]
+            named["staging_candidate_policy"] = values[20]
 
 
 def sync_timing_contract(workflow: dict[str, Any], mode: str) -> None:
@@ -1783,7 +1816,8 @@ def sync_timing_contract(workflow: dict[str, Any], mode: str) -> None:
 
 def write_workflows(context_loop_root: Path, output_dir: Path, *, runtime_only: bool = False,
                     direction_only: bool = False, candidate_only: bool = False,
-                    timing_only: bool = False, video_runtime_only: bool = False) -> None:
+                    timing_only: bool = False, video_runtime_only: bool = False,
+                    planner_schema_only: bool = False) -> None:
     if timing_only or video_runtime_only:
         for mode, spec in MODES.items():
             for suffix, number in (("plan_compiler", int(spec["number"]) * 2 - 1),
@@ -1801,13 +1835,15 @@ def write_workflows(context_loop_root: Path, output_dir: Path, *, runtime_only: 
                 formatted = (json.dumps(workflow, ensure_ascii=False, separators=(",", ":"))
                              if len(original_text.splitlines()) == 1 else _json_text(workflow))
                 path.write_text(formatted + "\n", encoding="utf-8")
-        if not (runtime_only or direction_only or candidate_only):
+        if not (runtime_only or direction_only or candidate_only or planner_schema_only):
             return
-    if runtime_only or direction_only or candidate_only:
+    if runtime_only or direction_only or candidate_only or planner_schema_only:
         for mode, spec in MODES.items():
             path = output_dir / f"{int(spec['number']) * 2 - 1:02d}_plan_compiler_{mode}.json"
             original_text = path.read_text(encoding="utf-8")
             workflow = json.loads(original_text)
+            if planner_schema_only:
+                sync_planner_schema(workflow)
             if runtime_only:
                 sync_model_runtime(workflow, mode)
             if direction_only:
@@ -1861,11 +1897,14 @@ def main() -> None:
                         help="Update all six timing contracts while retaining layouts, user inputs and saved Plan")
     parser.add_argument("--sync-context-loop-runtime", action="store_true",
                         help="Migrate video node schemas without replacing saved Plan or layout")
+    parser.add_argument("--sync-planner-schema", action="store_true",
+                        help="Remove retired Planner widgets while retaining layout and inputs")
     args = parser.parse_args()
     write_workflows(args.context_loop_root, args.output_dir, runtime_only=args.sync_model_runtime,
                     direction_only=args.sync_direction_settings, candidate_only=args.sync_candidate_policy,
                     timing_only=args.sync_timing_contract,
-                    video_runtime_only=args.sync_context_loop_runtime)
+                    video_runtime_only=args.sync_context_loop_runtime,
+                    planner_schema_only=args.sync_planner_schema)
 
 
 if __name__ == "__main__":

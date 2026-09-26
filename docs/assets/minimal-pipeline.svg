@@ -84,7 +84,7 @@
 
   <rect class="node" x="1370" y="180" width="300" height="280" rx="14"/>
   <text class="label" x="1520" y="217">Timeline Planner · 31B</text>
-  <text class="small" x="1520" y="248">Scene Author / section歌詞文脈</text>
+<text class="small" x="1520" y="248">Scene Authorのみ / section歌詞文脈</text>
   <text class="small" x="1520" y="274">EVENT → PERFORMANCE</text>
   <text class="small" x="1520" y="300">→ CAMERA / 固定Shot指示を保持</text>
   <text class="small" x="1520" y="326">終端状態を継続Sceneへ引継ぎ</text>

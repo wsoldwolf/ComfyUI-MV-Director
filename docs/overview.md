@@ -22,7 +22,7 @@ ComfyUI-MV-Directorは、利用者が完成promptを手書きしなくても、�
 
 人物参照と背景参照は別系統です。計画時は背景Visionが`scene_only`時に`emd_fragment`へ出すScene EMDをDirection EnhancerとPlannerの`scene_emd`へ渡し、動画生成時は同じ背景画像をH3の対応slotへ直接渡します。理由と推奨配線は[人物参照と背景参照を分ける](tips/separate-subject-and-background-references.md)を参照してください。
 
-Direction EnhancerとTimeline Planner内部の詳しい流れは[処理フロー図](architecture/direction-planner-flow.md)を参照してください。DirectionのStyle、Motion、Cameraは[`profiles/`](../profiles/README.md)の外部EMDとして追加できます。現在の31B向け配布workflowはStyleとCameraに`anime_emotional_mv`、Motionに`anime_scene_composed_mv`を指定し、Scene Author経路を使用します。profile metadataからPlannerの感情演技、歌詞Cue、長尺Arc、顔Zoom及びScene継続方針も切り替えます。
+Direction EnhancerとTimeline Planner内部の詳しい流れは[処理フロー図](architecture/direction-planner-flow.md)を参照してください。DirectionのStyle、Motion、Cameraは[`profiles/`](../profiles/README.md)の外部EMDとして追加できます。現在の31B向け配布workflowはStyleとCameraに`anime_emotional_mv`、Motionに`anime_scene_composed_mv`を指定し、Scene Author経路を使用します。profile metadataは明示モーション補完、描画方針、Arc＋Rollを制御します。Plannerの生成経路はprofileによらずScene Authorです。
 
 Lyric Segmentationはこの経路と独立して歌詞、SRT、typed timelineを生成できます。Audio Pad Pairはfull mixとvocalを混合せず、PCM無音で必要尺へそろえます。
 
@@ -33,14 +33,14 @@ EMDは **Easy MarkDown** です。人が確認・編集できる中間表現で�
 - `# サブジェクト`: 1 list itemを文書順に`<Subject 1..4>`へ割り当てます。行頭の``画像N``、``動画N``、``音声N``は任意のH3参照です。
 - `# シーン設定`: 背景環境、観測時の時刻・照明baseline及び環境専用Pictureを持ちます。明示Directionが観測条件より優先します。
 - `# 保持分析`: Subjectのどの識別要素を保持するかを記述します。
-- `# 共通プロンプト`: 任意の`## スタイル`、`## 背景`、`## 時間・照明`、`## モーション`、`## カメラ`、`## その他`を持ちます。
+- `# 共通プロンプト`: 任意の`## スタイル`、`## 環境`、`## 時間・照明`、`## モーション`、`## カメラ`、`## その他`を持ちます。
 - `# シーン`: `00:00.000`形式の絶対ms timeline、Shot、歌詞annotation、予約directiveを持ちます。
 
 厳密な構文は[EMD仕様書](spec/emd-spec.md)を参照してください。
 
 ## LLMへ任せる範囲
 
-Vision、演出、人物演技、Camera、英訳にはローカルGGUFを使いますが、JSONやEMDそのものをLLMへ生成させません。LLM応答は行指向protocolで受け、typed artifact、EMD、最終JSONはPythonが組み立てます。採用自然文はAS ISで保持し、明示モーション補完と歌唱・lip-sync directiveは出所を区別して合成します。旧profileで選ばれるCue・Action監査・有限Cameraは、現行Scene Authorとは別経路です。
+Vision、演出、人物演技、Camera、英訳にはローカルGGUFを使いますが、JSONやEMDそのものをLLMへ生成させません。LLM応答は行指向protocolで受け、typed artifact、EMD、最終JSONはPythonが組み立てます。採用自然文はAS ISで保持し、明示モーション補完と歌唱・lip-sync directiveは出所を区別して合成します。旧Cue・Action監査・有限Camera経路は撤去しました。
 
 Compilerは補強、要約、並べ替えをせず、EMD文法と予約directiveを機械的に処理します。作者が書いた`<d>...</d>`は翻訳せず、そのままH3へ渡します。
 

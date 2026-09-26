@@ -61,7 +61,7 @@ Load Text Fileはブラウザの`.txt`ファイル選択とD&D、UTF-8/UTF-8 BOM
 
 ### 1.5 Timeline Plannerの全socket
 
-Plannerの入力は表示順に、必須`template_emd`、任意`concept_emd`、任意`scene_emd`、任意`MV_DIRECTOR_DIRECTION`、lip-sync三項目、GGUF model選択とoverride、`chat_format`、`max_tokens`、`temperature`、`top_p`、`repetition_penalty`、`gpu_layers`、`n_batch`、`n_ctx`、`flash_attn`、`kv_cache_type`、`op_offload`、`keep_model_loaded`、`seed`、`scenes_per_batch`、`cache_mode`、任意`save_debug_output`とする。型、範囲、既定値の正本は最小コア仕様7.4の表を使う。
+Plannerの入力は表示順に、必須`template_emd`、任意`concept_emd`、任意`scene_emd`、任意`MV_DIRECTOR_DIRECTION`、lip-sync三項目、GGUF model選択とoverride、`chat_format`、`max_tokens`、`temperature`、`top_p`、`repetition_penalty`、`gpu_layers`、`n_batch`、`n_ctx`、`flash_attn`、`kv_cache_type`、`op_offload`、`keep_model_loaded`、`seed`、`cache_mode`、任意`save_debug_output`とする。型と範囲の実装正本は各nodeの`INPUT_TYPES`、配布WFの既定値は`tools/generate_workflows.py`を使う。
 
 旧Plannerにあったllama.cpp調整値は維持する。旧camera/vocal guard、visual enrichment profile、semantic guard及び可変retry回数は新Plannerへ持ち込まない。出力は編集可能な`emd_text`、内部typed `emd`、`status`の順とする。
 
@@ -73,7 +73,7 @@ Direction Enhancerでは`retention_policy`を先頭widgetに置く。LLM利用no
 
 `MVDirectorEMDCompiler`は必須`emd_text`、`translation_mode`、GGUF `model_name`、`chat_format`、`steps`、`max_tokens`、`temperature`、`top_p`、`repetition_penalty`、`gpu_layers`、`n_batch`、`n_ctx`、`flash_attn`、`kv_cache_type`、`op_offload`、`keep_model_loaded`、`seed`、`cache_mode`と、任意`MV_DIRECTOR_H3_TIMING_PROFILE`を受ける。`cache_mode`は`reuse`（既定）/ `refresh` / `disabled`とする。`translation_mode`は`ja_to_en`を既定とし、`already_english`ではmodel選択値が空又はstaleでもGGUFをresolve又はloadしない。Compilerは成功したPlan JSONとrequired referencesだけをcacheし、失敗、repair、意味監査又はgraph inspectionを保存しない。
 
-出力は`plan_json: STRING`、`required_references: MV_DIRECTOR_REQUIRED_REFERENCES`、`status: STRING`の順とする。`plan_json`はUnicode非escape、key sort、2 space indent、LF改行、末尾LFのpretty-printed JSONとする。文法不正は行番号を持つ`EMDParseError`として停止し、空Plan又は補正文を返さない。日本語翻訳応答は`TRANSLATION<TAB>SLOT<TAB>TEXT`だけを受理し、contextに収まり、かつ7 unit以下となる最大の連続unit群へ有限分割する。欠落、重複、未知行又は破損行はretryせず停止する。
+出力は`plan_json: STRING`、`required_references: MV_DIRECTOR_REQUIRED_REFERENCES`、`status: STRING`の順とする。`plan_json`はUnicode非escape、key sort、2 space indent、LF改行、末尾LFのpretty-printed JSONとする。文法不正は行番号を持つ`EMDParseError`として停止し、空Plan又は補正文を返さない。日本語翻訳応答は`TRANSLATION<TAB>SLOT<TAB>TEXT`だけを受理し、contextに収まり、かつ7 unit以下となる最大の連続unit群へ有限分割する。欠落・競合slotは有限の局所再試行を行い、復元できない必須翻訳が残った場合は停止する。
 
 ### 1.7 Audio Pad Pairの参照vocal出力
 

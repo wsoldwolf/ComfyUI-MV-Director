@@ -7,9 +7,6 @@ import unittest
 from core.compiler import compile_ref2va
 from core.direction.profile_loader import load_direction_profile, DirectionProfileError
 from core.direction.profiles import MOTION_PROFILES, RENDER_PROMPTS, render_profile_direction, planner_profile_metadata
-from types import SimpleNamespace
-from core.planner.engine import _CameraPlan, _connect_camera_geometry
-from core.planner.layout import build_layout_candidates
 
 
 class PerformanceTransportTests(unittest.TestCase):
@@ -52,31 +49,3 @@ class PerformanceTransportTests(unittest.TestCase):
             path.write_text(path.read_text(encoding="utf-8").replace("モーション", "スタイル"), encoding="utf-8")
             with self.assertRaises(DirectionProfileError):
                 load_direction_profile(path, "style")
-
-    def test_sustained_candidates_preserve_scene_and_allow_short_scene(self):
-        for seconds in (3, 10, 15):
-            scene = SimpleNamespace(start_ms=0, end_ms=seconds*1000, shots=(SimpleNamespace(start_ms=0),))
-            candidates = build_layout_candidates(scene, min_duration_ms=4000)
-            starts = [row.start_ms for row in candidates]
-            self.assertEqual(starts[0], 0)
-            if len(starts) > 1:
-                self.assertTrue(all(right-left >= 4000 for left, right in zip(starts, starts[1:]+[scene.end_ms])))
-            self.assertGreaterEqual(scene.end_ms, seconds*1000)
-
-    def test_camera_handoff_preserves_scale_and_cannot_zoom_from_rear_to_face(self):
-        previous = _CameraPlan("Arc Shot", "medium", "upper_body", "front", "rear_three_quarter", "arc_left_60_120_70_90", "upper_body_hands")
-        target = _CameraPlan("Zoom In", "head_and_shoulders", "face_closeup", "front", "front", "zoom_in_35_55", "face_eyes_mouth")
-        result = _connect_camera_geometry(target, previous, previous.path)
-        self.assertEqual(result.start_scale, previous.end_scale)
-        self.assertEqual(result.start_view, previous.end_view)
-        self.assertEqual(result.path, previous.path)
-        self.assertEqual(result.end_view, "front_three_quarter")
-        self.assertTrue(result.motion.startswith("Arc Shot"))
-        self.assertIs(_connect_camera_geometry(target, None), target)
-
-    def test_static_handoff_never_changes_scale_or_view(self):
-        previous = _CameraPlan("Zoom Out", "face_closeup", "upper_body", "front", "front", "zoom_out", "upper_body_hands")
-        target = _CameraPlan("Static Shot", "wide", "wide", "side", "side", "stationary", "upper_body_hands")
-        result = _connect_camera_geometry(target, previous)
-        self.assertEqual((result.start_scale, result.end_scale), ("upper_body", "upper_body"))
-        self.assertEqual((result.start_view, result.end_view), ("front", "front"))

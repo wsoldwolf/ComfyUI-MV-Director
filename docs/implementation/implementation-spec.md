@@ -1,10 +1,7 @@
 # MV Director 実装仕様
 
-版: `implementation-0.1`<br>
-作成日: 2026-09-16<br>
-対象: Phase 0以降のPython実装
-
-実装状態（2026-09-16）: Phase 0～7をFake backendによる純Pythonテストまで実装済み。Phase 2はGGUF scanner、ComfyUI `folder_paths` adapter、runtime、context予算及び成功cacheを持つ。Phase 3は画像fingerprint、Vision model/mmproj pair、MTMD lifecycle、観測provenance、Subject EMD、`auto_h3` binding及び`MVDirectorImageToSubjectEMD` wrapperを持つ。Phase 4は固定演出profile、authority順付きpayload、四種の行処理、欠落slotだけの一回局所retry、Direction provenance、EMD preview及び`MVDirectorDirectionEnhancer` wrapperを持つ。Phase 5はstrict lyrics parser、Whisper/VAD整列、H3時間量子化、Template EMD/SRT renderer及び`MVDirectorLyricSegmentation` wrapperを持つ。Phase 6はTemplate取込み、四段階Planner、作者台詞保護、生成台詞除去、決定論的lip-sync合成、成功cache及び`MVDirectorTimelinePlanner` wrapperを持つ。Phase 7はRef2VA純粋CompilerをGGUF一対一翻訳adapter、context内有限batch及び`MVDirectorEMDCompiler` wrapperへ接続する。実model、実音声及びComfyUI画面上の試験は未実施。
+更新日: 2026-09-27<br>
+対象: Gemma4 31B、現行Scene Authorのみ
 
 ## 1. 目的
 
@@ -31,7 +28,7 @@
 ```text
 core/
 ├─ artifacts/       versioned artifactの型、検証、canonical JSON
-├─ protocols/       LLM行protocolと将来のVision行protocol
+├─ protocols/       LLM行protocolとVision行protocol
 ├─ emd/             EMD lexer、parser、AST、renderer
 ├─ compiler/        Ref2VA変換とPromptTranslator interface
 ├─ timing/          ms、H3 frame格子、Scene/Shot
@@ -44,9 +41,9 @@ nodes/
 
 依存方向は`nodes -> core`だけとする。`artifacts`と`protocols`は他のcore moduleをimportしない。`emd`は`artifacts`を使用できるが、`compiler`又はnode wrapperをimportしない。
 
-## 4. Phase 0の公開API
+## 4. 公開API
 
-初期実装で次を安定APIとする。
+artifactとprotocolの入口は次を使用する。Plannerの入口は`core.planner.plan_timeline`とし、旧engineを公開しない。
 
 ```python
 from core.artifacts import (
@@ -106,16 +103,7 @@ cache keyは入力artifactのcanonical JSON、model識別子、runtime調整値�
 
 通常statusへ本文又はraw promptを含めない。`save_debug_output=true`の場合だけraw応答、拒否行、side table及びtoken内訳を保存する。provenanceはchain-of-thoughtではなく、protocol上確認できる入力・採用・機械的破棄の履歴だけを持つ。
 
-## 10. 実装順序
+## 10. 変更手順
 
-1. Phase 0: artifact、canonical JSON、LLM行parser、fixture
-2. Phase 1: EMD AST、parser、Fake translator、Ref2VA renderer
-3. Phase 2: GGUF runtimeとcache
-4. Phase 3: Image to Subject EMD
-5. Phase 4: Direction Enhancer
-6. Phase 5: Lyric Segmentation
-7. Phase 6: Timeline Planner
-8. Phase 7: Compiler wrapper
-9. Phase 8: ComfyUI workflow
-
-後段の都合で前段protocolを暗黙変更しない。変更が必要な場合はschema又はprotocol versionを更新し、旧versionを同じparserで推測受理しない。
+現行の配置と更新順序は[部品と変更手順](components-and-order.md)を参照する。
+EMDとartifactを暗黙変更しない。旧経路専用テストは撤去し、現行契約のCPU試験と実映像の人間評価を区別する。

@@ -36,15 +36,15 @@ LLMの出力は確率的で、行protocol違反や必須出力の欠落が起き
 | 場所 | 内容 |
 |---|---|
 | [`docs/`](docs/README.md) | 利用者向け・開発者向け文書の総合索引 |
-| [`docs/tips/`](docs/tips/README.md) | 参照画像の分離、再現率、配線など実運用のTIPS |
 | [`docs/nodes/`](docs/nodes/README.md) | 公開12ノードの操作マニュアル |
 | [`docs/spec/`](docs/spec/README.md) | EMD、protocol、最小コアの規範仕様 |
 | [`docs/implementation/`](docs/implementation/README.md) | 内部構造、公開surface、実装順序 |
-| 研究記録（リポジトリ外） | 実験ログ・調査レポートはローカルの`ComfyUI-MV-Director-research`へ保存。配布リポジトリには含めない |
-| [`docs/assets/`](docs/assets/README.md) | READMEや文書で使うPNG/SVG図版 |
 | [`profiles/`](profiles/README.md) | ユーザー拡張可能なStyle、Motion、Camera profile EMD |
-| [Direction / Planner処理フロー](docs/architecture/direction-planner-flow.md) | LLM task、Python所有処理、AS IS境界の図解 |
 | [`workflows/`](workflows/README.md) | 三つのリップシンク方式に対応する6 workflow |
+| [`docs/assets/`](docs/assets/README.md) | READMEや文書で使うPNG/SVG図版 |
+| [`docs/tips/`](docs/tips/README.md) | 参照画像の分離、再現率、配線など実運用のTIPS |
+| [Direction / Planner処理フロー](docs/architecture/direction-planner-flow.md) | LLM task、Python所有処理、AS IS境界の図解 |
+| 研究記録（リポジトリ外） | 実験ログ・調査レポートはローカルの`ComfyUI-MV-Director-research`へ保存。配布リポジトリには含めない |
 
 ## 公開ノード
 
@@ -72,9 +72,10 @@ LLMの出力は確率的で、行protocol違反や必須出力の欠落が起き
 ### 開発中（dev：次期系列向け）
 
 - 人物演技・感情表現の改善を目的として、人物・背景Vision、Direction Enhancer、Timeline Planner、Compilerの既定モデルをGemma4 31B Q4_K_Sへ統一しました。
-- Scene Author経路を導入しました。Scene単位で出来事、人物演技、Cameraを順に計画し、継続Sceneには直前の終端状態を渡します。利用者がShotへ直接記述した確定指示は保持します。
+- PlannerをScene Authorの単一経路へ統一しました。Scene単位で出来事、人物演技、Cameraを順に計画し、継続Sceneには直前の終端状態を渡します。利用者がShotへ直接記述した確定指示は保持します。
 - 明示的に有効化されたモーション補完を、LLM原文と出所を区別して合成できるようにしました。LLM原文の保持と、作者・profileによる補完を別の責務として扱います。
 - 開発時の検証対象を大容量VRAM環境へ変更しました。旧小型LLM構成の動作実績を、現在の31B構成の要件とはみなしません。
+- 旧8B向けPlanner・監査・profile切替と研究用配布資産を撤去しました。旧WF・profileの更新は[31B構成への移行](docs/implementation/gemma31b-migration.md)を参照してください。
 
 ### v0.1.2 - プロトタイプ（ComfyUI-cl-japanese2json）からの主な変更
 

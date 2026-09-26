@@ -46,7 +46,7 @@ profileには`reference_anime`、`anime_story_mv`、`anime_emotional_mv`、`refe
 
 Camera profileは非表示metadata `planner_policy`を任意に宣言できます。これは同じprofile選択からTimeline Plannerの構造最適化も切り替えるためのもので、UI socketは増えません。`anime_emotional_mv`は同名policyを宣言し、感情演技、継続Scene、長尺Arc及び顔Zoomの配分を変更します。生成済みAction又はCamera本文を書き換えないため、AS IS原則は維持されます。
 
-DirectionはCompiler後の全Scene `prompt_prefix`へ共通適用されます。Plannerでは型別に経路を分け、Visual BeatとActionへStyle、Environment、Time/Lighting、Motion、Otherを渡し、Camera profileはCamera taskだけへ渡します。特定の衣装部品、身体部位又は小物の局所形状をprofileへ書くと、全Shotで反復されて演技やCameraの主題になり得ます。これらは参照画像、`# サブジェクト`又は必要な作者Shot本文へ置き、Direction profileには画風、全体的な身体演技、Camera運用等のMV全体へ本当に共通する方針だけを置きます。
+DirectionはCompiler後の全Scene `prompt_prefix`へ共通適用されます。PlannerはScene Authorで出来事、人物演技、Cameraの責務を分け、必要なDirection fieldを各担当へ渡します。特定の衣装部品、身体部位又は小物の局所形状をprofileへ書くと、全Shotで反復されて演技やCameraの主題になり得ます。これらは参照画像、`# サブジェクト`又は必要な作者Shot本文へ置き、Direction profileには画風、全体的な身体演技、Camera運用等のMV全体へ本当に共通する方針だけを置きます。
 
 `scene_emd`は`# シーン設定`、`## 環境`、任意の`## 時間・照明`及び`## 背景参照`だけを持つ厳格な断片です。Direction Enhancerはこれをparseして`scene_context`へ渡します。参照設定画のpose、shot size、viewpoint、subject placement及びpanel構図はこの経路へ入らず、全Sceneで固定反復されません。ユーザーのDirection又はpass-throughで明示した環境、時刻及び照明は観測baselineより上位です。`observations_json`はVisionのdebug出力として残りますが、Direction Enhancerの入力ではありません。
 

@@ -20,7 +20,7 @@ from types import SimpleNamespace
 from core.compiler.ref2va import compile_ref2va
 from core.compiler.translator import IdentityTranslator
 from nodes.node_timeline_planner.node import _system_prompts
-from test_scene_author import Backend, CONCEPT, _runtime
+from scene_author_fixtures import Backend, CONCEPT, _runtime
 
 
 TEMPLATE = (
@@ -33,7 +33,7 @@ def run(backend, direction, template=TEMPLATE, concept=CONCEPT):
     return plan_timeline(
         backend, template_emd=template, concept_emd=concept, direction=direction,
         lip_sync_mode="off", lip_sync_target="サブジェクト1", lip_sync_audio_slot=1,
-        scenes_per_batch=1, system_prompts=_system_prompts(), runtime_config=_runtime())
+        system_prompts=_system_prompts(), runtime_config=_runtime())
 
 
 class MotionCompositionTests(unittest.TestCase):

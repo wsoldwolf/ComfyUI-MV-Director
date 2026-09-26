@@ -401,15 +401,11 @@ class DirectionEnhancerTests(unittest.TestCase):
 
     def test_anime_story_mv_is_an_emotional_baseline_copy(self) -> None:
         from core.direction.profiles import (
-            CAMERA_PLANNER_POLICIES,
-            MOTION_PERFORMANCE_MODES,
             RENDER_PROMPTS,
         )
 
         for profiles in (STYLE_PROFILES, MOTION_PROFILES, CAMERA_PROFILES):
             self.assertEqual(profiles["anime_story_mv"], profiles["anime_emotional_mv"])
-        self.assertEqual(MOTION_PERFORMANCE_MODES["anime_story_mv"], "dance_phrase")
-        self.assertEqual(CAMERA_PLANNER_POLICIES["anime_story_mv"], "anime_emotional_mv")
         for kind in ("motion", "camera"):
             self.assertEqual(
                 RENDER_PROMPTS[kind]["anime_story_mv"],
@@ -701,8 +697,7 @@ class DirectionEnhancerTests(unittest.TestCase):
             {
                 "natural_performance", "expressive_mv", "limited_animation",
                 "cinema_mv", "anime_story_mv",
-                "anime_emotional_mv", "anime_choreography_mv",
-                "anime_scene_phrase_mv", "anime_scene_author_mv",
+                "anime_emotional_mv", "anime_scene_author_mv",
                 "anime_scene_composed_mv",
             },
         )
@@ -726,7 +721,12 @@ class DirectionEnhancerTests(unittest.TestCase):
         self.assertIn("横への踏み替え", MOTION_PROFILES["anime_story_mv"])
         self.assertIn("時間方向に連続", MOTION_PROFILES["anime_story_mv"])
         self.assertIn("痙攣状motion", MOTION_PROFILES["anime_story_mv"])
-        self.assertIn("短いポーズ保持", MOTION_PROFILES["cinema_mv"])
+        cinema_motion = MOTION_PROFILES["cinema_mv"]
+        self.assertIn("映画的な身体演技", cinema_motion)
+        self.assertIn("接地と荷重移動", cinema_motion)
+        self.assertIn("ボーカルに合わせた口の動き", cinema_motion)
+        for animation_term in ("セルアニメーション", "二コマ打ち", "三コマ打ち", "中割り"):
+            self.assertNotIn(animation_term, cinema_motion)
         self.assertIn("移動が不要なら静止構図", CAMERA_PROFILES["cinema_mv"])
         self.assertIn("reference_anime", STYLE_PROFILES)
         self.assertIn("動物耳、耳内部、尾", STYLE_PROFILES["anime_story_mv"])
@@ -740,8 +740,6 @@ class DirectionEnhancerTests(unittest.TestCase):
             "Arc Shot with large amplitude at fast speed",
             CAMERA_PROFILES["anime_emotional_mv"],
         )
-        from core.direction.profiles import MOTION_PERFORMANCE_MODES
-        self.assertEqual(MOTION_PERFORMANCE_MODES["anime_emotional_mv"], "dance_phrase")
         self.assertIn(
             "つま先は親指側と残り四趾側の二つの連続した布形状",
             STYLE_PROFILES["anime_emotional_mv"],

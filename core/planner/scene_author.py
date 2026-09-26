@@ -1,4 +1,4 @@
-"""Opt-in Scene-local authorship path with explicit user-owned fields.
+"""Scene-local authorship path with explicit user-owned fields.
 
 The three LLM passes author event, performance, then camera in that order.
 No semantic natural-language repair is performed. Explicit motion templates
@@ -21,6 +21,8 @@ from .template import PlannerTemplate
 from .section_context import section_context_by_scene
 from .motion_composition import select_motion_composition
 from .candidate_policy import validate_staging_candidate_policy
+from .requests import request_entities
+from .types import PlannerContent, PlannerEntity
 
 
 _LOGGER = logging.getLogger("mv_director.nodes")
@@ -213,8 +215,6 @@ def generate_scene_author_content(
     interrupt_callback: Any = None,
 ) -> tuple[Any | None, tuple[tuple[str, int, int], ...]]:
     """Keep hand-authored Shot fields; generate only absent Scene-local fields."""
-    from .engine import PlannerContent, _Entity, _request_entities
-
     validate_staging_candidate_policy(staging_candidate_policy)
     _LOGGER.info(
         "[MV Director - Timeline Planner] staging candidate policy=%s; candidates=%d",
@@ -291,12 +291,12 @@ def generate_scene_author_content(
         ]
         event_states: dict[int, str] = {}
         if pending_events:
-            result, issues, retries, missing, recovered = _request_entities(
+            result, issues, retries, missing, recovered = request_entities(
                 backend,
                 task="scene-author-event",
                 record_type="EVENT",
                 entities=[
-                    _Entity(scene.scene_number, (index,), {
+                    PlannerEntity(scene.scene_number, (index,), {
                         "scene_number": scene.scene_number,
                         "scene": scene.scene_number,
                         "shot": index,
@@ -354,12 +354,12 @@ def generate_scene_author_content(
                 "template": composition[3], "text": composition[4],
             }
         if pending_actions:
-            result, issues, retries, missing, recovered = _request_entities(
+            result, issues, retries, missing, recovered = request_entities(
                 backend,
                 task="scene-author-performance",
                 record_type="PERFORMANCE",
                 entities=[
-                    _Entity(scene.scene_number, (index,), {
+                    PlannerEntity(scene.scene_number, (index,), {
                         "scene_number": scene.scene_number,
                         "scene": scene.scene_number,
                         "shot": index,
@@ -417,12 +417,12 @@ def generate_scene_author_content(
         ]
         camera_texts = dict(fixed_cameras)
         if pending_cameras:
-            result, issues, retries, missing, recovered = _request_entities(
+            result, issues, retries, missing, recovered = request_entities(
                 backend,
                 task="scene-author-camera",
                 record_type="CAMERA",
                 entities=[
-                    _Entity(scene.scene_number, (index,), {
+                    PlannerEntity(scene.scene_number, (index,), {
                         "scene_number": scene.scene_number,
                         "scene": scene.scene_number,
                         "shot": index,
@@ -495,18 +495,12 @@ def generate_scene_author_content(
             ",".join(key for key, value in previous_terminal.items() if value) or "none",
         )
     return PlannerContent(
-        visual_beats=(),
-        song_direction="",
-        shot_layouts=(),
         actions=tuple(actions),
         cameras=tuple(cameras),
         issue_count=issue_count,
         retried_scenes=tuple(sorted(retried_scenes)),
-        removed_generated_dialogue_count=0,
-        unused_protected_dialogue_ids=(),
         protocol_recovered_count=recovered_count,
         events=tuple(events),
-        typed_output=True,
         motion_compositions=tuple(motion_compositions),
         terminal_states=tuple(terminal_states),
     ), ()

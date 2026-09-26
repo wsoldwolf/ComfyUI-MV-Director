@@ -163,10 +163,6 @@ class DirectionEnhancerInput:
         if self.retention_policy not in RETENTION_POLICIES:
             raise DirectionEnhancerError("unknown retention_policy")
         split_staging_directives(self.normalized_user_request)
-        if split_motion_templates(self.normalized_user_request)[1]:
-            from .profiles import MOTION_PERFORMANCE_MODES
-            if MOTION_PERFORMANCE_MODES.get(self.motion_profile) != "scene_author":
-                raise DirectionEnhancerError("モーション補完 requires a scene_author motion profile")
         concept = self.normalized_concept_emd
         if concept:
             headings = [line for line in concept.split("\n") if line.startswith("# ")]

@@ -4,10 +4,11 @@ import unittest
 from core.artifacts import DirectionArtifact
 from core.emd import parse_emd
 from core.planner import parse_template_emd
-from core.planner.engine import _Entity, _request_entities
+from core.planner.types import PlannerEntity as _Entity
+from core.planner.requests import request_entities as _request_entities
 from core.planner.renderer import render_completed_emd
 from core.planner.text_normalization import strip_generated_line_continuation
-from test_timeline_planner import CONCEPT, TEMPLATE, runtime
+from planner_fixtures import CONCEPT, TEMPLATE, runtime
 
 
 class GeneratedTextNormalizationTests(unittest.TestCase):

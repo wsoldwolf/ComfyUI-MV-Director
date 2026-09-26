@@ -263,3 +263,10 @@ ComfyUIを再起動し、ノード検索で`MV Director`を確認します。11�
 次に動画workflowを開き、`MiniMax H3 Hybrid Loader`が未定義ノードにならず、FL2VAが`base_model`、Ref2VAが`overlay_model`、presetが`block_range_adaln`、block範囲が`25`～`49`であることを確認してください。Hybrid Loaderの`MODEL`出力はTurbo LoRAへ接続されています。
 
 見つからない場合は[トラブルシューティング](troubleshooting.md)を参照してください。
+
+## 既存devからの更新
+
+現行PlannerはScene Authorのみです。旧strategy selectorと`scenes_per_batch`を撤去しました。
+旧profile・WF・cacheの更新は[31B構成への移行](implementation/gemma31b-migration.md)を参照してください。
+前段WFのcontextはVision / Enhancer / Plannerが24,576、Compilerが16,384です。
+モデル取得元とハッシュは本書の表を使用し、旧8B presetを既定へ戻さないでください。
