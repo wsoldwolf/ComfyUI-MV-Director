@@ -1,5 +1,15 @@
 # Timeline Planner
 
+## 演出候補の採用方針
+
+`staging_candidate_policy`はScene Author経路のEvent選択に渡す助言です。
+`optional`（既定）は従来どおり自由に採否を決め、`prefer_matched`は現在Shotの
+原歌詞に合う候補の対象・場所・可視変化を背景からの独自案より優先して検討します。
+比喩に合う対象の映像化も許容します。無関係な候補の全編投入や、確定Shotの
+変更は行いません。採用率の保証、候補を採用しないことを理由とした停止・
+再試行、Pythonによる対象語の注入はありません。従来の非Scene Author経路には
+作用しません。方針はキャッシュキーとINFOログに記録されます。
+
 ## 実験用モーション合成
 
 Direction EnhancerのMotionを `anime_scene_composed_mv` にすると、Scene author経路で

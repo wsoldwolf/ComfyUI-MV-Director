@@ -17,7 +17,7 @@ ComfyUI-MV-Directorは、利用者が完成promptを手書きしなくても、�
 
 1. Image to Subject EMDが参照画像の可視情報をSubjectとして記述します。
 2. Direction Enhancerがスタイル、環境、時間・照明、モーション、カメラ、その他の全体方針を作ります。利用者の`# 演出候補`は共通指示から分離し、Planner専用の候補として保持します。
-3. Timeline Plannerが確定済みScene枠へ歌詞Cue、Sceneごとの演出候補選択、Visual Beat、曲全体の演出弧、CUT/CONTINUE、Scene spine、人物動作、Action監査、カメラ及びリップシンク方式を段階的に展開します。外部現象を扱うScene spineは現象の終端状態を継続Sceneへ渡し、必要なShotでは現象と身体演技を同時に映すcoverageをCameraへ要求します。
+3. Timeline Plannerの現行Scene Author経路は、確定済みScene/Shot枠と歌詞sectionの文脈から、Event（出来事）、Performance（人物演技）、Cameraを順に計画します。継続Sceneへ終端状態を渡し、作者がShotへ直接書いた確定指示は保持します。profileで有効化されたモーション補完は、出所を区別して合成します。
 4. EMD Compilerが日本語promptだけを英訳し、Ref2VA用Context Loop Plan JSONへ機械的に変換します。
 
 人物参照と背景参照は別系統です。計画時は背景Visionが`scene_only`時に`emd_fragment`へ出すScene EMDをDirection EnhancerとPlannerの`scene_emd`へ渡し、動画生成時は同じ背景画像をH3の対応slotへ直接渡します。理由と推奨配線は[人物参照と背景参照を分ける](tips/separate-subject-and-background-references.md)を参照してください。
@@ -40,7 +40,7 @@ EMDは **Easy MarkDown** です。人が確認・編集できる中間表現で�
 
 ## LLMへ任せる範囲
 
-Vision、演出、Shot計画、Action監査、英訳にはローカルGGUFを使いますが、JSONやEMDそのものをLLMへ生成させません。LLM応答は短い行指向protocolで受け、typed artifact、EMD、最終JSONはPythonが組み立てます。Plannerの合格Action自然文と自由文CameraはAS ISで保持します。`anime_emotional_mv`等の有限Cameraでは、LLMが選んだMotion Type、画角、経路及びcoverageをPythonが固定文へ直列化します。PythonはActionの意味を書き換えず、構造、時刻、slot、directive及び有限検証を担当します。
+Vision、演出、人物演技、Camera、英訳にはローカルGGUFを使いますが、JSONやEMDそのものをLLMへ生成させません。LLM応答は行指向protocolで受け、typed artifact、EMD、最終JSONはPythonが組み立てます。採用自然文はAS ISで保持し、明示モーション補完と歌唱・lip-sync directiveは出所を区別して合成します。旧profileで選ばれるCue・Action監査・有限Cameraは、現行Scene Authorとは別経路です。
 
 Compilerは補強、要約、並べ替えをせず、EMD文法と予約directiveを機械的に処理します。作者が書いた`<d>...</d>`は翻訳せず、そのままH3へ渡します。
 
@@ -59,7 +59,7 @@ EMDは`00:00.000`表記、内部timelineは整数msを使います。H3 Scene長
 
 ## 対象環境と方針
 
-- 主対象は8GB VRAM、4Bまたは8B級のローカルGGUFです。Vision以外の生成・英訳は8Bを推奨します。
+- 現行dev workflowはGemma4 31B Q4_K_Sへ統一し、RTX 5090環境で検証しています。VRAM 8 GB環境は現在の対象外です。未検証環境の最低容量は断定していません。
 - CompilerはRef2VA専用です。T2VAやI2VAは別Compilerの責務です。
 - 旧workflow、node ID、schemaとの互換性は持ちません。PCM処理、GGUF探索等、責務が変わらない実装資産だけを再利用します。
-- 基準はComfyUI `ee71d5c4993f29086b27fde1629a945ae48425bf`、Context Loop `9860a063784c8c23b58e00107f2180e0df3c43d9`です。
+- 基準はComfyUI v0.37.2 `830232b856045ca2892833212d7771078a13edd5`、Context Loop 0.7.0 `d80304f05ecc2f504e64cbfb636e2a21d4409909`です。

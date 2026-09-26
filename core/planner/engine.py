@@ -3521,8 +3521,11 @@ def generate_planner_content(
     system_prompts: Mapping[str, str],
     runtime_config: LlamaRuntimeConfig,
     scene_emd: str = "",
+    staging_candidate_policy: str = "optional",
     interrupt_callback: Any = None,
 ) -> tuple[PlannerContent | None, tuple[tuple[str, int, int], ...]]:
+    from .candidate_policy import validate_staging_candidate_policy
+    validate_staging_candidate_policy(staging_candidate_policy)
     if not 1 <= scenes_per_batch <= 6:
         raise TimelinePlannerError("scenes_per_batch must be in 1..6")
     if lip_sync_mode not in {"off", "context_loop", "audio_reference", "lyrics"}:
@@ -3551,6 +3554,7 @@ def generate_planner_content(
             backend, template=template, concept_emd=concept_emd,
             scene_emd=scene_emd, direction=direction,
             system_prompts=system_prompts, runtime_config=runtime_config,
+            staging_candidate_policy=staging_candidate_policy,
             interrupt_callback=interrupt_callback,
         )
     protector, _protected_concept, scene_context, shot_context, directions = _protected_context(
@@ -6152,6 +6156,7 @@ def plan_timeline(
     system_prompts: Mapping[str, str],
     runtime_config: LlamaRuntimeConfig,
     scene_emd: str = "",
+    staging_candidate_policy: str = "optional",
     interrupt_callback: Any = None,
 ) -> TimelinePlannerResult:
     template = parse_template_emd(template_emd)
@@ -6169,6 +6174,7 @@ def plan_timeline(
         scenes_per_batch=scenes_per_batch,
         system_prompts=system_prompts,
         runtime_config=runtime_config,
+        staging_candidate_policy=staging_candidate_policy,
         interrupt_callback=interrupt_callback,
     )
     if content is None:

@@ -731,7 +731,7 @@
         "Node name for S&R": "MVDirectorH3TimingProfile"
       },
       "widgets_values": [
-        "context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9"
+        "context-loop-0.7.0@d80304f05ecc2f504e64cbfb636e2a21d4409909"
       ],
       "color": "#233",
       "bgcolor": "#355"
@@ -1466,7 +1466,7 @@
       "widgets_values": [
         "{\n  \"prompt_prefix\": [\n    \"Render every scene as photorealistic live-action cinema.\"\n  ],\n  \"defaults\": {\n    \"steps\": 8\n  },\n  \"shots\": [\n    {\n      \"id\": \"scene_0001\",\n      \"length\": 243,\n      \"prompt\": [\n        \"subject_definitions:\",\n        \"<Picture 1> defines <Subject 1>, the performer in the reference image.\",\n        \"<Picture 2> is the environment reference: Observed scene content: A moonlit shrine approach in a forest with a red torii gate.. Use only its stable architecture, vegetation, terrain, materials, and spatial identity as background evidence. It is not a Subject, performer, storyboard, panel layout, framing template, or lighting authority. Render one unified full-frame environment and never reproduce people, characters, poses, text, borders, split views, or inset compositions from this Picture. The written Scene environment and time-lighting directions are authoritative and replace every conflicting season, weather, time of day, illumination, camera angle, and composition visible in this Picture. Preserve functional spatial topology: keep the established circulation space open and unobstructed. Preserve only the structures and fixed objects actually present in the supplied environment; do not invent additional fixtures. Existing fixed objects remain at their established positions; never relocate one into the circulation space or directly into the Subject's travel path. When a Shot calls for interaction with an existing fixed object, move the Subject toward its established position instead of moving the fixture toward the Subject.\",\n        \"\",\n        \"summary:\",\n        \"[reference generation] A moonlit performance at a shrine approach.\",\n        \"\",\n        \"retention_analysis:\",\n        \"<Subject 1>: fully_preserved - preserve identity, clothing, and proportions.\",\n        \"<Picture 1>: fully_preserved - preserve the visible performer design.\",\n        \"<Picture 2>: environment_partially_preserved - preserve stable architecture, vegetation, terrain, materials, spatial identity, open circulation routes, and the established placement of fixed fixtures only; restage framing and lighting for the current Shot and obey the written Scene environment and time-lighting directions.\",\n        \"\",\n        \"detailed_description:\",\n        \"[Shot 1] <Subject 1> walks toward the torii gate and sings.\",\n        \"<Subject 1> performs visible lip movements to <d>[Japanese]千年鳥居をくぐるそなたよ</d>.\",\n        \"\",\n        \"overall_soundscape:\",\n        \"Preserve the selected music-video soundtrack policy.\",\n        \"\",\n        \"non_diegetic_music:\",\n        \"No additional generated music is requested.\"\n      ],\n      \"context_length\": 0,\n      \"audio_context_length\": 22\n    }\n  ]\n}",
         "mv_director_lyrics",
-        "mv-director-lyrics-context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9",
+        "mv-director-lyrics-context-loop-0.7.0@d80304f05ecc2f504e64cbfb636e2a21d4409909",
         896,
         672,
         "video",
@@ -2318,6 +2318,30 @@
           "name": "state",
           "type": "H3_CHAIN_STATE",
           "link": 36
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "link": null,
+          "widget": {
+            "name": "fps"
+          }
+        },
+        {
+          "name": "match_tail",
+          "type": "BOOLEAN",
+          "link": null,
+          "widget": {
+            "name": "match_tail"
+          }
+        },
+        {
+          "name": "audio_trim_mode",
+          "type": "COMBO",
+          "link": null,
+          "widget": {
+            "name": "audio_trim_mode"
+          }
         }
       ],
       "outputs": [
@@ -2358,7 +2382,7 @@
         0,
         24,
         true,
-        0
+        "sync_with_video"
       ],
       "color": "#223",
       "bgcolor": "#335"
@@ -3267,7 +3291,7 @@
     "mv_director": {
       "kind": "video_generation",
       "lip_sync_mode": "lyrics",
-      "contract": "context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9",
+      "contract": "context-loop-0.7.0@d80304f05ecc2f504e64cbfb636e2a21d4409909",
       "context_loop_base": "Ref2V Basic - MiniMax H3 0.6.json"
     }
   },

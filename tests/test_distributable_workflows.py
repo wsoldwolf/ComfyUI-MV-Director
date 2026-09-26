@@ -7,12 +7,14 @@ import unittest
 from core.lyrics import parse_plain_lyrics
 from core.utilities import decode_embedded_text
 from tools.generate_workflows import (CHARACTER_HINT, DEFAULT_USER_PROMPT, LOCAL_FACE_CANDIDATE,
-                                      sync_direction_settings, sync_model_runtime, write_workflows)
+                                      sync_candidate_policy, sync_direction_settings, sync_model_runtime,
+                                      sync_timing_contract, sync_context_loop_runtime,
+                                      validate_workflow, write_workflows)
 
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / "workflows"
-CONTRACT_ID = "context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9"
+CONTRACT_ID = "context-loop-0.7.0@d80304f05ecc2f504e64cbfb636e2a21d4409909"
 H3_BASE_MODEL = (
     "MiniMaxH3\\minimax_h3_fl2va_pruned_int8_convrot.safetensors"
 )
@@ -70,6 +72,88 @@ def input_link(workflow: dict, node: dict, input_name: str) -> list:
 
 
 class DistributableWorkflowTests(unittest.TestCase):
+    def test_loop_trim_migration_preserves_plan_links_and_layout(self) -> None:
+        for mode, (_plan, name) in FILES.items():
+            with self.subTest(mode=mode):
+                workflow = load(name)
+                trim = only_type(workflow, "MiniMaxH3LoopTrim")
+                trim["widgets_values"] = [0, 24, True, 0]
+                trim["inputs"] = [item for item in trim["inputs"]
+                                  if item["name"] != "audio_trim_mode"]
+                trim["inputs"].append({"name": "retain_overlap_frames", "type": "INT",
+                                       "widget": {"name": "retain_overlap_frames"}, "link": None})
+                trim["widgets_values_named"] = {"retain_overlap_frames": 0}
+                before = copy.deepcopy(workflow)
+                sync_context_loop_runtime(workflow)
+                self.assertEqual(trim["widgets_values"], [0, 24, True, "sync_with_video"])
+                self.assertEqual(trim["widgets_values_named"], {"audio_trim_mode": "sync_with_video"})
+                self.assertNotIn("retain_overlap_frames", [item["name"] for item in trim["inputs"]])
+                self.assertIn("audio_trim_mode", [item["name"] for item in trim["inputs"]])
+                self.assertEqual(workflow["links"], before["links"])
+                for node, original in zip(workflow["nodes"], before["nodes"]):
+                    if node["type"] != "MiniMaxH3LoopTrim":
+                        self.assertEqual(node, original)
+                self.assertEqual(trim["pos"], only_type(before, "MiniMaxH3LoopTrim")["pos"])
+                validate_workflow(workflow)
+                synced = copy.deepcopy(workflow)
+                sync_context_loop_runtime(workflow)
+                self.assertEqual(workflow, synced)
+                trim["widgets_values"][3] = "fresh_narration_keep_start"
+                sync_context_loop_runtime(workflow)
+                self.assertEqual(trim["widgets_values"][3], "fresh_narration_keep_start")
+
+    def test_video_loop_trim_uses_current_audio_mode(self) -> None:
+        for _plan, name in FILES.values():
+            trim = only_type(load(name), "MiniMaxH3LoopTrim")
+            self.assertEqual(trim["widgets_values"][3], "sync_with_video")
+            self.assertNotIn("retain_overlap_frames", [item["name"] for item in trim["inputs"]])
+
+    def test_timing_sync_preserves_user_settings_and_is_idempotent(self) -> None:
+        legacy = "context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9"
+        for mode, names in FILES.items():
+            for name in names:
+                with self.subTest(workflow=name):
+                    workflow = load(name)
+                    timing = only_type(workflow, "MVDirectorH3TimingProfile")
+                    self.assertEqual(timing["widgets_values"][0], CONTRACT_ID)
+                    self.assertEqual(workflow["extra"]["mv_director"]["contract"], CONTRACT_ID)
+                    timing["widgets_values"][0] = legacy
+                    before = copy.deepcopy(workflow)
+                    sync_timing_contract(workflow, mode)
+                    self.assertEqual(workflow["links"], before["links"])
+                    self.assertEqual(workflow.get("groups"), before.get("groups"))
+                    for node, original in zip(workflow["nodes"], before["nodes"]):
+                        if node["type"] not in {
+                            "MVDirectorH3TimingProfile", "MiniMaxH3ChainPlanModern", "MarkdownNote"
+                        }:
+                            self.assertEqual(node, original)
+                        for key in ("pos", "size", "color", "bgcolor", "inputs", "outputs"):
+                            self.assertEqual(node.get(key), original.get(key))
+                    synced = copy.deepcopy(workflow)
+                    sync_timing_contract(workflow, mode)
+                    self.assertEqual(workflow, synced)
+
+    def test_candidate_policy_migration_preserves_existing_settings(self) -> None:
+        workflow = load("01_plan_compiler_context_loop.json")
+        planner = only_type(workflow, "MVDirectorTimelinePlanner")
+        planner["widgets_values"] = planner["widgets_values"][:21]
+        before = copy.deepcopy(workflow)
+        sync_candidate_policy(workflow)
+        self.assertEqual(planner["widgets_values"], only_type(before, "MVDirectorTimelinePlanner")["widgets_values"] + ["optional"])
+        for node, original in zip(workflow["nodes"], before["nodes"]):
+            if node["type"] != "MVDirectorTimelinePlanner":
+                self.assertEqual(node, original)
+            else:
+                self.assertEqual({k:v for k,v in node.items() if k != "widgets_values"},
+                                 {k:v for k,v in original.items() if k != "widgets_values"})
+        planner["widgets_values"][21] = "prefer_matched"
+        sync_candidate_policy(workflow)
+        self.assertEqual(planner["widgets_values"][21], "prefer_matched")
+        video = load("02_video_context_loop.json")
+        before_video = copy.deepcopy(video)
+        sync_candidate_policy(video)
+        self.assertEqual(video, before_video)
+
     def test_direction_sync_preserves_layout_and_video_plan(self) -> None:
         workflow = load("01_plan_compiler_context_loop.json")
         enhancer = only_type(workflow, "MVDirectorDirectionEnhancer")
@@ -380,9 +464,12 @@ class DistributableWorkflowTests(unittest.TestCase):
         }
         for selected_model in selected_models:
             self.assertIn(selected_model, documented)
-        self.assertIn("mmproj-F16.gguf", documented)
+        self.assertIn("gemma-4-31b-it-heretic-ara.mmproj-f16.gguf", documented)
+        self.assertNotIn("Qwen3-VL-4B-Instruct-GGUF", documented)
+        self.assertNotIn("Qwen3-8B", documented)
+        self.assertIn("d80304f05ecc2f504e64cbfb636e2a21d4409909", documented)
         self.assertIn(
-            "https://huggingface.co/unsloth/Qwen3-VL-4B-Instruct-GGUF",
+            "git clone https://github.com/ethanfel/ComfyUI-MiniMaxH3-Contex-Loop.git",
             documented,
         )
         self.assertIn(

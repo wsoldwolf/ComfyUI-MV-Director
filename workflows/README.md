@@ -2,8 +2,8 @@
 
 基準環境:
 
-- ComfyUI v0.36.0 commit `ee71d5c4993f29086b27fde1629a945ae48425bf`
-- Context Loop 0.6.9 commit `9860a063784c8c23b58e00107f2180e0df3c43d9`
+- ComfyUI v0.37.2 commit `830232b856045ca2892833212d7771078a13edd5`
+- Context Loop 0.7.0 commit `d80304f05ecc2f504e64cbfb636e2a21d4409909`
 
 ## Notes
 2026/09/20 現在、Context Loop標準リップシンクワークフロー以外は動作検証していませんのでご了承下さい。
@@ -66,7 +66,7 @@ Visionは既存MTMD backendで人物・背景それぞれのEMD出力を確認�
 
 Plannerは`scene_emd`を完成EMDへAS ISで統合し、Compilerが`<Picture 2>`の環境専用定義、保持契約及びrequired referenceをPlanへ生成する。動画生成WFは同じ背景画像を`ref_images.ref_image_1`へ直接渡す。人物`<Picture 1>`と環境`<Picture 2>`を独立条件にすることで背景の再現率を高める。Picture 2は建築、植生、地形、材質及び空間同一性だけを部分保持し、人物、pose、文字、分割構図、camera angle及び照明はコピーしない。ユーザーがDirection又は共通プロンプトで指定した環境、時刻及び照明を背景画像より優先する。これは画素単位の背景複製を保証しない。
 
-Plan/Compiler workflowのDirection EnhancerはStyle、Motion及びCameraの三項とも`anime_emotional_mv`を既定値とする。`anime_story_mv`は比較又は手動選択用profileとして残す。
+Plan/Compiler workflowのDirection EnhancerはStyleとCameraを`anime_emotional_mv`、Motionを`anime_scene_composed_mv`とする。`anime_story_mv`は比較又は手動選択用profileとして残す。
 
 三つのPlan/Compiler workflowには空欄可の「ユーザープロンプト」を置き、Direction Enhancerの`user_request`へ接続している。ここは自由文の全Scene共通方針用であり、Sceneごとの局所演出を予約する欄ではない。`direction_emd_passthrough`は厳格なEMD構文を要求し、選択中のprofileとも整合させる別の入力なので、この自由文ノードは接続しない。
 
@@ -94,6 +94,26 @@ Lyric SegmentationのSRT本文は前段workflowで同じcanonical segment列か�
 
 ## 再生成
 
+Context Loop 0.7.0のLoop Trim入力定義へ移行する場合は、
+`python tools/generate_workflows.py --sync-context-loop-runtime`を実行します。
+旧`retain_overlap_frames`を除去し、MVの音画同期を維持する
+`audio_trim_mode=sync_with_video`を設定します。動画3WFの保存済みPlan、
+素材、seed及びレイアウトは保持します。更新後はWFを開き直してください。
+
+現在のTiming contractだけを6本へ同期する場合は、次を使います。素材、seed、
+保存済みPlan、配線、レイアウト及び配色を保持し、H3 Timing Profileの既定値、
+contract表記とgeneration fingerprintを更新します。旧0.6.9契約はノードで選択可能です。
+
+```cmd
+python tools/generate_workflows.py --sync-timing-contract
+```
+
+Plannerの`staging_candidate_policy`は通常`optional`です。Scene Author経路で
+歌詞に適合する演出候補を優先して検討させる局所試験では`prefer_matched`を選べます。
+全Sceneに候補を強制する設定ではありません。既存のレイアウトや入力を保ったまま
+このUI項目だけを追加するには`python tools/generate_workflows.py --sync-candidate-policy`
+を実行します。既存の選択値は保持します。
+
 現在の31B検証用前段WFは、StyleとCameraが`anime_emotional_mv`、Motionが
 `anime_scene_composed_mv`です。Event→人物演技→CameraのScene Author経路を使い、
 既存の題材・身体演技候補に短い歌唱顔接写の候補を1件追加しています。
@@ -111,7 +131,7 @@ python tools/generate_workflows.py --sync-direction-settings
 
 6本は次で決定論的に再生成できる。
 
-```powershell
+```cmd
 python tools/generate_workflows.py
 ```
 

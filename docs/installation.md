@@ -1,13 +1,13 @@
 # 導入マニュアル
 
-Windows版ComfyUIへComfyUI-MV-Directorを導入し、Text/Vision GGUFとOpenAI Whisperをローカル実行する手順です。基準環境はPython 3.13、CUDA 13.0、`llama-cpp-python 0.3.34`です。本書のコマンドは、Visual Studio専用プロンプトを含めて`cmd.exe`の構文へ統一しています。
+Windows版ComfyUIへComfyUI-MV-Directorを導入し、Gemma4 31Bによる人物・背景Vision、Direction生成、Timeline計画、英訳と、OpenAI Whisperによる歌詞整列をローカル実行する手順です。現在のdev workflowはRTX 5090級の大容量VRAM環境向けです。基準環境はPython 3.13、CUDA 13.0、`llama-cpp-python 0.3.34`です。本書のコマンドは、Visual Studio専用プロンプトを含めて`cmd.exe`の構文へ統一しています。
 
 ## 1. 前提
 
 - ComfyUIが`C:\Software\ComfyUI\`へ導入済みであること
 - `C:\Software\ComfyUI\venv\`にComfyUI用Python仮想環境が構築済みであること
-- ComfyUI v0.36.0 commit `ee71d5c4993f29086b27fde1629a945ae48425bf`
-- ComfyUI-MiniMaxH3-Contex-Loop 0.6.9 commit `9860a063784c8c23b58e00107f2180e0df3c43d9`
+- ComfyUI v0.37.2 commit `830232b856045ca2892833212d7771078a13edd5`
+- ComfyUI-MiniMaxH3-Contex-Loop 0.7.0 commit `d80304f05ecc2f504e64cbfb636e2a21d4409909`
 - NVIDIA Driver、CUDA Toolkit 13.0
 - Visual Studio 2022のDesktop development with C++とWindows SDK
 - Git
@@ -22,11 +22,11 @@ Windows版ComfyUIへComfyUI-MV-Directorを導入し、Text/Vision GGUFとOpenAI 
 
 | GPU | CPU | メインメモリ | ストレージ | 備考 |
 | --- | --- | ---: | --- | --- |
-| NVIDIA GeForce RTX 5090 | AMD Ryzen 9 9950X | 256 GB | NVMe SSD 4 TB | 開発及び高負荷時の検証環境 |
-| NVIDIA GeForce RTX 4070 Ti | AMD Ryzen 9 5900XT | 64 GB | NVMe SSD 4 TB | 動作検証環境 |
-| NVIDIA GeForce RTX 5060 | AMD Ryzen 5 5500 | 16 GB | NVMe SSD 1 TB | Context Loop標準リップシンクは動作しません |
+| NVIDIA GeForce RTX 5090 | AMD Ryzen 9 9950X | 256 GB | NVMe SSD 4 TB | 現在のGemma4 31B Text/Vision及びH3の検証環境 |
+| NVIDIA GeForce RTX 4070 Ti | AMD Ryzen 9 5900XT | 64 GB | NVMe SSD 4 TB | 過去の小型LLM構成で検証。現在の31B構成は未検証 |
+| NVIDIA GeForce RTX 5060 | AMD Ryzen 5 5500 | 16 GB | NVMe SSD 1 TB | 過去の構成でContext Loop標準リップシンクが動作せず。現在の31B構成は対象外 |
 
-RTX 5060、メインメモリ16 GBの環境では、Context Loop標準リップシンクworkflowが停止することを確認しています。この構成ではAudio Reference方式又は歌詞方式のworkflowを検討してください。各方式の検証状況は[配布workflowの説明](../workflows/README.md)を参照してください。
+過去のRTX 5060、メインメモリ16 GB構成では、Context Loop標準リップシンクworkflowが停止することを確認しています。Audio Reference方式又は歌詞方式は動画生成側の代替ですが、現在のGemma4 31B推論を8 GB VRAMで実行可能にするものではありません。各方式の検証状況は[配布workflowの説明](../workflows/README.md)を参照してください。
 
 ## 2. カスタムノード本体
 
@@ -35,6 +35,25 @@ RTX 5060、メインメモリ16 GBの環境では、Context Loop標準リップ�
 ```bat
 cd /d C:\Software\ComfyUI\custom_nodes
 git clone https://github.com/wsoldwolf/ComfyUI-MV-Director.git
+```
+
+Gemma4へ移行中の構成は`dev`ブランチです。現行の開発workflowを試す場合は、
+clone後に次を実行してください。配布タグの構成と混同しないでください。
+
+```bat
+cd /d C:\Software\ComfyUI\custom_nodes\ComfyUI-MV-Director
+git switch dev
+```
+
+動画生成には[Context Loop](https://github.com/ethanfel/ComfyUI-MiniMaxH3-Contex-Loop)
+も必要です。未導入の場合はcloneし、本書の基準commitへcheckoutします。
+既存checkoutを変更する場合は作業中の変更を保護してください。
+
+```bat
+cd /d C:\Software\ComfyUI\custom_nodes
+git clone https://github.com/ethanfel/ComfyUI-MiniMaxH3-Contex-Loop.git
+cd /d C:\Software\ComfyUI\custom_nodes\ComfyUI-MiniMaxH3-Contex-Loop
+git checkout d80304f05ecc2f504e64cbfb636e2a21d4409909
 ```
 
 開発checkoutを別ドライブへ置く場合は、管理者権限のコマンドプロンプトでdirectory junctionを作れます。
@@ -140,11 +159,13 @@ C:\Software\ComfyUI\models\LLM\GGUF\
 - 同じディレクトリに複数`mmproj`があり一意に選べない組は表示しません。モデル系列名を含む`mmproj`、次いでF16/BF16/Q8の順で一意に解決します。
 - 絶対パスをwidgetへ貼り付ける方式ではありません。配置後にComfyUIを再起動しcomboから選択します。
 
-Text生成と英訳は8B級を推奨します。Visionだけは4B級でも比較的実用になります。
+現在のworkflowでは、VisionとText推論を同じGemma4 31B Q4_K_Sへ統一しています。
+Visionには追加で同系列のmmprojを使用します。各ノードは既定で処理後にモデルを
+解放し、H3動画生成と同時に31BをVRAMへ常駐させない運用です。
 
 ### `01_plan_compiler_context_loop.json`の既定モデル
 
-配布workflowの`01_plan_compiler_context_loop.json`は、次のモデルを選択した状態で保存されています。Visionは本体GGUFだけでなく、同じディレクトリに対応する`mmproj-F16.gguf`も必要です。
+配布workflowの`01_plan_compiler_context_loop.json`は、次のモデルを選択した状態で保存されています。Visionは本体GGUFだけでなく、同じディレクトリに対応する`gemma-4-31b-it-heretic-ara.mmproj-f16.gguf`も必要です。
 
 | 用途 / 使用ノード | workflowで選択されるファイル | 取得元 |
 | --- | --- | --- |
@@ -166,7 +187,21 @@ C:\Software\ComfyUI\models\
 
 配置先のサブディレクトリ名を変更した場合は、ComfyUI再起動後に各ノードのcomboで実ファイルを選び直し、workflowを保存してください。
 
-現在のdev workflowはテキスト推論3ノードと人物・背景Visionを同一のGemma4 31B Q4_K_Sへ揃えている。Visionはさらに対応mmprojを必要とする。これはRTX 5090級の開発環境向けで、RTX 5060の8GB VRAM向け設定ではない。各ノードのコンテキスト・サンプリング設定と検証上の注意は[workflow設定](../workflows/README.md#共通入力)を参照する。以前の8GB向け構成では[Qwen3-VL-4B](https://huggingface.co/unsloth/Qwen3-VL-4B-Instruct-GGUF)と[Qwen3 8B](https://huggingface.co/richardyoung/Qwen3-8B-Abliterated-GGUF)を使用していた。これらのハッシュは下表に比較用として残している。
+現在のdev workflowはテキスト推論3ノードと人物・背景Visionを同一のGemma4 31B Q4_K_Sへ揃えています。Visionはさらに対応mmprojを必要とします。これはRTX 5090級の開発環境向けで、RTX 5060の8 GB VRAM向け設定ではありません。
+
+| ノード | n_ctx | max_tokens | temperature | n_batch |
+| --- | ---: | ---: | ---: | ---: |
+| 人物・背景Vision | 16384 | 1024 | 0.1 | 512 |
+| Direction Enhancer | 24576 | 4096 | 0.2 | 256 |
+| Timeline Planner | 24576 | 4096 | 0.2 | 256 |
+| EMD Compiler | 16384 | 4096 | 0.0 | 256 |
+
+Text推論は`chat_format=auto`でGGUFのchat templateを使用します。VisionはMTMDと
+対応mmprojを使用します。KV cacheはq8_0、Flash Attention有効、GPU layers=-1、
+`keep_model_loaded=false`が既定です。`max_tokens`は出力の上限であり、Plannerは
+taskと入力長に応じて実際の出力予約量を調整します。Style/Cameraは
+`anime_emotional_mv`、Motionは`anime_scene_composed_mv`でScene Author経路を使います。
+詳しい設定と検証上の注意は[workflow設定](../workflows/README.md#共通入力)を参照してください。
 
 ダウンロードの破損や同名の別quantを判別する場合は、`cmd.exe`で次のようにSHA-256を表示し、表の値と比較できます。
 
@@ -178,9 +213,6 @@ certutil -hashfile "C:\Software\ComfyUI\models\LLM\GGUF\gemma-4-31b-it-heretic-a
 
 | ファイル | SHA-256 |
 | --- | --- |
-| `Qwen3-VL-4B-Instruct-Q4_K_M.gguf` | `d4dcd426bfba75752a312b266b80fec8136fbaca13c62d93b7ac41fa67f0492b` |
-| `mmproj-F16.gguf` | `1b9f4e92f0fbda14d7d7b58baed86039b8a980fe503d9d6a9393f25c0028f1fc` |
-| `qwen3-8b-abliterated-Q4_K_M.gguf` | `8625e48da4c4be9bcba2414fd8cad4095ff3a538d5b0111c2b26b5f6209538b9` |
 | `gemma-4-31b-it-heretic-ara.Q4_K_S.gguf` | `2fa55d46083775b3b308b41b0c255f1d44466fd9f9df8308f7545b369494e858` |
 | `gemma-4-31b-it-heretic-ara.mmproj-f16.gguf` | `6e3ba7c2d16bebe91812b3ce03ac819b3fc988093021f10388e5ddef141dd695` |
 | `medium.pt` | `345ae4da62f9b3d59415adc60127b97c714f32e89e936602e85993674d08dcb1` |
@@ -223,9 +255,10 @@ ComfyUIを再起動し、ノード検索で`MV Director`を確認します。11�
 
 1. Load Text FileでUTF-8 lyrics `.txt`を選べる。
 2. Lyric SegmentationでWhisper `.pt`が選べる。
-3. Image to Subject EMDでVision GGUF pairが選べる。
-4. Enhancer、Planner、CompilerでText GGUFが選べる。
+3. 人物・背景のImage to Subject EMDでGemma4本体とmmprojの組が選べる。
+4. Enhancer、Planner、Compilerで同じGemma4 Q4_K_Sが選べる。
 5. 実行logに各ノード名付きの`started`と`completed`が一度ずつ出る。
+6. H3 Timing Profileの既定値が`context-loop-0.7.0@d80304f05ecc2f504e64cbfb636e2a21d4409909`である。
 
 次に動画workflowを開き、`MiniMax H3 Hybrid Loader`が未定義ノードにならず、FL2VAが`base_model`、Ref2VAが`overlay_model`、presetが`block_range_adaln`、block範囲が`25`～`49`であることを確認してください。Hybrid Loaderの`MODEL`出力はTurbo LoRAへ接続されています。
 

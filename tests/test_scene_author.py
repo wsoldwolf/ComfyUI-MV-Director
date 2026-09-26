@@ -65,6 +65,40 @@ def _runtime():
 
 
 class SceneAuthorTests(unittest.TestCase):
+    def test_matched_candidate_policy_is_advisory_and_preserves_author_fields(self):
+        backend = Backend()
+        result = plan_timeline(
+            backend, template_emd=TEMPLATE, concept_emd=CONCEPT,
+            direction=DirectionArtifact(
+                motion_profile_id="anime_scene_author_mv",
+                staging_candidates=("花の場面で花びらが舞う。",),
+            ),
+            lip_sync_mode="off", lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1, scenes_per_batch=1,
+            system_prompts=_system_prompts(), runtime_config=_runtime(),
+            staging_candidate_policy="prefer_matched",
+        )
+        self.assertTrue(result.complete)
+        self.assertEqual(len(backend.calls), 3)
+        for _, request in backend.calls:
+            self.assertEqual(request["staging_candidate_policy"], "prefer_matched")
+        self.assertEqual(backend.calls[0][1]["fixed_events"], {"1": "木の根元に苔がある。"})
+        self.assertIn("`演出` 木の根元に苔がある。", result.emd.text)
+        # The mocked LLM chooses no Event for Shot 2; preference must not
+        # trigger semantic retries, inject a flower, or reject the result.
+        self.assertNotIn("花びらが舞う", result.emd.text)
+        self.assertIn("prefer_matched", _system_prompts()["scene-author-event"])
+
+    def test_candidate_policy_default_and_invalid_value(self):
+        from core.planner.candidate_policy import validate_staging_candidate_policy
+        from nodes.node_timeline_planner.node import MVDirectorTimelinePlanner
+        option = MVDirectorTimelinePlanner.INPUT_TYPES()["optional"]["staging_candidate_policy"]
+        self.assertEqual(option[1]["default"], "optional")
+        validate_staging_candidate_policy("optional")
+        validate_staging_candidate_policy("prefer_matched")
+        with self.assertRaises(ValueError):
+            validate_staging_candidate_policy("force_all")
+
     def test_scene_author_grammar_binds_requested_slots(self):
         event = build_scene_author_grammar(
             "scene-author-event",
@@ -322,6 +356,7 @@ class SceneAuthorTests(unittest.TestCase):
         self.assertTrue(result.complete)
         self.assertEqual(backend.calls[0][0], "scene-author-event")
         self.assertEqual(backend.calls[0][1]["staging_candidates_optional"], ["任意の候補。"])
+        self.assertEqual(backend.calls[0][1]["staging_candidate_policy"], "optional")
         self.assertEqual(backend.calls[1][1]["staging_candidates_optional"], ["任意の候補。"])
         self.assertEqual(backend.calls[2][1]["staging_candidates_optional"], ["任意の候補。"])
         self.assertNotIn("任意の候補。", result.emd.text)

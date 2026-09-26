@@ -415,7 +415,7 @@
         "Node name for S&R": "MVDirectorH3TimingProfile"
       },
       "widgets_values": [
-        "context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9"
+        "context-loop-0.7.0@d80304f05ecc2f504e64cbfb636e2a21d4409909"
       ],
       "color": "#223",
       "bgcolor": "#335"
@@ -1069,7 +1069,8 @@
         "fixed",
         3,
         "reuse",
-        false
+        false,
+        "optional"
       ],
       "color": "#223",
       "bgcolor": "#335"
@@ -1424,7 +1425,7 @@
     "mv_director": {
       "kind": "plan_compiler",
       "lip_sync_mode": "lyrics",
-      "contract": "context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9"
+      "contract": "context-loop-0.7.0@d80304f05ecc2f504e64cbfb636e2a21d4409909"
     }
   },
   "version": 0.4

@@ -20,12 +20,13 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from core.h3_contract import (
+    CONTRACT_ID,
+    SUPPORTED_CONTRACT_IDS,
     build_environment_definition,
     build_environment_retention,
 )
 
 
-CONTRACT_ID = "context-loop-0.6.9@9860a063784c8c23b58e00107f2180e0df3c43d9"
 VIDEO_DENOISING_STEPS = 8
 H3_BASE_MODEL = (
     "MiniMaxH3\\minimax_h3_fl2va_pruned_int8_convrot.safetensors"
@@ -716,6 +717,7 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
                 3,
                 "reuse",
                 False,
+                "optional",
             ],
         ),
         _node(
@@ -1341,6 +1343,7 @@ def _scene_debug_splitter_node(
 def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
     spec = MODES[mode]
     workflow = json.loads(base_path.read_text(encoding="utf-8"))
+    sync_context_loop_runtime(workflow)
     # The compact workflow uses the modern Plan directly.  The legacy prompt
     # editor, recovery manifest loader, recovery assembler, and detached text
     # encoder are intentionally absent from the distributable graph.
@@ -1631,6 +1634,39 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
     return _decorate_video_workflow(workflow, mode)
 
 
+def sync_context_loop_runtime(workflow: dict[str, Any]) -> None:
+    """Migrate legacy Loop Trim widgets to the pinned 0.7.0 schema."""
+    for node in workflow["nodes"]:
+        if node["type"] != "MiniMaxH3LoopTrim":
+            continue
+        inputs = node.get("inputs", [])
+        if any(item.get("name") == "retain_overlap_frames" and item.get("link") is not None
+               for item in inputs):
+            raise ValueError("linked legacy retain_overlap_frames requires manual migration")
+        values = list(node.get("widgets_values", []))
+        mode = values[3] if len(values) > 3 else "sync_with_video"
+        if mode not in ("sync_with_video", "fresh_narration_keep_start"):
+            # Legacy position 3 was retain_overlap_frames, not audio_trim_mode.
+            mode = "sync_with_video"
+        defaults = (0, 24.0, True)
+        node["widgets_values"] = [values[i] if i < len(values) else default
+                                  for i, default in enumerate(defaults)] + [mode]
+        named = node.get("widgets_values_named")
+        if isinstance(named, dict):
+            named.pop("retain_overlap_frames", None)
+            named["audio_trim_mode"] = mode
+        for item in reversed(inputs):
+            if item.get("name") != "retain_overlap_frames":
+                continue
+            slot = inputs.index(item)
+            inputs.pop(slot)
+            for link in workflow.get("links", []):
+                if link[3] == node["id"] and link[4] > slot:
+                    link[4] -= 1
+        _ensure_widget_inputs(node, (("fps", "FLOAT"), ("match_tail", "BOOLEAN"),
+                                     ("audio_trim_mode", "COMBO")))
+
+
 def validate_workflow(workflow: dict[str, Any]) -> None:
     nodes = {int(node["id"]): node for node in workflow["nodes"]}
     if len(nodes) != len(workflow["nodes"]):
@@ -1708,9 +1744,66 @@ def sync_direction_settings(workflow: dict[str, Any]) -> None:
                 named["value"] = DEFAULT_USER_PROMPT
 
 
+def sync_candidate_policy(workflow: dict[str, Any]) -> None:
+    """Append the advisory control without changing existing widget positions."""
+    for node in workflow["nodes"]:
+        if node["type"] != "MVDirectorTimelinePlanner":
+            continue
+        values = node["widgets_values"]
+        if len(values) == 21:
+            values.append("optional")
+        elif len(values) != 22 or values[21] not in {"optional", "prefer_matched"}:
+            raise ValueError("unexpected Planner widgets for candidate-policy migration")
+        named = node.get("widgets_values_named")
+        if isinstance(named, dict):
+            named["staging_candidate_policy"] = values[21]
+
+
+def sync_timing_contract(workflow: dict[str, Any], mode: str) -> None:
+    """Update the pinned contract without replacing user media or saved Plan."""
+    for node in workflow["nodes"]:
+        if node["type"] == "MVDirectorH3TimingProfile":
+            node["widgets_values"][0] = CONTRACT_ID
+            named = node.get("widgets_values_named")
+            if isinstance(named, dict):
+                named["contract"] = CONTRACT_ID
+        elif node["type"] == "MiniMaxH3ChainPlanModern":
+            node["widgets_values"][2] = f"mv-director-{mode}-{CONTRACT_ID}"
+            named = node.get("widgets_values_named")
+            if isinstance(named, dict) and "generation_fingerprint" in named:
+                named["generation_fingerprint"] = node["widgets_values"][2]
+        elif node["type"] == "MarkdownNote":
+            for index, value in enumerate(node.get("widgets_values", [])):
+                if isinstance(value, str):
+                    for contract in SUPPORTED_CONTRACT_IDS:
+                        value = value.replace(contract, CONTRACT_ID)
+                    node["widgets_values"][index] = value
+    workflow["extra"]["mv_director"]["contract"] = CONTRACT_ID
+
+
 def write_workflows(context_loop_root: Path, output_dir: Path, *, runtime_only: bool = False,
-                    direction_only: bool = False) -> None:
-    if runtime_only or direction_only:
+                    direction_only: bool = False, candidate_only: bool = False,
+                    timing_only: bool = False, video_runtime_only: bool = False) -> None:
+    if timing_only or video_runtime_only:
+        for mode, spec in MODES.items():
+            for suffix, number in (("plan_compiler", int(spec["number"]) * 2 - 1),
+                                   ("video", int(spec["number"]) * 2)):
+                path = output_dir / f"{number:02d}_{suffix}_{mode}.json"
+                if video_runtime_only and not timing_only and suffix != "video":
+                    continue
+                original_text = path.read_text(encoding="utf-8")
+                workflow = json.loads(original_text)
+                if timing_only:
+                    sync_timing_contract(workflow, mode)
+                if video_runtime_only and suffix == "video":
+                    sync_context_loop_runtime(workflow)
+                validate_workflow(workflow)
+                formatted = (json.dumps(workflow, ensure_ascii=False, separators=(",", ":"))
+                             if len(original_text.splitlines()) == 1 else _json_text(workflow))
+                path.write_text(formatted + "\n", encoding="utf-8")
+        if not (runtime_only or direction_only or candidate_only):
+            return
+    if runtime_only or direction_only or candidate_only:
         for mode, spec in MODES.items():
             path = output_dir / f"{int(spec['number']) * 2 - 1:02d}_plan_compiler_{mode}.json"
             original_text = path.read_text(encoding="utf-8")
@@ -1719,6 +1812,8 @@ def write_workflows(context_loop_root: Path, output_dir: Path, *, runtime_only: 
                 sync_model_runtime(workflow, mode)
             if direction_only:
                 sync_direction_settings(workflow)
+            if candidate_only:
+                sync_candidate_policy(workflow)
             validate_workflow(workflow)
             formatted = (
                 json.dumps(workflow, ensure_ascii=False, separators=(",", ":"))
@@ -1760,9 +1855,17 @@ def main() -> None:
                         help="Update model settings without rebuilding layout or saved Plan")
     parser.add_argument("--sync-direction-settings", action="store_true",
                         help="Apply current motion profile and user prompt, preserving layout and video Plan")
+    parser.add_argument("--sync-candidate-policy", action="store_true",
+                        help="Append optional candidate selection control, preserving existing settings")
+    parser.add_argument("--sync-timing-contract", action="store_true",
+                        help="Update all six timing contracts while retaining layouts, user inputs and saved Plan")
+    parser.add_argument("--sync-context-loop-runtime", action="store_true",
+                        help="Migrate video node schemas without replacing saved Plan or layout")
     args = parser.parse_args()
     write_workflows(args.context_loop_root, args.output_dir, runtime_only=args.sync_model_runtime,
-                    direction_only=args.sync_direction_settings)
+                    direction_only=args.sync_direction_settings, candidate_only=args.sync_candidate_policy,
+                    timing_only=args.sync_timing_contract,
+                    video_runtime_only=args.sync_context_loop_runtime)
 
 
 if __name__ == "__main__":

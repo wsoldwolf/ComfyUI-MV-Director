@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="2200" height="1280" viewBox="0 0 2200 1280" role="img" aria-labelledby="title desc">
   <title id="title">ComfyUI-MV-Director 現行プロジェクト概要</title>
-  <desc id="desc">人物・背景Vision、歌詞整列、共通指示とScene単位の演出候補を分離するDirection、外部現象の継続状態と身体・カメラcoverageを扱うTimeline Planner v80、CompilerからPlan JSONを保存する第一段階と、Hybrid Loaderを使う動画生成第二段階。</desc>
+  <desc id="desc">Gemma4 31Bによる人物・背景Vision、Direction、Scene単位のEvent、Performance、Camera、英訳CompilerとWhisper歌詞整列。Plan JSON保存境界でH3 Hybrid LoaderとContext Loop標準リップシンクの動画生成段階を分離する。</desc>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
       <path d="M0 0L10 5L0 10Z" fill="#526273"/>
@@ -14,7 +14,7 @@
   </defs>
 
   <rect class="canvas" width="2200" height="1280" rx="18"/>
-  <text class="title" x="1100" y="48">ComfyUI-MV-Director — 現行プロジェクト概要</text>
+  <text class="title" x="1100" y="48">ComfyUI-MV-Director — 現行dev / Gemma4 31B Q4_K_S</text>
 
   <rect class="stage" x="28" y="82" width="2144" height="710" rx="18"/>
   <text class="stageTitle" x="54" y="118">Stage 1 — Plan / Compiler：認識・歌詞時刻・演出を固定して保存</text>
@@ -24,7 +24,7 @@
   <text class="small" x="165" y="205">identity / Picture 1</text>
   <rect class="node" x="330" y="140" width="265" height="96" rx="12"/>
   <text class="label" x="462.5" y="176">Image to Subject EMD</text>
-  <text class="small" x="462.5" y="202">subject_only / person</text>
+  <text class="small" x="462.5" y="202">31B + mmproj / subject_only</text>
   <rect class="artifact" x="650" y="150" width="245" height="76" rx="12"/>
   <text class="label" x="772.5" y="181">Concept EMD</text>
   <text class="small" x="772.5" y="205">Subject identity</text>
@@ -36,7 +36,7 @@
   <text class="small" x="165" y="320">environment / Picture 2</text>
   <rect class="node" x="330" y="255" width="265" height="96" rx="12"/>
   <text class="label" x="462.5" y="291">Background Vision</text>
-  <text class="small" x="462.5" y="317">scene_only / location</text>
+  <text class="small" x="462.5" y="317">31B + mmproj / scene_only</text>
   <rect class="artifact" x="650" y="265" width="245" height="76" rx="12"/>
   <text class="label" x="772.5" y="296">Scene EMD</text>
   <text class="small" x="772.5" y="320">環境・時刻baseline</text>
@@ -68,7 +68,7 @@
   <text class="small" x="1142.5" y="216">concept_emd</text>
   <text class="small" x="1142.5" y="242">scene_emd</text>
   <text class="small" x="1142.5" y="278">共通指示 + 外部Profile</text>
-  <text class="small" x="1142.5" y="316">共通方針を一回統合</text>
+  <text class="small" x="1142.5" y="316">31Bで共通方針を一回統合</text>
   <text class="tiny" x="1142.5" y="346">演出候補はDirection LLMへ入れない</text>
 
   <path class="dash" d="M895 188H1000"/>
@@ -78,19 +78,19 @@
   <path class="edge" d="M895 600H955V330H1000"/>
 
   <rect class="artifact" x="1000" y="415" width="285" height="90" rx="12"/>
-  <text class="label" x="1142.5" y="448">MVD_DIRECTION_V3</text>
+  <text class="label" x="1142.5" y="448">MVD_DIRECTION_V4</text>
   <text class="small" x="1142.5" y="474">方針 + 演出候補 + preview</text>
   <path class="edge" d="M1142.5 375V415"/>
 
   <rect class="node" x="1370" y="180" width="300" height="280" rx="14"/>
-  <text class="label" x="1520" y="217">Timeline Planner v80</text>
-  <text class="small" x="1520" y="248">Lyric Cue + Scene演出候補選択</text>
-  <text class="small" x="1520" y="274">Visual Beats → Song Direction</text>
-  <text class="small" x="1520" y="300">Shot Layout → Scene spine</text>
-  <text class="small" x="1520" y="326">外部effect終端を継続Sceneへ</text>
-  <text class="small" x="1520" y="352">Actions / Audit → Cameras</text>
-  <text class="small" x="1520" y="378">身体accent + 現象の同時coverage</text>
-  <text class="tiny" x="1520" y="418">CUT/CONTINUE・歌詞・lip-sync・AS IS</text>
+  <text class="label" x="1520" y="217">Timeline Planner · 31B</text>
+  <text class="small" x="1520" y="248">Scene Author / section歌詞文脈</text>
+  <text class="small" x="1520" y="274">EVENT → PERFORMANCE</text>
+  <text class="small" x="1520" y="300">→ CAMERA / 固定Shot指示を保持</text>
+  <text class="small" x="1520" y="326">終端状態を継続Sceneへ引継ぎ</text>
+  <text class="small" x="1520" y="352">profile補完 / 任意の候補再選択</text>
+  <text class="small" x="1520" y="378">演出候補：optional / prefer_matched</text>
+  <text class="tiny" x="1520" y="418">LLM原文と補完の出所を区別</text>
 
   <path class="edge" d="M895 440H930V525H1325V405H1370"/>
   <text class="edgeLabel" x="1195" y="516">template_emd</text>
@@ -107,8 +107,8 @@
   <path class="edge" d="M1670 256H1730"/>
   <rect class="node" x="1730" y="350" width="210" height="112" rx="12"/>
   <text class="label" x="1835" y="384">EMD Compiler</text>
-  <text class="small" x="1835" y="410">Ref2VA構造化</text>
-  <text class="small" x="1835" y="434">日本語自由文だけ英訳</text>
+  <text class="small" x="1835" y="410">31B英訳 / Plan構造化</text>
+  <text class="small" x="1835" y="434">予約directiveは機械処理</text>
   <path class="edge" d="M1835 302V350"/>
 
   <rect class="save" x="1980" y="300" width="155" height="142" rx="14"/>
@@ -121,10 +121,10 @@
 
   <rect class="py" x="1000" y="550" width="940" height="148" rx="14"/>
   <text class="label" x="1470" y="584">責務境界</text>
-  <text class="small" x="1470" y="613">LLM：Vision観測、Scene候補選択、身体・現象の進行、Action監査、翻訳自由文</text>
+  <text class="small" x="1470" y="613">Gemma4：Vision観測、Direction、出来事 → 身体演技 → Camera、翻訳</text>
   <text class="small" x="1470" y="639">Python：typed artifact、時間、slot、protocol、directive、JSON</text>
   <text class="small" x="1470" y="665">人物Picture 1と背景Picture 2は別authority・別H3 slot。不完全な必須出力は後段へ流さず停止</text>
-  <text class="tiny" x="1470" y="687">成功cacheとINFOログで長い処理を追跡</text>
+  <text class="tiny" x="1470" y="687">Timing contract：Context Loop 0.7.0 @ d80304f / ComfyUI 0.37.2 @ 830232b</text>
 
   <text class="note" x="1100" y="756">Stage 1の成果を固定し、同じ計画からVideo段階だけを安全に再実行する</text>
 
@@ -155,7 +155,7 @@
   <text class="white" x="885" y="1045">Context Loop / MiniMax H3</text>
   <text class="whiteSmall" x="885" y="1074">Hybrid Loader：FL2VA + Ref2VA overlay</text>
   <text class="whiteSmall" x="885" y="1100">TurboLoRA → Attention → Sigma Shift</text>
-  <text class="whiteSmall" x="885" y="1127">Sampling → Review → 連結</text>
+  <text class="whiteSmall" x="885" y="1127">標準Lip Sync / Sampling → Review → 連結</text>
 
   <rect class="artifact" x="1190" y="985" width="310" height="136" rx="14"/>
   <text class="label" x="1345" y="1023">生成された動画候補</text>
@@ -170,7 +170,10 @@
   <text class="small" x="1795" y="1103">設定変更時は実在するVideoノード上で行う</text>
 
   <path class="edge" d="M275 957H350"/>
-  <path class="edge" d="M275 1092C310 1092 310 1050 350 1050"/>
+  <path class="edge" d="M275 1092H315V1050H350"/>
+  <text class="tiny" x="311" y="1073">PCM</text>
+  <path class="dash" d="M165 1144V1188H680V1140H720"/>
+  <text class="edgeLabel" x="460" y="1177">参照画像はH3へ直接入力</text>
   <path class="edge" d="M630 1008H680V1083H720"/>
   <path class="edge" d="M885 977V1005"/>
   <path class="edge" d="M1050 1083H1190"/>

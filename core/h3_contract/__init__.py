@@ -12,13 +12,16 @@ from .environment_reference import (
     build_environment_definition,
     build_environment_retention,
 )
-from .context_loop_0_6_9 import (
+from .context_loop import (
     COMFYUI_BASELINE_COMMIT,
     COMFYUI_BASELINE_VERSION,
     CONTEXT_LOOP_0_6_9,
+    CONTEXT_LOOP_0_7_0,
     CONTEXT_LOOP_BASELINE_COMMIT,
     CONTEXT_LOOP_BASELINE_VERSION,
     CONTRACT_ID,
+    LEGACY_CONTRACT_ID,
+    SUPPORTED_CONTRACT_IDS,
     ContextLoopContract,
 )
 from .timing import DEFAULT_H3_TIMING_PROFILE, H3TimingProfile, TIMING_SCHEMA
@@ -28,6 +31,9 @@ __all__ = [
     "COMFYUI_BASELINE_VERSION",
     "CONTRACT_ID",
     "CONTEXT_LOOP_0_6_9",
+    "CONTEXT_LOOP_0_7_0",
+    "LEGACY_CONTRACT_ID",
+    "SUPPORTED_CONTRACT_IDS",
     "CONTEXT_LOOP_BASELINE_COMMIT",
     "CONTEXT_LOOP_BASELINE_VERSION",
     "ContextLoopContract",

@@ -3,7 +3,7 @@
 [![【MV】千里の秋を駆ける - MiniMax H3+Context Loop+MV Director Demo](https://img.youtube.com/vi/OLffZGlcZOs/maxresdefault.jpg)](https://youtu.be/OLffZGlcZOs)
 ※本作品は東方Projectの二次創作であり、公式作品ではありません。
 
-画像、歌詞、ボーカルステム、フルミックスから、MiniMax H3 / Context Loop用のMV計画を作るComfyUIカスタムノードです。VisionによるSubject EMD、演出方針、歌詞タイムライン、Shot計画を分離し、最後にRef2VA Plan JSONへコンパイルします。
+人物・背景の参照画像、歌詞、ボーカルステム、フルミックスから、MiniMax H3 / Context Loop用のMV計画を作るComfyUIカスタムノードです。現行の開発workflowはGemma4 31Bで画像認識、演出方針、Sceneごとの出来事・人物演技・カメラ、英訳を処理し、編集可能なEMDと再利用可能なPlan JSONを保存します。動画生成にはFL2VAをベースにRef2VAの参照レイヤーを重ねるHybrid Loaderを使用します。
 
 EMDは **Easy MarkDown** の略です。Extended Markdownではありません。
 
@@ -12,19 +12,24 @@ EMDは **Easy MarkDown** の略です。Extended Markdownではありません�
 ## はじめに
 
 1. [導入マニュアル](docs/installation.md)に従ってカスタムノード、`llama-cpp-python`、Whisper、各モデルを準備します。
-2. [配布workflow](workflows/README.md)から、Context Loop標準、Audio参照、歌詞のいずれか一組を選びます。
+2. [配布workflow](workflows/README.md)のPlan / CompilerとVideoを一組で使います。現在の検証はContext Loop標準リップシンク方式を中心に行っています。Audio参照方式と歌詞方式もありますが、同等の同期精度は保証しません。
 3. [ノードマニュアル](docs/nodes/README.md)で各入力、出力、既定値、接続方法を確認します。
 4. EMDを直接編集する場合は[EMD仕様書](docs/spec/emd-spec.md)を参照します。
 
-基準環境はComfyUI v0.36.0 commit `ee71d5c4993f29086b27fde1629a945ae48425bf`、Context Loop 0.6.9 commit `9860a063784c8c23b58e00107f2180e0df3c43d9`です。
+現行の開発構成は`dev`ブランチです。既存のリリースタグとはモデル・パイプラインが異なります。基準環境はComfyUI v0.37.2 commit `830232b856045ca2892833212d7771078a13edd5`、Context Loop 0.7.0 commit `d80304f05ecc2f504e64cbfb636e2a21d4409909`です。
 
-## 重要: LLM出力と再実行
+Gemma4 31B構成はRTX 5090環境で検証しています。VRAM 8 GB環境は現在の対象外です。必要なVRAM・メインメモリは量子化、context、オフロード設定で変わるため、未検証環境の最低容量は断定していません。
 
-本プロジェクトはプロンプト生成にLLMの確率的な出力を使用するため、行protocol、必須slot又は出力規約への違反が発生する可能性があります。特に既定のQwen 8B級モデルは性能とinstruction追従性に制約があり、system prompt及びprofileで規約を明示しても、未知record、欠落・重複slot、field数違反又は余分な自然文を返す場合があります。
+`# 共通プロンプト`は全体方針、`# 演出候補`は歌詞に応じた局所演出として記述できます。候補は全Sceneへ一律に適用されません。人物の再現性、演技、リップシンクなどの最終的な採否は、生成映像を見て判断してください。
 
-Python側は一意に判断できる構造だけを有限範囲で検証・復元します。欠落又は破損したcreative textの意味を決定論的に推測して合成することはできないため、AS IS原則を維持したまま全てのprotocol不整合を必ず成功へ変換する決定論的な仕組みを構築することは不可能です。復元不能な場合は、不完全なPlanを後段へ流さず停止します。
+LLMの出力は確率的で、行protocol違反や必須出力の欠落が起きる場合があります。構造検証と有限回の再試行を行いますが、必ず成功することは保証しません。再試行時のseed・cacheの扱いは[トラブルシューティング](docs/troubleshooting.md#llmの行protocol不整合が発生する)を参照してください。
 
-protocol不整合が発生した場合は、32-bit Seedノードを`random`にするか別の言語生成`seed`へ変更し、対象ノードを`cache_mode=refresh`で再実行してください。これは別のLLM出力パターンから規約適合応答を得るための運用上の回避策であり、成功を保証する修復ではありません。原因調査では失敗したseedを記録し、繰り返し失敗する場合はinstruction追従性の高いGGUFへの変更又はPlannerのbatch縮小を検討してください。詳しくは[トラブルシューティング](docs/troubleshooting.md#llmの行protocol不整合が発生する)を参照してください。
+## 簡単な利用方法
+
+1. `01_plan_compiler_context_loop.json`をComfyUIで開き、参照画像・歌詞・音源を設定して実行します。Plan JSONは、ComfyUIの`output/mv_director`以下へ`.txt`形式で保存されます。
+2. `02_video_context_loop.json`を開き、保存した`.txt`を「Compiled Plan JSON (.txt handoff)」へ読み込みます。01と同じ参照画像・音源を指定し、実行すると動画を生成します。
+
+同じPlanで動画を再生成する場合は、02だけを再実行できます。歌詞や演出方針を変更した場合は、01でPlanを作り直し、02へ読み込み直してください。
 
 ## 文書索引
 
@@ -64,7 +69,14 @@ protocol不整合が発生した場合は、32-bit Seedノードを`random`に�
 
 詳細はGitのコミットログを参照してください。
 
-### プロトタイプ（ComfyUI-cl-japanese2json）からの主な変更
+### 開発中（dev：次期系列向け）
+
+- 人物演技・感情表現の改善を目的として、人物・背景Vision、Direction Enhancer、Timeline Planner、Compilerの既定モデルをGemma4 31B Q4_K_Sへ統一しました。
+- Scene Author経路を導入しました。Scene単位で出来事、人物演技、Cameraを順に計画し、継続Sceneには直前の終端状態を渡します。利用者がShotへ直接記述した確定指示は保持します。
+- 明示的に有効化されたモーション補完を、LLM原文と出所を区別して合成できるようにしました。LLM原文の保持と、作者・profileによる補完を別の責務として扱います。
+- 開発時の検証対象を大容量VRAM環境へ変更しました。旧小型LLM構成の動作実績を、現在の31B構成の要件とはみなしません。
+
+### v0.1.2 - プロトタイプ（ComfyUI-cl-japanese2json）からの主な変更
 
 - LLMの推論結果をAS ISで採用する設計へ変更しました。Python側での意味的な改変や再構築を避け、意味制約に起因するコンパイルエラーを削減しています。
 - 参照画像を人物用と背景用に分離しました。人物の識別特徴に背景情報が圧迫されることを防ぎ、舞台、建築、植生及び空間構造をより正確に反映できます。

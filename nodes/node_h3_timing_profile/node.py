@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import Any
 
 try:
-    from ...core.h3_contract import CONTRACT_ID, DEFAULT_H3_TIMING_PROFILE
+    from ...core.h3_contract import CONTRACT_ID, DEFAULT_H3_TIMING_PROFILE, SUPPORTED_CONTRACT_IDS
 except ImportError:
-    from core.h3_contract import CONTRACT_ID, DEFAULT_H3_TIMING_PROFILE
+    from core.h3_contract import CONTRACT_ID, DEFAULT_H3_TIMING_PROFILE, SUPPORTED_CONTRACT_IDS
 
 
 class MVDirectorH3TimingProfile:
@@ -15,15 +16,15 @@ class MVDirectorH3TimingProfile:
     RETURN_NAMES = ("timing_profile", "profile_json", "status")
     FUNCTION = "build_profile"
     CATEGORY = "MV Director/Utilities"
-    DESCRIPTION = "Share the pinned Context Loop 0.6.9 timing contract."
+    DESCRIPTION = "Share a pinned Context Loop timing contract. Default: 0.7.0 at d80304f."
 
     @classmethod
     def INPUT_TYPES(cls) -> dict[str, Any]:
-        return {"required": {"contract": ([CONTRACT_ID], {"default": CONTRACT_ID})}}
+        return {"required": {"contract": (list(SUPPORTED_CONTRACT_IDS), {"default": CONTRACT_ID})}}
 
     def build_profile(self, contract: str):
-        if contract != CONTRACT_ID:
+        if contract not in SUPPORTED_CONTRACT_IDS:
             raise ValueError("unsupported H3 timing contract")
-        profile = DEFAULT_H3_TIMING_PROFILE
+        profile = replace(DEFAULT_H3_TIMING_PROFILE, contract=contract)
         profile.validate()
         return profile, profile.to_json(), f"contract={contract}; fps={profile.fps}"

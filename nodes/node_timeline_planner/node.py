@@ -73,6 +73,11 @@ except ImportError:  # Standalone repository tests.
 from ..common import gguf_model_choices, resolve_comfy_gguf_model
 from ..common.node_progress import advance_progress, configure_progress as configure_node_progress
 
+try:
+    from ...core.planner.candidate_policy import STAGING_CANDIDATE_POLICIES, validate_staging_candidate_policy
+except ImportError:
+    from core.planner.candidate_policy import STAGING_CANDIDATE_POLICIES, validate_staging_candidate_policy
+
 
 _LOGGER = logging.getLogger("mv_director.nodes")
 
@@ -508,6 +513,10 @@ class MVDirectorTimelinePlanner:
                 "direction": ("MV_DIRECTOR_DIRECTION",),
                 "model_name_override": ("STRING", {"default": "", "forceInput": True}),
                 "save_debug_output": ("BOOLEAN", {"default": False}),
+                "staging_candidate_policy": (list(STAGING_CANDIDATE_POLICIES), {
+                    "default": "optional",
+                    "tooltip": "Scene Author専用。prefer_matchedは現在Shotの歌詞に適合する演出候補を優先します。確定Shotは変更せず、候補の採用を強制しません。",
+                }),
             },
         }
 
@@ -538,8 +547,10 @@ class MVDirectorTimelinePlanner:
         direction: DirectionArtifact | None = None,
         model_name_override: str = "",
         save_debug_output: bool = False,
+        staging_candidate_policy: str = "optional",
     ) -> Any:
         with self._lock:
+            validate_staging_candidate_policy(staging_candidate_policy)
             if cache_mode not in CACHE_MODES:
                 raise ValueError("cache_mode must be reuse, refresh, or disabled")
             if lip_sync_mode not in LIP_SYNC_MODES:
@@ -622,6 +633,7 @@ class MVDirectorTimelinePlanner:
                     scenes_per_batch=scenes_per_batch,
                     system_prompts=_system_prompts(),
                     runtime_config=config,
+                    staging_candidate_policy=staging_candidate_policy,
                     interrupt_callback=_interrupt,
                 )
                 if content is None or missing:
@@ -658,6 +670,7 @@ class MVDirectorTimelinePlanner:
                     "lip_sync_active": lip_sync_mode != "off",
                     "lip_sync_target": lip_sync_target,
                     "scenes_per_batch": scenes_per_batch,
+                    "staging_candidate_policy": staging_candidate_policy,
                     "model": {
                         "selection_id": model.selection_id,
                         "fingerprint": model.fingerprint,
@@ -725,6 +738,7 @@ class MVDirectorTimelinePlanner:
                         scenes_per_batch=scenes_per_batch,
                         system_prompts=prompts,
                         runtime_config=config,
+                        staging_candidate_policy=staging_candidate_policy,
                         interrupt_callback=_interrupt,
                     )
                     if content is not None and cache_mode in {"reuse", "refresh"} and cache is not None:

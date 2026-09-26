@@ -7,7 +7,7 @@ import math
 
 from ..artifacts.base import canonical_json
 
-from .context_loop_0_6_9 import CONTRACT_ID
+from .context_loop import CONTRACT_ID, SUPPORTED_CONTRACT_IDS
 
 
 TIMING_SCHEMA = "MVD_H3_TIMING_PROFILE_V1"
@@ -30,7 +30,7 @@ class H3TimingProfile:
     def validate(self) -> None:
         if self.schema != TIMING_SCHEMA:
             raise ValueError("H3 timing profile schema mismatch")
-        if self.contract != CONTRACT_ID:
+        if self.contract not in SUPPORTED_CONTRACT_IDS:
             raise ValueError("unsupported H3 timing contract")
         for name in (
             "fps",

@@ -20,6 +20,7 @@ from ..inference import LlamaRuntimeConfig
 from .template import PlannerTemplate
 from .section_context import section_context_by_scene
 from .motion_composition import select_motion_composition
+from .candidate_policy import validate_staging_candidate_policy
 
 
 _LOGGER = logging.getLogger("mv_director.nodes")
@@ -208,10 +209,17 @@ def generate_scene_author_content(
     direction: DirectionArtifact,
     system_prompts: Mapping[str, str],
     runtime_config: LlamaRuntimeConfig,
+    staging_candidate_policy: str = "optional",
     interrupt_callback: Any = None,
 ) -> tuple[Any | None, tuple[tuple[str, int, int], ...]]:
     """Keep hand-authored Shot fields; generate only absent Scene-local fields."""
     from .engine import PlannerContent, _Entity, _request_entities
+
+    validate_staging_candidate_policy(staging_candidate_policy)
+    _LOGGER.info(
+        "[MV Director - Timeline Planner] staging candidate policy=%s; candidates=%d",
+        staging_candidate_policy, len(direction.staging_candidates),
+    )
 
     prompts = {
         stage: system_prompts[f"scene-author-{stage}"]
@@ -261,6 +269,7 @@ def generate_scene_author_content(
             "subject_emd": concept_emd,
             "scene_emd": scene_emd,
             "shot_positions": positions,
+            "staging_candidate_policy": staging_candidate_policy,
         }
         # Fixed Events own their Shots only. Other Shots remain eligible for
         # Scene-local authorship in the same LLM call.

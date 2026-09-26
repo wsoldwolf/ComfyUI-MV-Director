@@ -1,8 +1,28 @@
 # Direction EnhancerとTimeline Plannerの処理フロー
 
-![Direction Enhancerが共通指示と演出候補を分離し、Timeline Planner v80が歌詞Cue、Scene候補選択、現象状態付きScene spine、Action、Camera及びリップシンクdirectiveを展開する処理フロー](../assets/direction-planner-flow.png)
+![Gemma4によるDirection、Scene AuthorのEvent・Performance・Camera、任意の補完とCompilerへの受け渡し](../assets/direction-planner-flow.png)
 
-青はLLMへ渡す処理、緑はPythonが所有する決定的処理、橙は利用者又は上流からの入力です。Direction Enhancerは全体方針を一度だけ統合します。Planner v80は短いtaskへ分け、`anime_emotional_mv`では条件付きLyric Cue Discovery、Sceneごとの演出候補選択及びScene spineを加えます。図中の「Cue発見 / 演出選択」は順に行う別のLLM要求を一箱にまとめた表示です。
+図は現行dev workflowのScene Author経路です。人物・背景Vision、Enhancer、Planner、CompilerはGemma4 31B Q4_K_Sを使用します。歌詞整列はWhisper、動画生成はMiniMax H3の別責務です。青はLLM、緑はPython、橙は入力、紫は受け渡す成果です。
+
+## 現行Planner：Scene Author
+
+前段WFはStyleとCameraに`anime_emotional_mv`、Motionに`anime_scene_composed_mv`を指定します。Motion profileのmetadataでScene Authorを有効化します。Scene内の複数Shotを同じ要求に含め、現在Sceneと歌詞sectionの文脈、人物・背景EMD及びDirectionを渡します。
+
+| 順序 | LLMの責務 | 次段へ渡す情報 |
+|---|---|---|
+| EVENT | 歌詞・演出候補から出来事、対象、外部effectを計画 | 採用Eventと出所 |
+| PERFORMANCE | Eventに対応する身体・表情の演技を計画 | 採用演技。出来事と身体を別責務として保持 |
+| CAMERA | Eventと演技を読んで撮影を計画 | Cameraと終端状態 |
+
+Shotの`演出`、`演技`、`カメラ`に直接書かれた確定指示は保持し、該当fieldの生成を省略します。`END_STATE`は輸送用metadataとして自然文から分離し、`CONTINUE`の次Sceneだけへ各終端を渡します。CUTでは渡しません。映像上の完全な連続性を保証するものではありません。
+
+`staging_candidate_policy=optional`は候補を任意の着想として扱います。`prefer_matched`は歌詞に適合する候補を優先して検討させます。全Sceneへの強制適用や、必ず対象が映像に出ることを保証する設定ではありません。
+
+profileが明示的に有効化した場合だけモーション補完を合成します。`pre_author`は予定補完を演技生成前に提示し、Cameraへ合成済み演技を渡します。`post_author`はEvent・演技・Camera生成後に補完します。任意の`guarded_no_drop`ではLLMが既存の補完候補を選び直し、不正選択は一度再試行、回復不能なら元の候補を保持します。旧Action Auditとは別機能で、作者の確定演技・Cameraは変更しません。
+
+Pythonは時刻、slot、構造grammar、protocol検証、有限retry及びEMD/JSONの組み立てを担当します。LLM原文を意味的に書き換えず、補完と歌唱・lip-sync directiveは別責務として合成し、出所を残します。「最終文はすべてLLM原文だけ」という設計ではありません。Compilerは翻訳対象fieldを英訳し、予約directiveとH3時間格子を機械処理してPlanを保存します。詳細は[Plannerノード](../nodes/timeline-planner.md)を参照してください。
+
+編集用[SVG](../assets/direction-planner-flow.svg)は`python tools/generate_runtime_flow_diagram.py`で再生成します。更新時はPNGも再描画してください。
 
 ## Direction Enhancer
 
@@ -10,7 +30,9 @@ Direction Enhancerは`retention_policy`、人物`concept_emd`、背景`scene_emd
 
 Motion、Camera及びlocked Styleはprofile本文が所有し、LLMへ再生成させません。`scene_emd`は参照背景の構図を複製する入力ではなく、環境、時刻・照明baseline及び背景Pictureの根拠です。明示された利用者DirectionがVision観測より優先します。
 
-## Timeline Planner v80
+## 旧Planner経路（現行Scene Authorとは別）
+
+以下は旧profile向けの別経路です。Scene Authorにこれらがすべて追加実行されるわけではありません。
 
 PlannerはJSONをLLMへ生成させません。Template EMDのScene時間枠と歌詞、Concept EMDのSubject roster、Scene EMD、typed DirectionをPythonが読み、次の順に短い行protocolを要求します。
 
@@ -31,7 +53,7 @@ bounded自動解釈では、Scene EMDを具体対象の発生源にせず、歌�
 
 LLMが返した合格Action自然文と自由文CameraはAS ISで流します。有限CameraではLLMの選択fieldをPythonが固定H3文へ直列化します。Pythonはslot、時刻、CUT/CONTINUE、H3時間格子、台詞保護、lip-sync directive、有限protocol検証及び狭い表示上の正規化を所有します。Action Auditは品質改善器であり、有限予算を使い切った場合は最小違反のLLM候補をAS ISで保持します。必須slot又はprotocolそのものを復元できない場合だけ、不完全EMDをCompilerへ流さず停止します。
 
-LLMのcreative textは確率的であり、既定のQwen 8B級モデルはsystem prompt又はprofileの出力規約へ常に従うとは限りません。Pythonは一意に判断できる構造だけを決定論的に検証・復元できますが、欠落した意味内容をAS ISのまま合成することはできません。そのため、全てのprotocol違反を必ず成功へ変換する決定論的fallbackは設けず、有限回復後も不正な場合は停止します。運用上は`cache_mode=refresh`と別の言語生成seedを使い、別のLLM出力パターンを得ることで回避します。詳細は[トラブルシューティング](../troubleshooting.md#llmの行protocol不整合が発生する)を参照してください。
+LLM出力は確率的で、出力規約への追従は保証されません。Pythonは一意な構造を検証・復元しますが、有限回復後も必須protocolが不正なら停止します。再試行時のseedとcacheの扱いは[トラブルシューティング](../troubleshooting.md#llmの行protocol不整合が発生する)を参照してください。
 
 長尺曲は`scenes_per_batch`単位で処理します。生成requestへ渡す履歴を限定しながら、採用後の反復検査は全履歴を対象にします。各LLM呼び出しは同じ実行seedからtask、call番号及びpayloadに応じた決定的な`call_seed`を派生するため、同じ入力の再現性とbatch間の乱数列分離を両立します。
 
