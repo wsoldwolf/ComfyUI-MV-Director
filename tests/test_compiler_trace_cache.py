@@ -12,6 +12,42 @@ from test_emd_compiler_node import ENGLISH_EMD, FakeLifecycle
 
 
 class CompilerTraceCacheTests(unittest.TestCase):
+    def test_pre_vocal_contract_cache_is_not_reused(self):
+        source = ENGLISH_EMD + "## 音響\n* `リップシンク` `Context Loop` `サブジェクト1`\n"
+        model = SimpleNamespace(path=Path("test.gguf"), selection_id="test.gguf",
+                                fingerprint="f" * 64, size=123, mtime_ns=456)
+        for mode in ("already_english", "ja_to_en"):
+            with self.subTest(mode=mode), TemporaryDirectory() as directory:
+                cache = SuccessCache(directory)
+                node = NODE_CLASS_MAPPINGS["MVDirectorEMDCompiler"]()
+                node._lifecycle = FakeLifecycle()
+                kwargs = dict(emd_text=source, translation_mode=mode, model_name="test.gguf",
+                              chat_format="auto", steps=8, max_tokens=64, temperature=0.0,
+                              top_p=0.9, repetition_penalty=1.05, gpu_layers=-1, n_batch=256,
+                              n_ctx=1100, flash_attn=True, kv_cache_type="q8_0", op_offload=True,
+                              keep_model_loaded=False, seed=1, cache_mode="reuse")
+                with patch("nodes.node_emd_compiler.node._cache", return_value=cache), patch(
+                    "nodes.node_emd_compiler.node.resolve_comfy_gguf_model", return_value=model
+                ):
+                    with patch("nodes.node_emd_compiler.node._COMPILER_CACHE_VERSION",
+                               "mvd-ref2va-compiler-cache-v17"):
+                        node.compile_emd(**kwargs)
+                    old_file = next(Path(directory).glob("*/*.json"))
+                    old_payload = cache.get(old_file.stem)
+                    legacy_plan = json.loads(old_payload["plan_json"])
+                    legacy_plan["legacy_cache_marker"] = True
+                    old_payload["plan_json"] = json.dumps(legacy_plan)
+                    cache.put_success(old_file.stem, old_payload)
+
+                    fresh = node.compile_emd(**kwargs)
+                    self.assertIn("cache=miss", fresh[2])
+                    self.assertNotIn("legacy_cache_marker", fresh[0])
+                    self.assertIn("visibly sings", fresh[0])
+                    reused = node.compile_emd(**kwargs)
+                    self.assertIn("cache=hit", reused[2])
+                    self.assertEqual(fresh[:2], reused[:2])
+                    self.assertEqual(len(list(Path(directory).glob("*/*.json"))), 2)
+
     def test_translated_trace_saves_and_reuses_without_loading_model(self):
         source = ENGLISH_EMD.replace("A person wearing a white coat.", "白い衣装の人物。")
         source = source.replace("The person walks forward.", "左手を伸ばし、Arc Shot の間も歌う。")

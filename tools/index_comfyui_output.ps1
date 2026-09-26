@@ -17,9 +17,12 @@ if (Test-Path -LiteralPath $indexPath) {
 }
 
 function Get-Category([string]$relative) {
+    if ($relative -eq '_archive') { return 'アーカイブ' }
     if ($relative -match '^h3_chains/mv_director_') { return '完成動画・通常生成' }
     if ($relative -match '^h3_chains/shotlink-body-full') { return '研究用全編動画' }
+    if ($relative -match '^h3_chains/gemma4_31b_full_.*_full$') { return '研究用全編動画' }
     if ($relative -match '^h3_chains/(audio_ref_|shotlink-body-scene)') { return '短区間比較' }
+    if ($relative -match '^h3_chains/(gemma31b_|gemma4_)') { return '短区間比較' }
     if ($relative -match '^mv_director(?:-\d+)?$') { return 'Plan・EMD・歌詞' }
     return '未分類・要確認'
 }
@@ -58,8 +61,12 @@ $lines.Add("生成日時: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')")
 $lines.Add("対象: $resolved")
 $lines.Add('')
 $lines.Add('この索引は読み取り集計のスナップショットです。フォルダの移動・削除は行いません。生成中のフォルダは容量が変化します。外部のWFやレポートによる絶対パス参照は、この索引だけでは検出できません。')
+$archiveIndex = Join-Path $resolved '_archive\through-2026-09-24\_INDEX.md'
+if (Test-Path -LiteralPath $archiveIndex) {
+    $lines.Add('旧出力の移動元・移動先は[_archive/through-2026-09-24 の対応表](<_archive/through-2026-09-24/_INDEX.md>)を参照。')
+}
 $lines.Add('')
-foreach ($category in @('完成動画・通常生成', '研究用全編動画', '短区間比較', 'Plan・EMD・歌詞', '未分類・要確認')) {
+foreach ($category in @('アーカイブ', '完成動画・通常生成', '研究用全編動画', '短区間比較', 'Plan・EMD・歌詞', '未分類・要確認')) {
     $group = @($entries | Where-Object Category -eq $category | Sort-Object Relative)
     if (-not $group.Count) { continue }
     $lines.Add("## $category")

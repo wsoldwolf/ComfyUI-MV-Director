@@ -30,7 +30,7 @@
 
 ## 共通入力
 
-- `image001_mikofox.jpg`: `<Picture 1>`用の人物参照画像
+- `image001_mikofox_ref.jpg`: `<Picture 1>`用の人物リファレンスシート（足袋の拡大を含む）
 - `image002_keinai.jpg`: 前段では背景Visionから場所・空間構成、建築、植生、時刻、天候及び環境照明をDirectionへ渡し、動画生成時には`<Picture 2>`の環境専用参照としてH3へ渡す
 - `bgm_millennium_torii.mp3`: 完成動画へ使うfull mix
 - `bgm_millennium_torii_vocal.mp3`: 整列・口形駆動用vocal stem

@@ -20,7 +20,7 @@ _KIND_HEADINGS = {
     "camera": "カメラ",
 }
 _STYLE_META_KEYS = frozenset({"locked", "retention", "scene_reinforcement"})
-_MOTION_META_KEYS = frozenset({"performance_mode", "body_accent_policy", "choreography_policy", "render_prompt"})
+_MOTION_META_KEYS = frozenset({"performance_mode", "body_accent_policy", "choreography_policy", "composition_timing", "composition_reselection", "render_prompt"})
 _CAMERA_META_KEYS = frozenset(
     {"planner_policy", "arc_roll_policy", "arc_tilt_policy", "camera_render_style", "lyric_cue_mode", "priority_lyric_cues", "lyric_interpretation", "render_prompt"}
 )
@@ -31,6 +31,8 @@ _BODY_ACCENT_POLICIES = frozenset({
     "sparse_chorus_prechorus_verse_contact", "scene_phrase",
 })
 _CHOREOGRAPHY_POLICIES = frozenset({"off", "scene_choice"})
+_COMPOSITION_TIMINGS = frozenset({"pre_author", "post_author"})
+_COMPOSITION_RESELECTIONS = frozenset({"off", "guarded_no_drop"})
 _ARC_ROLL_POLICIES = frozenset({"off", "selective_arc"})
 _CAMERA_RENDER_STYLES = frozenset({"detailed", "compact"})
 _PRIORITY_CUE_KINDS = frozenset(
@@ -63,6 +65,8 @@ class DirectionProfile:
     performance_mode: str = "event_based"
     body_accent_policy: str = "off"
     choreography_policy: str = "off"
+    composition_timing: str = "pre_author"
+    composition_reselection: str = "off"
     render_prompt: str = ""
     choreography_phrases: tuple[tuple[str, str], ...] = ()
     motion_templates: tuple[str, ...] = ()
@@ -85,6 +89,8 @@ class DirectionProfileCatalog:
     motion_performance_mode: dict[str, str]
     motion_body_accent_policy: dict[str, str]
     motion_choreography_policy: dict[str, str]
+    motion_composition_timing: dict[str, str]
+    motion_composition_reselection: dict[str, str]
     motion_choreography_phrases: dict[str, tuple[tuple[str, str], ...]]
     render_prompts: dict[str, dict[str, str]]
     motion_templates: dict[str, tuple[str, ...]]
@@ -271,6 +277,18 @@ def load_direction_profile(path: Path, kind: str) -> DirectionProfile:
         raise _fail(path, "モーション補完 requires performance_mode=scene_author")
     if performance_mode not in _PERFORMANCE_MODES:
         raise _fail(path, "performance_mode must be event_based, dance_phrase, or scene_author")
+    composition_timing = metadata.get("composition_timing", "pre_author")
+    if composition_timing not in _COMPOSITION_TIMINGS:
+        raise _fail(path, "composition_timing must be pre_author or post_author")
+    if composition_timing != "pre_author" and (
+        performance_mode != "scene_author" or not motion_templates
+    ):
+        raise _fail(path, "post_author composition_timing requires scene_author and モーション補完")
+    composition_reselection = metadata.get("composition_reselection", "off")
+    if composition_reselection not in _COMPOSITION_RESELECTIONS:
+        raise _fail(path, "composition_reselection must be off or guarded_no_drop")
+    if composition_reselection != "off" and composition_timing != "post_author":
+        raise _fail(path, "composition_reselection requires post_author composition_timing")
     body_accent_policy = metadata.get("body_accent_policy", "off")
     if body_accent_policy not in _BODY_ACCENT_POLICIES:
         raise _fail(path, "body_accent_policy must be off, sparse_chorus, sparse_chorus_prechorus, sparse_chorus_prechorus_verse_contact, or scene_phrase")
@@ -307,6 +325,8 @@ def load_direction_profile(path: Path, kind: str) -> DirectionProfile:
         performance_mode=performance_mode,
         body_accent_policy=body_accent_policy,
         choreography_policy=choreography_policy,
+        composition_timing=composition_timing,
+        composition_reselection=composition_reselection,
         render_prompt=metadata.get("render_prompt", ""),
         choreography_phrases=tuple(choreography_phrases),
         motion_templates=motion_templates or (),
@@ -346,6 +366,12 @@ def load_direction_profiles(root: Path = PROFILE_ROOT) -> DirectionProfileCatalo
         },
         motion_choreography_policy={
             key: value.choreography_policy for key, value in grouped["motion"].items()
+        },
+        motion_composition_timing={
+            key: value.composition_timing for key, value in grouped["motion"].items()
+        },
+        motion_composition_reselection={
+            key: value.composition_reselection for key, value in grouped["motion"].items()
         },
         motion_choreography_phrases={
             key: value.choreography_phrases

@@ -4,7 +4,7 @@ import unittest
 
 from core.lyrics import parse_plain_lyrics
 from core.utilities import decode_embedded_text
-from tools.generate_workflows import DEFAULT_USER_PROMPT
+from tools.generate_workflows import CHARACTER_HINT, DEFAULT_USER_PROMPT
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -114,7 +114,11 @@ class DistributableWorkflowTests(unittest.TestCase):
 
             plan_workflow = load(plan_name)
             seed = only_type(plan_workflow, "MVDirectorSeed32")
-            self.assertEqual(seed["widgets_values"], ["fixed", 42], mode)
+            self.assertEqual(seed["widgets_values"][:2], ["fixed", 42], mode)
+            self.assertTrue(
+                all(value is None for value in seed["widgets_values"][2:]),
+                mode,
+            )
             self.assertEqual(len(seed["outputs"][0]["links"]), 5, mode)
             for target_type in (
                 "MVDirectorDirectionEnhancer",
@@ -170,6 +174,11 @@ class DistributableWorkflowTests(unittest.TestCase):
             self.assertEqual(planner["widgets_values"][0], mode)
             character_vision = titled_node(
                 workflow, "Character Vision / Subject EMD"
+            )
+            character_image = titled_node(workflow, "Character Reference Image")
+            self.assertEqual(
+                character_image["widgets_values"][0],
+                "image001_mikofox_ref.jpg",
             )
             background_vision = titled_node(
                 workflow, "Background Vision (Scene Only)"
@@ -245,8 +254,15 @@ class DistributableWorkflowTests(unittest.TestCase):
                 ["anime_emotional_mv"] * 3,
             )
             self.assertEqual(direction["widgets_values"][13], 16384)
-            self.assertIn("眉毛は丸い", character_vision["widgets_values"][2])
-            self.assertIn("眉はやや高い位置", character_vision["widgets_values"][2])
+            self.assertEqual(character_vision["widgets_values"][2], CHARACTER_HINT)
+            if "widgets_values_named" in character_vision:
+                self.assertEqual(
+                    character_vision["widgets_values_named"]["subject_hint"],
+                    CHARACTER_HINT,
+                )
+            self.assertIn("小さく塗りつぶされた楕円の点", character_vision["widgets_values"][2])
+            self.assertIn("左右それぞれ一つずつ", character_vision["widgets_values"][2])
+            self.assertIn("各目の少し上", character_vision["widgets_values"][2])
             self.assertIn("木製台全体は黒色", character_vision["widgets_values"][2])
             self.assertEqual(planner["widgets_values"][19], "reuse")
             lyrics = next(
@@ -366,7 +382,7 @@ class DistributableWorkflowTests(unittest.TestCase):
             )
             self.assertEqual(
                 character_image["widgets_values"][0],
-                "image001_mikofox.jpg",
+                "image001_mikofox_ref.jpg",
             )
             self.assertEqual(background_image["widgets_values"][0], "image002_keinai.jpg")
             self.assertEqual(full_mix["widgets_values"][0], "bgm_millennium_torii.mp3")

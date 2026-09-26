@@ -19,7 +19,7 @@ from ..protocols import parse_llm_records
 from .errors import CompilerError
 
 
-TRANSLATION_PROMPT_VERSION = "mvd-prompt-translation-ja-en-v14"
+TRANSLATION_PROMPT_VERSION = "mvd-prompt-translation-ja-en-v15"
 TRANSLATION_RECORD_TYPE = "TRANSLATION"
 TRANSLATION_MAX_BATCH_UNITS = 7
 TRANSLATION_RECOVERY_CHUNK_CHARS = 120

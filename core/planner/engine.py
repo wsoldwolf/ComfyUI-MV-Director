@@ -3534,7 +3534,8 @@ def generate_planner_content(
             "visual-beats-bounded", "actions-bounded", "actions-dance-phrase",
             "lyric-cues", "scene-spine", "scene-spine-body",
             "choreography-choice", "scene-author-event",
-            "scene-author-performance", "scene-author-camera"
+            "scene-author-performance", "scene-author-camera",
+            "scene-author-composition-choice"
         }
         or any(not value.strip() for value in system_prompts.values())
     ):

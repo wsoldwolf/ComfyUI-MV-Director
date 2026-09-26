@@ -104,6 +104,8 @@ class ProtectedUnit:
         output: list[str] = []
 
         def append(piece: str, *, protected_boundary: bool) -> None:
+            # Split translation fragments can lose their trailing whitespace.
+            # Restore only token separation, never rewrite translated prose.
             if (
                 protected_boundary
                 and output
@@ -123,6 +125,10 @@ class ProtectedUnit:
                     or (
                         re.match(r"[A-Za-z0-9]", output[-1][-1])
                         and re.match(r"[A-Za-z0-9]", piece[0])
+                    )
+                    or (
+                        output[-1][-1] in ".!?"
+                        and re.match(r"[A-Za-z]", piece[0])
                     )
                 )
             ):

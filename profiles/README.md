@@ -3,12 +3,23 @@
 ## 明示モーション合成の比較用profile
 
 [motion/anime_scene_composed_mv.md](motion/anime_scene_composed_mv.md)はScene authorに
-旧版の三種類の全身移動を合成する実験用profile。既定profileではない。
+接地・荷重移動を含む三種類の全身移動を合成する実験用profile。既定profileではない。
 `# モーション補完` の通常箇条書きを外部EMDに置き、ユーザー入力の同名sectionで
 全置換できる。`* 無効` で停止する。最大12件・各500文字、scene_author専用。
 このsectionは共通promptへ入らない。適用条件と操作例は
 [TIPS](../docs/tips/mechanical-motion-and-perceived-performance.md)、
-実8Bで残る静止・移動の競合は[検証記録](../docs/research/motion-composition-2026-09-23.md)を参照。
+実8Bで残る静止・移動の競合は外部研究アーカイブの
+`docs/research/motion-composition-2026-09-23.md`を参照。
+このprofileの`composition_timing=post_author`では、補完文を人物演技とCameraの
+LLM入力へ先に見せず、両者の生成後に完成EMDへ一度だけ合成する。
+`composition_reselection=guarded_no_drop`は、確定したEvent・Performance・Cameraを
+読んで候補番号だけをSceneごとに一回選び直す実験設定。元のLLM本文・作者確定指示は
+変えず、補完なしにもできない。不正な選択応答は一回だけ再試行し、それでも不正なら
+従来のScene番号で選ばれた候補を維持する。現時点の評価対象はGemma 4 31Bであり、
+小型モデルへの有効性や全編H3での画質改善は未確認。省略時は`off`。
+`pre_author`が省略時の従来動作であり、他profileの挙動は変えない。
+作者がShotに演技を書いた場合は、どちらの方式でも機械的な補完を追加しない。
+この切替は振付と後段補完の意味的な整合を保証せず、実験用である。
 変更後はComfyUIを再起動し、Enhancerから再実行する。
 
 Direction Enhancerの`style_profile`、`motion_profile`、`camera_profile`はPython定数ではなく、このディレクトリのUTF-8 EMDファイルから読み込みます。

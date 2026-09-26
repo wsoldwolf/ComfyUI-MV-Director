@@ -3,7 +3,14 @@
 ## 実験用モーション合成
 
 Direction EnhancerのMotionを `anime_scene_composed_mv` にすると、Scene author経路で
-profileの `# モーション補完` をSceneごとに最大一文、Camera計画前に合成する。
+profileの `# モーション補完` をSceneごとに最大一文、Camera計画後に合成する。
+この実験用profileは`composition_timing=post_author`を指定しており、人物演技とCameraを
+生成するLLMには予定された補完文を先に見せない。省略時の`pre_author`は従来通り
+人物演技へ提示し、Cameraへは合成済み演技を渡す。
+同profileの`composition_reselection=guarded_no_drop`では、確定後のEvent・演技・Cameraを
+一Sceneずつ読み、既存候補を基本とする番号再選択を一回だけ行う。候補の削除や
+LLM本文の書き換えは行わない。選択形式が二度不正でも既存候補を保持して続行する。
+この経路はGemma 4 31Bで検証中であり、8B用の既定profileには適用しない。
 LLM原文は別行で保持し、EMDの `モーション補完` 注釈とINFOログに出所を残す。
 作者の演技・一般Shot本文があるScene、複数人物、Camera未固定で4秒以上のShotがないSceneには追加しない。
 ユーザーが共通Motionを上書きした場合もprofile補完は抑止し、作者自身の補完リストだけを許す。
@@ -11,6 +18,9 @@ LLM原文は別行で保持し、EMDの `モーション補完` 注釈とINFOロ
 操作例・無効化は[TIPS](../tips/mechanical-motion-and-perceived-performance.md)を参照。
 内部DirectionはV4へ更新したため、ComfyUI再起動後Enhancerから作り直す。
 合成は自然な演技を保証しない。静止・移動の意味競合をPythonで消す処理は追加していない。
+研究用Gemma 4 31B・同一seedの短区間では、苔、御神木、狐火、題材なしSceneで
+後段合成が作者評価で優位だった。ただし眉の再現、腕の破綻、全編への一般化は未解決。
+研究詳細は外部アーカイブ`ComfyUI-MV-Director-research/docs/research/motion-composition-p4-2026-09-25.md`に置く。
 
 ## 次期Scene author経路（オプトイン）
 
@@ -21,6 +31,11 @@ Motion profile [anime_scene_author_mv](../../profiles/motion/anime_scene_author_
 `演出`、`演技`、`カメラ`をShotへ書いた場合はその項目を生成しません。
 未指定の項目だけを補います。`# 演出候補`は出来事担当と人物演技担当へ直接渡す
 任意の着想です。Cameraや共通H3 promptには候補一覧を配布しません。
+出来事担当は一Sceneを一回の呼出しで読みつつ、未固定のShotごとに`EVENT`を返します。
+作者が固定した`演出`はそのShotだけに優先し、別Shotの歌詞上の出来事は妨げません。
+採用済みの出来事はShot番号付きで人物演技担当とCamera担当へ渡します。
+候補を採用する場合は対象・場所・変化の関係を保ちますが、採用自体は任意です。
+完成EMDから再入力した際には、`演技`と`カメラ`が共に完成したShotの空欄`演出`を再生成しません。
 当該Sceneの時刻付き歌詞とは別に、関係するセクションの歌詞を読み取り文脈として
 各担当へ渡します。文脈内の対象全てを現在Sceneへ出す指示ではありません。
 Templateでは元見出しIDが失われるため、連続するセクション名の区間を使います。
@@ -221,6 +236,10 @@ Scene境界ごとに`CUT`又は`CONTINUE`も選びます。新しい画角、det
 Action batchにはslow表現上限、単純な手の上下0件及び作者未指定の足元主体0件という構造予算を渡します。違反を検出した場合、PythonはAction本文を変更せず該当slotだけを`action_quality_budget`として一度再要求します。Camera batchは通常`Arc Shot`最大1件、`anime_story_mv`では適格な通常slotのおよそ3分の1、`Tracking Shot`最大1件、その他の同一Motion Type最大2件、slow表現上限及び作者未指定の足元detail 0件という構造予算を持ちます。`anime_emotional_mv`では2.5秒以上の適格な非顔slotのおよそ半数を長尺Arc候補にし、各slotへ`arc_permission=required|forbidden`を渡します。長尺Arcは`Arc Shot with large amplitude at fast speed`で始まり、速度を打ち消す日本語表現を含めません。顔Zoomはbatchごとの下限を持たず、曲全体の予算から既存section face cutを差し引いて追加します。正式Motion Type欠落、未割当Arc、profile固有の`long_arc_emphasis`、顔遷移、顔Zoom又は速度競合を検出した場合は、該当slotだけを`camera_quality_budget`として一度再要求します。PythonはCamera本文を機械生成又は書換えしません。再応答にも違反が残る場合、初回候補と再生成候補から必須Motion Type違反数と全違反数が少ない方を選び、AS IS採用してINFOへ理由を残します。必須Camera slotそのものの欠落又はprotocol回復失敗だけは停止条件です。
 
 歌詞annotationは全modeでEMDへ残ります。mode変更は機械的なlip-sync directiveだけを変えるため、成功cacheがあれば人物動作とカメラを再生成しません。
+
+Scene author方式のCamera生成は、既存の`original_lyrics`の歌唱句時刻と`shot_positions`を使って、歌唱中に口形と上半身の演技が読める構図を選択的に計画します。確定済みEvent・Performanceと作者固定Cameraは変更せず、句境界を構図移行の目安にします。全Shotを顔アップにはせず、全身の支持移動や対象の変化が主題の場合はその可視範囲を優先します。追加LLM段階や口元coverage不足による新しい停止条件は設けません。この撮影指示は口元の可視性を改善するためのもので、音素と口形の正確な同期を保証するものではありません。
+
+歌唱中に手や小物が口元に近づく演技も変更・禁止せず、歌唱口と手・小物が同時に読める視点を選びます。歌唱句中に口元を見せる場合は、その可視性をCamera本文へ短く明記します。一律の顔アップや新たな監査段階は追加しません。
 
 必要なslotが欠落した場合、まず同じSceneの欠落slotだけを一度再要求します。それでも複数recordの一部が欠ける場合は、残ったslotを一件ずつ隔離して再要求します。隔離要求では対応先が一意なので、正規のwrapperを省略した単一の非空行もTEXTを変更せずside tableへ対応付けます。隔離後も欠落する時だけ不完全EMDをCompilerへ流さずExecutionBlockerで停止します。`save_debug_output=true`は問題調査時だけ使い、通常は無効にします。
 

@@ -3,15 +3,19 @@ from dataclasses import replace
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from core.artifacts import DirectionArtifact
 from core.direction.enhancer import DirectionEnhancerInput, enhance_direction, split_staging_directives
 from core.direction.profile_loader import load_direction_profile
-from core.direction.profiles import MOTION_PROFILES, MOTION_TEMPLATES, planner_profile_metadata
+from core.direction.profiles import (MOTION_COMPOSITION_RESELECTIONS, MOTION_COMPOSITION_TIMINGS, MOTION_PROFILES,
+                                     MOTION_TEMPLATES, planner_profile_metadata)
 from core.emd import parse_emd
 from core.emd.motion_templates import split_motion_templates
 from core.planner import plan_timeline, PlannerContent
 from core.planner.motion_composition import select_motion_composition
+from core.planner.scene_author import build_composition_choice_grammar, count_motion_composition_choices
+from core.planner.template import parse_template_emd
 from types import SimpleNamespace
 from core.compiler.ref2va import compile_ref2va
 from core.compiler.translator import IdentityTranslator
@@ -57,17 +61,20 @@ class MotionCompositionTests(unittest.TestCase):
             self.assertEqual(restored.motion_templates, value)
 
     def test_profile_templates_are_not_global_prompt(self):
-        self.assertNotIn("斜め前方", MOTION_PROFILES["anime_scene_composed_mv"])
+        self.assertNotIn("支持足で身体を受け", MOTION_PROFILES["anime_scene_composed_mv"])
         meta = planner_profile_metadata("", "anime_scene_composed_mv")
         self.assertEqual(len(meta["motion_templates"]), 3)
-        self.assertIn("斜め前方", meta["motion_templates"][0])
+        self.assertEqual(meta["composition_timing"], "post_author")
+        self.assertEqual(meta["composition_reselection"], "guarded_no_drop")
+        self.assertIn("支持足で身体を受け", meta["motion_templates"][0])
+        self.assertIn("新しい足場に着く", meta["motion_templates"][1])
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / "wrong.md"
             path.write_text("# 共通プロンプト\n## スタイル\n* アニメ。\n# モーション補完\n* 動く。", encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "only by motion"):
                 load_direction_profile(path, "style")
 
-    def test_composition_keeps_raw_action_and_reaches_camera(self):
+    def test_post_author_composition_keeps_llm_requests_clean_and_reaches_emd(self):
         backend = Backend()
         direction = DirectionArtifact(motion_profile_id="anime_scene_composed_mv")
         with self.assertLogs("mv_director.nodes", level="INFO") as logs:
@@ -78,9 +85,10 @@ class MotionCompositionTests(unittest.TestCase):
         raw = "胸から腕へ動きを渡し、手を離す。"
         self.assertEqual(result.content.actions[0][2], raw)
         camera = next(p for task, p in backend.calls if task == "scene-author-camera")
-        self.assertEqual(camera["accepted_performances"]["1"], raw + " " + addition[4])
+        self.assertEqual(camera["accepted_performances"]["1"], raw)
         performance = next(p for task, p in backend.calls if task == "scene-author-performance")
-        self.assertEqual(performance["scheduled_motion_composition"]["text"], addition[4])
+        self.assertNotIn("scheduled_motion_composition", performance)
+        self.assertNotIn(addition[4], json.dumps(camera, ensure_ascii=False))
         self.assertEqual(result.emd.text.count(addition[4]), 1)
         self.assertIn("> `モーション補完` source=profile:", result.emd.text)
         doc = parse_emd(result.emd.text)
@@ -88,11 +96,92 @@ class MotionCompositionTests(unittest.TestCase):
         self.assertFalse(any("sha256=" in b for s in doc.scenes for shot in s.shots for b in shot.body))
         self.assertEqual(PlannerContent.from_dict(result.content.to_dict()), result.content)
         self.assertTrue(any("motion composition scheduled" in line for line in logs.output))
+        self.assertTrue(any("timing=post_author" in line for line in logs.output))
+        self.assertEqual(sum(task == "scene-author-composition-choice" for task, _ in backend.calls), 1)
         compiled = compile_ref2va(result.emd.text, IdentityTranslator())
         serialized = json.dumps(compiled.plan, ensure_ascii=False)
         self.assertIn(addition[4], serialized)
         self.assertNotIn("sha256=", serialized)
         self.assertNotIn("モーション補完", serialized)
+
+    def test_pre_author_timing_remains_available_for_existing_profiles(self):
+        backend = Backend()
+        with patch.dict(MOTION_COMPOSITION_TIMINGS,
+                        {"anime_scene_composed_mv": "pre_author"}):
+            result = run(backend, DirectionArtifact(
+                motion_profile_id="anime_scene_composed_mv"))
+        addition = result.content.motion_compositions[0]
+        performance = next(p for task, p in backend.calls if task == "scene-author-performance")
+        camera = next(p for task, p in backend.calls if task == "scene-author-camera")
+        self.assertEqual(performance["scheduled_motion_composition"]["text"], addition[4])
+        self.assertEqual(camera["accepted_performances"]["1"],
+                         "胸から腕へ動きを渡し、手を離す。 " + addition[4])
+        self.assertEqual(result.emd.text.count(addition[4]), 1)
+
+    def test_choice_changes_only_optional_composition_after_camera(self):
+        class ChoiceBackend(Backend):
+            def complete_planner(self, *, task, payload, **kwargs):
+                if task == "scene-author-composition-choice":
+                    request = json.loads(payload)
+                    self.calls.append((task, request))
+                    return "CHOICE\t1\t2"
+                return super().complete_planner(task=task, payload=payload, **kwargs)
+
+        backend = ChoiceBackend()
+        result = run(backend, DirectionArtifact(motion_profile_id="anime_scene_composed_mv"))
+        self.assertTrue(result.complete)
+        self.assertEqual(result.content.motion_compositions[0][3], 2)
+        self.assertEqual(result.content.motion_compositions[0][4], MOTION_TEMPLATES["anime_scene_composed_mv"][1])
+        self.assertEqual(result.content.actions[0][2], "胸から腕へ動きを渡し、手を離す。")
+        choice = next(payload for task, payload in backend.calls if task == "scene-author-composition-choice")
+        self.assertEqual(choice["current_choice"], 1)
+        self.assertEqual(choice["shots"][0]["performance"], result.content.actions[0][2])
+        self.assertIn("Arc Shot", choice["shots"][0]["camera"])
+        self.assertEqual(count_motion_composition_choices(
+            parse_template_emd(TEMPLATE), DirectionArtifact(motion_profile_id="anime_scene_composed_mv"), CONCEPT,
+        ), 1)
+
+    def test_invalid_choice_retries_then_keeps_original(self):
+        class InvalidBackend(Backend):
+            def complete_planner(self, *, task, payload, **kwargs):
+                if task == "scene-author-composition-choice":
+                    request = json.loads(payload)
+                    self.calls.append((task, request))
+                    return "CHOICE\t1\t0"
+                return super().complete_planner(task=task, payload=payload, **kwargs)
+
+        backend = InvalidBackend()
+        result = run(backend, DirectionArtifact(motion_profile_id="anime_scene_composed_mv"))
+        self.assertTrue(result.complete)
+        self.assertEqual(result.content.motion_compositions[0][3], 1)
+        calls = [payload for task, payload in backend.calls if task == "scene-author-composition-choice"]
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(calls[1]["retry"], "invalid_choice_only")
+        self.assertIn('"10"', build_composition_choice_grammar(12))
+        with self.assertRaises(ValueError):
+            build_composition_choice_grammar(13)
+
+    def test_reselection_off_preserves_previous_path(self):
+        backend = Backend()
+        with patch.dict(MOTION_COMPOSITION_RESELECTIONS,
+                        {"anime_scene_composed_mv": "off"}):
+            result = run(backend, DirectionArtifact(motion_profile_id="anime_scene_composed_mv"))
+        self.assertTrue(result.complete)
+        self.assertFalse(any(task == "scene-author-composition-choice" for task, _ in backend.calls))
+
+    def test_post_author_timing_survives_author_common_motion_override(self):
+        backend = Backend()
+        result = run(backend, DirectionArtifact(
+            motion_profile_id="passthrough",
+            motion_policy_profile_id="anime_scene_composed_mv",
+            motion_templates=("作者指定の一歩。",),
+        ))
+        self.assertEqual(result.content.motion_compositions[0][2], "user")
+        self.assertEqual(result.emd.text.count("作者指定の一歩。"), 1)
+        performance = next(p for task, p in backend.calls if task == "scene-author-performance")
+        camera = next(p for task, p in backend.calls if task == "scene-author-camera")
+        self.assertNotIn("scheduled_motion_composition", performance)
+        self.assertNotIn("作者指定の一歩。", json.dumps(camera, ensure_ascii=False))
 
     def test_user_replaces_profile_and_disabled_stays_off(self):
         for templates in ((), ("人物が体重を左から右へ渡す。",)):

@@ -39,7 +39,7 @@ try:
         parse_template_emd,
         render_planner_content,
     )
-    from ...core.planner.scene_author import build_scene_author_grammar
+    from ...core.planner.scene_author import build_scene_author_grammar, build_composition_choice_grammar, count_motion_composition_choices
 except ImportError:  # Standalone repository tests.
     from core.direction.profiles import planner_profile_metadata
     from core.emd import parse_emd
@@ -68,7 +68,7 @@ except ImportError:  # Standalone repository tests.
         parse_template_emd,
         render_planner_content,
     )
-    from core.planner.scene_author import build_scene_author_grammar
+    from core.planner.scene_author import build_scene_author_grammar, build_composition_choice_grammar, count_motion_composition_choices
 
 from ..common import gguf_model_choices, resolve_comfy_gguf_model
 from ..common.node_progress import advance_progress, configure_progress as configure_node_progress
@@ -97,6 +97,7 @@ _PROMPT_FILES = {
     "scene-author-event": "timeline_planner_scene_author_event_system_prompt.txt",
     "scene-author-performance": "timeline_planner_scene_author_performance_system_prompt.txt",
     "scene-author-camera": "timeline_planner_scene_author_camera_system_prompt.txt",
+    "scene-author-composition-choice": "timeline_planner_scene_author_composition_choice_system_prompt.txt",
 }
 
 
@@ -244,7 +245,7 @@ class _LlamaPlannerBackend:
                 task, request["slots"],
             )
             output_cap = {
-                "scene-author-event": 512,
+                "scene-author-event": min(1536, max(512, 256 * len(request["slots"]))),
                 "scene-author-performance": 1536,
                 "scene-author-camera": 1024,
             }[task]
@@ -253,6 +254,17 @@ class _LlamaPlannerBackend:
                 "[MV Director - Timeline Planner] output constraint=scene_author_v1; "
                 "task=%s; slots=%d",
                 task, len(request["slots"]),
+            )
+        if task == "scene-author-composition-choice":
+            request = json.loads(payload)
+            grammar_kwargs["grammar"] = build_composition_choice_grammar(
+                len(request["candidates"])
+            )
+            config = replace(config, max_tokens=min(config.max_tokens, 32))
+            _LOGGER.info(
+                "[MV Director - Timeline Planner] output constraint=composition_choice_v1; "
+                "scene=%d; candidates=%d",
+                request["scene"], len(request["candidates"]),
             )
         if task == "lyric-cues":
             request = json.loads(payload)
@@ -571,9 +583,13 @@ class MVDirectorTimelinePlanner:
             )["performance_mode"] == "scene_author"
             author_counts = {
                 "scene-author-event": sum(
-                    not any(
-                        directive.kind == "演出"
-                        for shot in item.shots for directive in shot.directives
+                    any(
+                        not any(d.kind == "演出" for d in shot.directives)
+                        and (
+                            not any(d.kind == "演技" for d in shot.directives)
+                            or not any(d.kind == "カメラ" for d in shot.directives)
+                        )
+                        for shot in item.shots
                     )
                     for item in template.scenes
                 ),
@@ -592,6 +608,10 @@ class MVDirectorTimelinePlanner:
                     for item in template.scenes
                 ),
             } if scene_author_mode else None
+            if author_counts is not None:
+                author_counts["scene-author-composition-choice"] = count_motion_composition_choices(
+                    template, selected_direction, concept,
+                )
             if scene_author_mode and author_counts is not None and not any(author_counts.values()):
                 content, missing = generate_planner_content(
                     self._backend,
@@ -616,6 +636,12 @@ class MVDirectorTimelinePlanner:
             selection = model_name_override.strip() or model_name
             model = resolve_comfy_gguf_model(selection)
             prompts = _system_prompts()
+            if planner_profile_metadata(
+                selected_direction.camera_profile_id,
+                selected_direction.motion_policy_profile_id
+                or selected_direction.motion_profile_id,
+            ).get("composition_reselection") != "guarded_no_drop":
+                prompts.pop("scene-author-composition-choice", None)
             key = build_cache_key(
                 task="timeline-planner",
                 algorithm_version=PLANNER_ALGORITHM_VERSION,
@@ -626,7 +652,8 @@ class MVDirectorTimelinePlanner:
                     "direction": selected_direction.to_dict(),
                     "planner_profile": planner_profile_metadata(
                         selected_direction.camera_profile_id,
-                        selected_direction.motion_profile_id,
+                        selected_direction.motion_policy_profile_id
+                        or selected_direction.motion_profile_id,
                     ),
                     "lip_sync_active": lip_sync_mode != "off",
                     "lip_sync_target": lip_sync_target,

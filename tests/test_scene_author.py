@@ -34,6 +34,8 @@ class Backend:
     def complete_planner(self, *, task, payload, **_kwargs):
         request = json.loads(payload)
         self.calls.append((task, request))
+        if task == "scene-author-composition-choice":
+            return f"CHOICE\t1\t{request['current_choice']}"
         kind = {
             "scene-author-event": "EVENT",
             "scene-author-performance": "PERFORMANCE",
@@ -42,7 +44,10 @@ class Backend:
         return "\n".join(
             f"{kind}\t{slot['slot']}\t"
             + {
-                "EVENT": "SHOT=1｜歌詞に応じて花が揺れる。",
+                "EVENT": (
+                    "歌詞に応じて花が揺れる。"
+                    if slot.get("shot") == 1 else "なし"
+                ),
                 "PERFORMANCE": "胸から腕へ動きを渡し、手を離す。",
                 "CAMERA": "Arc Shotで腕と表情を追う。",
             }[kind]
@@ -63,13 +68,15 @@ class SceneAuthorTests(unittest.TestCase):
     def test_scene_author_grammar_binds_requested_slots(self):
         event = build_scene_author_grammar(
             "scene-author-event",
-            [{"slot": 1, "shot_numbers": [1, 2]}],
+            [{"slot": 1, "shot": 1}, {"slot": 2, "shot": 2}],
         )
         performance = build_scene_author_grammar(
             "scene-author-performance",
             [{"slot": 1}, {"slot": 2}],
         )
-        self.assertIn('("1" | "2")', event)
+        self.assertIn("EVENT\\t1\\t", event)
+        self.assertIn("EVENT\\t2\\t", event)
+        self.assertNotIn("SHOT=", event)
         self.assertIn("PERFORMANCE\\t1\\t", performance)
         self.assertIn("PERFORMANCE\\t2\\t", performance)
         self.assertNotIn("PERFORMANCE\\t3\\t", performance)
@@ -105,6 +112,13 @@ class SceneAuthorTests(unittest.TestCase):
         self.assertEqual(load_direction_profile(path, "motion").performance_mode, "scene_author")
         prompts = _system_prompts()
         self.assertTrue(all(prompts[f"scene-author-{kind}"] for kind in ("event", "performance", "camera")))
+        self.assertIn("候補全体の対象・場所・変化", prompts["scene-author-event"])
+        self.assertIn("同じSceneの到達可能な空間", prompts["scene-author-event"])
+        self.assertIn("手の届く距離まで進んでから接触", prompts["scene-author-performance"])
+        self.assertIn("そこから向かう人物の移動", prompts["scene-author-camera"])
+        for stage in ("performance", "camera"):
+            self.assertIn("accepted_events_by_shot", prompts[f"scene-author-{stage}"])
+            self.assertNotIn("accepted_eventは", prompts[f"scene-author-{stage}"])
 
     def test_user_motion_prose_overrides_profile_text_but_keeps_planner_mode(self):
         class NoModel:
@@ -144,7 +158,8 @@ class SceneAuthorTests(unittest.TestCase):
         )
         self.assertTrue(planned.complete)
         self.assertEqual([name for name, _ in backend.calls],
-                         ["scene-author-performance", "scene-author-camera"])
+                         ["scene-author-event", "scene-author-performance",
+                          "scene-author-camera"])
         self.assertIn("* 作者の振付。", planned.emd.text)
 
     def test_fixed_fields_win_and_only_missing_fields_are_generated(self):
@@ -161,12 +176,15 @@ class SceneAuthorTests(unittest.TestCase):
         )
         self.assertTrue(result.complete)
         self.assertEqual([task for task, _ in backend.calls],
-                         ["scene-author-performance", "scene-author-camera"])
+                         ["scene-author-event", "scene-author-performance",
+                          "scene-author-camera"])
         self.assertEqual(backend.calls[0][1]["slots"][0]["position"]["shot"], 2)
-        self.assertEqual(backend.calls[1][1]["accepted_performances"][str(1)],
+        self.assertEqual(backend.calls[2][1]["accepted_performances"][str(1)],
                          "人物が片手を胸元に置く。")
-        self.assertEqual(backend.calls[1][1]["accepted_performances"][str(2)],
+        self.assertEqual(backend.calls[2][1]["accepted_performances"][str(2)],
                          "胸から腕へ動きを渡し、手を離す。")
+        self.assertEqual(backend.calls[1][1]["accepted_events_by_shot"],
+                         {"1": "木の根元に苔がある。", "2": "なし"})
         self.assertEqual(backend.calls[0][1]["staging_candidates_optional"], ["使わなくてもよい候補。"])
         self.assertNotIn("使わなくてもよい候補。", result.emd.text)
         self.assertEqual(result.content.events, ())
@@ -193,6 +211,34 @@ class SceneAuthorTests(unittest.TestCase):
         self.assertTrue(result.complete)
         self.assertEqual(backend.calls, [])
         self.assertIn("人物が視線を上げる。", result.emd.text)
+
+    def test_singing_camera_receives_lyric_windows_without_extra_stage(self):
+        source = (
+            "> `シーン` 1\n# シーン 00:00.000 --> 00:01.000\n* `H3長` 22\n"
+            "> `歌詞開始` 00:00.100\n> `歌詞終了` 00:00.900\n"
+            "> `歌詞` それでも永遠を\n## ショット 00:00.000\n"
+            "* `演出` なし\n* `演技` 胸元の片手を静かに開く。\n"
+        )
+        backend = Backend()
+        prompts = _system_prompts()
+        result = plan_timeline(
+            backend, template_emd=source, concept_emd=CONCEPT,
+            direction=DirectionArtifact(motion_profile_id="anime_scene_author_mv"),
+            lip_sync_mode="context_loop", lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1, scenes_per_batch=1,
+            system_prompts=prompts, runtime_config=_runtime(),
+        )
+        self.assertTrue(result.complete)
+        self.assertEqual([task for task, _ in backend.calls], ["scene-author-camera"])
+        payload = backend.calls[0][1]
+        lyric = payload["original_lyrics"][0]["lyrics"][0]
+        self.assertEqual((lyric["start_ms"], lyric["end_ms"]), (100, 900))
+        self.assertEqual(payload["accepted_performances"], {"1": "胸元の片手を静かに開く。"})
+        self.assertIn("句境界", prompts["scene-author-camera"])
+        self.assertIn("歌詞のない区間", prompts["scene-author-camera"])
+        self.assertIn("作者固定Cameraを変更せず", prompts["scene-author-camera"])
+        self.assertIn("その演技を保ち、歌唱口と近くの手・小物を同時に読める", prompts["scene-author-camera"])
+        self.assertIn("一律の顔アップを要求しない", prompts["scene-author-camera"])
 
     def test_section_context_reaches_model_without_changing_lyrics_or_timing(self):
         source = (
@@ -224,7 +270,12 @@ class SceneAuthorTests(unittest.TestCase):
 
     def test_optional_candidates_reach_event_and_performance_not_camera(self):
         backend = Backend()
-        template = TEMPLATE.replace("* `演出` 木の根元に苔がある。\n", "")
+        template = TEMPLATE.replace(
+            "* `演出` 木の根元に苔がある。\n"
+            "* `演技` 人物が片手を胸元に置く。\n"
+            "* `カメラ` 目と口が見える正面。\n",
+            "* 未計画\n",
+        )
         result = plan_timeline(
             backend, template_emd=template, concept_emd=CONCEPT,
             direction=DirectionArtifact(
@@ -255,7 +306,7 @@ class SceneAuthorTests(unittest.TestCase):
                 if task == "scene-author-event":
                     request = json.loads(payload)
                     self.calls.append((task, request))
-                    return "EVENT\t1\tSHOT=2｜狐火が現れる。"
+                    return "EVENT\t1\t狐火が現れる。"
                 return super().complete_planner(
                     task=task, payload=payload, **kwargs,
                 )
@@ -273,6 +324,91 @@ class SceneAuthorTests(unittest.TestCase):
         self.assertEqual(result.content.events, ((1, 2, "狐火が現れる。"),))
         self.assertNotIn("`演出`", result.emd.text.split("## ショット 00:00.500")[0])
         self.assertIn("`演出` 狐火が現れる。", result.emd.text.split("## ショット 00:00.500")[1])
+
+    def test_two_lyric_events_survive_one_scene_call(self):
+        class TwoEvents(Backend):
+            def complete_planner(self, *, task, payload, **kwargs):
+                if task == "scene-author-event":
+                    request = json.loads(payload)
+                    self.calls.append((task, request))
+                    return (
+                        "EVENT\t1\t石段に紅葉が積もる。｜END_STATE=紅葉は石段にある。\n"
+                        "EVENT\t2\t大樹の根元の苔が見える。"
+                        "｜END_STATE=苔は大樹の根元にある。"
+                    )
+                return super().complete_planner(
+                    task=task, payload=payload, **kwargs,
+                )
+
+        template = TEMPLATE.replace(
+            "* `演出` 木の根元に苔がある。\n"
+            "* `演技` 人物が片手を胸元に置く。\n"
+            "* `カメラ` 目と口が見える正面。\n",
+            "* 未計画\n",
+        )
+        backend = TwoEvents()
+        result = plan_timeline(
+            backend, template_emd=template, concept_emd=CONCEPT,
+            direction=DirectionArtifact(motion_profile_id="anime_scene_author_mv"),
+            lip_sync_mode="off", lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1, scenes_per_batch=1,
+            system_prompts=_system_prompts(), runtime_config=_runtime(),
+        )
+        self.assertTrue(result.complete)
+        self.assertEqual(
+            result.content.events,
+            ((1, 1, "石段に紅葉が積もる。"),
+             (1, 2, "大樹の根元の苔が見える。")),
+        )
+        self.assertEqual(
+            [task for task, _ in backend.calls].count("scene-author-event"), 1,
+        )
+        for _, payload in backend.calls[1:]:
+            self.assertEqual(
+                payload["accepted_events_by_shot"],
+                {"1": "石段に紅葉が積もる。", "2": "大樹の根元の苔が見える。"},
+            )
+        self.assertEqual(
+            result.content.terminal_states[0][1],
+            "苔は大樹の根元にある。",
+        )
+        self.assertIn("`演出` 大樹の根元の苔が見える。", result.emd.text)
+
+    def test_fixed_event_owns_only_its_shot(self):
+        class MissingShotEvent(Backend):
+            def complete_planner(self, *, task, payload, **kwargs):
+                if task == "scene-author-event":
+                    request = json.loads(payload)
+                    self.calls.append((task, request))
+                    self_request = request["slots"][0]
+                    assert self_request["shot"] == 2
+                    return "EVENT\t1\t大樹の根元に苔が現れる。"
+                return super().complete_planner(
+                    task=task, payload=payload, **kwargs,
+                )
+
+        backend = MissingShotEvent()
+        result = plan_timeline(
+            backend, template_emd=TEMPLATE, concept_emd=CONCEPT,
+            direction=DirectionArtifact(motion_profile_id="anime_scene_author_mv"),
+            lip_sync_mode="off", lip_sync_target="サブジェクト1",
+            lip_sync_audio_slot=1, scenes_per_batch=1,
+            system_prompts=_system_prompts(), runtime_config=_runtime(),
+        )
+        self.assertTrue(result.complete)
+        self.assertEqual(
+            result.content.events,
+            ((1, 2, "大樹の根元に苔が現れる。"),),
+        )
+        shots = parse_emd(result.emd.text).scenes[0].shots
+        self.assertEqual(
+            [item.text for item in shots[0].directives if item.kind == "演出"],
+            ["木の根元に苔がある。"],
+        )
+        self.assertEqual(
+            [item.text for item in shots[1].directives if item.kind == "演出"],
+            ["大樹の根元に苔が現れる。"],
+        )
 
     def test_continuation_receives_only_role_specific_terminal_state(self):
         from test_timeline_planner import TEMPLATE as LONG_TEMPLATE

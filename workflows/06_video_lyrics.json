@@ -72,7 +72,7 @@
         "Node name for S&R": "LoadImage"
       },
       "widgets_values": [
-        "image001_mikofox.jpg"
+        "image001_mikofox_ref.jpg"
       ],
       "color": "#232",
       "bgcolor": "#353"

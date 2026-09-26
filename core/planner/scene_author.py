@@ -13,6 +13,8 @@ import re
 from typing import Any, Mapping, Sequence
 
 from ..artifacts import DirectionArtifact
+from ..direction.profiles import (MOTION_COMPOSITION_RESELECTIONS,
+                                  MOTION_COMPOSITION_TIMINGS, MOTION_TEMPLATES)
 from ..emd.ast import Scene, Shot
 from ..inference import LlamaRuntimeConfig
 from .template import PlannerTemplate
@@ -21,9 +23,6 @@ from .motion_composition import select_motion_composition
 
 
 _LOGGER = logging.getLogger("mv_director.nodes")
-_EVENT_ASSIGNMENT = re.compile(
-    r"SHOT=([1-9][0-9]*)(?:｜|[ \t\u3000]+)(.+)\Z"
-)
 _END_STATE_SUFFIX = re.compile(
     r"END_STATE(?:\s*[=:：]\s*|[ \u3000]+)([^\t\n]+)\Z"
 )
@@ -61,22 +60,82 @@ def build_scene_author_grammar(
     if len(set(numbers)) != len(numbers):
         raise ValueError("duplicate Scene author slot")
     quote = lambda value: json.dumps(value, ensure_ascii=False)
-    if task == "scene-author-event":
-        if numbers != [1]:
-            raise ValueError("Scene event requires slot 1")
-        positions = slots[0].get("shot_numbers")
-        if not isinstance(positions, list) or not positions:
-            raise ValueError("Scene event needs Shot positions")
-        if any(type(position) is not int or position < 1 for position in positions):
-            raise ValueError("invalid Scene event Shot position")
-        shots = " | ".join(quote(str(position)) for position in positions)
-        root = quote("EVENT\t1\tSHOT=") + f" ({shots}) " + quote("｜") + " char+"
-    else:
-        root = ' "\\n" '.join(
-            quote(f"{kinds[task]}\t{slot}\t") + " char+"
-            for slot in numbers
-        )
+    root = ' "\\n" '.join(
+        quote(f"{kinds[task]}\t{slot}\t") + " char+"
+        for slot in numbers
+    )
     return "root ::= " + root + ' "\\n"?\n' + r"char ::= [^\x00-\x1f]" + "\n"
+
+
+def build_composition_choice_grammar(candidate_count: int) -> str:
+    """Constrain the transport to one existing, nonzero candidate number."""
+    if not 1 <= candidate_count <= 12:
+        raise ValueError("composition choice requires 1..12 candidates")
+    choices = " | ".join(json.dumps(str(index)) for index in range(1, candidate_count + 1))
+    return 'root ::= "CHOICE\\t1\\t" (' + choices + ') "\\n"?\n'
+
+
+def _reselect_composition(
+    backend: Any, *, scene: Scene, composition: tuple[int, int, str, int, str],
+    direction: DirectionArtifact, event_texts: Mapping[int, str],
+    action_texts: Mapping[int, str], camera_texts: Mapping[int, str],
+    system_prompt: str, runtime_config: LlamaRuntimeConfig,
+    interrupt_callback: Any,
+) -> tuple[int, int, str, int, str]:
+    """Retry malformed choices once; never delete a scheduled composition."""
+    profile = direction.motion_policy_profile_id or direction.motion_profile_id
+    templates = (direction.motion_templates if direction.motion_templates is not None
+                 else MOTION_TEMPLATES.get(profile, ()))
+    if len(templates) < 2:
+        return composition
+    shots = [
+        {
+            "shot": index,
+            "duration_ms": (
+                scene.shots[index].start_ms if index < len(scene.shots)
+                else scene.end_ms
+            ) - shot.start_ms,
+            "lyrics": [lyric.text for lyric in shot.lyric_annotations],
+            "event": event_texts.get(index, ""),
+            "performance": action_texts.get(index, ""),
+            "camera": camera_texts.get(index, ""),
+        }
+        for index, shot in enumerate(scene.shots, 1)
+    ]
+    request = {
+        "slots": [{"slot": 1, "scene_number": scene.scene_number}],
+        "scene": scene.scene_number,
+        "target_shot": composition[1],
+        "shots": shots,
+        "current_choice": composition[3],
+        "candidates": {str(index): value for index, value in enumerate(templates, 1)},
+    }
+    for attempt in range(2):
+        if interrupt_callback is not None:
+            interrupt_callback()
+        if attempt:
+            request["retry"] = "invalid_choice_only"
+        response = backend.complete_planner(
+            task="scene-author-composition-choice", system_prompt=system_prompt,
+            payload=json.dumps(request, ensure_ascii=False, separators=(",", ":")),
+            config=runtime_config, interrupt_callback=interrupt_callback,
+        ).strip()
+        match = re.fullmatch(r"CHOICE\t1\t([1-9][0-9]*)", response)
+        if match and 1 <= int(match.group(1)) <= len(templates):
+            index = int(match.group(1))
+            if index != composition[3]:
+                _LOGGER.info(
+                    "[MV Director - Timeline Planner] motion composition reselected; "
+                    "scene=%d; shot=%d; from=%d; to=%d",
+                    scene.scene_number, composition[1], composition[3], index,
+                )
+            return (*composition[:3], index, templates[index - 1])
+        _LOGGER.warning(
+            "[MV Director - Timeline Planner] invalid motion composition choice; "
+            "scene=%d; attempt=%d; retaining=%d",
+            scene.scene_number, attempt + 1, composition[3],
+        )
+    return composition
 
 
 def _fixed(shot: Shot, kind: str) -> str:
@@ -122,6 +181,24 @@ def _shot_positions(scene: Scene) -> list[dict[str, object]]:
     ]
 
 
+def count_motion_composition_choices(
+    template: PlannerTemplate, direction: DirectionArtifact, concept_emd: str,
+) -> int:
+    """Count post-author choice calls for an accurate progress total."""
+    profile = direction.motion_policy_profile_id or direction.motion_profile_id
+    if MOTION_COMPOSITION_RESELECTIONS.get(profile) != "guarded_no_drop":
+        return 0
+    templates = (direction.motion_templates if direction.motion_templates is not None
+                 else MOTION_TEMPLATES.get(profile, ()))
+    if len(templates) < 2:
+        return 0
+    return sum(
+        select_motion_composition(scene, _shot_positions(scene), direction, concept_emd)[0]
+        is not None
+        for scene in template.scenes
+    )
+
+
 def generate_scene_author_content(
     backend: Any,
     *,
@@ -156,11 +233,17 @@ def generate_scene_author_content(
         positions = _shot_positions(scene)
         composition, composition_skip = select_motion_composition(
             scene, positions, direction, concept_emd)
+        composition_profile = (
+            direction.motion_policy_profile_id or direction.motion_profile_id
+        )
+        composition_timing = MOTION_COMPOSITION_TIMINGS.get(
+            composition_profile, "pre_author"
+        )
         if composition:
             _LOGGER.info(
                 "[MV Director - Timeline Planner] motion composition scheduled; "
-                "scene=%d; shot=%d; source=%s; template=%d",
-                *composition[:4],
+                "scene=%d; shot=%d; source=%s; template=%d; timing=%s",
+                *composition[:4], composition_timing,
             )
         elif composition_skip != "disabled":
             _LOGGER.info("[MV Director - Timeline Planner] motion composition skipped; scene=%d; reason=%s",
@@ -179,66 +262,72 @@ def generate_scene_author_content(
             "scene_emd": scene_emd,
             "shot_positions": positions,
         }
-        # An explicit event in any Shot owns the Scene's event selection.
-        # Other Shots may have their own explicit event; none is overwritten.
+        # Fixed Events own their Shots only. Other Shots remain eligible for
+        # Scene-local authorship in the same LLM call.
         fixed_events = {
             index: _fixed(shot, "演出")
             for index, shot in enumerate(scene.shots, 1)
             if _fixed(shot, "演出")
         }
-        scene_event = " / ".join(f"Shot{index}: {value}" for index, value in fixed_events.items())
-        if not scene_event:
-            for attempt in range(2):
-                result, issues, retries, missing, recovered = _request_entities(
-                    backend,
-                    task="scene-author-event",
-                    record_type="EVENT",
-                    entities=[_Entity(scene.scene_number, (1,), {
+        event_texts = dict(fixed_events)
+        pending_events = [
+            index for index in range(1, len(scene.shots) + 1)
+            if index not in fixed_events
+            # A completed EMD has no marker for a deliberate "no Event".
+            # Do not reopen an otherwise fully authored Shot on re-entry.
+            and (
+                not _fixed(scene.shots[index - 1], "演技")
+                or not _fixed(scene.shots[index - 1], "カメラ")
+            )
+        ]
+        event_states: dict[int, str] = {}
+        if pending_events:
+            result, issues, retries, missing, recovered = _request_entities(
+                backend,
+                task="scene-author-event",
+                record_type="EVENT",
+                entities=[
+                    _Entity(scene.scene_number, (index,), {
                         "scene_number": scene.scene_number,
                         "scene": scene.scene_number,
-                        "scope": "one_scene_event",
-                        "shot_numbers": list(range(1, len(scene.shots) + 1)),
-                    })],
-                    shared={
-                        **shared,
-                        "scene_environment": list(direction.environment_direction),
-                        "scene_time_lighting": list(direction.time_lighting_direction),
-                        "scene_other": list(direction.other_direction),
-                        "staging_candidates_optional": list(direction.staging_candidates),
-                        "event_position_retry": attempt > 0,
-                        "previous_scene_state": (
-                            previous_terminal.get("event", "") if scene.continuation else ""
-                        ),
+                        "shot": index,
+                        "position": positions[index - 1],
+                    })
+                    for index in pending_events
+                ],
+                shared={
+                    **shared,
+                    "scene_other": list(direction.other_direction),
+                    "staging_candidates_optional": list(direction.staging_candidates),
+                    "fixed_events": {
+                        str(index): value for index, value in fixed_events.items()
                     },
-                    system_prompt=prompts["event"],
-                    runtime_config=runtime_config,
-                    interrupt_callback=interrupt_callback,
+                    "previous_scene_state": (
+                        previous_terminal.get("event", "") if scene.continuation else ""
+                    ),
+                },
+                system_prompt=prompts["event"],
+                runtime_config=runtime_config,
+                interrupt_callback=interrupt_callback,
+            )
+            issue_count += len(issues)
+            retried_scenes.update(retries)
+            recovered_count += recovered
+            if missing:
+                return None, tuple(missing)
+            for index in pending_events:
+                event_texts[index], event_states[index] = _split_terminal_state(
+                    result[(index,)]
                 )
-                issue_count += len(issues)
-                retried_scenes.update(retries)
-                recovered_count += recovered
-                if missing:
-                    return None, tuple(missing)
-                event_prose, event_state = _split_terminal_state(result[(1,)])
-                matched = _EVENT_ASSIGNMENT.fullmatch(event_prose)
-                if matched and int(matched.group(1)) <= len(scene.shots):
-                    event_shot = int(matched.group(1))
-                    scene_event = matched.group(2)
-                    if scene_event != "なし":
-                        events.append((scene.scene_number, event_shot, scene_event))
-                    break
-                _LOGGER.warning(
-                    "[MV Director - Timeline Planner] Scene event slot invalid; "
-                    "scene=%d; attempt=%d",
-                    scene.scene_number, attempt + 1,
-                )
-            else:
-                return None, (("EVENT_POSITION", scene.scene_number, 1),)
-        shared["accepted_event"] = scene_event
-        shared["event_source"] = "author" if fixed_events else "llm"
-        shared["accepted_event_shot"] = (
-            event_shot if not fixed_events else min(fixed_events)
-        )
+                if event_texts[index] not in {"なし", "無し", "none", "NONE"}:
+                    events.append((scene.scene_number, index, event_texts[index]))
+        shared["accepted_events_by_shot"] = {
+            str(index): value for index, value in sorted(event_texts.items())
+        }
+        shared["event_sources_by_shot"] = {
+            str(index): "author" if index in fixed_events else "llm"
+            for index in sorted(event_texts)
+        }
 
         fixed_actions = {
             index: _fixed(shot, "演技")
@@ -250,7 +339,7 @@ def generate_scene_author_content(
             if index not in fixed_actions
         ]
         action_texts = dict(fixed_actions)
-        if composition:
+        if composition and composition_timing == "pre_author":
             shared["scheduled_motion_composition"] = {
                 "shot": composition[1], "source": composition[2],
                 "template": composition[3], "text": composition[4],
@@ -300,9 +389,10 @@ def generate_scene_author_content(
                 for index in pending_actions
             )
         if composition:
-            motion_compositions.append(composition)
-            target = composition[1]
-            action_texts[target] = action_texts[target] + " " + composition[4]
+            if composition_timing == "pre_author":
+                motion_compositions.append(composition)
+                target = composition[1]
+                action_texts[target] = action_texts[target] + " " + composition[4]
         shared["accepted_performances"] = {
             str(index): value for index, value in action_texts.items()
         }
@@ -360,9 +450,20 @@ def generate_scene_author_content(
                 (scene.scene_number, index, camera_texts[index])
                 for index in pending_cameras
             )
+        if composition and composition_timing == "post_author":
+            if MOTION_COMPOSITION_RESELECTIONS.get(composition_profile) == "guarded_no_drop":
+                composition = _reselect_composition(
+                    backend, scene=scene, composition=composition,
+                    direction=direction, event_texts=event_texts,
+                    action_texts=action_texts, camera_texts=camera_texts,
+                    system_prompt=system_prompts["scene-author-composition-choice"],
+                    runtime_config=runtime_config,
+                    interrupt_callback=interrupt_callback,
+                )
+            motion_compositions.append(composition)
         last = len(scene.shots)
         previous_terminal = {
-            "event": event_state if not fixed_events else "",
+            "event": event_states.get(last, ""),
             "performance": action_states.get(last, "") if pending_actions else "",
             "camera": camera_states.get(last, "") if pending_cameras else "",
         }

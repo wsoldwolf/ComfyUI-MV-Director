@@ -346,6 +346,8 @@ Timeline Plannerで`context_loop`を選んだ場合は、歌詞annotationのな�
 規則:
 
 - `Context Loop`、`Audio参照`及びShotの`歌詞`方式はScene内で相互排他。
+- `Context Loop`は`source_audio_target=locked`等の音声設定に加え、指定Subjectが入力ボーカルの有声句に合わせて歌い、既存の身体演技と並行して口・顎を音節に同期させる固定文を`overall_soundscape`へ出力する。音声の同期対象と人物の可視歌唱を結び付ける音響契約であり、個別Action／Cameraによる共通文の継承抑制とは独立する。Action／Camera本文・Scene長・歌詞時刻は変更せず、顔アップを強制しない。有声句に限定する指示であり、無声区間への歌唱の追加や音素同期の保証ではない。
+- Compilerが生成する説明用の固定文へ、未閉鎖の発話特殊トークンを含めない。明示された発話・歌詞の`<d>...</d>`は従来どおり保持する。
 - `Audio参照`の`音声N`は`<Audio N>`及び対応するrequired inputへ機械変換する。
 - `無音`は他の音響directive又は歌詞方式と併用できない。
 - `無音`はPlan JSONへ無音条件を出すフラグであり、PCM無音を保証しない。真の無音が必要な場合は下流PCM audio gateの責務。

@@ -8,7 +8,7 @@
 |---|---|---|
 | `emd_text` | 必須 | Planner出力または手書きの完全EMD |
 | `translation_mode` | `ja_to_en` | `ja_to_en` / `already_english` |
-| `model_name` | 自動列挙 | 日本語英訳用Text GGUF。8B級推奨 |
+| `model_name` | 自動列挙 | 日本語英訳用Text GGUF。Plannerとは独立して明示選択 |
 | `chat_format` | `auto` | `auto` / `qwen` / `gemma` |
 | `steps` | `8` | TurboLoRA動画生成用Plan JSONの既定denoising steps |
 | `max_tokens` | `4096` | 英訳protocolの応答上限 |
@@ -29,6 +29,14 @@
 
 ## 動作境界
 
+### Context Loop標準リップシンクの歌唱指示
+
+`` `リップシンク` `Context Loop` `サブジェクトN` ``は、入力ボーカルの固定設定だけでなく、指定人物が有声句を歌いながら既存の身体演技を行う指示として`overall_soundscape`へ変換します。音節に合わせた口・顎の動きを明示し、個別Camera指定によって共通Camera文が省略されても、この音響契約は残ります。Action／Camera本文の書き換え、顔アップの強制、Scene長・歌詞時刻の変更は行いません。
+
+歌唱指示は入力ボーカルの有声句に限定します。音響directiveがないScene、`無音`、`明示台詞のみ`、Audio参照方式、歌詞方式へ標準方式の歌唱文を追加しません。H3の可視同期を保証するものではなく、音声条件と実際の口形は別途確認が必要です。
+
+Compilerキャッシュはv18へ更新しました。旧キャッシュは再利用しませんが、**保存済みPlan JSONは自動更新されません**。ComfyUIで修正コードを読み直し、同じ完成EMDをCompilerへ再入力してPlanを再保存し、動画生成WFへ読み込んでください。Plannerの再推論は不要です。
+
 ### 翻訳の出典分離とログ
 
 翻訳呼び出しはEMDの一つのフィールド内で完結させます。Subject、共通文、別ShotのActionを
@@ -38,6 +46,8 @@ INFOへ出し、`field`、原文SHA-256、fragment数と出力文字数を残し
 成功時のCompilerキャッシュには`translation_trace`を保存します。原文・採用英訳・fragment番号・
 復元後の文を対応づけ、共通文へ局所Actionが混入していないか確認できます。キャッシュ無効時は保存されません。
 フィールド単位の分離は呼出回数を増やす場合があります。意味の正確さを保証する機械判定は追加していません。
+
+参照・Camera名・機械変換した用語などの保護spanは、placeholderに置換せず翻訳入力から分離し、Python側で復元します。翻訳シスプロもこの方式を説明し、途中で始まるfragmentに省略語や内部ラベルを補わないよう指示します。入力に実在するliteral tokenは保持しますが、旧方式の保護トークン例はシスプロへ提示しません。
 
 - Subjectは`# サブジェクト`直下のlist item順で`<Subject 1..4>`へ割り当てます。
 - `# シーン設定`の環境・時間照明を共通Directionより前のbaselineとして`prompt_prefix`へ置きます。後続の明示Directionが優先されます。
@@ -52,7 +62,7 @@ INFOへ出し、`field`、原文SHA-256、fragment数と出力文字数を残し
 - 翻訳では識別上重要な局所形状、個数、配置、大きさ、色、材質及び否定条件を具体的な物理形状として保持し、特殊な特徴を一般的な解剖・衣装・装飾形状へ丸めません。例えば「丸く横へ線が伸びない」形状は単なる`round`ではなく、長い線を形成しない小さな円形又は楕円形のmarkとして英訳します。
 - Subject定義と既定`fully_preserved`保持文には、記述済みの局所形状を全Shotで文字どおり維持し、通常形へ置換しない固定契約を付けます。
 - 全Subjectへ一つの頭と一つの身体からなる物理instanceを一体だけ描き、duplicate、twin、clone、reflection、background lookalike、inset view、split-screen copy及びsecond representationを禁止する固定文を付けます。Picture/Video参照付きSubjectでは、全panelとalternate viewを同じ一体のidentity資料としてだけ扱い、参照ポーズ、画角、構図、左右panel及び背景を現在Shotへ複製しません。さらに各frameを画面全体に広がる一つの連続したcamera viewとし、内部境界、split screen、picture-in-picture又は複数角度の同時表示を禁止します。画角と視点の変更は時間方向のcamera motion又はscene cutで表します。現在Sceneの環境・時刻・照明を唯一の完成映像世界として参照背景と参照照明を完全に置換し、白背景、無地背景、昼光、撮影用backdrop又はpanel固有背景を入力資料の残滓として描画対象から除外します。各Shotは先頭frameから現在のActionとCameraに基づく新規stagingを使用し、参照画像そのもの又は参照構図を開始画面、静止画、plate、poster、inset若しくは背景として表示せず、参照ポーズからの遷移も行いません。
-- Picture/Video参照付きSubjectでは、`<d>`内の歌詞を口形用の発話内容としてだけ扱う固定文も付けます。作者のShotが可視の身体状態を明示しない限り、傷、古傷、痛み、血又は心の損傷という比喩を、傷跡、切創、痣、出血、包帯、病変、染み、刺青状の印、皮膚又は衣装の損傷へ変換せず、皮膚と衣装を清潔で損傷のない状態に保ちます。
+- Picture/Video参照付きSubjectでは、歌詞を発話内容として扱う固定文も付けます。この説明文に発話用の特殊トークンを埋め込まず、未閉鎖の`<d>`を生成しません。実際の発話・歌詞の`<d>...</d>`は保持します。作者のShotが可視の身体状態を明示しない限り、傷、古傷、痛み、血又は心の損傷という比喩を、傷跡、切創、痣、出血、包帯、病変、染み、刺青状の印、皮膚又は衣装の損傷へ変換せず、皮膚と衣装を清潔で損傷のない状態に保ちます。
 - Scene見出し末尾に`継続`がある場合だけtiming profileのvisual/audio contextと`continuation_mode=guide`を出します。省略Sceneは`context_length=0`、`audio_context_length=0`のカットです。
 - `H3長`はPlanner又は作者が境界modeに合わせて確定したraw lengthを無変換で`length`へ写します。
 - 360文字を超える翻訳unitは、既存の句点・読点境界で120文字以下を目標に機械分割できる場合、初回推論前から短いunitとして翻訳して文書順に再結合します。ほぼ完成した英文に少数の日本語だけが残った場合は、英文候補全体を再翻訳せず、連続する残存日本語spanだけを一意化して同じ翻訳protocolへ渡し、得た英訳を元のspan位置へ機械置換します。同じspanの反復は一度だけ翻訳し、既存英文の語順と内容は保持します。それ以外の翻訳slotで欠落、日本語echo又は競合重複となった場合は、該当unitを一度だけ隔離再翻訳し、長文が隔離後も日本語echoなら同じ分割回復を使います。隔離再試行は入力が一件だけなので、異なる`TRANSLATION 1`が複数返っても対応先は一意です。この場合は日本語echoと空候補を除き、応答順で最初の有効な英訳を無改変で採用し、候補数と選択規則をINFOへ記録します。分割は原文文字列を書き換えず、protected tokenは従来どおり翻訳入力から除外します。隔離、分割及び残存日本語cleanupの開始、batch、完了又は失敗はslot番号、trigger、文字数、span数及びchunk数とともにINFOへ記録し、正常完了statusへ`protocol_recovered`、`segmented_recovered`及び`cleanup_recovered`を出します。全必須slotが揃った後の非record行及び未知record型は翻訳行から分離し、同一slotの完全一致重複は一件として扱います。不正slot、未知slot、空本文、有効な英訳候補のない短文日本語echo、span cleanup又は分割後も残る日本語、再翻訳後の欠落、protected token破損は停止します。

@@ -3,6 +3,7 @@ import json
 import unittest
 
 from core.compiler import CompilerError, compile_ref2va
+from core.compiler.protection import ProtectedUnit, protect_unit
 from core.h3_contract import (
     ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA,
     ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA_H3,
@@ -59,6 +60,26 @@ class CameraDirectiveMutatingTranslator:
 
 
 class Ref2VACompilerTests(unittest.TestCase):
+    def test_sentence_boundary_before_protected_term_has_one_space(self) -> None:
+        item = protect_unit("を着用する。下駄の木製台は黒い。", ())
+        for punctuation in (".", "!", "?"):
+            with self.subTest(punctuation=punctuation):
+                self.assertEqual(
+                    item.restore({0: f"to be worn{punctuation}", 1: "The platform is black."}),
+                    f"to be worn{punctuation} geta The platform is black.",
+                )
+
+    def test_protected_term_punctuation_and_existing_spaces_are_preserved(self) -> None:
+        item = ProtectedUnit(("White ", ", with red straps."), ("tabi",))
+        self.assertEqual(item.restore(), "White tabi, with red straps.")
+        item = ProtectedUnit(("to be worn. ", " The platform is black."), ("geta",))
+        self.assertEqual(item.restore(), "to be worn. geta The platform is black.")
+
+    def test_sentence_spacing_never_changes_protected_dialogue_contents(self) -> None:
+        dialogue = "<d>[Japanese]丸い眉。次の句!</d>"
+        item = ProtectedUnit(("", "Next line."), (dialogue,))
+        self.assertEqual(item.restore(), dialogue + " Next line.")
+
     def test_local_authored_camera_replaces_global_camera_for_one_shot(self) -> None:
         source = (
             "# サブジェクト\n* 人物。\n"
@@ -307,7 +328,7 @@ class Ref2VACompilerTests(unittest.TestCase):
             "itself as a frame, still, plate, poster, inset, background, or "
             "composition. Keep visible skin and clothing clean and intact "
             "unless a Shot explicitly requires a physical "
-            "condition. Lyric text inside <d> is vocal content only: figurative "
+            "condition. Lyric text is vocal content only: figurative "
             "words about wounds, scars, pain, blood, or a broken heart never "
             "authorize a visible cut, scar, bruise, bleeding, bandage, lesion, "
             "stain, tattoo-like mark, torn skin, or damaged clothing.",

@@ -184,7 +184,7 @@ def _subject_definition(
         "show, reconstruct, paste, hold, or transition from the reference image "
         "itself as a frame, still, plate, poster, inset, background, or composition. "
         "Keep visible skin and clothing clean and intact unless a Shot "
-        "explicitly requires a physical condition. Lyric text inside <d> is "
+        "explicitly requires a physical condition. Lyric text is "
         "vocal content only: figurative words about wounds, scars, pain, blood, or "
         "a broken heart never authorize a visible cut, scar, bruise, bleeding, "
         "bandage, lesion, stain, tattoo-like mark, torn skin, or damaged clothing."
@@ -273,8 +273,15 @@ def _audio_prompt(
     for directive in directives:
         if directive.mode == "context_loop":
             target = _target_ref(document, directive.target_concept_id or "")
+            # Audio locking supplies the timing, but does not reliably make
+            # the visible performer sing. Keep this directive independent of
+            # Camera inheritance and leave authored Action/Camera untouched.
             soundscape.append(
-                f"Use the locked source vocal as the lip-sync timing target for {target}."
+                f"Use the locked source vocal as the lip-sync timing target for {target}. "
+                f"{target} visibly sings the supplied vocal throughout its voiced "
+                "phrases, with continuous syllable-by-syllable lip and jaw "
+                "movements synchronized to that vocal, while performing the "
+                "specified body actions."
             )
             fields.update(
                 source_reference="off",

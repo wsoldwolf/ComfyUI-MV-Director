@@ -12,6 +12,8 @@ MOTION_PROFILES = _CATALOG.motion
 MOTION_PERFORMANCE_MODES = _CATALOG.motion_performance_mode
 MOTION_BODY_ACCENT_POLICIES = _CATALOG.motion_body_accent_policy
 MOTION_CHOREOGRAPHY_POLICIES = _CATALOG.motion_choreography_policy
+MOTION_COMPOSITION_TIMINGS = _CATALOG.motion_composition_timing
+MOTION_COMPOSITION_RESELECTIONS = _CATALOG.motion_composition_reselection
 MOTION_CHOREOGRAPHY_PHRASES = _CATALOG.motion_choreography_phrases
 MOTION_TEMPLATES = _CATALOG.motion_templates
 CAMERA_PROFILES = _CATALOG.camera
@@ -39,13 +41,14 @@ def render_profile_direction(kind: str, profile_id: str, values: tuple[str, ...]
 def planner_profile_metadata(profile_id: str, motion_profile_id: str = "") -> dict[str, object]:
     """Cache identity includes metadata that is not part of Direction prose."""
     cues = CAMERA_PRIORITY_LYRIC_CUES.get(profile_id, ())
-    return {
+    metadata = {
         "render_prompts": {
             "camera": RENDER_PROMPTS.get("camera", {}).get(profile_id, ""),
             "motion": RENDER_PROMPTS.get("motion", {}).get(motion_profile_id, ""),
         },
         "performance_mode": MOTION_PERFORMANCE_MODES.get(motion_profile_id, "event_based"),
         "motion_templates": list(MOTION_TEMPLATES.get(motion_profile_id, ())),
+        "composition_timing": MOTION_COMPOSITION_TIMINGS.get(motion_profile_id, "pre_author"),
         "body_accent_policy": MOTION_BODY_ACCENT_POLICIES.get(motion_profile_id, "off"),
         "choreography_policy": MOTION_CHOREOGRAPHY_POLICIES.get(motion_profile_id, "off"),
         "choreography_phrases": [
@@ -63,6 +66,10 @@ def planner_profile_metadata(profile_id: str, motion_profile_id: str = "") -> di
             {"token": token, "kind": kind} for token, kind in cues
         ],
     }
+    reselection = MOTION_COMPOSITION_RESELECTIONS.get(motion_profile_id, "off")
+    if reselection != "off":
+        metadata["composition_reselection"] = reselection
+    return metadata
 
 
 # Presets only group three independently selectable external profiles. They are
