@@ -12,7 +12,7 @@ Windows版ComfyUIへComfyUI-MV-Directorを導入し、Gemma4 31Bによる人物�
 - Visual Studio 2022のDesktop development with C++とWindows SDK
 - Git
 
-異なるComfyUI / Context Loop commitでも動作する可能性はありますが、互換試験の基準外です。
+上記は導入基準です。追加検証として、ComfyUI v0.37.4とSpectrum v0.2.27でH3の全編完走を確認しています。条件と制限は[TIPS：H3高速化設定と安定性](tips/h3-acceleration-and-stability.md)を参照してください。これら以外のComfyUI / Context Loop commitは、互換性を個別に確認してください。
 本書はComfyUI本体及び`venv`の新規構築手順を扱いません。配置先が異なる場合は、以下の
 `C:\Software\ComfyUI\`を実際のComfyUIルートへ読み替えてください。
 
@@ -88,58 +88,11 @@ C:\Software\ComfyUI\venv\Scripts\python.exe -m pip install -r ComfyUI-KJNodes\re
 
 ### 動画生成の高速化設定
 
-現在の動画workflowは、次の順序でモデルへ設定を適用します。これらはTurbo LoRAの代替となる高速化構成ですが、同じ画質や速度をすべての環境で保証するものではありません。
+配布動画WFはComfy Kitchen Attention、Block Sparse Attention（SLA）、Spectrum、FP16 accumulationを使用します。Comfy KitchenとSLAはComfyUI本体側、SpectrumとModel Patch Torch Settingsは上記の追加カスタムノード側の機能です。既定は0.4MP（16:9）、20step、Turbo LoRAバイパスです。
 
-```text
-Hybrid Loader → Turbo LoRA（バイパス）→ Model Attention Backend
-             → Block Sparse Attention → Spectrum
-             → Model Patch Torch Settings → Sigma Shift
-```
+2026-09-28にはComfyUI v0.37.4とSpectrum v0.2.27で、0.9MP・20stepの全編完走を確認しました。これは単一環境での確認であり、すべての環境での安定性や速度を保証しません。
 
-#### Comfy Kitchen
-
-`ModelAttentionBackend`で`comfy kitchen attention`を選択します。ComfyUI本体が利用する`comfy-kitchen`のAttention実装を使用する設定で、別の「Comfy Kitchen」カスタムノードをcloneするものではありません。対応するComfyUI・依存package・GPU環境が必要です。導入については[Comfy Kitchen公式リポジトリ](https://github.com/Comfy-Org/comfy-kitchen)を参照してください。
-
-この設定はAttentionの実行方法を選ぶものであり、モデル全体をVRAMへ常駐させる設定ではありません。Dynamic VRAM、Block Sparse Attention、Spectrumと併用する際は、各実装の対応版を揃えてください。
-
-#### Block Sparse Attention（SLA）
-
-ComfyUI本体の`BlockSparseAttention`で`selection=sla`を選択します。重要と判定したAttention blockを選び、計算対象を減らす近似的な高速化です。現在の配布workflowの設定は次の通りです。
-
-| 項目 | 設定値 |
-| --- | --- |
-| `selection` | `sla` |
-| `selection.keep_percent` | `10` |
-| `start_percent` / `end_percent` | `0.2` / `1.0` |
-| `min_tokens` | `12288` |
-| `extra_tokens` | `256` |
-| `sink_conditioning` | `exact_kv_and_rows` |
-
-`keep_percent=10`は選択するblockの割合を指定する値であり、総計算量が必ず10%になるという意味ではありません。適用期間外、token数が閾値未満の場合などはdense計算になります。`exact_kv_and_rows`は、H3の参照条件に関わるKVと所定のquery行をdenseに扱う設定です。映像・参照再現性・音声への影響も含めて確認してください。
-
-#### Spectrum
-
-[ComfyUI-Spectrum-MiniMax-H3](https://github.com/xmarre/ComfyUI-Spectrum-MiniMax-H3)は、過去のH3計算から一部のステップを予測し、モデルの実計算回数を削減します。Planの20stepすべてで同じ重い計算を実行するわけではありません。現在の配布workflowでは`enabled=true`、`history_storage=system_ram`、`offline_archive_storage=system_ram`、`offline_smoothing_replay=true`です。RAM保存を選んでも、一時的なCUDAメモリの使用やCPU–GPU間の転送がなくなるわけではありません。
-
-**2026-09-27の更新・再検証記録（全編テスト中・未確定）**
-
-- 旧導入版は`v0.2.23`。0.9MP・20step・Turbo LoRAなしで短区間が完走しても、全編では再び大幅な低速化が発生しました。低速時はGPU使用率が高い一方、消費電力が約140 Wへ低下し、PCIe転送が大きく増える状況が見られました。これだけで原因を特定したものではありません。
-- `v0.2.25`は、SpectrumとComfyUI Dynamic VRAM / Comfy Compilerのmalloc-graph互換性を修正しています。最初の生成が完了しても次の生成でクラッシュする事例が対象です。本プロジェクトの低速化と同一の不具合と断定はしていません。[v0.2.25修正内容](https://github.com/xmarre/ComfyUI-Spectrum-MiniMax-H3/releases/tag/v0.2.25)
-- `v0.2.27`は、実計算ステップのCUDA hidden tensorが参照に保持される問題を修正し、予測時の出力投影もRAMから小分けに転送する方式へ変更しています。履歴の保存先がRAMでもCUDA tensorが残る問題だったため、今回の有力な確認対象です。修正目的はVRAM圧迫の軽減で、無条件の高速化や数値的に同一の出力を保証するものではありません。[v0.2.27修正内容](https://github.com/xmarre/ComfyUI-Spectrum-MiniMax-H3/releases/tag/v0.2.27)、[修正PR #107](https://github.com/xmarre/ComfyUI-Spectrum-MiniMax-H3/pull/107)
-- 現在はSpectrum `v0.2.27`を導入済みで、ComfyUIもユーザー側で`v0.37.4`へ更新しています。起動引数の`--disable-fast-disk`を外し、fast-diskの既定動作を含めて全編を検証中です。本書冒頭の旧基準版を、安定性確認済みとして置き換える段階ではありません。
-- 旧構成で`--disable-fast-disk`とSpectrumを併用した継続Sceneは、20stepで5分48秒、5分18秒、4分08秒の完走例がありました。ただし全編で再発したため、短区間の成功だけで「解決済み」としない方針です。
-
-今回の比較条件は**0.9MP・Planの`default_steps=20`・Turbo LoRAバイパス**です。Sceneごとの経過時間、GPUメモリ、消費電力、PCIe転送量、画質を記録してください。Spectrumの予測やreplayがあるため、進捗表示の一時的な`it/s`だけでは全体の処理時間を判断できません。ComfyUIとSpectrumを同時に更新しているので、改善してもどちらの変更が原因かはこの試験だけでは確定しません。
-
-再発した場合は、まず他の設定を維持して`--disable-fast-disk`だけを戻し、同条件で比較します。さらに必要なら別の試験で`offline_smoothing_replay=false`を比較します。一度に複数の設定を変えないでください。今回の追記は未コミットの検証メモとして保持し、結果に応じて修正・差し戻す予定です。現時点で既存workflowやジェネレーターの設定をこの試験のために変更していません。
-
-SpectrumをGitで管理している場合は、ComfyUI終了後、まず`git status --short`でローカル変更を確認してから`git fetch origin --tags`でタグを取得します。今回の再現対象を固定する場合は`git checkout --detach v0.2.27`を使用します。ZIP又はManager経由で導入したフォルダには`.git`がない場合があり、その状態での`git pull`は親のComfyUIリポジトリを対象にしてしまう可能性があります。Spectrum自身のGit checkoutであることを確認してください。旧版を退避する場合は二重読み込みを避けるため、退避先を`custom_nodes`の外に置きます。
-
-#### fast FP16 accumulation
-
-`ModelPatchTorchSettings`（KJNodes）の`enable_fp16_accumulation=true`で、`torch.backends.cuda.matmul.allow_fp16_accumulation`を有効にします。対応するFP16行列積でFP16の累積を許可する設定です。全モデル・VAE・Text EncoderをFP16へ変換する設定ではなく、BF16の演算すべてをFP16へ変更するものでもありません。速度への効果は、実際に使用されるdtype、演算kernel、GPUに依存します。数値精度にも影響し得るため、画質と安定性を確認してください。
-
-このノードは接続したモデルの実行前にPyTorchのプロセス共通フラグを設定し、cleanup時に解除するcallbackを登録します。ノード内だけに閉じたdtype設定ではありません。切り分け時はノードのbooleanを`false`にし、起動引数にも`--fast fp16_accumulation`を指定していないことを確認してください。起動引数とノード設定を同時に変えると比較条件が不明瞭になります。
+各設定の意味、Spectrum更新時の注意、低速化の切り分けと検証経緯は[TIPS：H3高速化設定と安定性](tips/h3-acceleration-and-stability.md)を参照してください。
 
 ## 3. `llama-cpp-python` CUDA wheelを作る
 
