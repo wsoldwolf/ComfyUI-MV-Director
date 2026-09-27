@@ -72,7 +72,7 @@ LLMの出力は確率的で、行protocol違反や必須出力の欠落が起き
 
 詳細はGitのコミットログを参照してください。
 
-### 開発中（dev：次期系列向け）
+### v0.2.1
 
 - 人物演技・感情表現の改善を目的として、人物・背景Vision、Direction Enhancer、Timeline Planner、Compilerの既定モデルをGemma4 31B Q4_K_Sへ統一しました。
 - PlannerをScene Authorの単一経路へ統一しました。Scene単位で出来事、人物演技、Cameraを順に計画し、継続Sceneには直前の終端状態を渡します。利用者がShotへ直接記述した確定指示は保持します。
