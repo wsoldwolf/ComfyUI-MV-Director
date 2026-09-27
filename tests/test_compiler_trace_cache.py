@@ -12,6 +12,24 @@ from test_emd_compiler_node import ENGLISH_EMD, FakeLifecycle
 
 
 class CompilerTraceCacheTests(unittest.TestCase):
+    def test_pre_step_ownership_cache_is_not_reused(self):
+        node = NODE_CLASS_MAPPINGS["MVDirectorEMDCompiler"]()
+        kwargs = dict(emd_text=ENGLISH_EMD, translation_mode="already_english",
+                      model_name="unused", chat_format="auto", max_tokens=64,
+                      temperature=0.0, top_p=0.9, repetition_penalty=1.05,
+                      gpu_layers=-1, n_batch=256, n_ctx=16384, flash_attn=True,
+                      kv_cache_type="q8_0", op_offload=True, keep_model_loaded=False,
+                      seed=42, cache_mode="reuse")
+        with TemporaryDirectory() as temporary, patch(
+            "nodes.node_emd_compiler.node._cache", return_value=SuccessCache(Path(temporary))
+        ):
+            with patch("nodes.node_emd_compiler.node._COMPILER_CACHE_VERSION", "mvd-ref2va-compiler-cache-v18"):
+                node.compile_emd(**kwargs)
+            current = node.compile_emd(**kwargs)
+            self.assertIn("cache=miss", current[2])
+            self.assertNotIn("steps", json.loads(current[0]).get("defaults", {}))
+            self.assertIn("cache=hit", node.compile_emd(**kwargs)[2])
+
     def test_pre_vocal_contract_cache_is_not_reused(self):
         source = ENGLISH_EMD + "## 音響\n* `リップシンク` `Context Loop` `サブジェクト1`\n"
         model = SimpleNamespace(path=Path("test.gguf"), selection_id="test.gguf",
@@ -22,7 +40,7 @@ class CompilerTraceCacheTests(unittest.TestCase):
                 node = NODE_CLASS_MAPPINGS["MVDirectorEMDCompiler"]()
                 node._lifecycle = FakeLifecycle()
                 kwargs = dict(emd_text=source, translation_mode=mode, model_name="test.gguf",
-                              chat_format="auto", steps=8, max_tokens=64, temperature=0.0,
+                              chat_format="auto", max_tokens=64, temperature=0.0,
                               top_p=0.9, repetition_penalty=1.05, gpu_layers=-1, n_batch=256,
                               n_ctx=1100, flash_attn=True, kv_cache_type="q8_0", op_offload=True,
                               keep_model_loaded=False, seed=1, cache_mode="reuse")
@@ -60,7 +78,7 @@ class CompilerTraceCacheTests(unittest.TestCase):
                 lifecycle = FakeLifecycle()
                 node._lifecycle = lifecycle
                 kwargs = dict(emd_text=source, translation_mode="ja_to_en", model_name="test.gguf",
-                              chat_format="auto", steps=8, max_tokens=64, temperature=0.0,
+                              chat_format="auto", max_tokens=64, temperature=0.0,
                               top_p=0.9, repetition_penalty=1.05, gpu_layers=-1, n_batch=256,
                               n_ctx=1100, flash_attn=True, kv_cache_type="q8_0", op_offload=True,
                               keep_model_loaded=False, seed=1, cache_mode=mode)

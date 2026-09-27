@@ -692,6 +692,7 @@ class EMDCompilerNodeTests(unittest.TestCase):
         )
         inputs = cls.INPUT_TYPES()
         self.assertTrue(inputs["required"]["emd_text"][1]["forceInput"])
+        self.assertNotIn("steps", inputs["required"])
         self.assertEqual(inputs["required"]["translation_mode"][1]["default"], "ja_to_en")
         self.assertEqual(inputs["required"]["n_ctx"][1]["default"], 16384)
         self.assertEqual(
@@ -711,7 +712,6 @@ class EMDCompilerNodeTests(unittest.TestCase):
             "already_english",
             "(no GGUF models found)",
             "auto",
-            20,
             64,
             0.1,
             0.9,
@@ -745,7 +745,6 @@ class EMDCompilerNodeTests(unittest.TestCase):
                 "already_english",
                 "(no GGUF models found)",
                 "auto",
-                20,
                 64,
                 0.1,
                 0.9,
@@ -765,7 +764,6 @@ class EMDCompilerNodeTests(unittest.TestCase):
                 "already_english",
                 "(no GGUF models found)",
                 "auto",
-                20,
                 64,
                 0.1,
                 0.9,
@@ -809,7 +807,6 @@ class EMDCompilerNodeTests(unittest.TestCase):
                 "ja_to_en",
                 "selected.gguf",
                 "auto",
-                20,
                 32,
                 0.0,
                 0.9,
@@ -843,7 +840,6 @@ class EMDCompilerNodeTests(unittest.TestCase):
                 "ja_to_en",
                 "missing.gguf",
                 "auto",
-                20,
                 32,
                 0.0,
                 0.9,

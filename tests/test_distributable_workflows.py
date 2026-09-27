@@ -9,6 +9,7 @@ from core.utilities import decode_embedded_text
 from tools.generate_workflows import (CHARACTER_HINT, DEFAULT_USER_PROMPT, LOCAL_FACE_CANDIDATE,
                                       sync_candidate_policy, sync_direction_settings, sync_model_runtime, sync_planner_schema,
                                       sync_timing_contract, sync_context_loop_runtime,
+                                      sync_compiler_schema, sync_step_ownership, sync_video_acceleration,
                                       validate_workflow, write_workflows)
 
 
@@ -72,6 +73,43 @@ def input_link(workflow: dict, node: dict, input_name: str) -> list:
 
 
 class DistributableWorkflowTests(unittest.TestCase):
+    def test_acceleration_sync_preserves_inputs_and_is_idempotent(self) -> None:
+        for _, video_name in FILES.values():
+            workflow = load(video_name)
+            before = copy.deepcopy(workflow)
+            sync_video_acceleration(workflow)
+            validate_workflow(workflow)
+            self.assertEqual(workflow, before)
+            for original in before["nodes"]:
+                current = next(n for n in workflow["nodes"] if n["id"] == original["id"])
+                self.assertEqual(current["pos"], original["pos"])
+                self.assertEqual(current["size"], original["size"])
+                if current["type"] not in {"MiniMaxH3ChainPlanModern", "BasicScheduler",
+                                          "LoraLoaderModelOnly", "ResolutionSelector",
+                                          "MiniMaxH3ChainLoopEnd", "ModelAttentionBackend",
+                                          "BlockSparseAttention", "SpectrumApplyMiniMaxH3",
+                                          "ModelPatchTorchSettings"}:
+                    self.assertEqual(current, original)
+
+    def test_acceleration_sync_migrates_old_chain_without_rebuilding(self) -> None:
+        from tools.generate_workflows import _remove_nodes, _connect
+        workflow = load(FILES["lyrics"][1])
+        attention = only_type(workflow, "ModelAttentionBackend")
+        sigma = only_type(workflow, "MiniMaxH3SigmaShift")
+        retired = {node["id"] for node in workflow["nodes"] if node["type"] in {
+            "BlockSparseAttention", "SpectrumApplyMiniMaxH3", "ModelPatchTorchSettings"}}
+        _remove_nodes(workflow, retired)
+        _connect(workflow, attention["id"], 0, sigma["id"], "model", "MODEL")
+        attention["pos"] = [1920, 1200]
+        saved_loader = copy.deepcopy(only_type(workflow, "MVDirectorLoadTextFile"))
+        sync_video_acceleration(workflow)
+        validate_workflow(workflow)
+        self.assertEqual(only_type(workflow, "MVDirectorLoadTextFile"), saved_loader)
+        self.assertEqual(only_type(workflow, "MiniMaxH3ChainPlanModern")["widgets_values"][8], 20)
+        snapshot = copy.deepcopy(workflow)
+        sync_video_acceleration(workflow)
+        self.assertEqual(workflow, snapshot)
+
     def test_loop_trim_migration_preserves_plan_links_and_layout(self) -> None:
         for mode, (_plan, name) in FILES.items():
             with self.subTest(mode=mode):
@@ -150,6 +188,70 @@ class DistributableWorkflowTests(unittest.TestCase):
         sync_candidate_policy(workflow)
         self.assertEqual(planner["widgets_values"][20], "prefer_matched")
 
+    def test_compiler_steps_migration_preserves_widgets_and_layout(self) -> None:
+        workflow = load("01_plan_compiler_context_loop.json")
+        node = only_type(workflow, "MVDirectorEMDCompiler")
+        expected = copy.deepcopy(workflow)
+        node["widgets_values"].insert(3, 12)
+        sync_compiler_schema(workflow)
+        self.assertEqual(workflow, expected)
+        sync_compiler_schema(workflow)
+        self.assertEqual(workflow, expected)
+
+    def test_compiler_steps_migration_rejects_linked_steps_before_mutation(self) -> None:
+        workflow = load("01_plan_compiler_context_loop.json")
+        node = only_type(workflow, "MVDirectorEMDCompiler")
+        node["widgets_values"].insert(3, 12)
+        node["inputs"].append({"name": "steps", "link": 123})
+        before = copy.deepcopy(workflow)
+        with self.assertRaisesRegex(ValueError, "manual migration"):
+            sync_compiler_schema(workflow)
+        self.assertEqual(workflow, before)
+
+    def test_compiler_steps_migration_reindexes_later_input_links(self) -> None:
+        workflow = load("01_plan_compiler_context_loop.json")
+        node = only_type(workflow, "MVDirectorEMDCompiler")
+        expected = copy.deepcopy(workflow)
+        only_type(expected, "MVDirectorEMDCompiler").pop("widgets_values_named", None)
+        node["widgets_values"].insert(3, 12)
+        node["inputs"].insert(0, {"name": "steps", "link": None})
+        for link in workflow["links"]:
+            if link[3] == node["id"]:
+                link[4] += 1
+        node["widgets_values_named"] = {"steps": 12, "denoising_steps": 12, "seed": 42}
+        sync_compiler_schema(workflow)
+        self.assertEqual(node.pop("widgets_values_named"), {"seed": 42})
+        self.assertEqual(workflow, expected)
+        validate_workflow(workflow)
+
+    def test_step_ownership_removes_only_saved_step_overrides(self) -> None:
+        workflow = load("02_video_context_loop.json")
+        node = only_type(workflow, "MiniMaxH3ChainPlanModern")
+        node["widgets_values"][8] = 12
+        original = json.loads(node["widgets_values"][0])
+        original["defaults"] = {"temperature": 0.5}
+        saved = copy.deepcopy(original)
+        saved["steps"] = 20
+        saved["defaults"]["steps"] = 16
+        saved["shots"][0]["steps"] = 24
+        node["widgets_values"][0] = json.dumps(saved, ensure_ascii=False)
+        node["widgets_values_named"] = {"plan_json": node["widgets_values"][0], "default_steps": 12}
+        before = copy.deepcopy(workflow)
+        sync_step_ownership(workflow)
+        self.assertEqual(json.loads(node["widgets_values"][0]), original)
+        self.assertEqual(node["widgets_values_named"]["plan_json"], node["widgets_values"][0])
+        self.assertEqual(node["widgets_values"][8], 12)
+        for actual, prior in zip(workflow["nodes"], before["nodes"]):
+            if actual["id"] != node["id"]:
+                self.assertEqual(actual, prior)
+            else:
+                for key in actual:
+                    if key not in {"widgets_values", "widgets_values_named"}:
+                        self.assertEqual(actual[key], prior[key])
+        once = copy.deepcopy(workflow)
+        sync_step_ownership(workflow)
+        self.assertEqual(workflow, once)
+
     def test_planner_schema_migration_is_idempotent_and_preserves_user_graph(self) -> None:
         workflow = load("01_plan_compiler_context_loop.json")
         planner = only_type(workflow, "MVDirectorTimelinePlanner")
@@ -213,14 +315,13 @@ class DistributableWorkflowTests(unittest.TestCase):
         workflow = load("01_plan_compiler_context_loop.json")
         node = only_type(workflow, "MVDirectorEMDCompiler")
         node["widgets_values"][1] = "old-model.gguf"
-        node["widgets_values"][3] = 12
-        node["widgets_values_named"] = {"model_name": "old-model.gguf", "n_ctx": 8, "denoising_steps": 12}
+        node["widgets_values_named"] = {"model_name": "old-model.gguf", "n_ctx": 8}
         before = copy.deepcopy(workflow)
         sync_model_runtime(workflow, "context_loop")
         self.assertEqual(node["widgets_values_named"]["model_name"], node["widgets_values"][1])
         self.assertEqual(node["widgets_values_named"]["n_ctx"], 16384)
-        self.assertEqual(node["widgets_values"][3], 12)
-        self.assertEqual(node["widgets_values_named"]["denoising_steps"], 12)
+        self.assertEqual(node["widgets_values"][3], 4096)
+        self.assertNotIn("denoising_steps", node["widgets_values_named"])
         for actual, original in zip(workflow["nodes"], before["nodes"]):
             for key in set(actual) | set(original):
                 if key not in {"widgets_values", "widgets_values_named"}:
@@ -394,7 +495,6 @@ class DistributableWorkflowTests(unittest.TestCase):
                     "ja_to_en",
                     "gemma-4-31b-it-heretic-ara-GGUF/gemma-4-31b-it-heretic-ara.Q4_K_S.gguf",
                     "auto",
-                    8,
                     4096,
                     0.0,
                     0.9,
@@ -558,8 +658,10 @@ class DistributableWorkflowTests(unittest.TestCase):
             full_mix = titled_node(workflow, "Full Mix")
             vocal = titled_node(workflow, "Vocal Stem")
             fallback_plan = json.loads(plan["widgets_values"][0])
-            self.assertEqual(fallback_plan["defaults"]["steps"], 8)
-            self.assertEqual(plan["widgets_values"][8], 8)
+            self.assertNotIn("steps", fallback_plan.get("defaults", {}))
+            self.assertNotIn("steps", fallback_plan)
+            self.assertTrue(all("steps" not in shot for shot in fallback_plan["shots"]))
+            self.assertEqual(plan["widgets_values"][8], 20)
             self.assertEqual(
                 input_link(workflow, plan, "plan_json_input")[1:3],
                 [splitter["id"], 0],
@@ -667,14 +769,24 @@ class DistributableWorkflowTests(unittest.TestCase):
             )
             self.assertEqual(
                 lora["widgets_values"][0],
-                "MiniMaxH3\\minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors",
+                "MiniMaxH3\\minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors",
             )
             self.assertEqual(attention["widgets_values"], ["comfy kitchen attention"])
+            self.assertEqual(lora["mode"], 4)
+            sparse = only_type(workflow, "BlockSparseAttention")
+            spectrum = only_type(workflow, "SpectrumApplyMiniMaxH3")
+            torch_settings = only_type(workflow, "ModelPatchTorchSettings")
+            self.assertEqual(sparse["widgets_values"],
+                             ["sla", 10, 0.2, 1, "", 12288, 256, "exact_kv_and_rows", False])
+            self.assertEqual(spectrum["widgets_values"][:9], [True, 0.5, 1, 0.1, 2, 0.75, 1, 1, 8])
+            self.assertEqual(torch_settings["widgets_values"], [True])
+            for source, target in ((attention, sparse), (sparse, spectrum), (spectrum, torch_settings)):
+                self.assertEqual(input_link(workflow, target, "model")[1:3], [source["id"], 0])
             self.assertFalse(review["widgets_values"][0])
             self.assertEqual(ref2va["widgets_values"][4], "max")
             self.assertEqual(
                 resolution["widgets_values"],
-                ["16:9 (Widescreen)", 0.4, 32],
+                ["16:9 (Widescreen)", 0.9, 32],
             )
             self.assertEqual(
                 input_link(workflow, plan, "width")[1:3],
@@ -690,11 +802,11 @@ class DistributableWorkflowTests(unittest.TestCase):
             )
             self.assertEqual(
                 input_link(workflow, sigma_shift, "model")[1:3],
-                [attention["id"], 0],
+                [torch_settings["id"], 0],
             )
             self.assertEqual(sigma_shift["widgets_values"], [12, 3])
             scheduler = only_type(workflow, "BasicScheduler")
-            self.assertEqual(scheduler["widgets_values"][1], 8)
+            self.assertEqual(scheduler["widgets_values"][1], 20)
 
     def test_context_loop_video_wires_options_voice_and_audio_vae(self) -> None:
         workflow = load(FILES["context_loop"][1])

@@ -8,7 +8,11 @@ Plan / Compiler段階は、人物と背景の認識、歌詞時刻、Direction�
 
 Video段階では同じPlan JSONを再利用し、前段の演出設計や歌詞対応を動かさずに再Queueできます。Video workflowに独立した「動画seed A/B」という入力はありません。必要な変更は、実在する`Scene Seed`、sampler、denoising steps、Review又はScene Debug Splitterの各ノード上で行います。
 
-配布Video workflowはMiniMax H3 Hybrid LoaderでFL2VAをベースにRef2VAの一部を重ね、Turbo LoRA、Attention Backend、Sigma Shiftへ渡します。これはVideo段階のモデル設定であり、保存済みPlanのScene構成やAction/Cameraを再推論しません。例外としてAudio Reference方式のVideo workflowは、Scene単位の参照音声をPlan位置へ再配置するためLyric Segmentationをもう一度実行します。Context Loop方式とLyrics方式のVideo workflowにはこの再整列はありません。
+denoising stepsは動画WFの`MiniMaxH3ChainPlanModern`の`default_steps`で全Scene共通に設定します。配布既定値は20です（Turbo LoRAはバイパス）。Compilerはstep数を受け取らず、Plan JSONへも出力しません。変更にPlanner・Compilerの再実行は不要です。
+
+旧Planには`defaults.steps`が残ることがあります。Context Loopの優先順位は各Sceneの`steps` → JSONの`defaults.steps` → JSON直下の`steps` → Planノードの`default_steps`です。ノード側を有効にするには、読み込む旧PlanからこれらのJSONのstep指定を削除してください。JSONの他の設定とScene本文は保持します。配布WFの埋め込みPlanはジェネレーターの`--sync-step-ownership`で移行できますが、外部の`.txt`ファイルは自動変更しません。
+
+配布Video workflowはMiniMax H3 Hybrid LoaderでFL2VAをベースにRef2VAの一部を重ね、Attention Backend、Sparse Attention、Spectrum、FP16 accumulation、Sigma Shiftへ渡します。Turbo LoRAはバイパスしています。これはVideo段階のモデル設定であり、保存済みPlanのScene構成やAction/Cameraを再推論しません。例外としてAudio Reference方式のVideo workflowは、Scene単位の参照音声をPlan位置へ再配置するためLyric Segmentationをもう一度実行します。Context Loop方式とLyrics方式のVideo workflowにはこの再整列はありません。
 
 ## 重い処理を繰り返さない
 

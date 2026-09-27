@@ -451,18 +451,15 @@ def compile_ref2va(
     source: str,
     translator: PromptTranslator,
     *,
-    steps: int = 8,
     timing_profile: H3TimingProfile = DEFAULT_H3_TIMING_PROFILE,
     progress_callback: Callable[[int, int], None] | None = None,
 ) -> CompileResult:
-    if not isinstance(steps, int) or isinstance(steps, bool) or steps < 1:
-        raise ValueError("steps must be a positive integer")
     timing_profile.validate()
     document = parse_emd(source, timing_profile=timing_profile)
     translations = _TranslationTable(document, translator, progress_callback)
     translations.build()
 
-    plan: dict[str, Any] = {"defaults": {"steps": steps}, "shots": []}
+    plan: dict[str, Any] = {"shots": []}
     typed_kinds = {
         directive.kind
         for scene in document.scenes

@@ -46,7 +46,7 @@ from ..common.node_progress import advance_progress, configure_progress
 TRANSLATION_MODES = ("ja_to_en", "already_english")
 CHAT_FORMATS = ("auto", "qwen", "gemma")
 CACHE_MODES = ("reuse", "refresh", "disabled")
-_COMPILER_CACHE_VERSION = "mvd-ref2va-compiler-cache-v18"
+_COMPILER_CACHE_VERSION = "mvd-ref2va-compiler-cache-v19-plan-runtime-steps"
 _SYSTEM_PROMPT_PATH = (
     Path(__file__).resolve().parents[2]
     / "prompts"
@@ -111,7 +111,6 @@ class MVDirectorEMDCompiler:
                 "translation_mode": (list(TRANSLATION_MODES), {"default": "ja_to_en"}),
                 "model_name": (models, {"default": models[0]}),
                 "chat_format": (list(CHAT_FORMATS), {"default": "auto"}),
-                "steps": ("INT", {"default": 8, "min": 1, "max": 100}),
                 "max_tokens": ("INT", {"default": 4096, "min": 32, "max": 16384, "step": 32}),
                 "temperature": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.05}),
                 "top_p": ("FLOAT", {"default": 0.9, "min": 0.0, "max": 1.0, "step": 0.01}),
@@ -145,7 +144,6 @@ class MVDirectorEMDCompiler:
         translation_mode: str,
         model_name: str,
         chat_format: str,
-        steps: int,
         max_tokens: int,
         temperature: float,
         top_p: float,
@@ -186,7 +184,6 @@ class MVDirectorEMDCompiler:
                     inputs={
                         "translation_mode": translation_mode,
                         "emd_text": normalize_newlines(emd_text),
-                        "steps": steps,
                         "timing_profile": profile.to_dict(),
                     },
                 )
@@ -198,7 +195,6 @@ class MVDirectorEMDCompiler:
                     result = compile_ref2va(
                         emd_text,
                         IdentityTranslator(),
-                        steps=steps,
                         timing_profile=profile,
                     )
                     plan_json = result.plan_json()
@@ -245,7 +241,6 @@ class MVDirectorEMDCompiler:
                     "translation_mode": translation_mode,
                     "translation_prompt_version": TRANSLATION_PROMPT_VERSION,
                     "emd_text": normalize_newlines(emd_text),
-                    "steps": steps,
                     "timing_profile": profile.to_dict(),
                     "model": {
                         "selection_id": model.selection_id,
@@ -288,7 +283,6 @@ class MVDirectorEMDCompiler:
                 result = compile_ref2va(
                     emd_text,
                     translator,
-                    steps=steps,
                     timing_profile=profile,
                     progress_callback=translation_progress,
                 )

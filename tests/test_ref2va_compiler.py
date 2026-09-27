@@ -137,9 +137,11 @@ class Ref2VACompilerTests(unittest.TestCase):
         result = compile_ref2va(source, EchoTranslator())
 
         rendered = result.plan_json()
-        self.assertEqual(result.plan["defaults"]["steps"], 8)
+        self.assertNotIn("defaults", result.plan)
+        self.assertNotIn("steps", result.plan)
+        self.assertTrue(all("steps" not in shot for shot in result.plan["shots"]))
         self.assertTrue(rendered.endswith("\n"))
-        self.assertTrue(rendered.startswith('{\n  "defaults": {\n'))
+        self.assertTrue(rendered.startswith('{\n  '))
         self.assertIn('\n  "shots": [\n    {\n', rendered)
         self.assertIn("実写映画として描写する。", rendered)
         self.assertNotIn("\\u5b9f", rendered)

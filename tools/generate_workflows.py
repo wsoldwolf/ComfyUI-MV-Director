@@ -27,7 +27,7 @@ from core.h3_contract import (
 )
 
 
-VIDEO_DENOISING_STEPS = 8
+VIDEO_DENOISING_STEPS = 20
 H3_BASE_MODEL = (
     "MiniMaxH3\\minimax_h3_fl2va_pruned_int8_convrot.safetensors"
 )
@@ -46,10 +46,10 @@ H3_ATTENTION_BACKEND = "comfy kitchen attention"
 H3_REFERENCE_IMAGE_SIZE = "max"
 REVIEW_ENABLED = False
 OUTPUT_ASPECT_RATIO = "16:9 (Widescreen)"
-OUTPUT_MEGAPIXELS = 0.4
+OUTPUT_MEGAPIXELS = 0.9
 OUTPUT_MULTIPLE = 32
 TURBO_LORA_NAME = (
-    "MiniMaxH3\\minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors"
+    "MiniMaxH3\\minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors"
 )
 TEXT_MODEL = (
     "gemma-4-31b-it-heretic-ara-GGUF/gemma-4-31b-it-heretic-ara.Q4_K_S.gguf"
@@ -468,7 +468,6 @@ def _fallback_plan(mode: str) -> dict[str, Any]:
         )
     return {
         "prompt_prefix": ["Render every scene as photorealistic live-action cinema."],
-        "defaults": {"steps": VIDEO_DENOISING_STEPS},
         "shots": [scene],
     }
 
@@ -738,7 +737,6 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
                 "ja_to_en",
                 TEXT_MODEL,
                 "auto",
-                VIDEO_DENOISING_STEPS,
                 4096,
                 0.0,
                 0.9,
@@ -1630,7 +1628,88 @@ def build_video_workflow(mode: str, base_path: Path) -> dict[str, Any]:
         "contract": CONTRACT_ID,
         "context_loop_base": "Ref2V Basic - MiniMax H3 0.6.json",
     }
-    return _decorate_video_workflow(workflow, mode)
+    _decorate_video_workflow(workflow, mode)
+    sync_video_acceleration(workflow)
+    return workflow
+
+
+def sync_video_acceleration(workflow: dict[str, Any]) -> None:
+    """Apply WF02's model patches without rebuilding saved inputs or layout."""
+    def unique(type_name: str) -> dict[str, Any]:
+        nodes = [node for node in workflow["nodes"] if node["type"] == type_name]
+        if len(nodes) != 1:
+            raise ValueError(f"Expected one {type_name}, found {len(nodes)}")
+        return nodes[0]
+
+    templates = json.loads((ROOT / "tools/workflow_templates/video_acceleration.json")
+                           .read_text(encoding="utf-8"))
+    patch_nodes = {}
+    for template in templates:
+        matching = [node for node in workflow["nodes"] if node["type"] == template["type"]]
+        if len(matching) > 1:
+            raise ValueError(f"Multiple acceleration nodes: {template['type']}")
+        if matching:
+            node = matching[0]
+            if [i["name"] for i in node["inputs"]] != [i["name"] for i in template["inputs"]]:
+                raise ValueError(f"Acceleration schema differs: {node['type']}")
+            node["widgets_values"] = template["widgets_values"]
+            node["mode"] = template["mode"]
+            if "widgets_values_named" in node:
+                node["widgets_values_named"] = template["widgets_values_named"].copy()
+        else:
+            node = template
+            used_ids = {n["id"] for n in workflow["nodes"]}
+            if node["id"] in used_ids:
+                node["id"] = max(used_ids) + 1
+            workflow["nodes"].append(node)
+            workflow["last_node_id"] = max(workflow["last_node_id"], node["id"])
+        patch_nodes[node["type"]] = node
+
+    lora = unique("LoraLoaderModelOnly")
+    lora["widgets_values"] = [TURBO_LORA_NAME, 1.0]
+    lora["mode"] = 4
+    lora["title"] = "TURBO LoRA — 8 STEP (BYPASSED)"
+    attention = unique("ModelAttentionBackend")
+    attention["widgets_values"] = [H3_ATTENTION_BACKEND]
+    # Keep the user's compact placement; migrate only the previous generated placement.
+    if attention["pos"] == [1920, 1200]:
+        attention.update(pos=[1920, 1170], size=[280, 70], color="#223", bgcolor="#335")
+    chain = [lora, attention, patch_nodes["BlockSparseAttention"],
+             patch_nodes["SpectrumApplyMiniMaxH3"], patch_nodes["ModelPatchTorchSettings"],
+             unique("MiniMaxH3SigmaShift")]
+    for origin, target in zip(chain, chain[1:]):
+        socket = target["inputs"][_input_index(target, "model")]
+        old_id = socket.get("link")
+        old = next((link for link in workflow["links"] if link[0] == old_id), None)
+        if old and old[1:3] == [origin["id"], 0]:
+            continue
+        if old:
+            previous = _node_by_id(workflow, old[1])["outputs"][old[2]]
+            previous["links"] = [link for link in (previous.get("links") or []) if link != old_id]
+            workflow["links"].remove(old)
+        _connect(workflow, origin["id"], 0, target["id"], "model", "MODEL")
+    unique("MiniMaxH3ChainPlanModern")["widgets_values"][8] = VIDEO_DENOISING_STEPS
+    unique("BasicScheduler")["widgets_values"][1] = VIDEO_DENOISING_STEPS
+    unique("ResolutionSelector")["widgets_values"] = [OUTPUT_ASPECT_RATIO, OUTPUT_MEGAPIXELS, OUTPUT_MULTIPLE]
+    unique("MiniMaxH3ChainLoopEnd")["widgets_values"][1] = "recursive"
+    # ComfyUI may serialize both positional and named widgets. Keep them consistent.
+    named_settings = {
+        "LoraLoaderModelOnly": {"lora_name": TURBO_LORA_NAME, "strength_model": 1.0},
+        "ModelAttentionBackend": {"attention_backend": H3_ATTENTION_BACKEND},
+        "MiniMaxH3ChainPlanModern": {"default_steps": VIDEO_DENOISING_STEPS},
+        "BasicScheduler": {"steps": VIDEO_DENOISING_STEPS},
+        "ResolutionSelector": {"aspect_ratio": OUTPUT_ASPECT_RATIO,
+                               "megapixels": OUTPUT_MEGAPIXELS, "multiple": OUTPUT_MULTIPLE},
+        "MiniMaxH3ChainLoopEnd": {"execution_mode": "recursive"},
+    }
+    for type_name, settings in named_settings.items():
+        node = unique(type_name)
+        if "widgets_values_named" in node:
+            node["widgets_values_named"].update(settings)
+    for group in workflow.get("groups", []):
+        if group.get("title") == "02 • MODELS & INPUTS":
+            group["bounding"][3] = max(group["bounding"][3], 2250)
+    sync_step_ownership(workflow)
 
 
 def sync_context_loop_runtime(workflow: dict[str, Any]) -> None:
@@ -1690,6 +1769,7 @@ def validate_workflow(workflow: dict[str, Any]) -> None:
 def sync_model_runtime(workflow: dict[str, Any], mode: str) -> None:
     """Update model settings, preserving UI metadata and saved media Plan."""
     sync_planner_schema(workflow)
+    sync_compiler_schema(workflow)
     generated = build_plan_workflow(mode)
     text_types = {
         "MVDirectorDirectionEnhancer",
@@ -1716,12 +1796,9 @@ def sync_model_runtime(workflow: dict[str, Any], mode: str) -> None:
         start, stop = {
             "MVDirectorDirectionEnhancer": (5, 18),
             "MVDirectorTimelinePlanner": (3, 16),
-            "MVDirectorEMDCompiler": (1, 15),
+            "MVDirectorEMDCompiler": (1, 14),
         }[node["type"]]
-        # Preserve the compiler's user-selected denoising steps as well.
-        indexes = [start, start + 1] + list(range(
-            start + (3 if node["type"] == "MVDirectorEMDCompiler" else 2), stop
-        ))
+        indexes = list(range(start, stop))
         named = node.get("widgets_values_named")
         for field, index in zip(runtime_fields, indexes, strict=True):
             node["widgets_values"][index] = source["widgets_values"][index]
@@ -1742,6 +1819,60 @@ def sync_direction_settings(workflow: dict[str, Any]) -> None:
             named = node.get("widgets_values_named")
             if isinstance(named, dict) and "value" in named:
                 named["value"] = DEFAULT_USER_PROMPT
+
+
+def sync_compiler_schema(workflow: dict[str, Any]) -> None:
+    """Remove Compiler steps; retain runtime widgets, layout and linked inputs."""
+    for node in workflow["nodes"]:
+        if node["type"] != "MVDirectorEMDCompiler":
+            continue
+        inputs = node.get("inputs", [])
+        if any(i.get("name") == "steps" and i.get("link") is not None for i in inputs):
+            raise ValueError("linked Compiler steps requires manual migration to Plan default_steps")
+        values = node["widgets_values"]
+        if len(values) == 18:
+            del values[3]
+        if len(values) != 17 or values[16] not in {"reuse", "refresh", "disabled"}:
+            raise ValueError("unexpected Compiler widgets for current schema")
+        named = node.get("widgets_values_named")
+        if isinstance(named, dict):
+            named.pop("steps", None)
+            named.pop("denoising_steps", None)
+        indexes = {i for i, item in enumerate(inputs) if item.get("name") == "steps"}
+        node["inputs"] = [item for i, item in enumerate(inputs) if i not in indexes]
+        for link in workflow.get("links", []):
+            if link[3] == node["id"]:
+                link[4] -= sum(i < link[4] for i in indexes)
+
+
+def sync_step_ownership(workflow: dict[str, Any]) -> None:
+    """Let Plan default_steps govern stored plans without changing their prose."""
+    sync_compiler_schema(workflow)
+    for node in workflow["nodes"]:
+        if node["type"] != "MiniMaxH3ChainPlanModern":
+            continue
+        raw = node["widgets_values"][0]
+        plan = json.loads(raw)
+        if not isinstance(plan, dict):
+            raise ValueError("stored Plan must be an object")
+        changed = "steps" in plan
+        plan.pop("steps", None)
+        defaults = plan.get("defaults")
+        if isinstance(defaults, dict) and "steps" in defaults:
+            del defaults["steps"]
+            changed = True
+            if not defaults:
+                del plan["defaults"]
+        for shot in plan.get("shots", []):
+            if isinstance(shot, dict) and "steps" in shot:
+                del shot["steps"]
+                changed = True
+        if changed:
+            text = json.dumps(plan, ensure_ascii=False, indent=2)
+            node["widgets_values"][0] = text
+            named = node.get("widgets_values_named")
+            if isinstance(named, dict) and "plan_json" in named:
+                named["plan_json"] = text
 
 
 def sync_planner_schema(workflow: dict[str, Any]) -> None:
@@ -1817,7 +1948,40 @@ def sync_timing_contract(workflow: dict[str, Any], mode: str) -> None:
 def write_workflows(context_loop_root: Path, output_dir: Path, *, runtime_only: bool = False,
                     direction_only: bool = False, candidate_only: bool = False,
                     timing_only: bool = False, video_runtime_only: bool = False,
-                    planner_schema_only: bool = False) -> None:
+                    planner_schema_only: bool = False, step_ownership_only: bool = False,
+                    acceleration_only: bool = False) -> None:
+    if acceleration_only:
+        pending_writes = []
+        for mode, spec in MODES.items():
+            path = output_dir / f"{int(spec['number']) * 2:02d}_video_{mode}.json"
+            original_text = path.read_text(encoding="utf-8")
+            workflow = json.loads(original_text)
+            sync_video_acceleration(workflow)
+            validate_workflow(workflow)
+            formatted = (json.dumps(workflow, ensure_ascii=False, separators=(",", ":"))
+                         if len(original_text.splitlines()) == 1 else _json_text(workflow))
+            pending_writes.append((path, formatted + "\n"))
+        for path, formatted in pending_writes:
+            path.write_text(formatted, encoding="utf-8")
+        if not (runtime_only or direction_only or candidate_only or planner_schema_only
+                or timing_only or video_runtime_only or step_ownership_only):
+            return
+    if step_ownership_only:
+        pending_writes = []
+        for path in sorted(output_dir.glob("*.json")):
+            original_text = path.read_text(encoding="utf-8")
+            workflow = json.loads(original_text)
+            sync_step_ownership(workflow)
+            validate_workflow(workflow)
+            formatted = (json.dumps(workflow, ensure_ascii=False, separators=(",", ":"))
+                         if len(original_text.splitlines()) == 1 else _json_text(workflow))
+            pending_writes.append((path, formatted + "\n"))
+        # Validate every graph before overwriting any of the user's files.
+        for path, formatted in pending_writes:
+            path.write_text(formatted, encoding="utf-8")
+        if not (runtime_only or direction_only or candidate_only or planner_schema_only
+                or timing_only or video_runtime_only):
+            return
     if timing_only or video_runtime_only:
         for mode, spec in MODES.items():
             for suffix, number in (("plan_compiler", int(spec["number"]) * 2 - 1),
@@ -1899,12 +2063,18 @@ def main() -> None:
                         help="Migrate video node schemas without replacing saved Plan or layout")
     parser.add_argument("--sync-planner-schema", action="store_true",
                         help="Remove retired Planner widgets while retaining layout and inputs")
+    parser.add_argument("--sync-step-ownership", action="store_true",
+                        help="Remove Compiler steps and stored Plan overrides; preserve Plan default_steps")
+    parser.add_argument("--sync-video-acceleration", action="store_true",
+                        help="Apply WF02 acceleration and 20-step defaults without rebuilding video inputs")
     args = parser.parse_args()
     write_workflows(args.context_loop_root, args.output_dir, runtime_only=args.sync_model_runtime,
                     direction_only=args.sync_direction_settings, candidate_only=args.sync_candidate_policy,
                     timing_only=args.sync_timing_contract,
                     video_runtime_only=args.sync_context_loop_runtime,
-                    planner_schema_only=args.sync_planner_schema)
+                    planner_schema_only=args.sync_planner_schema,
+                    step_ownership_only=args.sync_step_ownership,
+                    acceleration_only=args.sync_video_acceleration)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,7 @@
 # MV Director workflows
 
+denoising stepsは動画側の`MiniMaxH3ChainPlanModern.default_steps`で指定します（配布既定20）。Compilerのstep入力とJSONのstep出力は廃止しました。旧WFは`python tools/generate_workflows.py --sync-step-ownership`で移行できます。配置・配色・入力素材・Plan本文とPlanノードの既定値は保持し、旧Compiler widgetと埋め込みJSONのstep指定だけを取り除きます。旧stepsが外部接続されている場合は手動移行を要求します。外部Planファイルの移行については[TIPS](../docs/tips/two-stage-workflow.md)を参照してください。変更後はComfyUIを再起動し、WFを開き直してください。
+
 基準環境:
 
 - ComfyUI v0.37.2 commit `830232b856045ca2892833212d7771078a13edd5`
@@ -20,7 +22,9 @@
 | 5 | `05_plan_compiler_lyrics.json` | 歌詞directive用のEMDとPlanを生成 |
 | 6 | `06_video_lyrics.json` | 追加lip-sync経路なしで歌詞promptから動画生成 |
 
-三つの動画生成WFは共通して`UNET → LIGHTX2V TurboLoRA → Model Attention Backend → Sigma Shift`のMODEL経路を使い、既存のSigma ShiftをVideo/Audio Shiftとして一段だけ適用する。既定denoising stepsは8とする。
+三つの動画生成WFは共通して`Hybrid Loader → Turbo LoRA（バイパス）→ Model Attention Backend → Block Sparse Attention → Spectrum → FP16 accumulation → Sigma Shift`のMODEL経路を使い、既存のSigma ShiftをVideo/Audio Shiftとして一段だけ適用する。既定denoising stepsは20、解像度は0.9MP、Loop Endは`recursive`とする。
+
+02_から反映した高速化設定は`tools/workflow_templates/video_acceleration.json`に保持する。`python tools/generate_workflows.py --sync-video-acceleration`で動画WFのみ同期できる。既存ノードの配置・素材・保存済みPlan・seedは維持する。Sparse AttentionはComfyUI本体、SpectrumはComfyUI-Spectrum-MiniMax-H3、FP16 accumulationはComfyUI-KJNodesが必要。詳細は[導入マニュアル](../docs/installation.md)を参照する。
 
 各方式はPlan/Compilerと動画生成を一対一に分離している。前段をQueueするとComfyUI `output/mv_director`へPlan JSON本文を持つ`.txt`が保存される。対応する動画workflowの`Compiled Plan JSON (.txt handoff)`へ、そのファイルを選択又はD&Dする。
 
@@ -56,7 +60,7 @@ Visionは既存MTMD backendで人物・背景それぞれのEMD出力を確認�
 - MiniMax H3 FL2VA（base）及びRef2VA（overlay）diffusion model、text encoder、video VAE、audio VAE、Turbo LoRA
 - [ComfyUI_MinimaxH3HybridLoader](https://github.com/scottmudge/ComfyUI_MinimaxH3HybridLoader)カスタムノード
 
-動画WFは`MiniMaxH3HybridLoader`でFL2VAをベースにRef2VAのAdaLN block 25–49を重ね、その出力にTurbo LoRAを適用する。モデル、カスタムノードの導入手順、取得元及びSHA-256は[導入マニュアル](../docs/installation.md#動画workflowの既定h3-hybrid-loader)を参照する。
+動画WFは`MiniMaxH3HybridLoader`でFL2VAをベースにRef2VAのAdaLN block 25–49を重ねる。Turbo LoRAは選択値を保持したままバイパスする。モデル、カスタムノードの導入手順、取得元及びSHA-256は[導入マニュアル](../docs/installation.md#動画workflowの既定h3-hybrid-loader)を参照する。
 
 同梱検証素材を既定値にしているが、ComfyUIの`input`へ存在しない場合は各Loadノードで選択し直す。Context Loop方式とLyrics方式の動画WFは、コンパイル済みPlanから最終frame尺と歌詞directiveを得るためLyric Segmentationを再実行しない。Audio Reference方式だけは元音声のScene区間をPlan位置へ並べ直すため、Plan/Compiler側と同じ歌詞、vocal、Whisper及びtiming profileでLyric Segmentationを実行し、成功cacheを再利用する。
 

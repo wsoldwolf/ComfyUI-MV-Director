@@ -71,7 +71,7 @@ Direction Enhancerでは`retention_policy`を先頭widgetに置く。LLM利用no
 
 ### 1.6 EMD Compilerのsocket
 
-`MVDirectorEMDCompiler`は必須`emd_text`、`translation_mode`、GGUF `model_name`、`chat_format`、`steps`、`max_tokens`、`temperature`、`top_p`、`repetition_penalty`、`gpu_layers`、`n_batch`、`n_ctx`、`flash_attn`、`kv_cache_type`、`op_offload`、`keep_model_loaded`、`seed`、`cache_mode`と、任意`MV_DIRECTOR_H3_TIMING_PROFILE`を受ける。`cache_mode`は`reuse`（既定）/ `refresh` / `disabled`とする。`translation_mode`は`ja_to_en`を既定とし、`already_english`ではmodel選択値が空又はstaleでもGGUFをresolve又はloadしない。Compilerは成功したPlan JSONとrequired referencesだけをcacheし、失敗、repair、意味監査又はgraph inspectionを保存しない。
+`MVDirectorEMDCompiler`は必須`emd_text`、`translation_mode`、GGUF `model_name`、`chat_format`、`max_tokens`、`temperature`、`top_p`、`repetition_penalty`、`gpu_layers`、`n_batch`、`n_ctx`、`flash_attn`、`kv_cache_type`、`op_offload`、`keep_model_loaded`、`seed`、`cache_mode`と、任意`MV_DIRECTOR_H3_TIMING_PROFILE`を受ける。`cache_mode`は`reuse`（既定）/ `refresh` / `disabled`とする。`translation_mode`は`ja_to_en`を既定とし、`already_english`ではmodel選択値が空又はstaleでもGGUFをresolve又はloadしない。Compilerは成功したPlan JSONとrequired referencesだけをcacheし、失敗、repair、意味監査又はgraph inspectionを保存しない。step数は動画側Planノードの`default_steps`で設定し、Compilerの入力及びJSON出力には含めない。
 
 出力は`plan_json: STRING`、`required_references: MV_DIRECTOR_REQUIRED_REFERENCES`、`status: STRING`の順とする。`plan_json`はUnicode非escape、key sort、2 space indent、LF改行、末尾LFのpretty-printed JSONとする。文法不正は行番号を持つ`EMDParseError`として停止し、空Plan又は補正文を返さない。日本語翻訳応答は`TRANSLATION<TAB>SLOT<TAB>TEXT`だけを受理し、contextに収まり、かつ7 unit以下となる最大の連続unit群へ有限分割する。欠落・競合slotは有限の局所再試行を行い、復元できない必須翻訳が残った場合は停止する。
 

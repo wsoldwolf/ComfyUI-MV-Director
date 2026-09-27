@@ -61,9 +61,14 @@ $lines.Add("生成日時: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')")
 $lines.Add("対象: $resolved")
 $lines.Add('')
 $lines.Add('この索引は読み取り集計のスナップショットです。フォルダの移動・削除は行いません。生成中のフォルダは容量が変化します。外部のWFやレポートによる絶対パス参照は、この索引だけでは検出できません。')
-$archiveIndex = Join-Path $resolved '_archive\through-2026-09-24\_INDEX.md'
-if (Test-Path -LiteralPath $archiveIndex) {
-    $lines.Add('旧出力の移動元・移動先は[_archive/through-2026-09-24 の対応表](<_archive/through-2026-09-24/_INDEX.md>)を参照。')
+$archiveContainer = Join-Path $resolved '_archive'
+if (Test-Path -LiteralPath $archiveContainer) {
+    foreach ($archiveFolder in Get-ChildItem -LiteralPath $archiveContainer -Directory | Sort-Object Name) {
+        if (Test-Path -LiteralPath (Join-Path $archiveFolder.FullName '_INDEX.md')) {
+            $archiveRelative = "_archive/$($archiveFolder.Name)/_INDEX.md"
+            $lines.Add("旧出力の移動元・移動先は[$($archiveFolder.Name) の対応表](<$archiveRelative>)を参照。")
+        }
+    }
 }
 $lines.Add('')
 foreach ($category in @('アーカイブ', '完成動画・通常生成', '研究用全編動画', '短区間比較', 'Plan・EMD・歌詞', '未分類・要確認')) {

@@ -75,6 +75,17 @@ git clone https://github.com/scottmudge/ComfyUI_MinimaxH3HybridLoader.git
 
 既にclone済みなら重複して実行しないでください。ノード検索で`MiniMax H3 Hybrid Loader`が表示されることを確認します。
 
+動画WFの高速化ノードには、[ComfyUI-Spectrum-MiniMax-H3](https://github.com/xmarre/ComfyUI-Spectrum-MiniMax-H3)と[ComfyUI-KJNodes](https://github.com/kijai/ComfyUI-KJNodes)も必要です。未導入の場合は次を実行し、ComfyUIを再起動してください。
+
+```bat
+cd /d C:\Software\ComfyUI\custom_nodes
+git clone https://github.com/xmarre/ComfyUI-Spectrum-MiniMax-H3.git
+git clone https://github.com/kijai/ComfyUI-KJNodes.git
+C:\Software\ComfyUI\venv\Scripts\python.exe -m pip install -r ComfyUI-KJNodes\requirements.txt
+```
+
+`BlockSparseAttention`はComfyUI本体のノードです。`ModelPatchTorchSettings`はFP16 accumulationを有効にします。速度と画質への影響は環境・解像度・設定に依存します。配布設定はPlanの`default_steps=20`、0.9MP、Turbo LoRAバイパスです。
+
 ## 3. `llama-cpp-python` CUDA wheelを作る
 
 現環境のComfyUIはPython 3.13です。公式CUDA wheelのPython対応範囲と一致しない場合があるため、Vision対応を含むwheelをComfyUIのvenv用にsource buildします。
@@ -221,7 +232,7 @@ certutil -hashfile "C:\Software\ComfyUI\models\LLM\GGUF\gemma-4-31b-it-heretic-a
 
 配布workflowの動画生成側（`02_video_context_loop.json`、`04_video_audio_reference.json`、`06_video_lyrics.json`）は`MiniMaxH3HybridLoader`を使用します。FL2VAをベースに、Ref2VAの一部のAdaLN変調重みをオーバーレイします。これはFL2VAの画質・動きとRef2VAの参照条件付けを併用するための構成で、[Hybrid Loader作者の説明](https://github.com/scottmudge/ComfyUI_MinimaxH3HybridLoader)もこの組合せを提案しています。本workflowはユーザーが`02_video_context_loop.json`で設定した`block_range_adaln`、開始block `25`、終了block `49`、`final_adaln_from_overlay=false`をそのまま既定値とします。
 
-モデルファイルの配布元は[Comfy-Org/MiniMax-H3](https://huggingface.co/Comfy-Org/MiniMax-H3)です。FL2VAとRef2VAの両方をダウンロードし、表の配置先へ保存してください。Turbo LoRAはHybrid Loaderの出力へ適用します。
+モデルファイルの配布元は[Comfy-Org/MiniMax-H3](https://huggingface.co/Comfy-Org/MiniMax-H3)です。FL2VAとRef2VAの両方をダウンロードし、表の配置先へ保存してください。Turbo LoRAは現在バイパスされており、再有効化する場合だけ必要です。8step版を選択していますが、バイパス中の生成ステップ数はPlanの20です。
 
 | 用途 | workflowで選択されるファイル | ComfyUIモデルルートからの配置先 | 取得元 |
 | --- | --- | --- | --- |
@@ -230,7 +241,7 @@ certutil -hashfile "C:\Software\ComfyUI\models\LLM\GGUF\gemma-4-31b-it-heretic-a
 | Text Encoder (TE) | `qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors` | `text_encoders\MiniMaxH3\` | [ダウンロード](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors?download=true) |
 | Video VAE | `minimax_h3_video_vae_fp16.safetensors` | `vae\MiniMaxH3\` | [ダウンロード](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_fp16.safetensors?download=true) |
 | Audio VAE | `minimax_h3_audio_vae_fp32.safetensors` | `vae\MiniMaxH3\` | [ダウンロード](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors?download=true) |
-| Turbo LoRA | `minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors` | `loras\MiniMaxH3\` | [ダウンロード](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/loras/minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors?download=true) |
+| Turbo LoRA（バイパス） | `minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors` | `loras\MiniMaxH3\` | [ダウンロード](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/loras/minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors?download=true) |
 
 取得後は、例えば次のように各ファイルのSHA-256を確認できます。
 
@@ -245,7 +256,7 @@ certutil -hashfile "C:\Software\ComfyUI\models\diffusion_models\MiniMaxH3\minima
 | `qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors` | `35a88d51044231fe332301d7a62aa81e3f2cba62febeb446e2c1e3e0ef76f2c6` |
 | `minimax_h3_video_vae_fp16.safetensors` | `7c1f131492e7eddacaac9069a61b81bdd39de5cc96561e677c5eab1cdce5e522` |
 | `minimax_h3_audio_vae_fp32.safetensors` | `8e505d95dd1561d47abd43d4238fd40d9bb1ae9e147ed0a4cba778d76ae4db48` |
-| `minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors` | `5b9ab5ade15d0775676d01a907268a69a1468dc6033b3b0d3ded5502f3ebb84c` |
+| `minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors` | `6a56f41ab4229c9dd845b9501bbd475ee57e112d846cf2e819d534a1ae928c5a` |
 
 ## 6. 起動確認
 

@@ -1,0 +1,548 @@
+[
+  {
+    "id": 62,
+    "type": "ModelPatchTorchSettings",
+    "pos": [
+      2230,
+      1170
+    ],
+    "size": [
+      270,
+      60
+    ],
+    "flags": {},
+    "order": 21,
+    "mode": 0,
+    "inputs": [
+      {
+        "localized_name": "model",
+        "name": "model",
+        "type": "MODEL",
+        "link": null
+      },
+      {
+        "localized_name": "enable_fp16_accumulation",
+        "name": "enable_fp16_accumulation",
+        "type": "BOOLEAN",
+        "widget": {
+          "name": "enable_fp16_accumulation"
+        },
+        "link": null
+      }
+    ],
+    "outputs": [
+      {
+        "localized_name": "\u30e2\u30c7\u30eb",
+        "name": "MODEL",
+        "type": "MODEL",
+        "links": []
+      }
+    ],
+    "properties": {
+      "ue_properties": {
+        "widget_ue_connectable": {},
+        "input_ue_unconnectable": {}
+      },
+      "Node name for S&R": "ModelPatchTorchSettings"
+    },
+    "widgets_values": [
+      true
+    ],
+    "widgets_values_named": {
+      "enable_fp16_accumulation": true
+    },
+    "color": "#223",
+    "bgcolor": "#335"
+  },
+  {
+    "id": 60,
+    "type": "BlockSparseAttention",
+    "pos": [
+      1920,
+      1310
+    ],
+    "size": [
+      350,
+      250
+    ],
+    "flags": {},
+    "order": 28,
+    "mode": 0,
+    "inputs": [
+      {
+        "localized_name": "model",
+        "name": "model",
+        "type": "MODEL",
+        "link": null
+      },
+      {
+        "localized_name": "selection",
+        "name": "selection",
+        "type": "COMFY_DYNAMICCOMBO_V3",
+        "widget": {
+          "name": "selection"
+        },
+        "link": null
+      },
+      {
+        "localized_name": "keep_percent",
+        "name": "selection.keep_percent",
+        "type": "FLOAT",
+        "widget": {
+          "name": "selection.keep_percent"
+        },
+        "link": null
+      },
+      {
+        "localized_name": "start_percent",
+        "name": "start_percent",
+        "type": "FLOAT",
+        "widget": {
+          "name": "start_percent"
+        },
+        "link": null
+      },
+      {
+        "localized_name": "end_percent",
+        "name": "end_percent",
+        "type": "FLOAT",
+        "widget": {
+          "name": "end_percent"
+        },
+        "link": null
+      },
+      {
+        "localized_name": "dense_blocks",
+        "name": "dense_blocks",
+        "type": "STRING",
+        "widget": {
+          "name": "dense_blocks"
+        },
+        "link": null
+      },
+      {
+        "localized_name": "min_tokens",
+        "name": "min_tokens",
+        "type": "INT",
+        "widget": {
+          "name": "min_tokens"
+        },
+        "link": null
+      },
+      {
+        "localized_name": "extra_tokens",
+        "name": "extra_tokens",
+        "type": "INT",
+        "widget": {
+          "name": "extra_tokens"
+        },
+        "link": null
+      },
+      {
+        "localized_name": "sink_conditioning",
+        "name": "sink_conditioning",
+        "type": "COMBO",
+        "widget": {
+          "name": "sink_conditioning"
+        },
+        "link": null
+      },
+      {
+        "localized_name": "verbose",
+        "name": "verbose",
+        "type": "BOOLEAN",
+        "widget": {
+          "name": "verbose"
+        },
+        "link": null
+      }
+    ],
+    "outputs": [
+      {
+        "localized_name": "model",
+        "name": "model",
+        "type": "MODEL",
+        "links": []
+      }
+    ],
+    "properties": {
+      "Node name for S&R": "BlockSparseAttention",
+      "ue_properties": {
+        "widget_ue_connectable": {},
+        "input_ue_unconnectable": {},
+        "version": "7.8"
+      }
+    },
+    "widgets_values": [
+      "sla",
+      10,
+      0.2,
+      1,
+      "",
+      12288,
+      256,
+      "exact_kv_and_rows",
+      false
+    ],
+    "widgets_values_named": {
+      "selection": "sla",
+      "selection.keep_percent": 10,
+      "start_percent": 0.2,
+      "end_percent": 1,
+      "dense_blocks": "",
+      "min_tokens": 12288,
+      "extra_tokens": 256,
+      "sink_conditioning": "exact_kv_and_rows",
+      "verbose": false
+    },
+    "color": "#223",
+    "bgcolor": "#335"
+  },
+  {
+    "id": 61,
+    "type": "SpectrumApplyMiniMaxH3",
+    "pos": [
+      1920,
+      1630
+    ],
+    "size": [
+      390.669921875,
+      658
+    ],
+    "flags": {},
+    "order": 30,
+    "mode": 0,
+    "inputs": [
+      {
+        "localized_name": "model",
+        "name": "model",
+        "type": "MODEL",
+        "link": null
+      },
+      {
+        "localized_name": "enabled",
+        "name": "enabled",
+        "type": "BOOLEAN",
+        "widget": {
+          "name": "enabled"
+        },
+        "link": null
+      },
+      {
+        "localized_name": "blend_weight",
+        "name": "blend_weight",
+        "type": "FLOAT",
+        "widget": {
+          "name": "blend_weight"
+        },
+        "link": null
+      },
+      {
+        "localized_name": "degree",
+        "name": "degree",
+        "type": "INT",
+        "widget": {
+          "name": "degree"
+        },
+        "link": null
+      },
+      {
+        "localized_name": "ridge_lambda",
+        "name": "ridge_lambda",
+        "type": "FLOAT",
+        "widget": {
+          "name": "ridge_lambda"
+        },
+        "link": null
+      },
+      {
+        "localized_name": "window_size",
+        "name": "window_size",
+        "type": "FLOAT",
+        "widget": {
+          "name": "window_size"
+        },
+        "link": null
+      },
+      {
+        "localized_name": "flex_window",
+        "name": "flex_window",
+        "type": "FLOAT",
+        "widget": {
+          "name": "flex_window"
+        },
+        "link": null
+      },
+      {
+        "localized_name": "warmup_steps",
+        "name": "warmup_steps",
+        "type": "INT",
+        "widget": {
+          "name": "warmup_steps"
+        },
+        "link": null
+      },
+      {
+        "localized_name": "tail_actual_steps",
+        "name": "tail_actual_steps",
+        "type": "INT",
+        "widget": {
+          "name": "tail_actual_steps"
+        },
+        "link": null
+      },
+      {
+        "localized_name": "max_history",
+        "name": "max_history",
+        "type": "INT",
+        "widget": {
+          "name": "max_history"
+        },
+        "link": null
+      },
+      {
+        "localized_name": "debug",
+        "name": "debug",
+        "type": "BOOLEAN",
+        "widget": {
+          "name": "debug"
+        },
+        "link": null
+      },
+      {
+        "localized_name": "history_storage",
+        "name": "history_storage",
+        "shape": 7,
+        "type": "COMBO",
+        "widget": {
+          "name": "history_storage"
+        },
+        "link": null
+      },
+      {
+        "localized_name": "bootstrap_first_forecast",
+        "name": "bootstrap_first_forecast",
+        "shape": 7,
+        "type": "BOOLEAN",
+        "widget": {
+          "name": "bootstrap_first_forecast"
+        },
+        "link": null
+      },
+      {
+        "localized_name": "anchor_residual_feedback",
+        "name": "anchor_residual_feedback",
+        "shape": 7,
+        "type": "BOOLEAN",
+        "widget": {
+          "name": "anchor_residual_feedback"
+        },
+        "link": null
+      },
+      {
+        "localized_name": "selective_rollback_correction",
+        "name": "selective_rollback_correction",
+        "shape": 7,
+        "type": "BOOLEAN",
+        "widget": {
+          "name": "selective_rollback_correction"
+        },
+        "link": null
+      },
+      {
+        "localized_name": "offline_smoothing_replay",
+        "name": "offline_smoothing_replay",
+        "shape": 7,
+        "type": "BOOLEAN",
+        "widget": {
+          "name": "offline_smoothing_replay"
+        },
+        "link": null
+      },
+      {
+        "localized_name": "audio_blend_weight",
+        "name": "audio_blend_weight",
+        "shape": 7,
+        "type": "FLOAT",
+        "widget": {
+          "name": "audio_blend_weight"
+        },
+        "link": null
+      },
+      {
+        "localized_name": "offline_archive_storage",
+        "name": "offline_archive_storage",
+        "shape": 7,
+        "type": "COMBO",
+        "widget": {
+          "name": "offline_archive_storage"
+        },
+        "link": null
+      },
+      {
+        "localized_name": "model_aware_mode",
+        "name": "model_aware_mode",
+        "shape": 7,
+        "type": "COMBO",
+        "widget": {
+          "name": "model_aware_mode"
+        },
+        "link": null
+      },
+      {
+        "localized_name": "model_aware_risk_threshold",
+        "name": "model_aware_risk_threshold",
+        "shape": 7,
+        "type": "FLOAT",
+        "widget": {
+          "name": "model_aware_risk_threshold"
+        },
+        "link": null
+      },
+      {
+        "localized_name": "model_aware_trust_shrinkage",
+        "name": "model_aware_trust_shrinkage",
+        "shape": 7,
+        "type": "BOOLEAN",
+        "widget": {
+          "name": "model_aware_trust_shrinkage"
+        },
+        "link": null
+      },
+      {
+        "localized_name": "model_aware_replay_generic_correction",
+        "name": "model_aware_replay_generic_correction",
+        "shape": 7,
+        "type": "BOOLEAN",
+        "widget": {
+          "name": "model_aware_replay_generic_correction"
+        },
+        "link": null
+      },
+      {
+        "localized_name": "generic_correction_mode",
+        "name": "generic_correction_mode",
+        "shape": 7,
+        "type": "COMBO",
+        "widget": {
+          "name": "generic_correction_mode"
+        },
+        "link": null
+      },
+      {
+        "localized_name": "generic_correction_limiter",
+        "name": "generic_correction_limiter",
+        "shape": 7,
+        "type": "COMBO",
+        "widget": {
+          "name": "generic_correction_limiter"
+        },
+        "link": null
+      },
+      {
+        "localized_name": "generic_correction_limit",
+        "name": "generic_correction_limit",
+        "shape": 7,
+        "type": "FLOAT",
+        "widget": {
+          "name": "generic_correction_limit"
+        },
+        "link": null
+      },
+      {
+        "localized_name": "generic_correction_attenuation",
+        "name": "generic_correction_attenuation",
+        "shape": 7,
+        "type": "COMBO",
+        "widget": {
+          "name": "generic_correction_attenuation"
+        },
+        "link": null
+      },
+      {
+        "localized_name": "sa_pece_forecast_policy",
+        "name": "sa_pece_forecast_policy",
+        "shape": 7,
+        "type": "COMBO",
+        "widget": {
+          "name": "sa_pece_forecast_policy"
+        },
+        "link": null
+      }
+    ],
+    "outputs": [
+      {
+        "localized_name": "model",
+        "name": "model",
+        "type": "MODEL",
+        "links": []
+      }
+    ],
+    "properties": {
+      "Node name for S&R": "SpectrumApplyMiniMaxH3",
+      "ue_properties": {
+        "widget_ue_connectable": {},
+        "input_ue_unconnectable": {},
+        "version": "7.8"
+      }
+    },
+    "widgets_values": [
+      true,
+      0.5,
+      1,
+      0.1,
+      2,
+      0.75,
+      1,
+      1,
+      8,
+      false,
+      "system_ram",
+      true,
+      false,
+      false,
+      true,
+      0,
+      "system_ram",
+      "off",
+      0.65,
+      false,
+      false,
+      "coordinate_rls",
+      "hard_clip",
+      0.4,
+      "no_attenuation",
+      "balanced"
+    ],
+    "widgets_values_named": {
+      "enabled": true,
+      "blend_weight": 0.5,
+      "degree": 1,
+      "ridge_lambda": 0.1,
+      "window_size": 2,
+      "flex_window": 0.75,
+      "warmup_steps": 1,
+      "tail_actual_steps": 1,
+      "max_history": 8,
+      "debug": false,
+      "history_storage": "system_ram",
+      "bootstrap_first_forecast": true,
+      "anchor_residual_feedback": false,
+      "selective_rollback_correction": false,
+      "offline_smoothing_replay": true,
+      "audio_blend_weight": 0,
+      "offline_archive_storage": "system_ram",
+      "model_aware_mode": "off",
+      "model_aware_risk_threshold": 0.65,
+      "model_aware_trust_shrinkage": false,
+      "model_aware_replay_generic_correction": false,
+      "generic_correction_mode": "coordinate_rls",
+      "generic_correction_limiter": "hard_clip",
+      "generic_correction_limit": 0.4,
+      "generic_correction_attenuation": "no_attenuation",
+      "sa_pece_forecast_policy": "balanced"
+    },
+    "color": "#223",
+    "bgcolor": "#335"
+  }
+]

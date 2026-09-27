@@ -10,7 +10,6 @@
 | `translation_mode` | `ja_to_en` | `ja_to_en` / `already_english` |
 | `model_name` | 自動列挙 | 日本語英訳用Text GGUF。Plannerとは独立して明示選択 |
 | `chat_format` | `auto` | `auto` / `qwen` / `gemma` |
-| `steps` | `8` | TurboLoRA動画生成用Plan JSONの既定denoising steps |
 | `max_tokens` | `4096` | 英訳protocolの応答上限 |
 | `temperature` | `0.0` | 英訳は決定的な低温度を使う |
 | `n_ctx` | `16384` | 既定context。必要な場合だけ手動で拡張する |
@@ -18,6 +17,8 @@
 | `h3_timing_profile` | 任意 | H3時間契約。未接続時も固定既定値 |
 
 他の推論値は[GGUF共通設定](gguf-settings.md)を参照してください。
+
+denoising stepsはCompilerではなく、動画WFのPlanノードの`default_steps`で設定します。Compilerはstep数をJSONへ出力しません。配布WFの既定は20です。旧PlanのJSON指定がノード値を上書きする場合の移行方法は[二段階WFのTIPS](../tips/two-stage-workflow.md)を参照してください。Compilerの旧成功cacheは再利用せず、一度再コンパイルします。
 
 ## 出力
 

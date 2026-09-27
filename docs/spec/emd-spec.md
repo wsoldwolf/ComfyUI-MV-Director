@@ -410,6 +410,8 @@ Timeline Plannerで`context_loop`を選んだ場合は、歌詞annotationのな�
 
 ## 12. Compiler出力契約
 
+denoising step数はEMD及びCompilerの責務に含めない。Compilerは`steps`入力を持たず、Plan JSONの直下、`defaults`及びScene要素へ`steps`を出力しない。動画生成時にContext Loop Planノードの`default_steps`で全Scene共通に指定する（配布WFの既定は20）。旧Planを再利用する場合は、JSON内のstep指定がノード値より優先されるため、その指定を除去してから使用する。
+
 CompilerはContext Loop Plan JSONをUTF-8相当のUnicode文字列として返し、次の表示形式を規範とする。
 
 - 2-space indent
