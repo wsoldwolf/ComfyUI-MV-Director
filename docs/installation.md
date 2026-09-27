@@ -232,7 +232,9 @@ certutil -hashfile "C:\Software\ComfyUI\models\LLM\GGUF\gemma-4-31b-it-heretic-a
 
 配布workflowの動画生成側（`02_video_context_loop.json`、`04_video_audio_reference.json`、`06_video_lyrics.json`）は`MiniMaxH3HybridLoader`を使用します。FL2VAをベースに、Ref2VAの一部のAdaLN変調重みをオーバーレイします。これはFL2VAの画質・動きとRef2VAの参照条件付けを併用するための構成で、[Hybrid Loader作者の説明](https://github.com/scottmudge/ComfyUI_MinimaxH3HybridLoader)もこの組合せを提案しています。本workflowはユーザーが`02_video_context_loop.json`で設定した`block_range_adaln`、開始block `25`、終了block `49`、`final_adaln_from_overlay=false`をそのまま既定値とします。
 
-モデルファイルの配布元は[Comfy-Org/MiniMax-H3](https://huggingface.co/Comfy-Org/MiniMax-H3)です。FL2VAとRef2VAの両方をダウンロードし、表の配置先へ保存してください。Turbo LoRAは現在バイパスされており、再有効化する場合だけ必要です。8step版を選択していますが、バイパス中の生成ステップ数はPlanの20です。
+モデルファイルの配布元は[Comfy-Org/MiniMax-H3](https://huggingface.co/Comfy-Org/MiniMax-H3)です。FL2VAとRef2VAの両方をダウンロードし、表の配置先へ保存してください。
+
+Turbo LoRAの読み込みノードは動画workflowに組み込まれていますが、既定ではバイパスされ、生成モデルへ適用されません。品質面を考慮し、現在はTurbo LoRAではなく、Block Sparse Attention、Spectrum、FP16 accumulationによる高速化を使用しています。速度と画質への影響は環境や設定に依存します。Turbo LoRAのモデルファイルは再有効化する場合だけ必要です。ノードでは8step版を選択していますが、バイパス中の生成ステップ数はPlanの`default_steps=20`です。
 
 | 用途 | workflowで選択されるファイル | ComfyUIモデルルートからの配置先 | 取得元 |
 | --- | --- | --- | --- |
@@ -271,7 +273,7 @@ ComfyUIを再起動し、ノード検索で`MV Director`を確認します。11�
 5. 実行logに各ノード名付きの`started`と`completed`が一度ずつ出る。
 6. H3 Timing Profileの既定値が`context-loop-0.7.0@d80304f05ecc2f504e64cbfb636e2a21d4409909`である。
 
-次に動画workflowを開き、`MiniMax H3 Hybrid Loader`が未定義ノードにならず、FL2VAが`base_model`、Ref2VAが`overlay_model`、presetが`block_range_adaln`、block範囲が`25`～`49`であることを確認してください。Hybrid Loaderの`MODEL`出力はTurbo LoRAへ接続されています。
+次に動画workflowを開き、`MiniMax H3 Hybrid Loader`が未定義ノードにならず、FL2VAが`base_model`、Ref2VAが`overlay_model`、presetが`block_range_adaln`、block範囲が`25`～`49`であることを確認してください。Hybrid Loaderの`MODEL`出力はTurbo LoRAの読み込みノードへ接続されていますが、そのノードはバイパス状態が既定です。Turbo LoRAを適用せず、後段のAttention Backend、Block Sparse Attention、Spectrum、FP16 accumulation、Sigma Shiftへモデルを渡します。
 
 見つからない場合は[トラブルシューティング](troubleshooting.md)を参照してください。
 
