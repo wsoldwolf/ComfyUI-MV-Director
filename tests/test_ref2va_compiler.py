@@ -60,6 +60,30 @@ class CameraDirectiveMutatingTranslator:
 
 
 class Ref2VACompilerTests(unittest.TestCase):
+    def test_small_roll_modifier_survives_translation_with_separate_arc(self) -> None:
+        for roll in ("Roll Clockwise", "Roll Counterclockwise"):
+            with self.subTest(roll=roll):
+                camera = (
+                    "Arc Shot with large amplitude at fast speedで人物を周回する。"
+                    f"{roll} with small amplitude。"
+                    "画面は水平から約10度だけ傾き、同じ角度範囲を戻って水平になる。"
+                )
+                protected = protect_unit(camera, ())
+                self.assertIn(roll, protected.values)
+                self.assertIn("with small amplitude", protected.values)
+                self.assertFalse(any(roll in value or "with small amplitude" in value
+                                     for value in protected.fragments))
+                source = (
+                    "# サブジェクト\n* 人物。\n> `シーン` 1\n"
+                    "# シーン 00:00.000 --> 00:10.125\n* `H3長` 243\n"
+                    "## ショット 00:00.000\n* `演技` 人物が歌う。\n"
+                    f"* `カメラ` {camera}\n"
+                )
+                result = compile_ref2va(source, CameraDirectiveMutatingTranslator())
+                prompt = "\n".join(result.plan["shots"][0]["prompt"])
+                self.assertIn(f"{roll} with small amplitude", prompt)
+                self.assertIn("Arc Shot with large amplitude at fast speed", prompt)
+
     def test_sentence_boundary_before_protected_term_has_one_space(self) -> None:
         item = protect_unit("を着用する。下駄の木製台は黒い。", ())
         for punctuation in (".", "!", "?"):

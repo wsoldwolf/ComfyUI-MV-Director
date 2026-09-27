@@ -22,7 +22,7 @@ denoising stepsは動画側の`MiniMaxH3ChainPlanModern.default_steps`で指定�
 | 5 | `05_plan_compiler_lyrics.json` | 歌詞directive用のEMDとPlanを生成 |
 | 6 | `06_video_lyrics.json` | 追加lip-sync経路なしで歌詞promptから動画生成 |
 
-三つの動画生成WFは共通して`Hybrid Loader → Turbo LoRA（バイパス）→ Model Attention Backend → Block Sparse Attention → Spectrum → FP16 accumulation → Sigma Shift`のMODEL経路を使い、既存のSigma ShiftをVideo/Audio Shiftとして一段だけ適用する。既定denoising stepsは20、解像度は0.9MP、Loop Endは`recursive`とする。
+三つの動画生成WFは共通して`Hybrid Loader → Turbo LoRA（バイパス）→ Model Attention Backend → Block Sparse Attention → Spectrum → FP16 accumulation → Sigma Shift`のMODEL経路を使い、既存のSigma ShiftをVideo/Audio Shiftとして一段だけ適用する。既定denoising stepsは20、解像度は0.4MP（16:9）、Loop Endは`recursive`とする。
 
 02_から反映した高速化設定は`tools/workflow_templates/video_acceleration.json`に保持する。`python tools/generate_workflows.py --sync-video-acceleration`で動画WFのみ同期できる。既存ノードの配置・素材・保存済みPlan・seedは維持する。Sparse AttentionはComfyUI本体、SpectrumはComfyUI-Spectrum-MiniMax-H3、FP16 accumulationはComfyUI-KJNodesが必要。詳細は[導入マニュアル](../docs/installation.md)を参照する。
 

@@ -44,6 +44,19 @@ class SceneAuthorTests(unittest.TestCase):
         self.assertIn("Tiltではなく", prompt)
         self.assertIn("水平への復帰", prompt)
 
+    def test_selective_roll_has_its_own_small_amplitude_sentence(self):
+        prompt = _system_prompts()["scene-author-camera"]
+        profile = (Path(__file__).resolve().parents[1]
+                   / "profiles/camera/anime_emotional_mv.md").read_text(encoding="utf-8")
+        for text in (prompt, profile):
+            self.assertIn("Roll Clockwise with small amplitude", text)
+            self.assertIn("Roll Counterclockwise with small amplitude", text)
+            self.assertIn("独立した文", text)
+            self.assertIn("約10度", text)
+            self.assertIn("角度範囲を戻って水平", text)
+        self.assertIn("水平0度→約10度→水平0度", prompt)
+        self.assertIn("大振幅・高速という修飾はArcだけ", prompt)
+
     def test_matched_candidate_policy_is_advisory_and_preserves_author_fields(self):
         backend = Backend()
         result = plan_timeline(

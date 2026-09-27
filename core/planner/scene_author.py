@@ -21,6 +21,7 @@ from .template import PlannerTemplate
 from .section_context import section_context_by_scene
 from .motion_composition import select_motion_composition
 from .candidate_policy import validate_staging_candidate_policy
+from .camera_continuity import arc_directions, inspect_arc_sequence
 from .requests import request_entities
 from .types import PlannerContent, PlannerEntity
 
@@ -234,6 +235,7 @@ def generate_scene_author_content(
     retried_scenes: set[int] = set()
     recovered_count = 0
     previous_terminal: dict[str, str] = {}
+    previous_arc_direction: str | None = None
     section_contexts = section_context_by_scene(template)
     for scene in template.scenes:
         if interrupt_callback is not None:
@@ -416,6 +418,26 @@ def generate_scene_author_content(
             if index not in fixed_cameras
         ]
         camera_texts = dict(fixed_cameras)
+        inherited_arc = previous_arc_direction if scene.continuation else None
+        camera_shared = {
+            **shared,
+            "scene_camera": list(direction.camera_direction),
+            "arc_roll_policy": CAMERA_ARC_ROLL_POLICIES.get(
+                direction.camera_profile_id, "off"
+            ),
+            "staging_candidates_optional": list(direction.staging_candidates),
+            "scene_other": list(direction.other_direction),
+            "fixed_cameras": {str(index): value for index, value in fixed_cameras.items()},
+            "previous_scene_state": (
+                previous_terminal.get("camera", "") if scene.continuation else ""
+            ),
+            "arc_continuity": {
+                "inherited_direction": inherited_arc,
+                "scope": "same_direction_through_zoom_static_until_cut",
+                "author_camera_has_priority": True,
+            },
+        }
+        camera_states: dict[int, str] = {}
         if pending_cameras:
             result, issues, retries, missing, recovered = request_entities(
                 backend,
@@ -430,21 +452,7 @@ def generate_scene_author_content(
                     })
                     for index in pending_cameras
                 ],
-                shared={
-                    **shared,
-                    "scene_camera": list(direction.camera_direction),
-                    "arc_roll_policy": CAMERA_ARC_ROLL_POLICIES.get(
-                        direction.camera_profile_id, "off"
-                    ),
-                    "staging_candidates_optional": list(direction.staging_candidates),
-                    "scene_other": list(direction.other_direction),
-                    "fixed_cameras": {
-                        str(index): value for index, value in fixed_cameras.items()
-                    },
-                    "previous_scene_state": (
-                        previous_terminal.get("camera", "") if scene.continuation else ""
-                    ),
-                },
+                shared=camera_shared,
                 system_prompt=prompts["camera"],
                 runtime_config=runtime_config,
                 interrupt_callback=interrupt_callback,
@@ -454,15 +462,58 @@ def generate_scene_author_content(
             recovered_count += recovered
             if missing:
                 return None, tuple(missing)
-            camera_states: dict[int, str] = {}
             for index in pending_cameras:
                 camera_texts[index], camera_states[index] = _split_terminal_state(
                     result[(index,)]
                 )
+            conflicts, _ = inspect_arc_sequence(camera_texts, fixed_cameras, inherited_arc)
+            if conflicts:
+                _LOGGER.info(
+                    "[MV Director - Timeline Planner] Arc direction repair; scene=%d; targets=%s",
+                    scene.scene_number, conflicts,
+                )
+                retried_scenes.add(scene.scene_number)
+                repaired, issues, retries, missing, recovered = request_entities(
+                    backend, task="scene-author-camera", record_type="CAMERA",
+                    entities=[PlannerEntity(scene.scene_number, (index,), {
+                        "scene_number": scene.scene_number, "scene": scene.scene_number,
+                        "shot": index, "position": positions[index - 1],
+                        "required_arc_direction": expected,
+                    }) for index, expected in conflicts.items()],
+                    shared={
+                        **camera_shared, "retry": "arc_direction_only",
+                        "arc_direction_targets": {str(i): value for i, value in conflicts.items()},
+                        "existing_cameras": {str(i): value for i, value in camera_texts.items()},
+                    },
+                    system_prompt=prompts["camera"], runtime_config=runtime_config,
+                    interrupt_callback=interrupt_callback,
+                )
+                issue_count += len(issues)
+                retried_scenes.update(retries)
+                recovered_count += recovered
+                for index, expected in conflicts.items():
+                    value = repaired.get((index,))
+                    if value:
+                        prose, state = _split_terminal_state(value)
+                        if arc_directions(prose) == {expected}:
+                            camera_texts[index], camera_states[index] = prose, state
+                            _LOGGER.info(
+                                "[MV Director - Timeline Planner] Arc direction repaired; "
+                                "scene=%d; shot=%d; direction=%s", scene.scene_number, index, expected,
+                            )
+                            continue
+                    _LOGGER.warning(
+                        "[MV Director - Timeline Planner] Arc direction repair unresolved; "
+                        "scene=%d; shot=%d; retained original Camera AS IS; expected=%s",
+                        scene.scene_number, index, expected,
+                    )
             cameras.extend(
                 (scene.scene_number, index, camera_texts[index])
                 for index in pending_cameras
             )
+        _, previous_arc_direction = inspect_arc_sequence(
+            camera_texts, fixed_cameras, inherited_arc
+        )
         if composition and composition_timing == "post_author":
             if MOTION_COMPOSITION_RESELECTIONS.get(composition_profile) == "guarded_no_drop":
                 composition = _reselect_composition(

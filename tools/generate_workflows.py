@@ -46,7 +46,7 @@ H3_ATTENTION_BACKEND = "comfy kitchen attention"
 H3_REFERENCE_IMAGE_SIZE = "max"
 REVIEW_ENABLED = False
 OUTPUT_ASPECT_RATIO = "16:9 (Widescreen)"
-OUTPUT_MEGAPIXELS = 0.9
+OUTPUT_MEGAPIXELS = 0.4
 OUTPUT_MULTIPLE = 32
 TURBO_LORA_NAME = (
     "MiniMaxH3\\minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors"

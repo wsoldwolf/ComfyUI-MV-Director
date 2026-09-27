@@ -1,9 +1,12 @@
 # ComfyUI-MV-Director
 
 [![【MV】千里の秋を駆ける - MiniMax H3+Context Loop+MV Director Demo](https://img.youtube.com/vi/OLffZGlcZOs/maxresdefault.jpg)](https://youtu.be/OLffZGlcZOs)
-※本作品は東方Projectの二次創作であり、公式作品ではありません。
 
 人物・背景の参照画像、歌詞、ボーカルステム、フルミックスから、MiniMax H3 / Context Loop用のMV計画を作るComfyUIカスタムノードです。現行の開発workflowはGemma4 31Bで画像認識、演出方針、Sceneごとの出来事・人物演技・カメラ、英訳を処理し、編集可能なEMDと再利用可能なPlan JSONを保存します。動画生成にはFL2VAをベースにRef2VAの参照レイヤーを重ねるHybrid Loaderを使用します。
+
+ボーカルステムが必要な理由として、歌詞のみではどの時間で演技を行うか推測できません、そこで予めVAD(Voice Active Detection)+whisperで歌詞の発声タイミングを確定し、テンプレートタイムラインを生成します、フルミックス音源ではこの処理が行えない為ボーカルステムが必要になります。
+もう一つボーカルステムが必要となる理由は、H3/Context Loopによるリップシンクの為です、リップシンクするのみで映像に説得力が出ます、この処理もフルミックス音源では難しいです。
+ボーカルステムの取得はSunoであればオンラインで行う事ができます、AI素材以外を利用する場合はSpectraLayersPro等を使用する事でボーカルステムを分離できます。
 
 EMDは **Easy MarkDown** の略です。Extended Markdownではありません。
 

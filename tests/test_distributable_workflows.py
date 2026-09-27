@@ -786,7 +786,7 @@ class DistributableWorkflowTests(unittest.TestCase):
             self.assertEqual(ref2va["widgets_values"][4], "max")
             self.assertEqual(
                 resolution["widgets_values"],
-                ["16:9 (Widescreen)", 0.9, 32],
+                ["16:9 (Widescreen)", 0.4, 32],
             )
             self.assertEqual(
                 input_link(workflow, plan, "width")[1:3],

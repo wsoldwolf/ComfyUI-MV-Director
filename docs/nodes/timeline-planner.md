@@ -14,6 +14,12 @@ Shotへ直接書いた`演出`、`演技`、`カメラ`は固定し、そのfiel
 
 `END_STATE`は本文から分離した輸送metadataです。継続Sceneへだけ引き継ぎ、CUTでは引き継ぎません。映像上の完全な接続を保証する機能ではありません。
 
+Arcの明示的な周回方向はCamera本文から別途読み取り、Zoom、Pull Out、昇降、Staticを挟んでも継続Sceneまで保持します。CUTでリセットします。時計回り／反時計回りが生成Shot間で矛盾する場合、該当Cameraだけをまとめて一度LLMへ再要求します。PythonはCamera自然文を書き換えず、作者固定Cameraの方向変更を優先します。Rollの時計回り／反時計回りはArc方向と区別します。方向が曖昧な自然文から無理に推定することはありません。
+
+修復成功はINFO、未解消はWARNINGへ記録します。修復要求はSceneごとに1回（行プロトコル欠落回復は既存の有限経路）とし、未解消のCameraは元のLLM文を保持して処理を止めません。H3映像上の旋回を保証するものではありません。既存の完成Planは自動変更されないため、反映にはPlannerからの再生成が必要です。
+
+`arc_roll_policy=selective_arc`のRollは、Arcの大振幅指定から独立した文で`Roll Clockwise with small amplitude`又は`Roll Counterclockwise with small amplitude`を記し、画面の水平0度→約10度→水平0度の短い一往復を計画します。人物を回転させる動作やArcの周回とは別です。これは生成指示であり、H3の傾斜角を数値制御する機能ではありません。作者固定Cameraはそのまま保持します。
+
 ## 接続
 
 | 入力 | 内容 |
