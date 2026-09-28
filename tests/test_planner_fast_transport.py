@@ -1,4 +1,4 @@
-"""26B Planner transport fast path, without loading a model."""
+"""Model-specific Planner transport fast paths, without loading a model."""
 
 import json
 import unittest
@@ -9,6 +9,7 @@ from core.planner.types import PlannerEntity
 from nodes.node_timeline_planner.node import (
     _LlamaPlannerBackend,
     _PLANNER_TRANSPORT_26B_FAST,
+    _PLANNER_TRANSPORT_31B_FAST,
     _PLANNER_TRANSPORT_CONSTRAINED,
     _planner_transport_policy,
 )
@@ -36,18 +37,18 @@ def _backend(outputs, policy=_PLANNER_TRANSPORT_26B_FAST):
     return backend, lifecycle
 
 
-def _payload(*slots, **extra):
+def _payload(*slots, task="scene-author-event", **extra):
     return json.dumps({
         "protocol": "MVD_LLM_RECORDS_V1",
-        "task": "scene-author-event",
+        "task": task,
         "slots": [{"slot": slot, "scene_number": 1} for slot in slots],
         **extra,
     })
 
 
-def _complete(backend, payload):
+def _complete(backend, payload, task="scene-author-event"):
     return backend.complete_planner(
-        task="scene-author-event", system_prompt="system", payload=payload,
+        task=task, system_prompt="system", payload=payload,
         config=LlamaRuntimeConfig(max_tokens=1024),
     )
 
@@ -57,11 +58,46 @@ class PlannerFastTransportTests(unittest.TestCase):
         name = "Gemma4-26B-A4B-Uncensored-HauhauCS-Balanced-IQ2_M.gguf"
         self.assertEqual(_planner_transport_policy("folder/" + name),
                          _PLANNER_TRANSPORT_26B_FAST)
-        for other in ("gemma-4-31b-it-heretic-ara.Q4_K_S.gguf",
+        name = "gemma-4-31b-it-heretic-ara.Q4_K_S.gguf"
+        self.assertEqual(_planner_transport_policy("folder\\" + name),
+                         _PLANNER_TRANSPORT_31B_FAST)
+        for other in ("gemma-4-31b-it-heretic-ara.Q6_K.gguf",
                       "Gemma4-26B-A4B-Uncensored-HauhauCS-Balanced-IQ3_M.gguf",
                       "Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced.gguf"):
             self.assertEqual(_planner_transport_policy(other),
                              _PLANNER_TRANSPORT_CONSTRAINED)
+
+    def test_31b_performance_and_camera_use_no_grammar(self):
+        for task, record_type in (
+            ("scene-author-performance", "PERFORMANCE"),
+            ("scene-author-camera", "CAMERA"),
+        ):
+            with self.subTest(task=task):
+                response = f"{record_type}\t1\t人物を捉える。"
+                backend, lifecycle = _backend([response],
+                                              _PLANNER_TRANSPORT_31B_FAST)
+                self.assertEqual(_complete(backend, _payload(1, task=task), task),
+                                 response)
+                self.assertEqual(len(lifecycle.calls), 1)
+                self.assertNotIn("grammar", lifecycle.calls[0][2])
+
+    def test_31b_event_remains_constrained(self):
+        backend, lifecycle = _backend(["EVENT\t1\t苔が光る。"],
+                                      _PLANNER_TRANSPORT_31B_FAST)
+        self.assertEqual(_complete(backend, _payload(1)), "EVENT\t1\t苔が光る。")
+        self.assertIn("grammar", lifecycle.calls[0][2])
+
+    def test_31b_protocol_issue_falls_back_to_grammar(self):
+        backend, lifecycle = _backend([
+            "PERFORMANCE\t1\t一。\nPERFORMANCE\t1\t重複。",
+            "PERFORMANCE\t1\t二。",
+        ], _PLANNER_TRANSPORT_31B_FAST)
+        task = "scene-author-performance"
+        self.assertEqual(_complete(backend, _payload(1, task=task), task),
+                         "PERFORMANCE\t1\t二。")
+        self.assertEqual(len(lifecycle.calls), 2)
+        self.assertNotIn("grammar", lifecycle.calls[0][2])
+        self.assertIn("grammar", lifecycle.calls[1][2])
 
     def test_valid_initial_response_uses_no_grammar(self):
         response = "EVENT\t1\t苔が光る。\nEVENT\t2\t人物が見つめる。"
@@ -130,6 +166,7 @@ class PlannerFastTransportTests(unittest.TestCase):
     def test_retries_and_other_models_remain_constrained(self):
         for policy, payload in (
             (_PLANNER_TRANSPORT_26B_FAST, _payload(1, retry="missing_slots_only")),
+            (_PLANNER_TRANSPORT_31B_FAST, _payload(1, retry="missing_slots_only")),
             (_PLANNER_TRANSPORT_CONSTRAINED, _payload(1)),
         ):
             with self.subTest(policy=policy):

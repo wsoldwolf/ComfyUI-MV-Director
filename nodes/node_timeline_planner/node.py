@@ -87,14 +87,25 @@ _SCENE_AUTHOR_RECORD_TYPES = {
 }
 _PLANNER_TRANSPORT_CONSTRAINED = "grammar_v1"
 _PLANNER_TRANSPORT_26B_FAST = "26b_iq2_m_unconstrained_first_v1"
+_PLANNER_TRANSPORT_31B_FAST = "31b_q4_k_s_unconstrained_first_v1"
+_PLANNER_TRANSPORT_FAST_TASKS = {
+    _PLANNER_TRANSPORT_26B_FAST: frozenset(_SCENE_AUTHOR_RECORD_TYPES),
+    # The 31B partial-offload probe produced invalid unguided EVENT records
+    # twice, making grammar fallback slower than grammar-first for that task.
+    _PLANNER_TRANSPORT_31B_FAST: frozenset({
+        "scene-author-performance", "scene-author-camera",
+    }),
+}
 
 
 def _planner_transport_policy(selection_id: str) -> str:
-    """Opt in only the measured 26B IQ2_M model, not other Gemma variants."""
+    """Opt in only explicitly supported GGUF variants, not all Gemma models."""
 
     filename = selection_id.replace("\\", "/").rsplit("/", 1)[-1].lower()
     if filename == "gemma4-26b-a4b-uncensored-hauhaucs-balanced-iq2_m.gguf":
         return _PLANNER_TRANSPORT_26B_FAST
+    if filename == "gemma-4-31b-it-heretic-ara.q4_k_s.gguf":
+        return _PLANNER_TRANSPORT_31B_FAST
     return _PLANNER_TRANSPORT_CONSTRAINED
 
 
@@ -265,7 +276,9 @@ class _LlamaPlannerBackend:
         slot_count, scene_label, retry_label = self._request_summary(payload)
         unconstrained_first = (
             scene_author_stage
-            and self.transport_policy == _PLANNER_TRANSPORT_26B_FAST
+            and task in _PLANNER_TRANSPORT_FAST_TASKS.get(
+                self.transport_policy, frozenset(),
+            )
             and retry_label == "no"
         )
         if scene_author_stage:
