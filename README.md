@@ -43,7 +43,7 @@ LLMの出力は確率的で、行protocol違反や必須出力の欠落が起き
 | [`docs/spec/`](docs/spec/README.md) | EMD、protocol、最小コアの規範仕様 |
 | [`docs/implementation/`](docs/implementation/README.md) | 内部構造、公開surface、実装順序 |
 | [`profiles/`](profiles/README.md) | ユーザー拡張可能なStyle、Motion、Camera profile EMD |
-| [`workflows/`](workflows/README.md) | 三つのリップシンク方式に対応する6 workflow |
+| [`workflows/`](workflows/README.md) | 三つのリップシンク方式に対応する基本6 workflowと12B・26B検証用Plan派生版 |
 | [`docs/assets/`](docs/assets/README.md) | READMEや文書で使うPNG/SVG図版 |
 | [`docs/tips/`](docs/tips/README.md) | 参照画像の分離、再現率、配線など実運用のTIPS |
 | [Direction / Planner処理フロー](docs/architecture/direction-planner-flow.md) | LLM task、Python所有処理、AS IS境界の図解 |

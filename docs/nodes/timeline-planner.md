@@ -63,6 +63,10 @@ lip_sync_modeはoff / context_loop / audio_reference / lyrics。対象と音声s
 
 必須slotの欠落は局所再要求と一件隔離要求で有限回復します。回復不能なら不完全EMDをCompilerへ流しません。grammarは型・slot・行構造を拘束し、自然文の意味を決めません。
 
+26B IQ2_MのScene Author（Event / Performance / Camera）に限り、初回はgrammarなしで推論し、同じ行プロトコルで検証します。全slotが有効なら原文を採用し、欠落slotは従来の文法付き局所再要求へ回します。重複行や不明な行など、slotへ安全に帰属できないプロトコル違反は文法付きで同じバッチを一度再要求します。補完候補の選択、31B、12B、その他のモデルは従来どおり文法付きです。この輸送方式はcache keyに含まれ、既存のcacheを誤って再利用しません。初回の採用・再要求理由はINFO／WARNINGに記録します。
+
+警告の`issue_shapes`は行番号、問題種別、先頭の英数字ラベル、タブ数だけを示し、生成本文は通常ログへ出しません。原因調査時は`save_debug_output=true`と`cache_mode=refresh`で再実行すると、statusに示す`planner_debug` JSONの`trace`に、文法なしの元応答`unconstrained_response`と採用した最終応答`response`の両方を保存します。歌詞・プロンプト・生成本文を含むため、このdebug JSONは公開前に確認してください。
+
 contextは実効値と出力予約・安全余白から事前検査します。履歴を縮小し、必要なら同じSceneのslotを分割します。必須の固定指示・現在slot内容を削除して成功扱いにはしません。
 
 進捗は必要なEvent / Performance / Camera / 補完再選択の主呼出し数とモデル準備を基準にします。retry、cache、モデルload時間により実時間との比例は保証しません。`save_debug_output=true`ではtask、要求payload、応答等を保存します。

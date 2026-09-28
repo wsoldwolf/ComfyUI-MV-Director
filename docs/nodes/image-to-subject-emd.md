@@ -17,6 +17,7 @@
 | `concept_type` | `person` | `person` / `location` / `object` |
 | `picture_index` | `1` | `manual`時のPicture番号、1～9 |
 | `analysis_max_edge` | `1024` | Visionへ渡す最大辺。元IMAGE出力は変更しない |
+| `mmproj_use_gpu` | `true` | Vision projectorをGPUへ置く。`false`なら本体の`gpu_layers`を維持したままmmprojだけCPUへ置く |
 | `cache_mode` | `reuse` | 成功結果の再利用方針 |
 
 残りの推論値は[GGUF共通設定](gguf-settings.md)を参照してください。

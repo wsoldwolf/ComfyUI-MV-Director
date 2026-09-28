@@ -449,6 +449,30 @@ class VisionPhase3Tests(unittest.TestCase):
             self.assertTrue(first.closed)
             self.assertTrue(FakeHandler.instances[0].closed)
 
+    def test_mtmd_cpu_projector_keeps_language_model_on_gpu(self) -> None:
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            _gguf(root / "vision.gguf")
+            _gguf(root / "mmproj-vision.gguf")
+            pair = discover_vision_model_pairs({"models": root})[0]
+            lifecycle = LlamaCppVisionLifecycle(
+                llama_module=FakeLlamaModule,
+                llama_class=FakeVisionModel,
+                handler_class=FakeHandler,
+            )
+            config = LlamaRuntimeConfig(gpu_layers=27)
+            first = lifecycle.ensure_loaded(pair, config, mmproj_use_gpu=False)
+            self.assertFalse(FakeHandler.instances[-1].kwargs["use_gpu"])
+            self.assertEqual(first.kwargs["n_gpu_layers"], 27)
+            self.assertIs(
+                lifecycle.ensure_loaded(pair, config, mmproj_use_gpu=False), first
+            )
+            second = lifecycle.ensure_loaded(pair, config, mmproj_use_gpu=True)
+            self.assertIsNot(second, first)
+            self.assertTrue(FakeHandler.instances[-1].kwargs["use_gpu"])
+            self.assertTrue(first.closed)
+            lifecycle.clear()
+
     def test_public_mapping_contains_image_node(self) -> None:
         self.assertIn("MVDirectorImageToSubjectEMD", NODE_CLASS_MAPPINGS)
         cls = NODE_CLASS_MAPPINGS["MVDirectorImageToSubjectEMD"]
@@ -462,6 +486,7 @@ class VisionPhase3Tests(unittest.TestCase):
             ("STRING", "MV_DIRECTOR_REFERENCE_BINDINGS", "IMAGE", "STRING"),
         )
         self.assertIn("model_name", inputs["required"])
+        self.assertTrue(inputs["optional"]["mmproj_use_gpu"][1]["default"])
         self.assertEqual(
             inputs["required"]["seed"][1]["control_after_generate"],
             "randomize",
