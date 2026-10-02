@@ -87,11 +87,10 @@ _SCENE_AUTHOR_RECORD_TYPES = {
 }
 _PLANNER_TRANSPORT_CONSTRAINED = "grammar_v1"
 _PLANNER_TRANSPORT_26B_FAST = "26b_iq2_m_unconstrained_first_v1"
-_PLANNER_TRANSPORT_31B_FAST = "31b_q4_k_s_unconstrained_first_v1"
+_PLANNER_TRANSPORT_31B_FAST = "31b_unconstrained_first_v2"
 _PLANNER_TRANSPORT_FAST_TASKS = {
     _PLANNER_TRANSPORT_26B_FAST: frozenset(_SCENE_AUTHOR_RECORD_TYPES),
-    # The 31B partial-offload probe produced invalid unguided EVENT records
-    # twice, making grammar fallback slower than grammar-first for that task.
+    # Both tested 31B variants emitted invalid unguided EVENT records.
     _PLANNER_TRANSPORT_31B_FAST: frozenset({
         "scene-author-performance", "scene-author-camera",
     }),
@@ -104,7 +103,10 @@ def _planner_transport_policy(selection_id: str) -> str:
     filename = selection_id.replace("\\", "/").rsplit("/", 1)[-1].lower()
     if filename == "gemma4-26b-a4b-uncensored-hauhaucs-balanced-iq2_m.gguf":
         return _PLANNER_TRANSPORT_26B_FAST
-    if filename == "gemma-4-31b-it-heretic-ara.q4_k_s.gguf":
+    if filename in {
+        "gemma-4-31b-it-heretic-ara.q4_k_s.gguf",
+        "gemma-4-31b-it-heretic.i1-iq3_xs.gguf",
+    }:
         return _PLANNER_TRANSPORT_31B_FAST
     return _PLANNER_TRANSPORT_CONSTRAINED
 

@@ -61,7 +61,11 @@ class PlannerFastTransportTests(unittest.TestCase):
         name = "gemma-4-31b-it-heretic-ara.Q4_K_S.gguf"
         self.assertEqual(_planner_transport_policy("folder\\" + name),
                          _PLANNER_TRANSPORT_31B_FAST)
+        name = "gemma-4-31B-it-heretic.i1-IQ3_XS.gguf"
+        self.assertEqual(_planner_transport_policy("folder/" + name),
+                         _PLANNER_TRANSPORT_31B_FAST)
         for other in ("gemma-4-31b-it-heretic-ara.Q6_K.gguf",
+                      "gemma-4-31B-it-heretic.i1-IQ3_S.gguf",
                       "Gemma4-26B-A4B-Uncensored-HauhauCS-Balanced-IQ3_M.gguf",
                       "Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced.gguf"):
             self.assertEqual(_planner_transport_policy(other),
@@ -83,7 +87,9 @@ class PlannerFastTransportTests(unittest.TestCase):
 
     def test_31b_event_remains_constrained(self):
         backend, lifecycle = _backend(["EVENT\t1\t苔が光る。"],
-                                      _PLANNER_TRANSPORT_31B_FAST)
+                                      _planner_transport_policy(
+                                          "gemma-4-31B-it-heretic.i1-IQ3_XS.gguf"
+                                      ))
         self.assertEqual(_complete(backend, _payload(1)), "EVENT\t1\t苔が光る。")
         self.assertIn("grammar", lifecycle.calls[0][2])
 

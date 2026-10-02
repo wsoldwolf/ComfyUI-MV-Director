@@ -30,6 +30,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=Path, required=True)
     parser.add_argument("--gpu-layers", type=int, default=31)
+    parser.add_argument("--n-ctx", type=int, default=8192)
     parser.add_argument("--max-tokens", type=int, default=192)
     parser.add_argument("--task", choices=TASKS, default="event")
     args = parser.parse_args()
@@ -76,7 +77,7 @@ def main() -> None:
     started = perf_counter()
     model = Llama(
         model_path=str(args.model.resolve(strict=True)),
-        n_ctx=16384,
+        n_ctx=args.n_ctx,
         n_gpu_layers=args.gpu_layers,
         n_batch=256,
         flash_attn=True,
@@ -84,12 +85,14 @@ def main() -> None:
         type_v=GGML_TYPE_Q8_0,
         offload_kqv=True,
         op_offload=True,
+        swa_full=False,
         verbose=False,
     )
     print(f"model_ready_s={perf_counter() - started:.2f}", flush=True)
-    # Alternating order separates grammar cost from the one-time warmup and
-    # prompt-prefix reuse. Native timings exclude Python and grammar sampling.
+    # Alternate order and reset context to separate grammar cost from warmup
+    # and prefix reuse. Native timings exclude Python and grammar sampling.
     for index, constrained in enumerate((False, True, True, False), 1):
+        model.reset()
         grammar = LlamaGrammar.from_string(grammar_text, verbose=False) if constrained else None
         llama_cpp.llama_perf_context_reset(model._ctx.ctx)
         cpu_start = process_time()
