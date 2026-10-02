@@ -120,6 +120,7 @@ class LlamaCppLifecycle:
             "type_v": kv_type,
             "offload_kqv": True,
             "op_offload": config.op_offload,
+            "swa_full": False,
             "verbose": False,
         }
         if config.chat_format:
