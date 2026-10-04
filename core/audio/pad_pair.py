@@ -148,14 +148,27 @@ def _pad_end(waveform: Any, target_samples: int) -> Any:
     return output
 
 
-def align_audio_to_plan_scenes(
-    audio: Mapping[str, Any],
+@dataclass(frozen=True, slots=True)
+class SceneAudioPlacement:
+    """Exact half-open PCM copy range, not a Scene-start offset estimate."""
+
+    source_start_sample: int
+    source_end_sample: int
+    destination_start_sample: int
+    destination_end_sample: int
+    plan_start_sample: int
+    plan_end_sample: int
+    gap_after_samples: int
+
+
+def scene_audio_placements(
+    shape: AudioShape,
     scene_windows: tuple[SceneAudioWindow, ...],
     *,
     target_samples: int,
     fps: int = 24,
-) -> tuple[dict[str, Any], tuple[int, ...]]:
-    """Place source PCM on the cumulative H3 grid without altering samples.
+) -> tuple[SceneAudioPlacement, ...]:
+    """Calculate the same copy ranges used by Audio Pad Pair and diagnostics.
 
     A Scene's delivered interval can be shorter than its source interval when
     an earlier Scene already accumulated H3 quantization surplus. Defer silence
@@ -164,7 +177,7 @@ def align_audio_to_plan_scenes(
     never overlaps, resamples, or drops source PCM.
     """
 
-    waveform, shape = _audio_parts(audio, "audio")
+    shape.validate()
     if not scene_windows:
         raise ValueError("scene_windows must not be empty")
     if isinstance(target_samples, bool) or not isinstance(target_samples, int):
@@ -235,19 +248,42 @@ def align_audio_to_plan_scenes(
         future_minimum = min(future_minimum, surplus[index])
         cumulative_padding[index] = future_minimum
 
-    aligned = waveform.new_zeros((*tuple(waveform.shape[:-1]), target_samples))
-    gap_samples: list[int] = []
-    for index, (source_start, source_end, _plan_start, plan_end) in enumerate(windows):
+    placements: list[SceneAudioPlacement] = []
+    for index, (source_start, source_end, plan_start, plan_end) in enumerate(windows):
         destination_start = source_start + cumulative_padding[index]
         copy_end = destination_start + source_end - source_start
         if copy_end > plan_end or copy_end > target_samples:
             raise ValueError("aligned Scene exceeds its cumulative Plan boundary")
-        aligned[..., destination_start:copy_end] = waveform[..., source_start:source_end]
-        gap_samples.append(cumulative_padding[index + 1] - cumulative_padding[index])
+        placements.append(SceneAudioPlacement(
+            source_start, source_end, destination_start, copy_end,
+            plan_start, plan_end,
+            cumulative_padding[index + 1] - cumulative_padding[index],
+        ))
+    return tuple(placements)
+
+
+def align_audio_to_plan_scenes(
+    audio: Mapping[str, Any],
+    scene_windows: tuple[SceneAudioWindow, ...],
+    *,
+    target_samples: int,
+    fps: int = 24,
+) -> tuple[dict[str, Any], tuple[int, ...]]:
+    """Copy every source sample using the shared cumulative-grid layout."""
+
+    waveform, shape = _audio_parts(audio, "audio")
+    placements = scene_audio_placements(
+        shape, scene_windows, target_samples=target_samples, fps=fps,
+    )
+    aligned = waveform.new_zeros((*tuple(waveform.shape[:-1]), target_samples))
+    for item in placements:
+        aligned[..., item.destination_start_sample:item.destination_end_sample] = (
+            waveform[..., item.source_start_sample:item.source_end_sample]
+        )
 
     result = dict(audio)
     result["waveform"] = aligned
-    return result, tuple(gap_samples)
+    return result, tuple(item.gap_after_samples for item in placements)
 
 
 def pad_audio_pair(

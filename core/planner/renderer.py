@@ -94,6 +94,8 @@ def render_completed_emd(
                 lines.extend(f"* {value}" for value in values)
 
     cleaned_generated_lines = 0
+    if template.audio_activity is not None:
+        lines.extend(("", *template.audio_activity.render_lines()))
     event_values = events or {}
     for scene in template.scenes:
         continuation = " 継続" if scene.continuation else ""
@@ -179,4 +181,4 @@ def render_completed_emd(
         parse_emd(text, timing_profile=timing_profile)
     except Exception as exc:
         raise TimelinePlannerError(f"Planner rendered invalid completed EMD: {exc}") from exc
-    return EMDTextArtifact.create("MVD_EMD_V1", text)
+    return EMDTextArtifact.create("MVD_EMD_V2" if template.audio_activity else "MVD_EMD_V1", text)

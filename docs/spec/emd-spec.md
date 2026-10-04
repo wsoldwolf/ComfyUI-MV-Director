@@ -2,7 +2,7 @@
 
 Status: normative
 
-Schema: `MVD_EMD_V1`
+Schema: `MVD_EMD_V1`、音声活動付きは`MVD_EMD_V2`
 
 Compiler target: Context Loop / MiniMax H3 Ref2VA
 
@@ -50,9 +50,33 @@ Compiler-ready EMDの順序は次のとおり。
 2. 任意 `# シーン設定`
 3. 任意 `# 保持分析`
 4. 任意 `# 共通プロンプト`
-5. 一個以上のScene
+5. 任意 `# 音声活動`
+6. 一個以上のScene
 
 空入力はEnhancerの入力として許されるが、Compiler-ready EMDとしては許されない。
+
+### 音声活動の参考メタデータ
+
+Lyric Segmentationが保持する元ボーカルPCMの活動区間。これは自然文promptではなく、歌詞時刻と伴奏中の演技計画を読むための任意メタデータである。TemplateではSubjectなしの先頭、完成EMDでは共通プロンプトの後かつ最初のSceneより前に一度だけ置く。音声活動付きTemplateのartifact schemaは`MVD_EMD_TEMPLATE_V2`、完成EMDは`MVD_EMD_V2`。活動なしのV1は引き続き有効。
+
+```markdown
+# 音声活動
+* `音声活動v1` sample_rate=48000 source_samples=480000 sha256=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa method=energy_vad_sample_refined
+* `ボーカル区間` 0 144000 no_vocal_candidate
+* `ボーカル区間` 144000 384000 vocal_candidate
+* `ボーカル区間` 384000 480000 no_vocal_candidate
+* `参照PCM配置` 0 480000 0
+```
+
+sample位置は0ベースで終端を含まない。`ボーカル区間`は元PCM全体を重複・欠落なく時系列で覆う。許容stateは`vocal_candidate`、`no_vocal_candidate`、`instrumental_candidate`、`fullmix_silence_candidate`、`unknown`。VADと整列歌詞が食い違う場合は`unknown`へ保留する。ボーカルだけを解析するノードは伴奏の存在を確定できないため`no_vocal_candidate`を使う。全曲の無音指定や歌唱禁止を意味しない。
+
+SHA-256は波形shape、sample rate、連続float PCMから算出する。`method`は`energy_vad_sample_refined`又は作者記述の`author`。任意の`参照PCM配置`は元PCM開始sample、元PCM終了sample、参照PCMでのコピー先開始sampleを表す。元PCMを順序どおり全量コピーし、コピー先は重複させず、間の隙間をpaddingとして扱う。Audio Pad Pairと同じ配置計算を用い、Scene開始時刻差で推測しない。
+
+Plannerは選択したlip-sync方式のPCM時刻で現在Sceneへ切り出し、前後有声境界も参考情報として渡す。配置表のないAudio参照入力では時刻を推測せず通常計画へ戻る。歌詞のないSceneでは前後歌詞の短い抜粋を意味文脈として渡せるが、歌唱時刻として追加しない。候補を不採用にしても品質エラーにしない。
+
+Compilerは音声活動を翻訳せず、Planルートの`mv_director_audio_activity`へ診断情報として保持する。H3の共通prefix、Shot本文、audio mask、既存のリップシンク指定には変換しない。音声・歌唱タイミングのH3上の保証は別問題である。
+
+このメタデータの保存先はCompiler出力のPlan JSONである。現在のContext Loopは独自のPlan正規化時にこの追加キーを利用せず、内部Planへも継承しない。診断の長期保存には元EMD又はCompiler出力を保存する。
 
 ## 3. サブジェクト
 

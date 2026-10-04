@@ -14,6 +14,8 @@ Shotへ直接書いた`演出`、`演技`、`カメラ`は固定し、そのfiel
 
 `END_STATE`は本文から分離した輸送metadataです。継続Sceneへだけ引き継ぎ、CUTでは引き継ぎません。映像上の完全な接続を保証する機能ではありません。
 
+Templateの任意`# 音声活動`は、現在Sceneの有声候補・ボーカル不在候補・未確定区間・追加paddingへ切り出して三担当へ渡します。歌詞のないSceneには近接する前後歌詞を各最大4行の読み取り文脈として渡します。イントロ・間奏の身体候補も任意に選べますが、後続歌詞の対象を全部先出しする共通命令や、新しい品質停止条件にはしません。作者固定fieldは変更しません。Audio参照では実PCM再配置表を使い、Context Loopでは末尾paddingを除いて元音声の時刻を使います。検出結果は歌唱の禁止又はH3の時刻指定マスクではありません。
+
 Arcの明示的な周回方向はCamera本文から別途読み取り、Zoom、Pull Out、昇降、Staticを挟んでも継続Sceneまで保持します。CUTでリセットします。時計回り／反時計回りが生成Shot間で矛盾する場合、該当Cameraだけをまとめて一度LLMへ再要求します。PythonはCamera自然文を書き換えず、作者固定Cameraの方向変更を優先します。Rollの時計回り／反時計回りはArc方向と区別します。方向が曖昧な自然文から無理に推定することはありません。
 
 修復成功はINFO、未解消はWARNINGへ記録します。修復要求はSceneごとに1回（行プロトコル欠落回復は既存の有限経路）とし、未解消のCameraは元のLLM文を保持して処理を止めません。H3映像上の旋回を保証するものではありません。既存の完成Planは自動変更されないため、反映にはPlannerからの再生成が必要です。
@@ -55,7 +57,7 @@ Enhancerの`user_request`に`# 演出候補`を記述します。最大12件、�
 
 `scenes_per_batch`はScene Authorでは使われないため削除しました。旧WFはジェネレーターの`--sync-planner-schema`で更新します。配線済みの旧widgetは黙って消さず、手動移行を要求します。
 
-cache_modeはreuse / refresh / disabled。生成条件を変えないlip-sync mode切替は生成済み演技・Cameraを再利用し、描画directiveを更新します。旧Planner cacheは使用しません。
+cache_modeはreuse / refresh / disabled。生成条件を変えないlip-sync mode切替は生成済み演技・Cameraを再利用し、描画directiveを更新します。音声活動付きTemplateではAudio参照とそれ以外で入力PCM時刻が変わるため、この切替のキャッシュは分離します。旧Planner cacheは使用しません。
 
 lip_sync_modeはoff / context_loop / audio_reference / lyrics。対象と音声slotは`lip_sync_target`、`lip_sync_audio_slot`で指定します。標準lip-syncの実音声配線は対応Video WFで設定します。
 

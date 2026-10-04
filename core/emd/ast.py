@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from .audio_activity import AudioActivity
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,6 +85,7 @@ class EMDDocument:
     common_prompt: tuple[tuple[str, tuple[str, ...]], ...]
     scenes: tuple[Scene, ...]
     scene_setting: SceneSetting | None = None
+    audio_activity: AudioActivity | None = None
 
     def common_prompt_dict(self) -> dict[str, tuple[str, ...]]:
         return dict(self.common_prompt)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from ..artifacts import EMDTextArtifact, TimelineArtifact
+from ..emd.audio_activity import AudioActivity
 
 
 def format_emd_time(value_ms: int) -> str:
@@ -18,12 +19,12 @@ def format_srt_time(value_ms: int) -> str:
     return f"{hours:02d}:{minutes:02d}:{seconds:02d},{millis:03d}"
 
 
-def render_template_emd(timeline: TimelineArtifact) -> EMDTextArtifact:
+def render_template_emd(timeline: TimelineArtifact, *, audio_activity: AudioActivity | None = None) -> EMDTextArtifact:
     timeline.validate()
     lyrics_by_shot: dict[tuple[int, int], list[object]] = {}
     for lyric in timeline.lyrics:
         lyrics_by_shot.setdefault((lyric.scene_number, lyric.shot_index), []).append(lyric)
-    lines: list[str] = []
+    lines: list[str] = audio_activity.render_lines() if audio_activity is not None else []
     for scene in timeline.scenes:
         if lines:
             lines.append("")
@@ -51,7 +52,7 @@ def render_template_emd(timeline: TimelineArtifact) -> EMDTextArtifact:
                     "* 未計画",
                 ]
             )
-    return EMDTextArtifact.create("MVD_EMD_TEMPLATE_V1", "\n".join(lines) + "\n")
+    return EMDTextArtifact.create("MVD_EMD_TEMPLATE_V2" if audio_activity else "MVD_EMD_TEMPLATE_V1", "\n".join(lines) + "\n")
 
 
 def render_srt(timeline: TimelineArtifact, *, offset_ms: int = 0) -> str:

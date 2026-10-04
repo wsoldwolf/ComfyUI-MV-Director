@@ -460,6 +460,9 @@ def compile_ref2va(
     translations.build()
 
     plan: dict[str, Any] = {"shots": []}
+    if document.audio_activity is not None:
+        # Diagnostic metadata only: never translated into a global H3 prompt.
+        plan["mv_director_audio_activity"] = document.audio_activity.to_dict()
     typed_kinds = {
         directive.kind
         for scene in document.scenes

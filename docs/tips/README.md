@@ -8,6 +8,7 @@
 | [演出候補が採用される条件](staging-candidate-selection.md) | 三つのLLM担当の判断、optional / prefer_matchedの違い、確定指示とモーション補完との区別 |
 | [「演技するLLM」と三行補完・状態機械という思考実験](llm-acting-and-three-line-automaton-hypothesis.md) | 旧Python三行の事実と未証明の因果、有限状態の仮説、作者指示とLLM演技の境界を整理。FSMは採用案ではない |
 | [H3へ渡す文と映像の因果関係](compact-h3-visual-spec.md) | 対象・可視変化・人物の反応・Cameraの関係を簡潔に示す考え方と、短区間A/Bで確認すべきこと |
+| [ビート検出と身体演技の間にある隔たり](beat-detection-and-performance.md) | 拍検出・LLMの時刻解釈・H3の映像化を分け、細かな拍情報が振付の改善へ結び付かなかった検証と考察 |
 | [機械的な補完文が演技に見えること](mechanical-motion-and-perceived-performance.md) | 旧版の固定文補完の発見、確認事実と仮説、AS ISの限定的見直し、比較用profileとユーザー指定方法 |
 | [試行錯誤で生まれた良さを仕様化する難しさ](prototype-discovery-and-reproducibility.md) | バイブコーディングのプロトタイプから良い表現を移す費用と、後から再現できるよう残すべき証跡 |
 | [人物参照と背景参照を分ける](separate-subject-and-background-references.md) | 人物identityと環境条件の競合を避け、計画時と動画生成時に別Pictureとして扱う方法 |

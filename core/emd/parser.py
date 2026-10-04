@@ -1,4 +1,4 @@
-"""Strict line-oriented parser for MVD_EMD_V1."""
+"""Strict line-oriented parser for EMD V1 and advisory audio-activity V2."""
 
 from __future__ import annotations
 
@@ -20,6 +20,7 @@ from .ast import (
     Subject,
 )
 from .errors import EMDParseError
+from .audio_activity import AudioActivity, ActivityRange, ReferenceCopy
 from .common import COMMON_HEADINGS, split_shot_directive
 from .scene_fragment import SceneEMDFragmentError, parse_scene_emd_fragment
 
@@ -146,19 +147,47 @@ class _Parser:
         line = self.current()
         if line and line.text == "# 共通プロンプト":
             common = self.parse_common_prompt()
+        activity = None
+        if (line := self.current()) is not None and line.text == "# 音声活動":
+            activity = self.parse_audio_activity()
         scenes = self.parse_scenes()
         self.validate_concept_references(subjects, scenes)
         if self.current() is not None:
             line = self.current()
             raise EMDParseError(line.number, "unexpected trailing content")
-        return EMDDocument(subjects, retention, common, scenes, scene_setting)
+        return EMDDocument(subjects, retention, common, scenes, scene_setting, activity)
+
+    def parse_audio_activity(self) -> AudioActivity:
+        self.expect("# 音声活動")
+        header = self.take()
+        match = re.fullmatch(r"\* `音声活動v1` sample_rate=([1-9][0-9]*) source_samples=([1-9][0-9]*) "
+                             r"sha256=([0-9a-f]{64}) method=(energy_vad_sample_refined|author)", header.text)
+        if not match:
+            raise EMDParseError(header.number, "invalid audio activity v1 header")
+        intervals, copies = [], []
+        while (line := self.current()) is not None and line.text.startswith("* "):
+            interval = re.fullmatch(r"\* `ボーカル区間` ([0-9]+) ([0-9]+) ([a-z_]+)", line.text)
+            copy = re.fullmatch(r"\* `参照PCM配置` ([0-9]+) ([0-9]+) ([0-9]+)", line.text)
+            if interval and not copies:
+                intervals.append(ActivityRange(int(interval[1]), int(interval[2]), interval[3]))
+            elif copy:
+                copies.append(ReferenceCopy(*(int(v) for v in copy.groups())))
+            else:
+                raise EMDParseError(line.number, "unknown or out-of-order audio activity record")
+            self.take()
+        result = AudioActivity(int(match[1]), int(match[2]), match[3], tuple(intervals), tuple(copies), match[4])
+        try:
+            result.validate()
+        except ValueError as exc:
+            raise EMDParseError(header.number, str(exc)) from exc
+        return result
 
     def parse_scene_setting(self) -> SceneSetting:
         start = self.current()
         assert start is not None
         fragment_lines: list[str] = [self.take().text]
         while (line := self.current()) is not None:
-            if line.text in {"# 保持分析", "# 共通プロンプト"}:
+            if line.text in {"# 保持分析", "# 共通プロンプト", "# 音声活動"}:
                 break
             if line.text.startswith("> `シーン`"):
                 break

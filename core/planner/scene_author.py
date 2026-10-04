@@ -213,6 +213,7 @@ def generate_scene_author_content(
     system_prompts: Mapping[str, str],
     runtime_config: LlamaRuntimeConfig,
     staging_candidate_policy: str = "optional",
+    lip_sync_mode: str = "off",
     interrupt_callback: Any = None,
 ) -> tuple[Any | None, tuple[tuple[str, int, int], ...]]:
     """Keep hand-authored Shot fields; generate only absent Scene-local fields."""
@@ -273,6 +274,10 @@ def generate_scene_author_content(
             "shot_positions": positions,
             "staging_candidate_policy": staging_candidate_policy,
         }
+        if template.audio_activity is not None:
+            shared["audio_activity"] = template.audio_activity.scene_payload(
+                start_ms=scene.start_ms, end_ms=scene.end_ms, audio_mode=lip_sync_mode,
+            )
         # Fixed Events own their Shots only. Other Shots remain eligible for
         # Scene-local authorship in the same LLM call.
         fixed_events = {

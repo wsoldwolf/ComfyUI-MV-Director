@@ -15,7 +15,7 @@ from .template import (
 )
 from .types import PlannerContent, TimelinePlannerBackend, TimelinePlannerResult
 
-PLANNER_ALGORITHM_VERSION = "mvd-scene-author-v1-gemma31b"
+PLANNER_ALGORITHM_VERSION = "mvd-scene-author-v2-audio-activity"
 
 
 def generate_planner_content(
@@ -48,6 +48,7 @@ def generate_planner_content(
         scene_emd=scene_emd, direction=direction,
         system_prompts=system_prompts, runtime_config=runtime_config,
         staging_candidate_policy=staging_candidate_policy,
+        lip_sync_mode=lip_sync_mode,
         interrupt_callback=interrupt_callback,
     )
 
@@ -114,7 +115,7 @@ def plan_timeline(
     )
     if content is None:
         return TimelinePlannerResult(
-            EMDTextArtifact.create("MVD_EMD_TEMPLATE_V1", template_emd),
+            EMDTextArtifact.create("MVD_EMD_TEMPLATE_V2" if template.audio_activity else "MVD_EMD_TEMPLATE_V1", template_emd),
             None,
             False,
             missing,
