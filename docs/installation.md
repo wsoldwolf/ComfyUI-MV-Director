@@ -1,6 +1,6 @@
 # 導入マニュアル
 
-Windows版ComfyUIへComfyUI-MV-Directorを導入し、Gemma4 31Bによる人物・背景Vision、Direction生成、Timeline計画、英訳と、OpenAI Whisperによる歌詞整列をローカル実行する手順です。現在のdev workflowはRTX 5090級の大容量VRAM環境向けです。基準環境はPython 3.13、CUDA 13.0、`llama-cpp-python 0.3.34`です。本書のコマンドは、Visual Studio専用プロンプトを含めて`cmd.exe`の構文へ統一しています。
+Windows版ComfyUIへComfyUI-MV-Directorを導入し、Gemma4 31Bによる人物・背景Vision、Direction生成、Timeline計画、英訳と、OpenAI Whisperによる歌詞整列をローカル実行する手順です。現在のdev構成はRTX 5090・RTX 5080環境で検証しています。必要なメモリはモデルの量子化とcontext・オフロード設定で変わります。基準環境はPython 3.13、CUDA 13.0、`llama-cpp-python 0.3.34`です。本書のコマンドは、Visual Studio専用プロンプトを含めて`cmd.exe`の構文へ統一しています。
 
 ## 1. 前提
 
@@ -23,7 +23,7 @@ Windows版ComfyUIへComfyUI-MV-Directorを導入し、Gemma4 31Bによる人物�
 | GPU | CPU | メインメモリ | ストレージ | 備考 |
 | --- | --- | ---: | --- | --- |
 | NVIDIA GeForce RTX 5090 | AMD Ryzen 9 9950X | 256 GB | NVMe SSD 4 TB | 現在のGemma4 31B Text/Vision及びH3の検証環境 |
-| NVIDIA GeForce RTX 4070 Ti | AMD Ryzen 9 5900XT | 64 GB | NVMe SSD 4 TB | 過去の小型LLM構成で検証。現在の31B構成は未検証 |
+| NVIDIA GeForce RTX 5080 | AMD Ryzen 9 5900XT | 64 GB | NVMe SSD 4 TB | 現在のGemma4 31B Text/Vision及びH3の検証環境 |
 | NVIDIA GeForce RTX 5060 | AMD Ryzen 5 5500 | 16 GB | NVMe SSD 1 TB | 過去の構成でContext Loop標準リップシンクが動作せず。現在の31B構成は対象外 |
 
 過去のRTX 5060、メインメモリ16 GB構成では、Context Loop標準リップシンクworkflowが停止することを確認しています。Audio Reference方式又は歌詞方式は動画生成側の代替ですが、現在のGemma4 31B推論を8 GB VRAMで実行可能にするものではありません。各方式の検証状況は[配布workflowの説明](../workflows/README.md)を参照してください。
@@ -236,6 +236,39 @@ certutil -hashfile "C:\Software\ComfyUI\models\LLM\GGUF\gemma-4-31b-it-heretic-a
 | `gemma-4-31b-it-heretic-ara.mmproj-f16.gguf` | `6e3ba7c2d16bebe91812b3ce03ac819b3fc988093021f10388e5ddef141dd695` |
 | `medium.pt` | `345ae4da62f9b3d59415adc60127b97c714f32e89e936602e85993674d08dcb1` |
 
+### Text推論を31B IQ3_XSへ切り替える
+
+RTX 5080のVRAM 16 GB環境では、Text推論にIQ3_XSを使用することを推奨します。Direction Enhancer、Timeline Planner、EMD Compilerを下記のモデルへ切り替え、contextとGPUオフロード設定を環境に合わせて調整してください。
+
+devでは、Text推論用の選択肢として`gemma-4-31B-it-heretic.i1-IQ3_XS.gguf`にも対応しています。配布workflowの既定はQ4_K_Sのままなので、導入後にDirection Enhancer、Timeline Planner、EMD Compilerのモデルを手動で選び直します。IQ3_XSは別のheretic配布モデルであり、既定のheretic-ara Q4_K_Sと同一モデルの量子化違いとは限りません。生成内容は改めて確認してください。
+
+取得元は[mradermacher/gemma-4-31B-it-heretic-i1-GGUF](https://huggingface.co/mradermacher/gemma-4-31B-it-heretic-i1-GGUF)です。[IQ3_XSをダウンロード](https://huggingface.co/mradermacher/gemma-4-31B-it-heretic-i1-GGUF/resolve/main/gemma-4-31B-it-heretic.i1-IQ3_XS.gguf?download=true)し、次へ配置します。ファイルサイズは13,072,368,576 bytes（約13.1 GB）です。
+
+```text
+C:\Software\ComfyUI\models\LLM\GGUF\
+└─ gemma-4-31B-it-heretic-i1-GGUF\
+   └─ gemma-4-31B-it-heretic.i1-IQ3_XS.gguf
+```
+
+配布元の[ファイルメタデータ](https://huggingface.co/api/models/mradermacher/gemma-4-31B-it-heretic-i1-GGUF?blobs=true)で2026-10-04に確認したSHA-256は次です（配布元revision：`ac1fc7cf8561416d08a4144897fdd6bb4321a4a9`）。
+
+| ファイル | SHA-256 |
+| --- | --- |
+| `gemma-4-31B-it-heretic.i1-IQ3_XS.gguf` | `9333ddc13bdb757c7ba0354403f823141bfd9906fde8052a8956766b9022dfc6` |
+
+`cmd.exe`でダウンロード済みファイルを確認します。
+
+```bat
+certutil -hashfile "C:\Software\ComfyUI\models\LLM\GGUF\gemma-4-31B-it-heretic-i1-GGUF\gemma-4-31B-it-heretic.i1-IQ3_XS.gguf" SHA256
+```
+
+1. 表のSHA-256と一致することを確認してComfyUIを再起動します。
+2. Direction Enhancer、Timeline Planner、EMD Compilerのモデルcomboで`gemma-4-31B-it-heretic-i1-GGUF/gemma-4-31B-it-heretic.i1-IQ3_XS.gguf`を選び、workflowを保存します。
+3. 人物・背景のImage to Subject EMDは、既定のheretic-ara Q4_K_Sと対応mmprojを引き続き使用します。この導入手順はText推論の切り替えを対象とします。
+4. 各Textノードを`cache_mode=refresh`で実行し、選択したモデルでPlanを作り直します。必要なcontextは入力長で変わるため、量子化を変えても十分なcontextを確保し、GPUオフロード設定を環境に合わせて調整します。
+
+Timeline Plannerはこのファイル名を判別し、Performance・Cameraでgrammarなしの生成を先に試す高速化経路を使用します。出力が構造検証に通らなければgrammar付き生成へ戻ります。Eventは最初からgrammar付きです。判別にはファイル名を使うため、`gemma-4-31B-it-heretic.i1-IQ3_XS.gguf`を変更しないでください。Text推論ではSWA cacheの全context確保も無効化しています。ファイルサイズは実行時のVRAM使用量と同じではなく、速度と必要メモリはcontext・オフロード設定に依存します。
+
 ### 動画workflowの既定H3 Hybrid Loader
 
 配布workflowの動画生成側（`02_video_context_loop.json`、`04_video_audio_reference.json`、`06_video_lyrics.json`）は`MiniMaxH3HybridLoader`を使用します。FL2VAをベースに、Ref2VAの一部のAdaLN変調重みをオーバーレイします。これはFL2VAの画質・動きとRef2VAの参照条件付けを併用するための構成で、[Hybrid Loader作者の説明](https://github.com/scottmudge/ComfyUI_MinimaxH3HybridLoader)もこの組合せを提案しています。本workflowはユーザーが`02_video_context_loop.json`で設定した`block_range_adaln`、開始block `25`、終了block `49`、`final_adaln_from_overlay=false`をそのまま既定値とします。
@@ -270,7 +303,7 @@ certutil -hashfile "C:\Software\ComfyUI\models\diffusion_models\MiniMaxH3\minima
 
 ## 6. 起動確認
 
-ComfyUIを再起動し、ノード検索で`MV Director`を確認します。11ノードがCore、Input、Audio、Utilitiesに表示されます。
+ComfyUIを再起動し、ノード検索で`MV Director`を確認します。12ノードがCore、Input、Audio、Utilitiesに表示されます。
 
 まず[配布workflow](../workflows/README.md)のPlan/Compiler側を開き、次を確認してください。
 
@@ -289,5 +322,5 @@ ComfyUIを再起動し、ノード検索で`MV Director`を確認します。11�
 
 現行PlannerはScene Authorのみです。旧strategy selectorと`scenes_per_batch`を撤去しました。
 旧profile・WF・cacheの更新は[31B構成への移行](implementation/gemma31b-migration.md)を参照してください。
-前段WFのcontextはVision / Enhancer / Plannerが24,576、Compilerが16,384です。
+前段WFのcontextはVisionが16,384、Enhancer / Plannerが24,576、Compilerが16,384です。
 モデル取得元とハッシュは本書の表を使用し、旧8B presetを既定へ戻さないでください。

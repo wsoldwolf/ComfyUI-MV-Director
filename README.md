@@ -21,7 +21,7 @@ EMDは **Easy MarkDown** の略です。Extended Markdownではありません�
 
 現行の開発構成は`dev`ブランチです。既存のリリースタグとはモデル・パイプラインが異なります。基準環境はComfyUI v0.37.2 commit `830232b856045ca2892833212d7771078a13edd5`、Context Loop 0.7.0 commit `d80304f05ecc2f504e64cbfb636e2a21d4409909`です。ComfyUI v0.37.4とSpectrum v0.2.27での全編完走も確認しています。高速化設定と検証条件は[TIPS](docs/tips/h3-acceleration-and-stability.md)を参照してください。
 
-Gemma4 31B構成はRTX 5090環境で検証しています。VRAM 8 GB環境は現在の対象外です。必要なVRAM・メインメモリは量子化、context、オフロード設定で変わるため、未検証環境の最低容量は断定していません。
+Gemma4 31B構成はRTX 5090・RTX 5080環境で検証しています。VRAM 8 GB環境は現在の対象外です。必要なVRAM・メインメモリは量子化、context、オフロード設定で変わるため、未検証環境の最低容量は断定していません。
 
 `# 共通プロンプト`は全体方針、`# 演出候補`は歌詞に応じた局所演出として記述できます。候補は全Sceneへ一律に適用されません。人物の再現性、演技、リップシンクなどの最終的な採否は、生成映像を見て判断してください。
 
@@ -72,7 +72,20 @@ LLMの出力は確率的で、行protocol違反や必須出力の欠落が起き
 
 詳細はGitのコミットログを参照してください。
 
-### 開発中（dev：次期系列向け）
+### v0.2.2（予定：devで開発中）
+
+- **伴奏区間での簡易的なモーション追加**を予定しています。ボーカルの音声活動情報と前後の歌詞を参考に、イントロ・間奏などで身体の揺れ、踏み替え、体幹や腕の流れといった演技をPlannerへ提案します。`# 演出候補`で伴奏中の動きを指定できます。動作の採用と映像での再現は生成結果に依存し、拍に同期した振付を保証する機能ではありません。
+- 音声活動情報を持つEMD V2に対応し、従来のEMD V1も引き続き受け付けます。利用方法は[Lyric Segmentation](docs/nodes/lyric-segmentation.md)、検証で得た考察は[ビート検出と身体演技](docs/tips/beat-detection-and-performance.md)を参照してください。
+
+追加のモデル導入は不要です。利用の流れは次のとおりです。
+
+1. Lyric Segmentationへpadding前のボーカルステムと歌詞を入力し、生成したTemplate EMDをTimeline Plannerへ接続します。音声活動情報は`# 音声活動`としてEMDへ保存されます。古い成功キャッシュも、`reuse`でWhisperを再実行せず情報を補充します。
+2. Direction Enhancerへ渡す`# 演出候補`に、伴奏中に行わせたい動きを記述します。例えば「歌声のない長い伴奏では、体幹を捻り、肩と腕を連動させ、踏み替えながら身体の流れを続ける」と指定します。
+3. Planを作り直して動画workflowへ渡し、伴奏中の演技と歌唱へ戻るつながりを音付き映像で確認します。
+
+ボーカル不在の検出は伴奏の存在を確定するものではなく、候補の採用や拍への同期も保証しません。従来のEMD V1を使う場合も実行できますが、音声活動情報を参考にするにはEMD V2のTemplateを作り直してください。詳細は[Lyric Segmentation](docs/nodes/lyric-segmentation.md)と[ビート検出と身体演技](docs/tips/beat-detection-and-performance.md)を参照してください。
+
+### 開発中の31B構成とパイプライン
 
 - 人物演技・感情表現の改善を目的として、人物・背景Vision、Direction Enhancer、Timeline Planner、Compilerの既定モデルをGemma4 31B Q4_K_Sへ統一しました。
 - PlannerをScene Authorの単一経路へ統一しました。Scene単位で出来事、人物演技、Cameraを順に計画し、継続Sceneには直前の終端状態を渡します。利用者がShotへ直接記述した確定指示は保持します。
