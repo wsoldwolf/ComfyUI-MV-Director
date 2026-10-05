@@ -222,6 +222,10 @@ taskと入力長に応じて実際の出力予約量を調整します。Style/C
 `anime_emotional_mv`、Motionは`anime_scene_composed_mv`でScene Author経路を使います。
 詳しい設定と検証上の注意は[workflow設定](../workflows/README.md#共通入力)を参照してください。
 
+Plannerの推論高速化はIQ3_XSやRTX 5080専用ではありません。既定の`gemma-4-31b-it-heretic-ara.Q4_K_S.gguf`と`gemma-4-31B-it-heretic.i1-IQ3_XS.gguf`の両方で、通常のPlannerノードがPerformance・Cameraの初回生成をgrammarなしで実行し、出力後にプロトコルを検査します。不整合時はgrammar付きで再推論し、Eventと候補選択は最初からgrammar付きです。追加UIや専用WFは不要です。
+
+Text推論の共通経路はモデル名にかかわらず`swa_full=False`を指定します。これは上記のPlanner生成方式とは別のKVメモリ節約設定で、Enhancer・Planner・Compilerに適用されます。対象モデルの一覧、ログによる確認と制限は[TIPS：通常パイプラインの推論高速化](tips/rtx5080-gemma31b-iq3-xs.md#通常パイプラインの推論高速化)を参照してください。
+
 ダウンロードの破損や同名の別quantを判別する場合は、`cmd.exe`で次のようにSHA-256を表示し、表の値と比較できます。
 
 ```bat
@@ -267,7 +271,7 @@ certutil -hashfile "C:\Software\ComfyUI\models\LLM\GGUF\gemma-4-31B-it-heretic-i
 3. 人物・背景のImage to Subject EMDは、既定のheretic-ara Q4_K_Sと対応mmprojを引き続き使用します。この導入手順はText推論の切り替えを対象とします。
 4. 各Textノードを`cache_mode=refresh`で実行し、選択したモデルでPlanを作り直します。必要なcontextは入力長で変わるため、量子化を変えても十分なcontextを確保し、GPUオフロード設定を環境に合わせて調整します。
 
-Timeline Plannerはこのファイル名を判別し、Performance・Cameraでgrammarなしの生成を先に試す高速化経路を使用します。出力が構造検証に通らなければgrammar付き生成へ戻ります。Eventは最初からgrammar付きです。判別にはファイル名を使うため、`gemma-4-31B-it-heretic.i1-IQ3_XS.gguf`を変更しないでください。Text推論ではSWA cacheの全context確保も無効化しています。ファイルサイズは実行時のVRAM使用量と同じではなく、速度と必要メモリはcontext・オフロード設定に依存します。
+IQ3_XSへの切り替えは、主にVRAM 16 GBへ収めるためのモデル選択です。Plannerの高速化を有効にするための必須条件ではなく、既定Q4_K_Sでも同じPerformance・Cameraの高速化経路を使用します。自動判別にはGGUFのファイル名（大文字・小文字は区別しない）を使うため、配布時のファイル名を変更しないでください。ファイルサイズは実行時のVRAM使用量と同じではなく、速度と必要メモリはcontext・オフロード設定に依存します。
 
 ### 動画workflowの既定H3 Hybrid Loader
 

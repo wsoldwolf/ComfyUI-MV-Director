@@ -2,7 +2,7 @@
 
 VRAM 16GBのRTX 5080で、Gemma4 31B IQ3_XSを使う場合の開始設定をまとめます。2026-10-04時点のモデル構造と現行コードから計算した目安であり、この4ノード構成をRTX 5080実機で通して検証した結果ではありません。動作保証や自動設定ではなく、手動調整の起点です。
 
-対象モデルは`gemma-4-31B-it-heretic.i1-IQ3_XS.gguf`です。[配布元](https://huggingface.co/mradermacher/gemma-4-31B-it-heretic-i1-GGUF)と配置手順は[導入マニュアル](../installation.md#text推論を31b-iq3_xsへ切り替える)を参照してください。26B MoEや12BのIQ3モデルには、この計算を適用しません。
+このTIPSのVRAM容量・context計算の対象モデルは`gemma-4-31B-it-heretic.i1-IQ3_XS.gguf`です。[配布元](https://huggingface.co/mradermacher/gemma-4-31B-it-heretic-i1-GGUF)と配置手順は[導入マニュアル](../installation.md#text推論を31b-iq3_xsへ切り替える)を参照してください。26B MoEや12BのIQ3モデルには、この計算を適用しません。一方、以下のPlanner推論高速化はIQ3_XS専用ではなく、通常パイプラインの既定Q4_K_Sにも適用されます。メモリ容量の見積もりと、高速化の適用条件を区別してください。
 
 ## 推奨する開始設定
 
@@ -16,6 +16,24 @@ VRAM 16GBのRTX 5080で、Gemma4 31B IQ3_XSを使う場合の開始設定をま�
 共通の前提は`gpu_layers=-1`、`kv_cache_type=q8_0`、`flash_attn=true`、`op_offload=true`、`keep_model_loaded=false`です。ノードは順次実行し、LLM・H3・LM Studio等を同時にGPUへ常駐させない構成を想定しています。`gpu_layers=-1`でも必要なVRAMが自動的に16GBへ収まるわけではありません。
 
 `n_ctx`には入力、Visionの画像token、出力が含まれます。`max_tokens`は別途確保する出力上限なので、入力だけが上記の長さまで入るわけではありません。context予算エラーとVRAM不足は別の問題として確認してください。モデル側の巨大な既定contextを選ばないよう、`n_ctx=0`ではなく表の値を指定します。
+
+## 通常パイプラインの推論高速化
+
+2026-10-05時点の[Planner実装](../../nodes/node_timeline_planner/node.py)は、選択したGGUFのファイル名から次の生成方式を自動選択します。RTX 5080専用の処理ではなく、通常のPlannerノードと配布WFで使用します。
+
+| GGUFファイル名 | grammarなしで初回生成する担当 | 初回からgrammarを使用する担当 |
+| --- | --- | --- |
+| `gemma-4-31b-it-heretic-ara.Q4_K_S.gguf` | Performance・Camera | Event・候補選択 |
+| `gemma-4-31B-it-heretic.i1-IQ3_XS.gguf` | Performance・Camera | Event・候補選択 |
+| `Gemma4-26B-A4B-Uncensored-HauhauCS-Balanced-IQ2_M.gguf` | Event・Performance・Camera | 候補選択 |
+
+対象担当では、毎tokenのgrammar制約を省いて生成し、その後にline protocolを検査します。不整合があればgrammar付きで再推論し、必要なslotが欠けた場合は該当slotをgrammar付きで再試行します。検査を省略する方式ではありません。上記以外のファイル名は初回からgrammar付きです。ディレクトリ名とファイル名の大文字・小文字は判別に影響しませんが、GGUFのファイル名自体は変更しないでください。別の量子化やすべてのGemmaモデルへ一律に適用するものではありません。
+
+適用時のPlannerログは`sampling=unconstrained_first`、初回からgrammarを使う担当は`sampling=grammar`です。`fallback=grammar_full_batch`は出力不整合による再推論を示します。ログで推論を確認する際は`cache_mode=refresh`を使用してください。キャッシュ再利用時は推論自体を省略します。再推論の頻度、CPUに残すモデル層、入力長によって効果が変わるため、一定の速度向上倍率は保証しません。
+
+別の共通設定として、[Text lifecycle](../../core/inference/llama_cpp_backend.py)はEnhancer・Planner・Compilerのモデル読み込みで`swa_full=False`と`offload_kqv=True`を指定し、`op_offload`と`flash_attn`はノード設定に従います。これらはIQ3_XS限定ではありません。ただし、上記のgrammarなし初回生成はPlannerだけの仕組みです。Visionは別の読み込み経路であり、Textと同じSWA設定とは限りません。
+
+通常パイプラインへの適用に追加UI・専用WFは不要です。Q4_K_Sでも高速化経路は使用しますが、このTIPSのIQ3_XS向け容量計算をQ4_K_Sへ流用して16GBに収まると判断しないでください。
 
 ## 計算の前提
 
