@@ -67,6 +67,14 @@ VisionもIQ3_XSへ切り替えるには、対応するmmprojとモデルペア�
 [INFO] Prompt executed in 07:19:46
 ```
 
-これは02 WFのH3／Context Loopによる全編動画生成の所要時間の目安です。01 WFの言語生成時間とは別の測定です。解像度、step数、Scene構成、高速化ノードや起動オプション等の実行条件は今回の報告だけでは確認できないため、同じ長さの動画が常にこの時間で生成できるとは限りません。
+同日の追加報告による実行条件は次のとおりです。
+
+* 生成解像度は0.9MP。
+* Spectrumはストールする場合がまだあるため、バイパス。
+* ComfyUIの起動引数に`--disable-fast-disk --disable-async-offload --disable-pinned-memory`を追加。
+
+起動引数は、02 WF実行中にComfyUI／aimdoのモデル読み込みエラーが発生する場合があるため使用しています。先に報告された`GetOverlappedResult failed error=1450`は、Windowsの`ERROR_NO_SYSTEM_RESOURCES`（システム資源不足）です。この分類だけではRAM不足・VRAM不足などの具体的な原因や、各引数単独の改善効果までは確定できません。現状の回避設定として記録します。
+
+これは02 WFのH3／Context Loopによる全編動画生成の所要時間の目安です。01 WFの言語生成時間とは別の測定です。step数、Scene構成、その他の高速化設定やソフトウェアのバージョンは今回の報告だけでは確認できないため、同じ長さの動画が常にこの時間で生成できるとは限りません。
 
 このTIPSの追加では、WF、ジェネレーター、VisionのSWA設定、実行中の動画生成は変更していません。
