@@ -46,6 +46,9 @@ def main() -> None:
                  "max_tokens", "temperature", "top_p", "repetition_penalty", "gpu_layers", "n_batch", "n_ctx",
                  "flash_attn", "kv_cache_type", "op_offload", "keep_model_loaded", "seed"]
         inputs = dict(zip(names, item["widgets_values"][:22], strict=True))
+        inputs["mmproj_use_gpu"] = item.get("widgets_values_named", {}).get(
+            "mmproj_use_gpu", True
+        )
         inputs.update(model_name=args.model, seed=42, keep_model_loaded=False, cache_mode="disabled")
         link = next(link for link in workflow["links"] if link[3] == item["id"] and link[4] == 0)
         image_node = next(n for n in workflow["nodes"] if n["id"] == link[1])

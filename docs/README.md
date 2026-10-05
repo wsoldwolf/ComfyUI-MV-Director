@@ -12,7 +12,7 @@
 | [Direction profile EMD](../profiles/README.md) | Style、Motion、Camera profileを追加・編集する |
 | [Direction / Planner処理フロー](architecture/direction-planner-flow.md) | LLM task、Python所有処理、artifactの流れを確認する |
 | [TIPS](tips/README.md) | 参照画像の分離、再現率、配線など実運用のノウハウを確認する |
-| [workflowマニュアル](../workflows/README.md) | 三つのリップシンク方式に対応する6 workflowを使う |
+| [workflowマニュアル](../workflows/README.md) | 三つのリップシンク方式に対応する基本6 workflowと12B・26B検証用Plan派生版を使う |
 | [トラブルシューティング](troubleshooting.md) | モデル未検出、protocol、歌詞整列等の停止原因を調べる |
 
 ## 形式を実装・編集する人向け

@@ -11,8 +11,9 @@ Image to Subject EMD、Direction Enhancer、Timeline Planner、EMD Compilerで�
 | `top_p` | nucleus sampling | 既定`0.9` |
 | `repetition_penalty` | 反復抑制 | 既定`1.05` |
 | `gpu_layers` | GPUへoffloadするlayer数 | `-1`は可能なlayerをoffload |
+| `mmproj_use_gpu` | Visionだけのprojector配置 | 既定`true`。`false`でmmprojをCPUに置き、`gpu_layers`とは独立にする |
 | `n_batch` | prompt処理batch | VRAM不足時は下げる |
-| `n_ctx` | context上限 | 配布WFはVision/Planner/Enhancerが24,576、Compilerが16,384 |
+| `n_ctx` | context上限 | 31B基本WFはVision/Compilerが16,384、Planner/Enhancerが24,576。派生WFは別設定 |
 | `flash_attn` | Flash Attention | 対応buildでは`true` |
 | `kv_cache_type` | KV cache量子化 | 配布WFは`q8_0` |
 | `op_offload` | 演算offload | 既定`true` |

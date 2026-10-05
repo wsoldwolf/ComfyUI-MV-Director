@@ -11,7 +11,7 @@ denoising stepsは動画側の`MiniMaxH3ChainPlanModern.default_steps`で指定�
 2026/09/20 現在、Context Loop標準リップシンクワークフロー以外は動作検証していませんのでご了承下さい。
 上手く動かない・リップシンクしないとバグ報告されても、他の箇所が重要で修正に着手できません。
 
-## 6本の構成
+## 6本の基本構成と12B・26B派生版
 
 | 順番 | ファイル | 役割 |
 |---|---|---|
@@ -21,6 +21,18 @@ denoising stepsは動画側の`MiniMaxH3ChainPlanModern.default_steps`で指定�
 | 4 | `04_video_audio_reference.json` | Scene-local vocal sliceを`ref_audio_0`へ渡して動画生成 |
 | 5 | `05_plan_compiler_lyrics.json` | 歌詞directive用のEMDとPlanを生成 |
 | 6 | `06_video_lyrics.json` | 追加lip-sync経路なしで歌詞promptから動画生成 |
+
+`_12b_01_plan_compiler_context_loop.json`は01_のレイアウト・入力・接続を複製した12B用Plan / Compiler WFです。人物・背景Vision、Direction Enhancer、Timeline Planner、EMD Compilerは`Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-Q4_K_M.gguf`を選択し、全ノードの`n_ctx`を12,288とします。Visionでは同じモデルフォルダの専用`mmproj`を使用します。出力Planは通常の`02_video_context_loop.json`へ渡せます。
+
+これは12 GB VRAM向けの実用候補であり、12 GB実機での完走を保証しません。コンテキスト不足又はVRAM不足が出る場合は、ノードごとの入力長・GPUメモリ使用量を確認してください。複製WFだけを現在の01_から更新するには`python tools/generate_workflows.py --sync-12b-variant`を使います。元の01_は31B設定のままです。
+
+`_26b_iq2_m_01_plan_compiler_context_loop.json`は同じ01_のレイアウト・素材・接続を複製した26B A4B IQ2_M検証用WFです。人物・背景Vision、Direction Enhancer、Timeline Planner、EMD Compilerを同系列のIQ2_M GGUFに切り替え、全ノードで`n_ctx=16384`、`gpu_layers=27`、`n_batch=256`とします。Visionだけは独立設定`mmproj_use_gpu=false`でmmprojをCPUに置き、言語モデルの27層はGPUに残します。出力Planは通常の`02_video_context_loop.json`へ渡せます。現在の01_から再複製するには`python tools/generate_workflows.py --sync-26b-iq2-m-variant`を使います。
+
+`_26b_iq2_m_29gpu_01_plan_compiler_context_loop.json`は上記27層版との速度・VRAM比較用です。PlannerとCompilerだけ`gpu_layers=29`にし、Vision・Enhancerは27層、`n_ctx`、`n_batch`、素材、シード、配線は同一に保ちます。16GB VRAMでの実測ピークと品質は未確認です。先に27層版の実行時間・VRAMピークを記録し、同じ入力で29層版を実行してください。再生成は`python tools/generate_workflows.py --sync-26b-iq2-m-29gpu-variant`です。
+
+`_26b_iq2_m_30gpu_01_plan_compiler_context_loop.json`は、30個の反復層の最後の1層もGPUへ載せる追加比較用です。PlannerとCompilerだけ`gpu_layers=30`とし、それ以外は29層版と同じです。ただしllama.cppでは出力層を別の1層として数えるため、30層版はモデル全体のGPU配置ではありません。出力層まで試すには`gpu_layers=31`が必要です。現在の30層・16k contextでの5090実測GPUメモリ使用量は約15.7GiBであり、31層と16GB VRAMの組合せは安全と確認できていません。GGUFの最後の反復層は約317MiB、共有出力に使われる埋め込み重みは約484MiBですが、KV cache・一時領域・他プロセスもVRAMを消費します。GPUメモリのピークを確認しながら試し、OOM時は29層版へ戻してください。再生成は`python tools/generate_workflows.py --sync-26b-iq2-m-30gpu-variant`です。GPU利用率だけでなくPlanner・Compiler各ノードの経過時間を比較し、ComfyUIキャッシュによる他ノードの省略を総時間の差と混同しないでください。
+
+12 GiB VRAM向けの概算: 配布IQ2_MのGGUF tensorは10,361,892,472 byteで、最初の3層は983,194,380 byteです。27層と非block tensorをすべてGPU計上しても約9.38 GBとなり、12 GiBとの差は約3.51 GBです。モデルの5つの全域attention層と25の1024-token sliding-window層を`q8_0`で見積もると、16,384 contextのKVは約0.29 GBです。残りはCUDA/ComfyUI、計算buffer、断片化に充てます。実際の割付はllama.cpp buildと画像サイズに依存するため、**12 GB実機での起動・全曲完走は未検証**です。VisionのCPU mmprojは画像解析を遅くする可能性があります。IQ2_Mは強い量子化なので、規約遵守と映像品質を12B/31Bと比較してから採用してください。
 
 三つの動画生成WFは共通して`Hybrid Loader → Turbo LoRA（バイパス）→ Model Attention Backend → Block Sparse Attention → Spectrum → FP16 accumulation → Sigma Shift`のMODEL経路を使い、既存のSigma ShiftをVideo/Audio Shiftとして一段だけ適用する。既定denoising stepsは20、解像度は0.4MP（16:9）、Loop Endは`recursive`とする。
 

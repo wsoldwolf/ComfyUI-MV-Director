@@ -13,6 +13,7 @@ from ..emd import (
     render_scene_emd_fragment,
 )
 from ..emd.errors import EMDParseError
+from ..emd.audio_activity import AudioActivity
 from ..h3_contract import DEFAULT_H3_TIMING_PROFILE, H3TimingProfile
 from .errors import TimelinePlannerError
 
@@ -33,6 +34,7 @@ _PROBE_SCENE = """
 @dataclass(frozen=True, slots=True)
 class PlannerTemplate:
     scenes: tuple[Scene, ...]
+    audio_activity: AudioActivity | None = None
 
     @property
     def shot_keys(self) -> tuple[tuple[int, int], ...]:
@@ -87,7 +89,8 @@ def parse_template_emd(
         raise TimelinePlannerError("template_emd must not contain a Subject section")
     try:
         document: EMDDocument = parse_emd(
-            DEFAULT_CONCEPT_EMD.rstrip() + "\n\n" + normalized + "\n",
+            # Template targets bind to the actual concept fragment later.
+            "# サブジェクト\n" + "* Template Subject.\n" * 4 + "\n" + normalized + "\n",
             timing_profile=timing_profile,
         )
     except EMDParseError as exc:
@@ -98,4 +101,4 @@ def parse_template_emd(
         for shot in scene.shots:
             if shot.lyric_lip_sync:
                 raise TimelinePlannerError("template_emd must not contain lyric lip-sync directives")
-    return PlannerTemplate(document.scenes)
+    return PlannerTemplate(document.scenes, document.audio_activity)

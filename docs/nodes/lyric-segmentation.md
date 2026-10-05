@@ -50,3 +50,19 @@ Template EMDは先頭Sceneをカット、2件目以降を初期値`継続`とし
 全歌詞が配置できない場合は赤いERRORを出し、Template EMD、SRT、timelineをExecutionBlockerで停止します。これは音源が歌詞後半を歌っていない場合を黙って成功にしないためです。
 
 INFOログの`targeted retries completed`には、再探索した未解決run数、回収segment数、残数が表示されます。`remaining=0`なら全歌詞が実timestampへ配置されています。
+
+## ボーカル活動の保持と診断保存
+
+成功キャッシュには`payload.audio_activity`として、元PCMのsample位置、音源fingerprint、VAD条件、2秒以上のボーカル不在候補、歌詞との食い違い、Audio参照向けPCM再配置の対応を保存します。保存先はINFOログの`vocal activity saved in cache`に絶対パスで表示されます。`reuse`で古いキャッシュを読む場合も、追加のWhisper推論なしでCPU解析して補充します。
+
+Template EMDには任意の`# 音声活動`を追加し、PlannerのEvent・Performance・Cameraへ現在Sceneの実PCM区間だけを参考情報として渡します。歌詞のないSceneでは近接する前後歌詞も読み取り文脈として渡し、イントロ・間奏で身体候補を選べるようにします。候補の強制採用や品質停止条件にはしません。Scene/Shot枠、SRT、timeline、4本の出力ソケットは維持します。歌詞とVADが食い違う区間は`unknown`として残し、この診断を理由に生成を停止しません。
+
+音声活動を含むTemplateは`MVD_EMD_TEMPLATE_V2`です。Plannerが口元計画を追加した完成EMDは`MVD_EMD_V3`、口元計画がない完成EMDは`MVD_EMD_V2`です。従来のV1も受け付けます。診断生成に失敗した場合は警告して従来のEMDを返します。古い成功キャッシュはWhisperを再実行せずCPUで補充し、Templateも更新します。
+
+長いボーカル不在候補から閉口を計画する責務はPlannerにあります。このノードは口元の状態を決めず、Compilerも活動情報だけでは閉口を補完しません。時刻付きの`口元`アノテーションと作者指定の優先順位は[EMD仕様](../spec/emd-spec.md)を参照してください。閉口の描写はH3本文による誘導であり、音声活動の検出だけでは保証されません。
+
+ノードはボーカルのみを受け取るため、`no_vocal_candidate`は伴奏や楽曲全体の無音を確定したものではありません。H3用に挿入される`padding`も元音源の休止とは区別します。`cache_mode=disabled`又はComfyUIのtemp保存先を取得できない場合は診断をファイル保存しません。キャッシュは一時保存であり、長期検証には別途書き出してください。
+
+CPU検証ツール`tools/analyze_audio_activity.py`は、ボーカルとフルミックスを比較し、区間JSON、CSV、波形図をプロジェクト外の指定先へ書き出します。`--timeline`は保存済みtimeline又は歌詞整列キャッシュ、`--template`は保存済みTemplate EMDを受け取ります。後者は元Scene範囲を再構築し、保存済みの全Scene/Shot枠を再現できた場合だけ対応表を作ります。音源の同一性は利用者も確認してください。
+
+`--lyrics`はplain lyricsの出典とfingerprintを記録するだけで、歌詞時刻を推測しません。音源長が1sampleだけ違う場合に限り、`--allow-one-sample-tail-difference`で明示的に許可できます。元PCMの伸縮や切り詰めは行わず、フルミックスが足りない末尾は`unknown`とします。

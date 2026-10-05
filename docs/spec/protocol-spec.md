@@ -1,6 +1,6 @@
 # MV Director プロトコル仕様
 
-更新日: 2026-09-27<br>
+更新日: 2026-10-05<br>
 対象: 現行dev、Gemma4 31B / Scene Author
 
 ## 1. 適用範囲
@@ -30,10 +30,12 @@ V1は後方互換を要求しない。未知schema、旧`CL...` schema又はvers
 | MVD_TIMELINE_V1 | source音声、歌詞、Scene/Shot |
 | MVD_EMD_TEMPLATE_V1 | 確定時間枠と歌詞annotation |
 | MVD_EMD_V1 | 完成EMD |
+| MVD_EMD_TEMPLATE_V2 / MVD_EMD_V2 | 音声活動付きTemplate / 完成EMD |
+| MVD_EMD_TEMPLATE_V3 / MVD_EMD_V3 | 口元計画付きTemplate / 完成EMD |
 | MVD_REQUIRED_REFERENCES_V2 | Compilerが要求する参照 |
 | MVD_SCENE_AUTHOR_CONTENT_V1 | Planner成功cacheの内部内容 |
 
-Planner内容cacheはactions、cameras、events、motion_compositions、terminal_statesと計数を持つ。
+Planner内容cacheはactions、cameras、events、motion_compositions、terminal_statesと計数を持つ。任意の`mouth_performances`は`[scene_number, subject_id, start_ms, end_ms, state]`の配列を持ち、時刻は配信PCM上の絶対ms、stateは`閉口` / `歌唱` / `自由`とする。旧内容でこのkeyがない場合は空配列として読むが、Plannerのalgorithm version更新により旧成功cacheを新規計画として再利用しない。
 自然文はLLM原文と別責務の補完を分けて保持する。旧engineのcache形状は読み替えない。
 
 ## 4. EMD text artifact
@@ -42,7 +44,7 @@ Planner内容cacheはactions、cameras、events、motion_compositions、terminal
 {"schema":"MVD_EMD_V1","text":"# サブジェクト\n...","sha256":"..."}
 ```
 
-`schema`は四つのEMD schemaのいずれか、`text`はLFへ正規化した文字列、`sha256`は正規化後textのUTF-8 SHA-256とする。hash不一致を修復しない。`MVD_SCENE_EMD_FRAGMENT_V1`は`# シーン設定`だけを持ち、文法はEMD仕様を正本とする。
+`schema`は登録済みEMD schemaのいずれか、`text`はLFへ正規化した文字列、`sha256`は正規化後textのUTF-8 SHA-256とする。hash不一致を修復しない。`MVD_SCENE_EMD_FRAGMENT_V1`は`# シーン設定`だけを持ち、文法はEMD仕様を正本とする。口元計画はPlannerが確定するEMDアノテーションであり、LLM返答のline protocolへ新しいrecord種別を追加しない。Compilerは音声活動から口元を再判定せず、口元計画だけを時間付きH3本文へ変換する。
 
 ## 5. Direction artifact
 

@@ -1,4 +1,4 @@
-"""Strict line-oriented parser for MVD_EMD_V1."""
+"""Strict EMD parser, including advisory activity and planned mouth intervals."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ from .ast import (
     AudioDirective,
     EMDDocument,
     LyricAnnotation,
+    MouthPerformance,
     RetentionDirective,
     Scene,
     SceneSetting,
@@ -20,6 +21,7 @@ from .ast import (
     Subject,
 )
 from .errors import EMDParseError
+from .audio_activity import AudioActivity, ActivityRange, ReferenceCopy
 from .common import COMMON_HEADINGS, split_shot_directive
 from .scene_fragment import SceneEMDFragmentError, parse_scene_emd_fragment
 
@@ -33,6 +35,11 @@ _SCENE_RE = re.compile(
 )
 _H3_LENGTH_RE = re.compile(r"\* `H3長` ([1-9][0-9]*)\Z")
 _SHOT_RE = re.compile(r"## ショット ([0-9]{2,}:[0-5][0-9]\.[0-9]{3})\Z")
+_MOUTH_RE = re.compile(
+    r"> `口元` `(サブジェクト[1-4])` "
+    r"([0-9]{2,}:[0-5][0-9]\.[0-9]{3}) --> "
+    r"([0-9]{2,}:[0-5][0-9]\.[0-9]{3}) `(閉口|歌唱|自由)`\Z"
+)
 _ANNOTATION_RE = re.compile(
     r"> `(セクション|歌詞開始|歌詞終了|歌詞)`(?: (.*))?\Z"
 )
@@ -146,19 +153,47 @@ class _Parser:
         line = self.current()
         if line and line.text == "# 共通プロンプト":
             common = self.parse_common_prompt()
+        activity = None
+        if (line := self.current()) is not None and line.text == "# 音声活動":
+            activity = self.parse_audio_activity()
         scenes = self.parse_scenes()
         self.validate_concept_references(subjects, scenes)
         if self.current() is not None:
             line = self.current()
             raise EMDParseError(line.number, "unexpected trailing content")
-        return EMDDocument(subjects, retention, common, scenes, scene_setting)
+        return EMDDocument(subjects, retention, common, scenes, scene_setting, activity)
+
+    def parse_audio_activity(self) -> AudioActivity:
+        self.expect("# 音声活動")
+        header = self.take()
+        match = re.fullmatch(r"\* `音声活動v1` sample_rate=([1-9][0-9]*) source_samples=([1-9][0-9]*) "
+                             r"sha256=([0-9a-f]{64}) method=(energy_vad_sample_refined|author)", header.text)
+        if not match:
+            raise EMDParseError(header.number, "invalid audio activity v1 header")
+        intervals, copies = [], []
+        while (line := self.current()) is not None and line.text.startswith("* "):
+            interval = re.fullmatch(r"\* `ボーカル区間` ([0-9]+) ([0-9]+) ([a-z_]+)", line.text)
+            copy = re.fullmatch(r"\* `参照PCM配置` ([0-9]+) ([0-9]+) ([0-9]+)", line.text)
+            if interval and not copies:
+                intervals.append(ActivityRange(int(interval[1]), int(interval[2]), interval[3]))
+            elif copy:
+                copies.append(ReferenceCopy(*(int(v) for v in copy.groups())))
+            else:
+                raise EMDParseError(line.number, "unknown or out-of-order audio activity record")
+            self.take()
+        result = AudioActivity(int(match[1]), int(match[2]), match[3], tuple(intervals), tuple(copies), match[4])
+        try:
+            result.validate()
+        except ValueError as exc:
+            raise EMDParseError(header.number, str(exc)) from exc
+        return result
 
     def parse_scene_setting(self) -> SceneSetting:
         start = self.current()
         assert start is not None
         fragment_lines: list[str] = [self.take().text]
         while (line := self.current()) is not None:
-            if line.text in {"# 保持分析", "# 共通プロンプト"}:
+            if line.text in {"# 保持分析", "# 共通プロンプト", "# 音声活動"}:
                 break
             if line.text.startswith("> `シーン`"):
                 break
@@ -175,6 +210,11 @@ class _Parser:
     ) -> None:
         defined = {subject.concept_id for subject in subjects}
         for scene in scenes:
+            for mouth in scene.mouth_performances:
+                if mouth.target_concept_id not in defined:
+                    raise EMDParseError(
+                        mouth.line_number, "mouth performance references undefined concept ID"
+                    )
             for shot in scene.shots:
                 for text in shot.body:
                     for match in _CONCEPT_TOKEN_RE.finditer(text):
@@ -391,6 +431,22 @@ class _Parser:
                     continue
                 break
             pending_annotations: list[LyricAnnotation] = []
+            mouths: list[MouthPerformance] = []
+            previous_mouth_end: dict[str, int] = {}
+            while (line := self.current()) is not None and line.text.startswith("> `口元`"):
+                matched = _MOUTH_RE.fullmatch(line.text)
+                if matched is None:
+                    raise EMDParseError(line.number, "invalid mouth performance annotation")
+                target, start_text, end_text, state = matched.groups()
+                mouth_start = parse_time_ms(start_text, line_number=line.number)
+                mouth_end = parse_time_ms(end_text, line_number=line.number)
+                if not start_ms <= mouth_start < mouth_end <= end_ms:
+                    raise EMDParseError(line.number, "mouth interval must be positive and inside Scene")
+                if mouth_start < previous_mouth_end.get(target, start_ms):
+                    raise EMDParseError(line.number, "mouth intervals for each Subject must be ordered and non-overlapping")
+                mouths.append(MouthPerformance(target, mouth_start, mouth_end, state, line.number))
+                previous_mouth_end[target] = mouth_end
+                self.take()
             shots: list[Shot] = []
             while (line := self.current()) is not None:
                 if line.text.startswith("> `") and not _SCENE_ANNOTATION_RE.fullmatch(
@@ -496,6 +552,7 @@ class _Parser:
                     audio_directives=tuple(audio),
                     line_number=heading_line.number,
                     continuation=continuation,
+                    mouth_performances=tuple(mouths),
                 )
             )
             previous_end = end_ms

@@ -12,7 +12,7 @@ Copyright © 2026 wsoldwolf
 
 ## 楽曲と歌詞
 
-以下のファイルはSuno Pro契約中に生成し、Sunoの正規のダウンロード機能を使用して取得したものです。歌詞アラインメント、ボーカルタイミング、字幕生成、音声パディング及びMV計画の検証素材として提供します。
+以下のファイルはSuno Pro契約中に生成し、Sunoの正規のダウンロード機能を使用して取得したものです。歌詞アラインメント、ボーカルタイミング、字幕生成、音声パディング、MV計画及び伴奏区間の簡易モーションの検証素材として提供します。
 
 - `assets/bgm/autumn_fox_shrine.mp3`
 - `assets/bgm/autumn_fox_shrine_vocal.mp3`
@@ -41,10 +41,11 @@ Copyright © 2026 wsoldwolf
 
 ### 人物リファレンスシートと作成用素材
 
-以下は`wsoldwolf`が提供する、Qwen Image 2.1を利用した人物リファレンスシート作成・検証用の素材です。この2ファイルにも、本書の`CC BY-NC 4.0`を適用します。
+以下は`wsoldwolf`が提供する、Qwen Image 2.1を利用した人物リファレンスシート作成・検証用の素材とその縮小版です。この3ファイルにも、本書の`CC BY-NC 4.0`を適用します。
 
 - `assets/image/image001_mikofox_qi21_src.jpg` — リファレンスシート作成用の元画像
 - `assets/image/image001_mikofox_ref.jpg` — 現行workflowの人物参照、`<Picture 1>`。全身・顔・足袋などの詳細を含むリファレンスシート
+- `assets/image/image001_mikofox_ref_div2.jpg` — リファレンスシートの縮小版。動画生成workflowの人物参照、`<Picture 1>`
 
 リファレンスシートは人物の識別特徴や局所形状の再現を補助するものであり、生成映像での完全な再現を保証するものではありません。
 

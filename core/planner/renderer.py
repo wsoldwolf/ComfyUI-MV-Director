@@ -43,6 +43,7 @@ def render_completed_emd(
     events: Mapping[tuple[int, int], str] | None = None,
     typed_output: bool = False,
     motion_compositions: Mapping[tuple[int, int], tuple[str, int, str]] | None = None,
+    mouth_performances: tuple[tuple[int, str, int, int, str], ...] = (),
     lip_sync_mode: str,
     lip_sync_target: str,
     lip_sync_audio_slot: int,
@@ -94,6 +95,8 @@ def render_completed_emd(
                 lines.extend(f"* {value}" for value in values)
 
     cleaned_generated_lines = 0
+    if template.audio_activity is not None:
+        lines.extend(("", *template.audio_activity.render_lines()))
     event_values = events or {}
     for scene in template.scenes:
         continuation = " 継続" if scene.continuation else ""
@@ -106,6 +109,14 @@ def render_completed_emd(
             )
         )
         lines.extend(f"* {value}" for value in scene.descriptions)
+        mouths = [row[1:] for row in mouth_performances if row[0] == scene.scene_number]
+        if not mouths:
+            mouths = [(i.target_concept_id, i.start_ms, i.end_ms, i.state)
+                      for i in scene.mouth_performances]
+        lines.extend(
+            f"> `口元` `{target}` {format_emd_time(start)} --> {format_emd_time(end)} `{state}`"
+            for target, start, end, state in mouths
+        )
         scene_has_lyrics = any(shot.lyric_annotations for shot in scene.shots)
         for shot_index, shot in enumerate(scene.shots, 1):
             for lyric in shot.lyric_annotations:
@@ -179,4 +190,7 @@ def render_completed_emd(
         parse_emd(text, timing_profile=timing_profile)
     except Exception as exc:
         raise TimelinePlannerError(f"Planner rendered invalid completed EMD: {exc}") from exc
-    return EMDTextArtifact.create("MVD_EMD_V1", text)
+    return EMDTextArtifact.create(
+        "MVD_EMD_V3" if mouth_performances or any(s.mouth_performances for s in template.scenes)
+        else "MVD_EMD_V2" if template.audio_activity else "MVD_EMD_V1", text,
+    )

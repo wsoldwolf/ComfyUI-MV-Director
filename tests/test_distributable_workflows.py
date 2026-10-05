@@ -7,6 +7,13 @@ import unittest
 from core.lyrics import parse_plain_lyrics
 from core.utilities import decode_embedded_text
 from tools.generate_workflows import (CHARACTER_HINT, DEFAULT_USER_PROMPT, LOCAL_FACE_CANDIDATE,
+                                      PLAN_12B_FILENAME, PLAN_12B_N_CTX, TEXT_MODEL_12B,
+                                      PLAN_26B_IQ2_M_FILENAME, PLAN_26B_IQ2_M_29GPU_FILENAME,
+                                      PLAN_26B_IQ2_M_30GPU_FILENAME, PLAN_26B_IQ2_M_GPU_LAYERS,
+                                      PLAN_26B_IQ2_M_29GPU_LAYERS, PLAN_26B_IQ2_M_30GPU_LAYERS,
+                                      PLAN_26B_IQ2_M_N_BATCH, PLAN_26B_IQ2_M_N_CTX,
+                                      TEXT_MODEL_26B_IQ2_M, build_12b_plan_variant,
+                                      build_26b_iq2_m_plan_variant,
                                       sync_candidate_policy, sync_direction_settings, sync_model_runtime, sync_planner_schema,
                                       sync_timing_contract, sync_context_loop_runtime,
                                       sync_compiler_schema, sync_step_ownership, sync_video_acceleration,
@@ -73,6 +80,157 @@ def input_link(workflow: dict, node: dict, input_name: str) -> list:
 
 
 class DistributableWorkflowTests(unittest.TestCase):
+    def test_26b_iq2_m_variant_preserves_wf01_and_offloads_vision_projector(self) -> None:
+        source = load(FILES["context_loop"][0])
+        variant = load(PLAN_26B_IQ2_M_FILENAME)
+        self.assertEqual(variant, build_26b_iq2_m_plan_variant(source))
+        for key in ("links", "groups", "extra"):
+            self.assertEqual(variant[key], source[key])
+        slots = {
+            "MVDirectorImageToSubjectEMD": (0, 14, 15, 16),
+            "MVDirectorDirectionEnhancer": (5, 11, 12, 13),
+            "MVDirectorTimelinePlanner": (3, 9, 10, 11),
+            "MVDirectorEMDCompiler": (1, 7, 8, 9),
+        }
+        for original, changed in zip(source["nodes"], variant["nodes"], strict=True):
+            self.assertEqual(changed["id"], original["id"])
+            self.assertEqual(changed["pos"], original["pos"])
+            self.assertEqual(changed["size"], original["size"])
+            if changed["type"] not in slots:
+                if changed["type"] != "MarkdownNote":
+                    self.assertEqual(changed, original)
+                continue
+            model, gpu, batch, context = slots[changed["type"]]
+            values = changed["widgets_values"]
+            named = changed["widgets_values_named"]
+            self.assertEqual(values[model], TEXT_MODEL_26B_IQ2_M)
+            self.assertEqual(values[gpu], PLAN_26B_IQ2_M_GPU_LAYERS)
+            self.assertEqual(values[batch], PLAN_26B_IQ2_M_N_BATCH)
+            self.assertEqual(values[context], PLAN_26B_IQ2_M_N_CTX)
+            for field, expected in (
+                ("model_name", TEXT_MODEL_26B_IQ2_M),
+                ("gpu_layers", PLAN_26B_IQ2_M_GPU_LAYERS),
+                ("n_batch", PLAN_26B_IQ2_M_N_BATCH),
+                ("n_ctx", PLAN_26B_IQ2_M_N_CTX),
+            ):
+                self.assertEqual(named[field], expected)
+            if changed["type"] == "MVDirectorImageToSubjectEMD":
+                self.assertFalse(values[24])
+                self.assertFalse(named["mmproj_use_gpu"])
+                self.assertEqual(changed["inputs"][-1]["name"], "mmproj_use_gpu")
+        validate_workflow(variant)
+
+    def test_26b_variant_sync_does_not_rewrite_wf01(self) -> None:
+        source_name = FILES["context_loop"][0]
+        with tempfile.TemporaryDirectory() as temporary:
+            output_dir = Path(temporary)
+            original = (WORKFLOWS / source_name).read_bytes()
+            (output_dir / source_name).write_bytes(original)
+            write_workflows(
+                Path("unused-context-loop-root"), output_dir,
+                variant_26b_iq2_m_only=True,
+            )
+            first = (output_dir / PLAN_26B_IQ2_M_FILENAME).read_bytes()
+            self.assertEqual((output_dir / source_name).read_bytes(), original)
+            write_workflows(
+                Path("unused-context-loop-root"), output_dir,
+                variant_26b_iq2_m_only=True,
+            )
+            self.assertEqual((output_dir / PLAN_26B_IQ2_M_FILENAME).read_bytes(), first)
+
+    def test_26b_29gpu_variant_changes_only_planner_and_compiler_layers(self) -> None:
+        source = load(FILES["context_loop"][0])
+        baseline = load(PLAN_26B_IQ2_M_FILENAME)
+        tuned = load(PLAN_26B_IQ2_M_29GPU_FILENAME)
+        self.assertEqual(
+            tuned,
+            build_26b_iq2_m_plan_variant(
+                source, planner_compiler_gpu_layers=PLAN_26B_IQ2_M_29GPU_LAYERS,
+            ),
+        )
+        for original, changed in zip(baseline["nodes"], tuned["nodes"], strict=True):
+            self.assertEqual(original["id"], changed["id"])
+            if original["type"] in {"MVDirectorTimelinePlanner", "MVDirectorEMDCompiler"}:
+                self.assertEqual(changed["widgets_values_named"]["gpu_layers"], 29)
+                self.assertEqual(
+                    changed["widgets_values"][9 if original["type"] == "MVDirectorTimelinePlanner" else 7],
+                    29,
+                )
+                reverted = copy.deepcopy(changed)
+                reverted["widgets_values_named"]["gpu_layers"] = PLAN_26B_IQ2_M_GPU_LAYERS
+                reverted["widgets_values"][9 if original["type"] == "MVDirectorTimelinePlanner" else 7] = PLAN_26B_IQ2_M_GPU_LAYERS
+                self.assertEqual(reverted, original)
+            else:
+                self.assertEqual(changed, original)
+        validate_workflow(tuned)
+
+    def test_26b_29gpu_sync_preserves_wf01_and_baseline(self) -> None:
+        source_name = FILES["context_loop"][0]
+        with tempfile.TemporaryDirectory() as temporary:
+            output_dir = Path(temporary)
+            source_bytes = (WORKFLOWS / source_name).read_bytes()
+            baseline_bytes = (WORKFLOWS / PLAN_26B_IQ2_M_FILENAME).read_bytes()
+            (output_dir / source_name).write_bytes(source_bytes)
+            (output_dir / PLAN_26B_IQ2_M_FILENAME).write_bytes(baseline_bytes)
+            write_workflows(
+                Path("unused-context-loop-root"), output_dir,
+                variant_26b_iq2_m_29gpu_only=True,
+            )
+            self.assertEqual((output_dir / source_name).read_bytes(), source_bytes)
+            self.assertEqual(
+                (output_dir / PLAN_26B_IQ2_M_FILENAME).read_bytes(), baseline_bytes,
+            )
+
+    def test_26b_30gpu_variant_changes_only_planner_and_compiler_layers(self) -> None:
+        source = load(FILES["context_loop"][0])
+        baseline = load(PLAN_26B_IQ2_M_FILENAME)
+        tuned = load(PLAN_26B_IQ2_M_30GPU_FILENAME)
+        self.assertEqual(
+            tuned,
+            build_26b_iq2_m_plan_variant(
+                source, planner_compiler_gpu_layers=PLAN_26B_IQ2_M_30GPU_LAYERS,
+            ),
+        )
+        for original, changed in zip(baseline["nodes"], tuned["nodes"], strict=True):
+            if original["type"] in {"MVDirectorTimelinePlanner", "MVDirectorEMDCompiler"}:
+                slot = 9 if original["type"] == "MVDirectorTimelinePlanner" else 7
+                self.assertEqual(changed["widgets_values"][slot], 30)
+                self.assertEqual(changed["widgets_values_named"]["gpu_layers"], 30)
+                reverted = copy.deepcopy(changed)
+                reverted["widgets_values"][slot] = PLAN_26B_IQ2_M_GPU_LAYERS
+                reverted["widgets_values_named"]["gpu_layers"] = PLAN_26B_IQ2_M_GPU_LAYERS
+                self.assertEqual(reverted, original)
+            else:
+                self.assertEqual(changed, original)
+        validate_workflow(tuned)
+
+    def test_12b_variant_preserves_wf01_layout_and_sets_every_inference_node(self) -> None:
+        source = load(FILES["context_loop"][0])
+        variant = load(PLAN_12B_FILENAME)
+        self.assertEqual(variant, build_12b_plan_variant(source))
+        self.assertEqual(variant["links"], source["links"])
+        self.assertEqual(variant["groups"], source["groups"])
+        self.assertEqual(variant["extra"], source["extra"])
+        model_nodes = {
+            "MVDirectorImageToSubjectEMD": (0, 16),
+            "MVDirectorDirectionEnhancer": (5, 13),
+            "MVDirectorTimelinePlanner": (3, 11),
+            "MVDirectorEMDCompiler": (1, 9),
+        }
+        for original, changed in zip(source["nodes"], variant["nodes"], strict=True):
+            self.assertEqual(changed["id"], original["id"])
+            self.assertEqual(changed["pos"], original["pos"])
+            self.assertEqual(changed["size"], original["size"])
+            if changed["type"] in model_nodes:
+                model_slot, context_slot = model_nodes[changed["type"]]
+                self.assertEqual(changed["widgets_values"][model_slot], TEXT_MODEL_12B)
+                self.assertEqual(changed["widgets_values"][context_slot], PLAN_12B_N_CTX)
+                self.assertEqual(changed["widgets_values_named"]["model_name"], TEXT_MODEL_12B)
+                self.assertEqual(changed["widgets_values_named"]["n_ctx"], PLAN_12B_N_CTX)
+            elif changed["type"] != "MarkdownNote":
+                self.assertEqual(changed, original)
+        validate_workflow(variant)
+
     def test_acceleration_sync_preserves_inputs_and_is_idempotent(self) -> None:
         for _, video_name in FILES.values():
             workflow = load(video_name)
@@ -345,12 +503,16 @@ class DistributableWorkflowTests(unittest.TestCase):
                 self.assertEqual(len((output_dir / plan_name).read_text(encoding="utf-8").splitlines()), 1)
                 self.assertEqual((output_dir / video_name).read_bytes(), original_video[video_name])
 
-    def test_exact_six_workflows_are_present(self) -> None:
+    def test_six_base_workflows_and_four_variants_are_present(self) -> None:
         actual = {
             path.name
             for path in WORKFLOWS.glob("*.json")
         }
         expected = {name for pair in FILES.values() for name in pair}
+        expected.add(PLAN_12B_FILENAME)
+        expected.add(PLAN_26B_IQ2_M_FILENAME)
+        expected.add(PLAN_26B_IQ2_M_29GPU_FILENAME)
+        expected.add(PLAN_26B_IQ2_M_30GPU_FILENAME)
         self.assertEqual(actual, expected)
         self.assertEqual(list((WORKFLOWS / "development").glob("*.json")), [])
 

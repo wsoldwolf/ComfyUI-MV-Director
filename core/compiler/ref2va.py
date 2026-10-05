@@ -263,7 +263,8 @@ def _target_ref(document: EMDDocument, concept_id: str) -> str:
 
 
 def _audio_prompt(
-    document: EMDDocument, directives: tuple[AudioDirective, ...]
+    document: EMDDocument, directives: tuple[AudioDirective, ...],
+    *, closed_targets: frozenset[str] = frozenset(),
 ) -> tuple[list[str], str, dict[str, str]]:
     soundscape: list[str] = []
     music = "No additional non-diegetic music is requested."
@@ -276,13 +277,19 @@ def _audio_prompt(
             # Audio locking supplies the timing, but does not reliably make
             # the visible performer sing. Keep this directive independent of
             # Camera inheritance and leave authored Action/Camera untouched.
-            soundscape.append(
-                f"Use the locked source vocal as the lip-sync timing target for {target}. "
-                f"{target} visibly sings the supplied vocal throughout its voiced "
-                "phrases, with continuous syllable-by-syllable lip and jaw "
-                "movements synchronized to that vocal, while performing the "
-                "specified body actions."
-            )
+            if directive.target_concept_id in closed_targets:
+                soundscape.append(
+                    "Preserve the locked source audio while "
+                    f"{target} performs the specified body actions and timed mouth performance."
+                )
+            else:
+                soundscape.append(
+                    f"Use the locked source vocal as the lip-sync timing target for {target}. "
+                    f"{target} visibly sings the supplied vocal throughout its voiced "
+                    "phrases, with continuous syllable-by-syllable lip and jaw "
+                    "movements synchronized to that vocal, while performing the "
+                    "specified body actions."
+                )
             fields.update(
                 source_reference="off",
                 generated_continuity="off",
@@ -290,10 +297,13 @@ def _audio_prompt(
             )
         elif directive.mode == "audio_reference":
             target = _target_ref(document, directive.target_concept_id or "")
-            soundscape.append(
-                f"{target} performs visible lip movements synchronized to "
-                f"<Audio {directive.audio_slot}>."
-            )
+            if directive.target_concept_id not in closed_targets:
+                soundscape.append(
+                    f"{target} performs visible lip movements synchronized to "
+                    f"<Audio {directive.audio_slot}>."
+                )
+            else:
+                soundscape.append(f"<Audio {directive.audio_slot}> supplies the scene audio.")
         elif directive.mode == "explicit_dialogue_only":
             soundscape.append(
                 "Do not add speech beyond dialogue explicitly provided with d tags."
@@ -311,12 +321,34 @@ def _audio_prompt(
     return soundscape, music, fields
 
 
+def _mouth_prompt(document: EMDDocument, scene: Scene, context_ms: int) -> list[str]:
+    """Lower explicit visual instructions; never consult audio activity here."""
+    lines = []
+    for item in scene.mouth_performances:
+        if item.state == "自由":
+            continue
+        target = _target_ref(document, item.target_concept_id)
+        start = format_time_ms(item.start_ms - scene.start_ms + context_ms)
+        end = format_time_ms(item.end_ms - scene.start_ms + context_ms)
+        timing = f"From {start} to {end} in the generated clip, "
+        if item.state == "閉口":
+            body = (f"{target} keeps the lips gently together while continuing the specified "
+                    "body actions and expression in the eyes, brows and cheeks.")
+        else:
+            body = (f"{target} visibly sings the supplied vocal with syllable-by-syllable "
+                    "lip and jaw movements synchronized to its voiced phrases, "
+                    "while performing the specified body actions.")
+        lines.append(timing + body)
+    return lines
+
+
 def _scene_prompt(
     document: EMDDocument,
     scene: Scene,
     scene_index: int,
     translations: _TranslationTable,
     scoped_common_sections: frozenset[str] = frozenset(),
+    timing_profile: H3TimingProfile = DEFAULT_H3_TIMING_PROFILE,
 ) -> tuple[list[str], dict[str, str]]:
     subject_lines: list[str] = []
     for subject_index, subject in enumerate(document.subjects):
@@ -366,15 +398,29 @@ def _scene_prompt(
     summary = summary_body.strip()
     if not summary.startswith("[reference generation]"):
         summary = f"[reference generation] {summary}"
-    soundscape, music, audio_fields = _audio_prompt(
-        document, scene.audio_directives
+    # Read explicit structural coverage, never infer mouth state from PCM.
+    closed_targets = frozenset(
+        item.target_concept_id for item in scene.mouth_performances
+        if sum(i.end_ms - i.start_ms for i in scene.mouth_performances
+               if i.target_concept_id == item.target_concept_id and i.state == "閉口")
+        == scene.end_ms - scene.start_ms
     )
+    soundscape, music, audio_fields = _audio_prompt(
+        document, scene.audio_directives, closed_targets=closed_targets,
+    )
+    # A continuation clip includes a protected prefix that is later trimmed.
+    # Mouth timestamps apply to the newly delivered part of the raw clip.
+    context_ms = (
+        round(timing_profile.continuation_context_length * 1000 / timing_profile.fps)
+        if scene_index > 0 and scene.continuation else 0
+    )
+    mouth_lines = _mouth_prompt(document, scene, context_ms)
     prompt: list[str] = []
     sections = (
         ("subject_definitions:", subject_lines),
         ("summary:", [summary]),
         ("retention_analysis:", _retention_lines(document, translations)),
-        ("detailed_description:", scene_lines + shot_lines),
+        ("detailed_description:", scene_lines + shot_lines + mouth_lines),
         ("overall_soundscape:", soundscape),
         ("non_diegetic_music:", [music]),
     )
@@ -460,6 +506,9 @@ def compile_ref2va(
     translations.build()
 
     plan: dict[str, Any] = {"shots": []}
+    if document.audio_activity is not None:
+        # Diagnostic metadata only: never translated into a global H3 prompt.
+        plan["mv_director_audio_activity"] = document.audio_activity.to_dict()
     typed_kinds = {
         directive.kind
         for scene in document.scenes
@@ -497,7 +546,7 @@ def compile_ref2va(
         plan["prompt_prefix"] = prefix
     for index, scene in enumerate(document.scenes):
         prompt, audio_fields = _scene_prompt(
-            document, scene, index, translations, scoped_common_sections
+            document, scene, index, translations, scoped_common_sections, timing_profile,
         )
         continuation = index > 0 and scene.continuation
         scene_plan: dict[str, Any] = {

@@ -39,13 +39,27 @@ def section_context_by_scene(template: PlannerTemplate) -> dict[int, list[dict[s
                     "end_ms": lyric.end_ms,
                     "text": lyric.text,
                 })
-    return {
+    contexts = {
         scene.scene_number: [
             group for group in groups
             if any(line["scene"] == scene.scene_number for line in group["lines"])
         ]
         for scene in template.scenes
     }
+    # Silence has no current lyric annotations. Only the opt-in activity path
+    # supplies a small neighboring reading scope, never an invented sung line.
+    if template.audio_activity is not None:
+        for scene in template.scenes:
+            if contexts[scene.scene_number]:
+                continue
+            before = [g for g in groups if g["lines"][-1]["scene"] < scene.scene_number]
+            after = [g for g in groups if g["lines"][0]["scene"] > scene.scene_number]
+            for role, candidates in (("previous_lyrics", before[-1:]), ("following_lyrics", after[:1])):
+                for group in candidates:
+                    lines = group["lines"][-4:] if role == "previous_lyrics" else group["lines"][:4]
+                    contexts[scene.scene_number].append({**group, "lines": lines,
+                        "coverage": "neighbor_excerpt", "role": role, "reading_only": True})
+    return contexts
 
 
 def reduce_section_context(request: dict[str, Any]) -> dict[str, Any] | None:

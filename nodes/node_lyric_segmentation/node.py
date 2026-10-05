@@ -11,6 +11,8 @@ from typing import Any
 
 try:
     from ...core.artifacts import TimelineArtifact
+    from ...core.emd.audio_activity import AudioActivity
+    from ...core.lyrics.activity import ACTIVITY_SCHEMA, VAD_SETTINGS, build_activity_diagnostic
     from ...core.h3_contract import DEFAULT_H3_TIMING_PROFILE, H3TimingProfile
     from ...core.inference import SuccessCache, build_cache_key
     from ...core.lyrics import (
@@ -29,6 +31,8 @@ try:
     )
 except ImportError:  # Standalone repository tests.
     from core.artifacts import TimelineArtifact
+    from core.emd.audio_activity import AudioActivity
+    from core.lyrics.activity import ACTIVITY_SCHEMA, VAD_SETTINGS, build_activity_diagnostic
     from core.h3_contract import DEFAULT_H3_TIMING_PROFILE, H3TimingProfile
     from core.inference import SuccessCache, build_cache_key
     from core.lyrics import (
@@ -87,6 +91,41 @@ def _status(timeline: TimelineArtifact, *, cache: str) -> str:
         f"plan_ms={timeline.plan_duration_ms}; "
         f"scenes={len(timeline.scenes)}; cache={cache}"
     )
+
+
+def _activity_diagnostic(waveform: Any, *, sample_rate: int, total_samples: int,
+                         timeline: TimelineArtifact, audio_sha256: str, fps: int,
+                         voiced: Any = None) -> dict[str, object] | None:
+    """Optional CPU diagnostics must not turn successful lyric alignment into failure."""
+    try:
+        if voiced is None:
+            voiced = analyze_waveform(waveform, sample_rate=sample_rate, total_samples=total_samples, **VAD_SETTINGS)
+        result = build_activity_diagnostic(
+            voiced, sample_rate=sample_rate, total_samples=total_samples,
+            timeline=timeline, audio_sha256=audio_sha256, fps=fps,
+        )
+        _LOGGER.info("[MV Director - Lyric Segmentation] vocal activity diagnostic; "
+                     "long_gaps=%d; unknown_intervals=%d; Planner control=advisory",
+                     len(result["long_gaps"]), result["warning_count"])
+        return result
+    except Exception as exc:
+        _LOGGER.warning("[MV Director - Lyric Segmentation] optional vocal activity "
+                        "diagnostic unavailable; retained lyric output: %s", exc)
+        return None
+
+
+def _log_activity_path(cache: SuccessCache, key: str) -> None:
+    _LOGGER.info("[MV Director - Lyric Segmentation] vocal activity saved in cache: %s "
+                 "(payload.audio_activity)", cache.root / key[:2] / f"{key}.json")
+
+
+def _render_activity_template(timeline: TimelineArtifact, activity: Any) -> str:
+    try:
+        metadata = AudioActivity.from_diagnostic(activity) if isinstance(activity, dict) else None
+    except (KeyError, TypeError, ValueError) as exc:
+        _LOGGER.warning("Optional EMD audio activity unavailable; retained lyric output: %s", exc)
+        metadata = None
+    return render_template_emd(timeline, audio_activity=metadata).text
 
 
 def _block_unplaced(
@@ -186,11 +225,12 @@ class MVDirectorLyricSegmentation:
             advance_progress()
             duration_ms = math.ceil(total_samples * 1000 / sample_rate)
             model = resolve_comfy_whisper_model(whisper_model)
+            audio_sha256 = _audio_digest(waveform, sample_rate=sample_rate)
             key = build_cache_key(
                 task="lyric-segmentation",
                 algorithm_version=ALGORITHM_VERSION,
                 inputs={
-                    "audio_sha256": _audio_digest(waveform, sample_rate=sample_rate),
+                    "audio_sha256": audio_sha256,
                     "lyrics_text": lyrics_text.replace("\r\n", "\n").replace("\r", "\n"),
                     "model": {
                         "selection_id": model.selection_id,
@@ -206,13 +246,27 @@ class MVDirectorLyricSegmentation:
             cached = cache.get(key) if cache_mode == "reuse" and cache else None
             if cached and isinstance(cached.get("timeline"), dict):
                 timeline = TimelineArtifact.from_dict(cached["timeline"])
-                template = str(cached["template_emd"])
+                original_template = str(cached["template_emd"])
                 srt = render_srt(timeline, offset_ms=srt_time_offset_ms)
                 status = _status(timeline, cache="hit")
                 if not keep_whisper_loaded:
                     self._whisper.clear()
                 if timeline.unplaced_lyrics:
                     return _block_unplaced(timeline, cache="hit")
+                activity = cached.get("audio_activity")
+                if not isinstance(activity, dict) or activity.get("schema") != ACTIVITY_SCHEMA:
+                    activity = _activity_diagnostic(
+                        waveform, sample_rate=sample_rate, total_samples=total_samples,
+                        timeline=timeline, audio_sha256=audio_sha256, fps=profile.fps,
+                    )
+                template = _render_activity_template(timeline, activity)
+                if activity is not None and (cached.get("audio_activity") != activity or template != original_template):
+                    try:
+                        cache.put_success(key, {**cached, "audio_activity": activity, "template_emd": template})
+                    except OSError as exc:
+                        _LOGGER.warning("Optional activity cache update failed: %s", exc)
+                if activity is not None:
+                    _log_activity_path(cache, key)
                 return template, srt, timeline, status
 
             try:
@@ -220,6 +274,7 @@ class MVDirectorLyricSegmentation:
                     waveform,
                     sample_rate=sample_rate,
                     total_samples=total_samples,
+                    **VAD_SETTINGS,
                 )
                 advance_progress()
                 if lyrics:
@@ -280,9 +335,13 @@ class MVDirectorLyricSegmentation:
                 advance_progress()
                 if timeline.unplaced_lyrics:
                     return _block_unplaced(timeline, cache="miss")
-                template = render_template_emd(timeline).text
                 srt = render_srt(timeline, offset_ms=srt_time_offset_ms)
                 status = _status(timeline, cache="miss")
+                activity = _activity_diagnostic(
+                    waveform, sample_rate=sample_rate, total_samples=total_samples,
+                    timeline=timeline, audio_sha256=audio_sha256, fps=profile.fps, voiced=voiced,
+                )
+                template = _render_activity_template(timeline, activity)
                 if cache_mode in {"reuse", "refresh"} and cache is not None:
                     cache.put_success(
                         key,
@@ -290,8 +349,11 @@ class MVDirectorLyricSegmentation:
                             "timeline": timeline.to_dict(),
                             "template_emd": template,
                             "status": _status(timeline, cache="stored"),
+                            **({"audio_activity": activity} if activity is not None else {}),
                         },
                     )
+                    if activity is not None:
+                        _log_activity_path(cache, key)
                 return template, srt, timeline, status
             finally:
                 if not keep_whisper_loaded:

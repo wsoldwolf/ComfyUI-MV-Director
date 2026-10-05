@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from .audio_activity import AudioActivity
 
 
 @dataclass(frozen=True, slots=True)
@@ -48,6 +49,17 @@ class AudioDirective:
 
 
 @dataclass(frozen=True, slots=True)
+class MouthPerformance:
+    """An authored visual intention, not an audio detection or audio mask."""
+
+    target_concept_id: str
+    start_ms: int
+    end_ms: int
+    state: str
+    line_number: int = 0
+
+
+@dataclass(frozen=True, slots=True)
 class ShotDirective:
     kind: str
     text: str
@@ -75,6 +87,7 @@ class Scene:
     audio_directives: tuple[AudioDirective, ...]
     line_number: int
     continuation: bool = False
+    mouth_performances: tuple[MouthPerformance, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,6 +97,7 @@ class EMDDocument:
     common_prompt: tuple[tuple[str, tuple[str, ...]], ...]
     scenes: tuple[Scene, ...]
     scene_setting: SceneSetting | None = None
+    audio_activity: AudioActivity | None = None
 
     def common_prompt_dict(self) -> dict[str, tuple[str, ...]]:
         return dict(self.common_prompt)

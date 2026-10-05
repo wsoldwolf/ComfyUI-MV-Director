@@ -7,6 +7,7 @@ from dataclasses import replace
 import hashlib
 import logging
 from pathlib import Path
+import re
 import threading
 from time import perf_counter
 from typing import Any
@@ -32,6 +33,8 @@ try:
         render_planner_content,
     )
     from ...core.planner.scene_author import build_scene_author_grammar, build_composition_choice_grammar, count_motion_composition_choices
+    from ...core.planner.requests import normalize_record_response
+    from ...core.protocols import parse_llm_records
 except ImportError:  # Standalone repository tests.
     from core.direction.profiles import planner_profile_metadata
     from core.emd import parse_emd
@@ -53,6 +56,8 @@ except ImportError:  # Standalone repository tests.
         render_planner_content,
     )
     from core.planner.scene_author import build_scene_author_grammar, build_composition_choice_grammar, count_motion_composition_choices
+    from core.planner.requests import normalize_record_response
+    from core.protocols import parse_llm_records
 
 from ..common import gguf_model_choices, resolve_comfy_gguf_model
 from ..common.node_progress import advance_progress, configure_progress as configure_node_progress
@@ -75,6 +80,53 @@ _PROMPT_FILES = {
     "scene-author-camera": "timeline_planner_scene_author_camera_system_prompt.txt",
     "scene-author-composition-choice": "timeline_planner_scene_author_composition_choice_system_prompt.txt",
 }
+_SCENE_AUTHOR_RECORD_TYPES = {
+    "scene-author-event": "EVENT",
+    "scene-author-performance": "PERFORMANCE",
+    "scene-author-camera": "CAMERA",
+}
+_PLANNER_TRANSPORT_CONSTRAINED = "grammar_v1"
+_PLANNER_TRANSPORT_26B_FAST = "26b_iq2_m_unconstrained_first_v1"
+_PLANNER_TRANSPORT_31B_FAST = "31b_unconstrained_first_v2"
+_PLANNER_TRANSPORT_FAST_TASKS = {
+    _PLANNER_TRANSPORT_26B_FAST: frozenset(_SCENE_AUTHOR_RECORD_TYPES),
+    # Both tested 31B variants emitted invalid unguided EVENT records.
+    _PLANNER_TRANSPORT_31B_FAST: frozenset({
+        "scene-author-performance", "scene-author-camera",
+    }),
+}
+
+
+def _planner_transport_policy(selection_id: str) -> str:
+    """Opt in only explicitly supported GGUF variants, not all Gemma models."""
+
+    filename = selection_id.replace("\\", "/").rsplit("/", 1)[-1].lower()
+    if filename == "gemma4-26b-a4b-uncensored-hauhaucs-balanced-iq2_m.gguf":
+        return _PLANNER_TRANSPORT_26B_FAST
+    if filename in {
+        "gemma-4-31b-it-heretic-ara.q4_k_s.gguf",
+        "gemma-4-31b-it-heretic.i1-iq3_xs.gguf",
+    }:
+        return _PLANNER_TRANSPORT_31B_FAST
+    return _PLANNER_TRANSPORT_CONSTRAINED
+
+
+def _protocol_issue_shapes(response: str, issues: tuple[Any, ...]) -> str:
+    """Report transport shape, not generated prose, in ordinary logs."""
+
+    lines = normalize_newlines(response).split("\n")
+    shapes: list[str] = []
+    for issue in issues[:8]:
+        line = lines[issue.line_number - 1] if issue.line_number <= len(lines) else ""
+        fields = line.split("\t")
+        raw_type = fields[0].strip()
+        label = raw_type if re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]{0,31}", raw_type) else "other"
+        shapes.append(
+            f"line{issue.line_number}:{issue.reason}:type={label}:tabs={len(fields) - 1}"
+        )
+    if len(issues) > 8:
+        shapes.append(f"additional={len(issues) - 8}")
+    return ",".join(shapes)
 
 
 def _system_prompts() -> dict[str, str]:
@@ -117,6 +169,7 @@ class _LlamaPlannerBackend:
         self._task_calls: dict[str, int] = {}
         self._primary_calls: dict[str, int] = {}
         self._expected_primary_calls: dict[str, int] = {}
+        self.transport_policy = _PLANNER_TRANSPORT_CONSTRAINED
 
     def reset_trace(self) -> None:
         self.trace.clear()
@@ -196,10 +249,7 @@ class _LlamaPlannerBackend:
     ) -> str:
         model_payload = f"/no_think\n{payload}"
         grammar_kwargs: dict[str, str] = {}
-        scene_author_stage = task in {
-            "scene-author-event", "scene-author-performance",
-            "scene-author-camera",
-        }
+        scene_author_stage = task in _SCENE_AUTHOR_RECORD_TYPES
         if scene_author_stage:
             request = json.loads(payload)
             grammar_kwargs["grammar"] = build_scene_author_grammar(
@@ -211,11 +261,6 @@ class _LlamaPlannerBackend:
                 "scene-author-camera": 1024,
             }[task]
             config = replace(config, max_tokens=min(config.max_tokens, output_cap))
-            _LOGGER.info(
-                "[MV Director - Timeline Planner] output constraint=scene_author_v1; "
-                "task=%s; slots=%d",
-                task, len(request["slots"]),
-            )
         if task == "scene-author-composition-choice":
             request = json.loads(payload)
             grammar_kwargs["grammar"] = build_composition_choice_grammar(
@@ -231,7 +276,21 @@ class _LlamaPlannerBackend:
             raise ValueError(f"unsupported Planner task: {task}")
         count = self.lifecycle.count_serialized_prompt(system_prompt + "\n" + model_payload)
         slot_count, scene_label, retry_label = self._request_summary(payload)
-        # Reserve output according to the current Scene Author grammar.
+        unconstrained_first = (
+            scene_author_stage
+            and task in _PLANNER_TRANSPORT_FAST_TASKS.get(
+                self.transport_policy, frozenset(),
+            )
+            and retry_label == "no"
+        )
+        if scene_author_stage:
+            _LOGGER.info(
+                "[MV Director - Timeline Planner] output protocol=scene_author_v1; "
+                "task=%s; slots=%d; sampling=%s",
+                task, slot_count,
+                "unconstrained_first" if unconstrained_first else "grammar",
+            )
+        # Keep the same output budget regardless of the transport sampler.
         if scene_author_stage:
             minimum_output = min(config.max_tokens, max(512, 384 * slot_count))
         else:
@@ -288,16 +347,66 @@ class _LlamaPlannerBackend:
             call_config.max_tokens,
             call_config.seed,
         )
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": model_payload},
+        ]
+        transport_debug: dict[str, str] = {}
         try:
             response = self.lifecycle.complete_chat(
-                [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": model_payload},
-                ],
+                messages,
                 call_config,
                 interrupt_callback=interrupt_callback,
-                **grammar_kwargs,
+                **({} if unconstrained_first else grammar_kwargs),
             )
+            if unconstrained_first:
+                record_type = _SCENE_AUTHOR_RECORD_TYPES[task]
+                slots = frozenset(slot["slot"] for slot in request["slots"])
+                normalized_response = normalize_record_response(response, record_type)
+                parsed = parse_llm_records(
+                    normalized_response,
+                    allowed_slots={record_type: slots},
+                    required=frozenset((record_type, slot) for slot in slots),
+                )
+                if parsed.issues:
+                    transport_debug["unconstrained_response"] = response
+                    transport_debug["unconstrained_issues"] = json.dumps(
+                        [issue.to_dict() for issue in parsed.issues],
+                        ensure_ascii=False,
+                    )
+                    _LOGGER.warning(
+                        "[MV Director - Timeline Planner] unconstrained protocol issues; "
+                        "task=%s; call=%d; issues=%s; issue_shapes=%s; "
+                        "fallback=grammar_full_batch",
+                        task, call_number,
+                        ",".join(sorted({issue.reason for issue in parsed.issues})),
+                        _protocol_issue_shapes(normalized_response, parsed.issues),
+                    )
+                    fallback_config = replace(
+                        call_config,
+                        seed=self._call_seed(
+                            config.seed, task, call_number,
+                            payload + "\0grammar_fallback",
+                        ),
+                    )
+                    response = self.lifecycle.complete_chat(
+                        messages, fallback_config,
+                        interrupt_callback=interrupt_callback,
+                        **grammar_kwargs,
+                    )
+                elif parsed.missing:
+                    _LOGGER.info(
+                        "[MV Director - Timeline Planner] unconstrained slots missing; "
+                        "task=%s; call=%d; slots=%s; fallback=targeted_grammar_retry",
+                        task, call_number,
+                        ",".join(str(slot) for _, slot in parsed.missing),
+                    )
+                else:
+                    _LOGGER.info(
+                        "[MV Director - Timeline Planner] unconstrained protocol accepted; "
+                        "task=%s; call=%d; slots=%d",
+                        task, call_number, len(slots),
+                    )
         except BaseException:
             _LOGGER.error(
                 "[MV Director - Timeline Planner] inference failed; task=%s; "
@@ -317,7 +426,10 @@ class _LlamaPlannerBackend:
             perf_counter() - started,
             len(response),
         )
-        self.trace.append({"task": task, "payload": payload, "response": response})
+        self.trace.append({
+            "task": task, "payload": payload, "response": response,
+            **transport_debug,
+        })
         advance_progress()
         return response
 
@@ -430,8 +542,12 @@ class MVDirectorTimelinePlanner:
             if chat_format not in CHAT_FORMATS:
                 raise ValueError("unknown chat_format")
             if normalize_newlines(template_emd).lstrip().startswith("# サブジェクト\n"):
-                parse_emd(template_emd)
-                emd = EMDTextArtifact.create("MVD_EMD_V1", normalize_newlines(template_emd))
+                document = parse_emd(template_emd)
+                emd = EMDTextArtifact.create(
+                    "MVD_EMD_V3" if any(s.mouth_performances for s in document.scenes)
+                    else "MVD_EMD_V2" if document.audio_activity else "MVD_EMD_V1",
+                    normalize_newlines(template_emd),
+                )
                 status = "complete=yes; source=author_emd; model=skipped"
                 _LOGGER.info(
                     "[MV Director - Timeline Planner] full author EMD accepted; "
@@ -513,6 +629,7 @@ class MVDirectorTimelinePlanner:
                 return emd.text, emd, "complete=yes; source=author_shots; model=skipped"
             selection = model_name_override.strip() or model_name
             model = resolve_comfy_gguf_model(selection)
+            self._backend.transport_policy = _planner_transport_policy(model.selection_id)
             prompts = _system_prompts()
             if planner_profile_metadata(
                 selected_direction.camera_profile_id,
@@ -534,6 +651,10 @@ class MVDirectorTimelinePlanner:
                         or selected_direction.motion_profile_id,
                     ),
                     "lip_sync_active": lip_sync_mode != "off",
+                    "audio_activity_timebase": (
+                        "aligned_reference_pcm" if lip_sync_mode == "audio_reference"
+                        else "end_padded_source_pcm"
+                    ) if template.audio_activity is not None else None,
                     "lip_sync_target": lip_sync_target,
                     "staging_candidate_policy": staging_candidate_policy,
                     "model": {
@@ -543,6 +664,7 @@ class MVDirectorTimelinePlanner:
                         "mtime_ns": model.mtime_ns,
                     },
                     "runtime": config.to_dict(),
+                    "transport_policy": self._backend.transport_policy,
                     "system_prompts": {task: sha256_text(value) for task, value in prompts.items()},
                 },
             )
@@ -611,7 +733,11 @@ class MVDirectorTimelinePlanner:
                         self._lifecycle.clear()
 
             if content is None:
-                emd = EMDTextArtifact.create("MVD_EMD_TEMPLATE_V1", template_emd)
+                emd = EMDTextArtifact.create(
+                    "MVD_EMD_TEMPLATE_V3" if any(s.mouth_performances for s in template.scenes)
+                    else "MVD_EMD_TEMPLATE_V2" if template.audio_activity else "MVD_EMD_TEMPLATE_V1",
+                    template_emd,
+                )
                 labels = ",".join(f"{kind}:scene{scene}:slot{slot}" for kind, scene, slot in missing)
                 status = f"complete=no; missing={labels}; cache={cache_status}"
             else:

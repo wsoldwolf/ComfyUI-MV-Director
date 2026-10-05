@@ -21,7 +21,7 @@ EMDは **Easy MarkDown** の略です。Extended Markdownではありません�
 
 現行の開発構成は`dev`ブランチです。既存のリリースタグとはモデル・パイプラインが異なります。基準環境はComfyUI v0.37.2 commit `830232b856045ca2892833212d7771078a13edd5`、Context Loop 0.7.0 commit `d80304f05ecc2f504e64cbfb636e2a21d4409909`です。ComfyUI v0.37.4とSpectrum v0.2.27での全編完走も確認しています。高速化設定と検証条件は[TIPS](docs/tips/h3-acceleration-and-stability.md)を参照してください。
 
-Gemma4 31B構成はRTX 5090環境で検証しています。VRAM 8 GB環境は現在の対象外です。必要なVRAM・メインメモリは量子化、context、オフロード設定で変わるため、未検証環境の最低容量は断定していません。
+Gemma4 31B構成はRTX 5090・RTX 5080環境で検証しています。VRAM 8 GB環境は現在の対象外です。必要なVRAM・メインメモリは量子化、context、オフロード設定で変わるため、未検証環境の最低容量は断定していません。
 
 `# 共通プロンプト`は全体方針、`# 演出候補`は歌詞に応じた局所演出として記述できます。候補は全Sceneへ一律に適用されません。人物の再現性、演技、リップシンクなどの最終的な採否は、生成映像を見て判断してください。
 
@@ -43,7 +43,7 @@ LLMの出力は確率的で、行protocol違反や必須出力の欠落が起き
 | [`docs/spec/`](docs/spec/README.md) | EMD、protocol、最小コアの規範仕様 |
 | [`docs/implementation/`](docs/implementation/README.md) | 内部構造、公開surface、実装順序 |
 | [`profiles/`](profiles/README.md) | ユーザー拡張可能なStyle、Motion、Camera profile EMD |
-| [`workflows/`](workflows/README.md) | 三つのリップシンク方式に対応する6 workflow |
+| [`workflows/`](workflows/README.md) | 三つのリップシンク方式に対応する基本6 workflowと12B・26B検証用Plan派生版 |
 | [`docs/assets/`](docs/assets/README.md) | READMEや文書で使うPNG/SVG図版 |
 | [`docs/tips/`](docs/tips/README.md) | 参照画像の分離、再現率、配線など実運用のTIPS |
 | [Direction / Planner処理フロー](docs/architecture/direction-planner-flow.md) | LLM task、Python所有処理、AS IS境界の図解 |
@@ -71,6 +71,20 @@ LLMの出力は確率的で、行protocol違反や必須出力の欠落が起き
 ## 更新履歴（主要な変更のみ）
 
 詳細はGitのコミットログを参照してください。
+
+### v0.2.2
+
+- **伴奏区間での簡易的なモーション追加**に対応しました。ボーカルの音声活動情報と前後の歌詞を参考に、イントロ・間奏などで身体の揺れ、踏み替え、体幹や腕の流れといった演技をPlannerへ提案します。`# 演出候補`で伴奏中の動きを指定できます。動作の採用と映像での再現は生成結果に依存し、拍に同期した振付を保証する機能ではありません。
+- 音声活動情報を持つEMD V2に対応し、従来のEMD V1も引き続き受け付けます。利用方法は[Lyric Segmentation](docs/nodes/lyric-segmentation.md)、検証で得た考察は[ビート検出と身体演技](docs/tips/beat-detection-and-performance.md)を参照してください。
+- EMD V3の時刻付き`口元`指定に対応しました。Plannerが既知の長い無声区間で閉口を計画し、CompilerがH3向けの指示へ変換します。伴奏中の身体演技と歌唱復帰を保ちながら口元を誘導しますが、映像での完全な再現は保証しません。詳細は[EMD仕様](docs/spec/emd-spec.md)を参照してください。
+
+追加のモデル導入は不要です。利用の流れは次のとおりです。
+
+1. Lyric Segmentationへpadding前のボーカルステムと歌詞を入力し、生成したTemplate EMDをTimeline Plannerへ接続します。音声活動情報は`# 音声活動`としてEMDへ保存されます。古い成功キャッシュも、`reuse`でWhisperを再実行せず情報を補充します。
+2. Direction Enhancerへ渡す`# 演出候補`に、伴奏中に行わせたい動きを記述します。例えば「歌声のない長い伴奏では、体幹を捻り、肩と腕を連動させ、踏み替えながら身体の流れを続ける」と指定します。
+3. Planを作り直して動画workflowへ渡し、伴奏中の演技と歌唱へ戻るつながりを音付き映像で確認します。
+
+ボーカル不在の検出は伴奏の存在を確定するものではなく、候補の採用や拍への同期も保証しません。従来のEMD V1を使う場合も実行できますが、音声活動情報を参考にするにはEMD V2のTemplateを作り直してください。詳細は[Lyric Segmentation](docs/nodes/lyric-segmentation.md)と[ビート検出と身体演技](docs/tips/beat-detection-and-performance.md)を参照してください。
 
 ### v0.2.1
 

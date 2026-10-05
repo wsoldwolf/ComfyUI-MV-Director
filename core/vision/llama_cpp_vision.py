@@ -95,9 +95,12 @@ class LlamaCppVisionLifecycle:
         return str(resolved), stat.st_size, stat.st_mtime_ns
 
     def ensure_loaded(
-        self, pair: VisionModelPair, config: LlamaRuntimeConfig
+        self, pair: VisionModelPair, config: LlamaRuntimeConfig, *,
+        mmproj_use_gpu: bool | None = None,
     ) -> Any:
         config.validate()
+        if mmproj_use_gpu is None:
+            mmproj_use_gpu = config.gpu_layers != 0
         try:
             signature = (
                 *self._file_signature(pair.model_path),
@@ -108,6 +111,7 @@ class LlamaCppVisionLifecycle:
                 config.flash_attn,
                 config.kv_cache_type,
                 config.op_offload,
+                mmproj_use_gpu,
             )
         except OSError as exc:
             raise InferenceBackendError("Vision model pair cannot be read") from exc
@@ -128,7 +132,7 @@ class LlamaCppVisionLifecycle:
             handler = handler_class(
                 clip_model_path=str(pair.projector_path.resolve(strict=True)),
                 verbose=False,
-                use_gpu=config.gpu_layers != 0,
+                use_gpu=mmproj_use_gpu,
             )
             model = llama_class(
                 model_path=str(pair.model_path.resolve(strict=True)),

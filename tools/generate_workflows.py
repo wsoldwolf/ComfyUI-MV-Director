@@ -1,4 +1,4 @@
-"""Generate the six distributable MV Director workflows.
+"""Generate six base MV Director workflows and model-specific Plan variants.
 
 The video graphs deliberately start from the pinned Context Loop Ref2V Basic
 workflow.  This preserves its recursive sampling, checkpoint, review, and
@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import copy
 import json
 from pathlib import Path
 import sys
@@ -54,6 +55,27 @@ TURBO_LORA_NAME = (
 TEXT_MODEL = (
     "gemma-4-31b-it-heretic-ara-GGUF/gemma-4-31b-it-heretic-ara.Q4_K_S.gguf"
 )
+TEXT_MODEL_12B = (
+    "Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced/"
+    "Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-Q4_K_M.gguf"
+)
+TEXT_MODEL_26B_IQ2_M = (
+    "Gemma4-26B-A4B-Uncensored-HauhauCS-Balanced/"
+    "Gemma4-26B-A4B-Uncensored-HauhauCS-Balanced-IQ2_M.gguf"
+)
+PLAN_12B_FILENAME = "_12b_01_plan_compiler_context_loop.json"
+PLAN_12B_N_CTX = 12288
+PLAN_26B_IQ2_M_FILENAME = "_26b_iq2_m_01_plan_compiler_context_loop.json"
+PLAN_26B_IQ2_M_29GPU_FILENAME = "_26b_iq2_m_29gpu_01_plan_compiler_context_loop.json"
+PLAN_26B_IQ2_M_30GPU_FILENAME = "_26b_iq2_m_30gpu_01_plan_compiler_context_loop.json"
+# IQ2_M has 10.36 GB of tensors, about 328 MB per transformer block.
+# Keeping three of 30 blocks on CPU leaves roughly 3.5 GB of a 12 GiB card
+# for the q8_0 KV cache, compute buffers and ComfyUI. CPU mmproj is separate.
+PLAN_26B_IQ2_M_GPU_LAYERS = 27
+PLAN_26B_IQ2_M_29GPU_LAYERS = 29
+PLAN_26B_IQ2_M_30GPU_LAYERS = 30
+PLAN_26B_IQ2_M_N_CTX = 16384
+PLAN_26B_IQ2_M_N_BATCH = 256
 # Planner settings follow the 31B scene-author trials. Compiler settings follow
 # P2g's successful whole-EMD translation. Use the GGUF's own chat template;
 # forcing the legacy llama.cpp "gemma" formatter is not equivalent.
@@ -588,7 +610,7 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
             (440, 330),
             (500, 800),
             "Character Vision / Subject EMD",
-            inputs=[_input("image", "IMAGE")],
+            inputs=[_input("image", "IMAGE"), _widget_input("mmproj_use_gpu", "BOOLEAN")],
             outputs=[
                 _output("emd_fragment", "STRING"),
                 _output("reference_bindings", "MV_DIRECTOR_REFERENCE_BINDINGS"),
@@ -620,6 +642,7 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
                 1,
                 "fixed",
                 "reuse",
+                True,
                 "<Picture 1>",
             ],
         ),
@@ -789,7 +812,7 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
             (440, 1700),
             (500, 800),
             "Background Vision (Scene Only)",
-            inputs=[_input("image", "IMAGE")],
+            inputs=[_input("image", "IMAGE"), _widget_input("mmproj_use_gpu", "BOOLEAN")],
             outputs=[
                 _output("emd_fragment", "STRING"),
                 _output("reference_bindings", "MV_DIRECTOR_REFERENCE_BINDINGS"),
@@ -821,6 +844,7 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
                 1,
                 "fixed",
                 "reuse",
+                True,
                 "<Picture 2>",
             ],
         ),
@@ -1945,11 +1969,170 @@ def sync_timing_contract(workflow: dict[str, Any], mode: str) -> None:
     workflow["extra"]["mv_director"]["contract"] = CONTRACT_ID
 
 
+def build_12b_plan_variant(source: dict[str, Any]) -> dict[str, Any]:
+    """Clone WF01's layout and inputs; change only the model and context budget."""
+    workflow = copy.deepcopy(source)
+    widgets_by_type = {
+        "MVDirectorImageToSubjectEMD": (0, 16),
+        "MVDirectorDirectionEnhancer": (5, 13),
+        "MVDirectorTimelinePlanner": (3, 11),
+        "MVDirectorEMDCompiler": (1, 9),
+    }
+    counts = {node_type: 0 for node_type in widgets_by_type}
+    for node in workflow["nodes"]:
+        node_type = node["type"]
+        if node_type in widgets_by_type:
+            model_slot, context_slot = widgets_by_type[node_type]
+            values = node["widgets_values"]
+            named = node.get("widgets_values_named")
+            if (len(values) <= context_slot or (
+                    isinstance(named, dict) and (
+                        named.get("model_name") != values[model_slot]
+                        or named.get("n_ctx") != values[context_slot]
+                    ))):
+                raise ValueError(f"{node_type} model/context widgets are out of sync")
+            values[model_slot] = TEXT_MODEL_12B
+            values[context_slot] = PLAN_12B_N_CTX
+            if isinstance(named, dict):
+                named["model_name"] = TEXT_MODEL_12B
+                named["n_ctx"] = PLAN_12B_N_CTX
+            counts[node_type] += 1
+        elif node_type == "MarkdownNote":
+            node["widgets_values"] = [
+                value.replace("Gemma4 31B", "Gemma4 12B")
+                if isinstance(value, str) else value
+                for value in node.get("widgets_values", [])
+            ]
+    if counts != {
+        "MVDirectorImageToSubjectEMD": 2,
+        "MVDirectorDirectionEnhancer": 1,
+        "MVDirectorTimelinePlanner": 1,
+        "MVDirectorEMDCompiler": 1,
+    }:
+        raise ValueError(f"unexpected WF01 inference nodes: {counts}")
+    validate_workflow(workflow)
+    return workflow
+
+
+def build_26b_iq2_m_plan_variant(
+    source: dict[str, Any], *, planner_compiler_gpu_layers: int | None = None,
+) -> dict[str, Any]:
+    """Clone WF01 for a 12 GiB card, keeping its layout and author inputs."""
+    workflow = copy.deepcopy(source)
+    widgets_by_type = {
+        "MVDirectorImageToSubjectEMD": (0, 14, 15, 16),
+        "MVDirectorDirectionEnhancer": (5, 11, 12, 13),
+        "MVDirectorTimelinePlanner": (3, 9, 10, 11),
+        "MVDirectorEMDCompiler": (1, 7, 8, 9),
+    }
+    counts = {node_type: 0 for node_type in widgets_by_type}
+    for node in workflow["nodes"]:
+        node_type = node["type"]
+        if node_type in widgets_by_type:
+            model_slot, gpu_slot, batch_slot, context_slot = widgets_by_type[node_type]
+            values = node["widgets_values"]
+            named = node.get("widgets_values_named")
+            if len(values) <= context_slot or (
+                isinstance(named, dict) and any(
+                    named.get(field) != values[index]
+                    for field, index in (
+                        ("model_name", model_slot), ("gpu_layers", gpu_slot),
+                        ("n_batch", batch_slot), ("n_ctx", context_slot),
+                    )
+                )
+            ):
+                raise ValueError(f"{node_type} runtime widgets are out of sync")
+            gpu_layers = PLAN_26B_IQ2_M_GPU_LAYERS
+            if planner_compiler_gpu_layers is not None and node_type in {
+                "MVDirectorTimelinePlanner", "MVDirectorEMDCompiler",
+            }:
+                gpu_layers = planner_compiler_gpu_layers
+            settings = {
+                "model_name": TEXT_MODEL_26B_IQ2_M,
+                "gpu_layers": gpu_layers,
+                "n_batch": PLAN_26B_IQ2_M_N_BATCH,
+                "n_ctx": PLAN_26B_IQ2_M_N_CTX,
+            }
+            for field, index in (
+                ("model_name", model_slot), ("gpu_layers", gpu_slot),
+                ("n_batch", batch_slot), ("n_ctx", context_slot),
+            ):
+                values[index] = settings[field]
+            if isinstance(named, dict):
+                named.update(settings)
+            if node_type == "MVDirectorImageToSubjectEMD":
+                mmproj_input = next(
+                    (item for item in node["inputs"] if item["name"] == "mmproj_use_gpu"),
+                    None,
+                )
+                if mmproj_input is None:
+                    if len(values) != 25:
+                        raise ValueError("unexpected Vision widgets for mmproj migration")
+                    values.insert(24, False)
+                    node["inputs"].append(_widget_input("mmproj_use_gpu", "BOOLEAN"))
+                else:
+                    if len(values) != 26 or mmproj_input.get("link") is not None:
+                        raise ValueError("unexpected or linked Vision mmproj widget")
+                    values[24] = False
+                if isinstance(named, dict):
+                    named["mmproj_use_gpu"] = False
+            counts[node_type] += 1
+        elif node_type == "MarkdownNote":
+            node["widgets_values"] = [
+                value.replace("Gemma4 31B", "Gemma4 26B A4B")
+                if isinstance(value, str) else value
+                for value in node.get("widgets_values", [])
+            ]
+    if counts != {
+        "MVDirectorImageToSubjectEMD": 2,
+        "MVDirectorDirectionEnhancer": 1,
+        "MVDirectorTimelinePlanner": 1,
+        "MVDirectorEMDCompiler": 1,
+    }:
+        raise ValueError(f"unexpected WF01 inference nodes: {counts}")
+    validate_workflow(workflow)
+    return workflow
+
+
 def write_workflows(context_loop_root: Path, output_dir: Path, *, runtime_only: bool = False,
                     direction_only: bool = False, candidate_only: bool = False,
                     timing_only: bool = False, video_runtime_only: bool = False,
                     planner_schema_only: bool = False, step_ownership_only: bool = False,
-                    acceleration_only: bool = False) -> None:
+                    acceleration_only: bool = False, variant_12b_only: bool = False,
+                    variant_26b_iq2_m_only: bool = False,
+                    variant_26b_iq2_m_29gpu_only: bool = False,
+                    variant_26b_iq2_m_30gpu_only: bool = False) -> None:
+    if (variant_12b_only or variant_26b_iq2_m_only
+            or variant_26b_iq2_m_29gpu_only or variant_26b_iq2_m_30gpu_only):
+        source_path = output_dir / "01_plan_compiler_context_loop.json"
+        source_text = source_path.read_text(encoding="utf-8")
+        source = json.loads(source_text)
+        variants = []
+        if variant_12b_only:
+            variants.append((PLAN_12B_FILENAME, build_12b_plan_variant(source)))
+        if variant_26b_iq2_m_only:
+            variants.append((PLAN_26B_IQ2_M_FILENAME, build_26b_iq2_m_plan_variant(source)))
+        if variant_26b_iq2_m_29gpu_only:
+            variants.append((
+                PLAN_26B_IQ2_M_29GPU_FILENAME,
+                build_26b_iq2_m_plan_variant(
+                    source, planner_compiler_gpu_layers=PLAN_26B_IQ2_M_29GPU_LAYERS,
+                ),
+            ))
+        if variant_26b_iq2_m_30gpu_only:
+            variants.append((
+                PLAN_26B_IQ2_M_30GPU_FILENAME,
+                build_26b_iq2_m_plan_variant(
+                    source, planner_compiler_gpu_layers=PLAN_26B_IQ2_M_30GPU_LAYERS,
+                ),
+            ))
+        for filename, workflow in variants:
+            formatted = (
+                json.dumps(workflow, ensure_ascii=False, separators=(",", ":"))
+                if len(source_text.splitlines()) == 1 else _json_text(workflow)
+            )
+            (output_dir / filename).write_text(formatted + "\n", encoding="utf-8")
+        return
     if acceleration_only:
         pending_writes = []
         for mode, spec in MODES.items():
@@ -2039,6 +2222,27 @@ def write_workflows(context_loop_root: Path, output_dir: Path, *, runtime_only: 
         video_path = output_dir / f"{number * 2:02d}_video_{mode}.json"
         plan_path.write_text(_json_text(plan) + "\n", encoding="utf-8")
         video_path.write_text(_json_text(video) + "\n", encoding="utf-8")
+        if mode == "context_loop":
+            variant = build_12b_plan_variant(plan)
+            (output_dir / PLAN_12B_FILENAME).write_text(
+                _json_text(variant) + "\n", encoding="utf-8"
+            )
+            variant = build_26b_iq2_m_plan_variant(plan)
+            (output_dir / PLAN_26B_IQ2_M_FILENAME).write_text(
+                _json_text(variant) + "\n", encoding="utf-8"
+            )
+            variant = build_26b_iq2_m_plan_variant(
+                plan, planner_compiler_gpu_layers=PLAN_26B_IQ2_M_29GPU_LAYERS,
+            )
+            (output_dir / PLAN_26B_IQ2_M_29GPU_FILENAME).write_text(
+                _json_text(variant) + "\n", encoding="utf-8"
+            )
+            variant = build_26b_iq2_m_plan_variant(
+                plan, planner_compiler_gpu_layers=PLAN_26B_IQ2_M_30GPU_LAYERS,
+            )
+            (output_dir / PLAN_26B_IQ2_M_30GPU_FILENAME).write_text(
+                _json_text(variant) + "\n", encoding="utf-8"
+            )
 
 
 def main() -> None:
@@ -2067,6 +2271,14 @@ def main() -> None:
                         help="Remove Compiler steps and stored Plan overrides; preserve Plan default_steps")
     parser.add_argument("--sync-video-acceleration", action="store_true",
                         help="Apply WF02 acceleration and 20-step defaults without rebuilding video inputs")
+    parser.add_argument("--sync-12b-variant", action="store_true",
+                        help="Clone the current WF01 layout into the 12B variant with 12288 context")
+    parser.add_argument("--sync-26b-iq2-m-variant", action="store_true",
+                        help="Clone WF01 for 26B IQ2_M on a 12 GiB GPU")
+    parser.add_argument("--sync-26b-iq2-m-29gpu-variant", action="store_true",
+                        help="Clone WF01 for 26B IQ2_M with 29 Planner/Compiler GPU layers")
+    parser.add_argument("--sync-26b-iq2-m-30gpu-variant", action="store_true",
+                        help="Clone WF01 for 26B IQ2_M with 30 Planner/Compiler GPU layers")
     args = parser.parse_args()
     write_workflows(args.context_loop_root, args.output_dir, runtime_only=args.sync_model_runtime,
                     direction_only=args.sync_direction_settings, candidate_only=args.sync_candidate_policy,
@@ -2074,7 +2286,11 @@ def main() -> None:
                     video_runtime_only=args.sync_context_loop_runtime,
                     planner_schema_only=args.sync_planner_schema,
                     step_ownership_only=args.sync_step_ownership,
-                    acceleration_only=args.sync_video_acceleration)
+                    acceleration_only=args.sync_video_acceleration,
+                    variant_12b_only=args.sync_12b_variant,
+                    variant_26b_iq2_m_only=args.sync_26b_iq2_m_variant,
+                    variant_26b_iq2_m_29gpu_only=args.sync_26b_iq2_m_29gpu_variant,
+                    variant_26b_iq2_m_30gpu_only=args.sync_26b_iq2_m_30gpu_variant)
 
 
 if __name__ == "__main__":

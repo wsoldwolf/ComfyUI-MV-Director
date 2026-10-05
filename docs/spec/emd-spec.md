@@ -2,7 +2,7 @@
 
 Status: normative
 
-Schema: `MVD_EMD_V1`
+Schema: `MVD_EMD_V1`、音声活動付きは`MVD_EMD_V2`、口元計画付きは`MVD_EMD_V3`
 
 Compiler target: Context Loop / MiniMax H3 Ref2VA
 
@@ -50,9 +50,72 @@ Compiler-ready EMDの順序は次のとおり。
 2. 任意 `# シーン設定`
 3. 任意 `# 保持分析`
 4. 任意 `# 共通プロンプト`
-5. 一個以上のScene
+5. 任意 `# 音声活動`
+6. 一個以上のScene
 
 空入力はEnhancerの入力として許されるが、Compiler-ready EMDとしては許されない。
+
+### 音声活動の参考メタデータ
+
+Lyric Segmentationが保持する元ボーカルPCMの活動区間。これは自然文promptではなく、歌詞時刻と伴奏中の演技計画を読むための任意メタデータである。TemplateではSubjectなしの先頭、完成EMDでは共通プロンプトの後かつ最初のSceneより前に一度だけ置く。音声活動付きTemplateのartifact schemaは`MVD_EMD_TEMPLATE_V2`、完成EMDは`MVD_EMD_V2`。活動なしのV1は引き続き有効。
+
+```markdown
+# 音声活動
+* `音声活動v1` sample_rate=48000 source_samples=480000 sha256=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa method=energy_vad_sample_refined
+* `ボーカル区間` 0 144000 no_vocal_candidate
+* `ボーカル区間` 144000 384000 vocal_candidate
+* `ボーカル区間` 384000 480000 no_vocal_candidate
+* `参照PCM配置` 0 480000 0
+```
+
+sample位置は0ベースで終端を含まない。`ボーカル区間`は元PCM全体を重複・欠落なく時系列で覆う。許容stateは`vocal_candidate`、`no_vocal_candidate`、`instrumental_candidate`、`fullmix_silence_candidate`、`unknown`。VADと整列歌詞が食い違う場合は`unknown`へ保留する。ボーカルだけを解析するノードは伴奏の存在を確定できないため`no_vocal_candidate`を使う。全曲の無音指定や歌唱禁止を意味しない。
+
+SHA-256は波形shape、sample rate、連続float PCMから算出する。`method`は`energy_vad_sample_refined`又は作者記述の`author`。任意の`参照PCM配置`は元PCM開始sample、元PCM終了sample、参照PCMでのコピー先開始sampleを表す。元PCMを順序どおり全量コピーし、コピー先は重複させず、間の隙間をpaddingとして扱う。Audio Pad Pairと同じ配置計算を用い、Scene開始時刻差で推測しない。
+
+Plannerは選択したlip-sync方式のPCM時刻で現在Sceneへ切り出し、前後有声境界も参考情報として渡す。配置表のないAudio参照入力では時刻を推測せず通常計画へ戻る。歌詞のないSceneでは前後歌詞の短い抜粋を意味文脈として渡せるが、歌唱時刻として追加しない。候補を不採用にしても品質エラーにしない。
+
+Compilerは音声活動を翻訳せず、Planルートの`mv_director_audio_activity`へ診断情報として保持する。H3の共通prefix、Shot本文、audio mask、既存のリップシンク指定には変換しない。音声・歌唱タイミングのH3上の保証は別問題である。
+
+このメタデータの保存先はCompiler出力のPlan JSONである。現在のContext Loopは独自のPlan正規化時にこの追加キーを利用せず、内部Planへも継承しない。診断の長期保存には元EMD又はCompiler出力を保存する。
+
+### Plannerが確定する口元計画
+
+音声活動は検出事実であり、口元は映像上の演出意図である。Plannerは既存のPCM時刻対応を使い、lip-sync対象の人物について長い無声区間を`閉口`、有声区間を`歌唱`として計画する。閉口は唇を軽く合わせる意図であり、身体・目・眉・頬を静止させる指定ではない。Compilerは検出情報から口元を再判定せず、Planner又は作者が明示した口元計画だけを変換する。
+
+Sceneの`H3長`及び任意の概要行の後、最初のShotより前に置く。
+
+```markdown
+> `シーン` 1
+# シーン 00:00.000 --> 00:10.125
+* `H3長` 243
+> `口元` `サブジェクト1` 00:00.000 --> 00:04.800 `閉口`
+> `口元` `サブジェクト1` 00:05.000 --> 00:10.125 `歌唱`
+## ショット 00:00.000
+* `演技` 人物は踏み替えと身体の捻りをつなぎ、目と眉で感情を表す。
+## 音響
+* `リップシンク` `Context Loop` `サブジェクト1`
+```
+
+許容stateは`閉口`、`歌唱`、`自由`。対象Subjectは定義済みのものとし、各区間はScene内の正の長さ、開始を含み終端を含まない。同じSubjectの区間は時系列で重複させない。Scene全体を覆う義務はなく、未指定部分と`自由`には局所的な口元補足を加えない。時刻は当該lip-sync方式の生成用PCMと対応する絶対時刻で、元の検出PCM sampleとは区別する。口元境界はShot境界に一致しなくてよく、Shot・Sceneの分割を追加しない。
+
+Plannerの自動計画は次の規則に従う。
+
+- 連続する既知の無声候補が2秒以上の場合だけ閉口を計画する。長さはSceneで切る前に判定する。
+- 有声区間の前後200msは自動閉口から除外し、発音準備・余韻の余地を残す。これは初期方針の値であり、H3での同期を保証する値ではない。
+- `unknown`、短い息継ぎ、追加padding、活動情報なしには自動閉口を加えない。
+- Audio参照は既存の参照PCM配置表を使用し、配置表がなければ自動計画を省略する。
+- `lip_sync_mode=off`では音声活動による自動計画を行わない。作者の明示した口元は保持する。
+- 作者の口元アノテーションが最優先。作者が確定した`演技`、歌詞lip-sync又はラベルなしShot本文のある時間には、自動指定を加えない。固定Cameraだけなら自動計画を妨げない。
+
+作者はTemplate EMDの同じ構文をPlannerへ渡すか、完成EMDへ直接書いてCompilerへ渡せる。TemplateのSubject番号は接続された人物定義へ結び付ける。演出候補は従来どおり着想であり、この時間付き確定指定とは区別する。
+
+Plannerは口元計画を既存のPerformance・Camera推論へ渡し、出力は従来のline protocolを維持する。追加LLM段階、本文の語句検索による修復、口元品質による生成停止は設けない。結果はPlanner成功キャッシュにも保持する。
+
+口元付きTemplateのartifact schemaは`MVD_EMD_TEMPLATE_V3`、完成EMDは`MVD_EMD_V3`。既存V1・V2も有効であり、音声活動だけを持つ旧EMDをCompilerへ渡しても口元を自動補完しない。
+
+Compilerは口元を英語の時間付き肯定文として局所本文へ写す。継続SceneではTiming Profileの映像context framesを秒へ換算して加え、生成クリップの保護プレフィックス後へ指定を置く。全Sceneが同じSubjectへの閉口指定で覆われる場合は、そのSubjectへの一括歌唱文を重ねない。ただし`source_audio_target="locked"`などの音声方針は音響directiveから従来どおり生成する。
+
+独自の`mouth_closed` JSONキーや顔の映像マスクではなく、H3の`prompt`に作用する演出指定である。閉口の映像的な遵守は短区間で検証する必要がある。
 
 ## 3. サブジェクト
 

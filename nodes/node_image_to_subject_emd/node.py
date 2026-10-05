@@ -139,6 +139,9 @@ class MVDirectorImageToSubjectEMD:
                 ),
                 "cache_mode": (list(CACHE_MODES), {"default": "reuse"}),
             },
+            "optional": {
+                "mmproj_use_gpu": ("BOOLEAN", {"default": True}),
+            },
             "hidden": {"prompt": "PROMPT", "unique_id": "UNIQUE_ID"},
         }
 
@@ -199,6 +202,7 @@ class MVDirectorImageToSubjectEMD:
         keep_model_loaded: bool,
         seed: int,
         cache_mode: str,
+        mmproj_use_gpu: bool = True,
         prompt: Any = None,
         unique_id: Any = None,
     ) -> dict[str, Any]:
@@ -250,6 +254,7 @@ class MVDirectorImageToSubjectEMD:
                     ),
                     "system_prompt": system_prompt,
                     "runtime": config.to_dict(),
+                    "mmproj_use_gpu": mmproj_use_gpu,
                 },
             )
             cache = _cache()
@@ -262,7 +267,9 @@ class MVDirectorImageToSubjectEMD:
                     self._backend.clear()
             else:
                 try:
-                    self._backend.ensure_loaded(pair, config)
+                    self._backend.ensure_loaded(
+                        pair, config, mmproj_use_gpu=mmproj_use_gpu
+                    )
                     advance_progress()
                     observations, warnings = observe_image(
                         self._backend,
@@ -297,6 +304,7 @@ class MVDirectorImageToSubjectEMD:
             advance_progress()
             status = (
                 f"picture={result.resolved_picture_reference}; cache={cache_status}; "
+                f"mmproj={'gpu' if mmproj_use_gpu else 'cpu'}; "
                 f"analysis={prepared.analysis_width}x{prepared.analysis_height}"
             )
             return {
