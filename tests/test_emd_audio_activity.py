@@ -66,7 +66,7 @@ class EMDAudioActivityTests(unittest.TestCase):
             lip_sync_mode="context_loop", lip_sync_target="サブジェクト1", lip_sync_audio_slot=1,
             system_prompts=_system_prompts(), runtime_config=_runtime())
         self.assertTrue(result.complete)
-        self.assertEqual(result.emd.schema, "MVD_EMD_V2")
+        self.assertEqual(result.emd.schema, "MVD_EMD_V3")
         for _, payload in backend.calls:
             self.assertTrue(payload["audio_activity"]["advisory"])
             self.assertNotIn("audio_sha256", payload["audio_activity"])

@@ -14,8 +14,9 @@ from .template import (
     PlannerTemplate, normalize_concept_emd, normalize_scene_emd, parse_template_emd,
 )
 from .types import PlannerContent, TimelinePlannerBackend, TimelinePlannerResult
+from .mouth_performance import plan_mouth_performances
 
-PLANNER_ALGORITHM_VERSION = "mvd-scene-author-v2-audio-activity"
+PLANNER_ALGORITHM_VERSION = "mvd-scene-author-v3-mouth-performance"
 
 
 def generate_planner_content(
@@ -49,6 +50,10 @@ def generate_planner_content(
         system_prompts=system_prompts, runtime_config=runtime_config,
         staging_candidate_policy=staging_candidate_policy,
         lip_sync_mode=lip_sync_mode,
+        mouth_performances=plan_mouth_performances(
+            template, lip_sync_mode=lip_sync_mode, lip_sync_target=lip_sync_target,
+            subject_count=sum(line.startswith("* ") for line in concept_emd.splitlines()),
+        ),
         interrupt_callback=interrupt_callback,
     )
 
@@ -75,6 +80,7 @@ def render_planner_content(
         typed_output=True,
         motion_compositions={(s, shot): (source, index, text)
                              for s, shot, source, index, text in content.motion_compositions},
+        mouth_performances=content.mouth_performances,
         lip_sync_mode=lip_sync_mode,
         lip_sync_target=lip_sync_target,
         lip_sync_audio_slot=lip_sync_audio_slot,
@@ -115,7 +121,11 @@ def plan_timeline(
     )
     if content is None:
         return TimelinePlannerResult(
-            EMDTextArtifact.create("MVD_EMD_TEMPLATE_V2" if template.audio_activity else "MVD_EMD_TEMPLATE_V1", template_emd),
+            EMDTextArtifact.create(
+                "MVD_EMD_TEMPLATE_V3" if any(s.mouth_performances for s in template.scenes)
+                else "MVD_EMD_TEMPLATE_V2" if template.audio_activity else "MVD_EMD_TEMPLATE_V1",
+                template_emd,
+            ),
             None,
             False,
             missing,

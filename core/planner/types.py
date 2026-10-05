@@ -26,6 +26,7 @@ class PlannerContent:
     events: tuple[tuple[int, int, str], ...] = ()
     motion_compositions: tuple[tuple[int, int, str, int, str], ...] = ()
     terminal_states: tuple[tuple[int, str, str, str], ...] = ()
+    mouth_performances: tuple[tuple[int, str, int, int, str], ...] = ()
 
     @property
     def typed_output(self) -> bool:
@@ -42,6 +43,7 @@ class PlannerContent:
             "protocol_recovered_count": self.protocol_recovered_count,
             "motion_compositions": [list(row) for row in self.motion_compositions],
             "terminal_states": [list(row) for row in self.terminal_states],
+            "mouth_performances": [list(row) for row in self.mouth_performances],
         }
 
     @classmethod
@@ -61,6 +63,9 @@ class PlannerContent:
             terminal_states=tuple(
                 (int(r[0]), str(r[1]), str(r[2]), str(r[3]))
                 for r in value["terminal_states"]),
+            mouth_performances=tuple(
+                (int(r[0]), str(r[1]), int(r[2]), int(r[3]), str(r[4]))
+                for r in value.get("mouth_performances", ())),
         )
 
 

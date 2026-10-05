@@ -49,6 +49,17 @@ class AudioDirective:
 
 
 @dataclass(frozen=True, slots=True)
+class MouthPerformance:
+    """An authored visual intention, not an audio detection or audio mask."""
+
+    target_concept_id: str
+    start_ms: int
+    end_ms: int
+    state: str
+    line_number: int = 0
+
+
+@dataclass(frozen=True, slots=True)
 class ShotDirective:
     kind: str
     text: str
@@ -76,6 +87,7 @@ class Scene:
     audio_directives: tuple[AudioDirective, ...]
     line_number: int
     continuation: bool = False
+    mouth_performances: tuple[MouthPerformance, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

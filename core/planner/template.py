@@ -89,7 +89,8 @@ def parse_template_emd(
         raise TimelinePlannerError("template_emd must not contain a Subject section")
     try:
         document: EMDDocument = parse_emd(
-            DEFAULT_CONCEPT_EMD.rstrip() + "\n\n" + normalized + "\n",
+            # Template targets bind to the actual concept fragment later.
+            "# サブジェクト\n" + "* Template Subject.\n" * 4 + "\n" + normalized + "\n",
             timing_profile=timing_profile,
         )
     except EMDParseError as exc:

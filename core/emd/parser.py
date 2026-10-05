@@ -1,4 +1,4 @@
-"""Strict line-oriented parser for EMD V1 and advisory audio-activity V2."""
+"""Strict EMD parser, including advisory activity and planned mouth intervals."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ from .ast import (
     AudioDirective,
     EMDDocument,
     LyricAnnotation,
+    MouthPerformance,
     RetentionDirective,
     Scene,
     SceneSetting,
@@ -34,6 +35,11 @@ _SCENE_RE = re.compile(
 )
 _H3_LENGTH_RE = re.compile(r"\* `H3長` ([1-9][0-9]*)\Z")
 _SHOT_RE = re.compile(r"## ショット ([0-9]{2,}:[0-5][0-9]\.[0-9]{3})\Z")
+_MOUTH_RE = re.compile(
+    r"> `口元` `(サブジェクト[1-4])` "
+    r"([0-9]{2,}:[0-5][0-9]\.[0-9]{3}) --> "
+    r"([0-9]{2,}:[0-5][0-9]\.[0-9]{3}) `(閉口|歌唱|自由)`\Z"
+)
 _ANNOTATION_RE = re.compile(
     r"> `(セクション|歌詞開始|歌詞終了|歌詞)`(?: (.*))?\Z"
 )
@@ -204,6 +210,11 @@ class _Parser:
     ) -> None:
         defined = {subject.concept_id for subject in subjects}
         for scene in scenes:
+            for mouth in scene.mouth_performances:
+                if mouth.target_concept_id not in defined:
+                    raise EMDParseError(
+                        mouth.line_number, "mouth performance references undefined concept ID"
+                    )
             for shot in scene.shots:
                 for text in shot.body:
                     for match in _CONCEPT_TOKEN_RE.finditer(text):
@@ -420,6 +431,22 @@ class _Parser:
                     continue
                 break
             pending_annotations: list[LyricAnnotation] = []
+            mouths: list[MouthPerformance] = []
+            previous_mouth_end: dict[str, int] = {}
+            while (line := self.current()) is not None and line.text.startswith("> `口元`"):
+                matched = _MOUTH_RE.fullmatch(line.text)
+                if matched is None:
+                    raise EMDParseError(line.number, "invalid mouth performance annotation")
+                target, start_text, end_text, state = matched.groups()
+                mouth_start = parse_time_ms(start_text, line_number=line.number)
+                mouth_end = parse_time_ms(end_text, line_number=line.number)
+                if not start_ms <= mouth_start < mouth_end <= end_ms:
+                    raise EMDParseError(line.number, "mouth interval must be positive and inside Scene")
+                if mouth_start < previous_mouth_end.get(target, start_ms):
+                    raise EMDParseError(line.number, "mouth intervals for each Subject must be ordered and non-overlapping")
+                mouths.append(MouthPerformance(target, mouth_start, mouth_end, state, line.number))
+                previous_mouth_end[target] = mouth_end
+                self.take()
             shots: list[Shot] = []
             while (line := self.current()) is not None:
                 if line.text.startswith("> `") and not _SCENE_ANNOTATION_RE.fullmatch(
@@ -525,6 +552,7 @@ class _Parser:
                     audio_directives=tuple(audio),
                     line_number=heading_line.number,
                     continuation=continuation,
+                    mouth_performances=tuple(mouths),
                 )
             )
             previous_end = end_ms

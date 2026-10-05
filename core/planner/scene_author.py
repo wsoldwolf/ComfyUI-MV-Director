@@ -15,7 +15,7 @@ from typing import Any, Mapping, Sequence
 from ..artifacts import DirectionArtifact
 from ..direction.profiles import (CAMERA_ARC_ROLL_POLICIES, MOTION_COMPOSITION_RESELECTIONS,
                                   MOTION_COMPOSITION_TIMINGS, MOTION_TEMPLATES)
-from ..emd.ast import Scene, Shot
+from ..emd.ast import MouthPerformance, Scene, Shot
 from ..inference import LlamaRuntimeConfig
 from .template import PlannerTemplate
 from .section_context import section_context_by_scene
@@ -24,6 +24,7 @@ from .candidate_policy import validate_staging_candidate_policy
 from .camera_continuity import arc_directions, inspect_arc_sequence
 from .requests import request_entities
 from .types import PlannerContent, PlannerEntity
+from .mouth_performance import mouth_scene_payload
 
 
 _LOGGER = logging.getLogger("mv_director.nodes")
@@ -214,6 +215,7 @@ def generate_scene_author_content(
     runtime_config: LlamaRuntimeConfig,
     staging_candidate_policy: str = "optional",
     lip_sync_mode: str = "off",
+    mouth_performances: Mapping[int, tuple[MouthPerformance, ...]] | None = None,
     interrupt_callback: Any = None,
 ) -> tuple[Any | None, tuple[tuple[str, int, int], ...]]:
     """Keep hand-authored Shot fields; generate only absent Scene-local fields."""
@@ -345,6 +347,9 @@ def generate_scene_author_content(
             for index in sorted(event_texts)
         }
 
+        scene_mouths = (mouth_performances or {}).get(scene.scene_number, scene.mouth_performances)
+        if scene_mouths:
+            shared["mouth_performance"] = mouth_scene_payload(scene, scene_mouths)
         fixed_actions = {
             index: _fixed(shot, "演技")
             for index, shot in enumerate(scene.shots, 1)
@@ -559,4 +564,9 @@ def generate_scene_author_content(
         events=tuple(events),
         motion_compositions=tuple(motion_compositions),
         terminal_states=tuple(terminal_states),
+        mouth_performances=tuple(
+            (scene.scene_number, i.target_concept_id, i.start_ms, i.end_ms, i.state)
+            for scene in template.scenes
+            for i in (mouth_performances or {}).get(scene.scene_number, scene.mouth_performances)
+        ),
     ), ()

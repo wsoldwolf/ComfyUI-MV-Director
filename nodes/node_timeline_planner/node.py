@@ -543,7 +543,11 @@ class MVDirectorTimelinePlanner:
                 raise ValueError("unknown chat_format")
             if normalize_newlines(template_emd).lstrip().startswith("# サブジェクト\n"):
                 document = parse_emd(template_emd)
-                emd = EMDTextArtifact.create("MVD_EMD_V2" if document.audio_activity else "MVD_EMD_V1", normalize_newlines(template_emd))
+                emd = EMDTextArtifact.create(
+                    "MVD_EMD_V3" if any(s.mouth_performances for s in document.scenes)
+                    else "MVD_EMD_V2" if document.audio_activity else "MVD_EMD_V1",
+                    normalize_newlines(template_emd),
+                )
                 status = "complete=yes; source=author_emd; model=skipped"
                 _LOGGER.info(
                     "[MV Director - Timeline Planner] full author EMD accepted; "
@@ -729,7 +733,11 @@ class MVDirectorTimelinePlanner:
                         self._lifecycle.clear()
 
             if content is None:
-                emd = EMDTextArtifact.create("MVD_EMD_TEMPLATE_V2" if template.audio_activity else "MVD_EMD_TEMPLATE_V1", template_emd)
+                emd = EMDTextArtifact.create(
+                    "MVD_EMD_TEMPLATE_V3" if any(s.mouth_performances for s in template.scenes)
+                    else "MVD_EMD_TEMPLATE_V2" if template.audio_activity else "MVD_EMD_TEMPLATE_V1",
+                    template_emd,
+                )
                 labels = ",".join(f"{kind}:scene{scene}:slot{slot}" for kind, scene, slot in missing)
                 status = f"complete=no; missing={labels}; cache={cache_status}"
             else:

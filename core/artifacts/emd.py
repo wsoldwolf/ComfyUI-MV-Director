@@ -24,6 +24,8 @@ EMD_SCHEMAS = frozenset(
         "MVD_EMD_V1",
         "MVD_EMD_TEMPLATE_V2",
         "MVD_EMD_V2",
+        "MVD_EMD_TEMPLATE_V3",
+        "MVD_EMD_V3",
     }
 )
 _HASH_RE = re.compile(r"[0-9a-f]{64}\Z")
