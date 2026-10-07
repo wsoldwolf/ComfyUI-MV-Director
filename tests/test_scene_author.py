@@ -530,6 +530,51 @@ class SceneAuthorTests(unittest.TestCase):
         self.assertTrue(all(payload["previous_scene_state"] == "" for payload in second))
         self.assertEqual(result.content.terminal_states[0][1:], ("", "", ""))
 
+    def test_prop_state_uses_existing_transport_without_extra_pass_or_prose_repair(self):
+        from planner_fixtures import TEMPLATE as LONG_TEMPLATE, INSTRUMENTAL_TAIL
+
+        state = "両足支持、右手は刀の柄を保持、左手は盾を保持、視線は前。"
+        prose = "右手で刀を保持して走り、胸郭と視線を前へ向ける。"
+
+        class PropBackend(Backend):
+            def complete_planner(self, **kwargs):
+                response = super().complete_planner(**kwargs)
+                if kwargs["task"] == "scene-author-performance":
+                    return response.replace("胸から腕へ動きを渡し、手を離す。", prose).replace(
+                        "両足支持、右腕は低く、視線は前。", state)
+                return response
+
+        backend = PropBackend()
+        concept = "# サブジェクト\n* `画像1` 刀と盾を持つ人物。\n"
+        result = plan_timeline(
+            backend, template_emd=LONG_TEMPLATE + INSTRUMENTAL_TAIL,
+            concept_emd=concept, direction=DirectionArtifact(motion_profile_id="anime_scene_author_mv"),
+            lip_sync_mode="off", lip_sync_target="サブジェクト1", lip_sync_audio_slot=1,
+            system_prompts=_system_prompts(), runtime_config=_runtime())
+        self.assertTrue(result.complete)
+        self.assertEqual(len(backend.calls), 6)  # Existing Event/Performance/Camera only.
+        performance_calls = [p for task, p in backend.calls if task == "scene-author-performance"]
+        self.assertEqual(performance_calls[1]["previous_scene_state"], state)
+        self.assertEqual(performance_calls[0]["subject_emd"], concept)
+        self.assertEqual(result.content.terminal_states[0][2], state)
+        self.assertTrue(all(text == prose for _, _, text in result.content.actions))
+        self.assertIn(prose, result.emd.text)
+        self.assertNotIn("END_STATE", result.emd.text)
+
+    def test_fixed_prop_hold_is_not_reopened_or_rewritten(self):
+        source = TEMPLATE.replace("人物が片手を胸元に置く。", "右手の小道具を握り続ける。")
+        backend = Backend()
+        result = plan_timeline(
+            backend, template_emd=source, concept_emd=CONCEPT,
+            direction=DirectionArtifact(motion_profile_id="anime_scene_author_mv"),
+            lip_sync_mode="off", lip_sync_target="サブジェクト1", lip_sync_audio_slot=1,
+            system_prompts=_system_prompts(), runtime_config=_runtime())
+        self.assertTrue(result.complete)
+        request = next(p for task, p in backend.calls if task == "scene-author-performance")
+        self.assertEqual(request["fixed_performances"], {"1": "右手の小道具を握り続ける。"})
+        self.assertEqual([s["shot"] for s in request["slots"]], [2])
+        self.assertIn("* `演技` 右手の小道具を握り続ける。", result.emd.text)
+
     def test_full_author_emd_bypasses_model_selection(self):
         from unittest.mock import patch
         from nodes.node_timeline_planner.node import MVDirectorTimelinePlanner
