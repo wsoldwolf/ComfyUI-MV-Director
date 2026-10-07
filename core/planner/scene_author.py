@@ -25,6 +25,8 @@ from .camera_continuity import arc_directions, inspect_arc_sequence
 from .requests import request_entities
 from .types import PlannerContent, PlannerEntity
 from .mouth_performance import mouth_scene_payload
+from .prop_inventory import request_prop_inventory
+from .prop_decision import request_prop_decisions
 
 
 _LOGGER = logging.getLogger("mv_director.nodes")
@@ -86,6 +88,7 @@ def _reselect_composition(
     action_texts: Mapping[int, str], camera_texts: Mapping[int, str],
     system_prompt: str, runtime_config: LlamaRuntimeConfig,
     interrupt_callback: Any,
+    prop_context: Mapping[str, object] | None = None,
 ) -> tuple[int, int, str, int, str]:
     """Retry malformed choices once; never delete a scheduled composition."""
     profile = direction.motion_policy_profile_id or direction.motion_profile_id
@@ -115,6 +118,8 @@ def _reselect_composition(
         "current_choice": composition[3],
         "candidates": {str(index): value for index, value in enumerate(templates, 1)},
     }
+    if prop_context:
+        request.update(prop_context)
     for attempt in range(2):
         if interrupt_callback is not None:
             interrupt_callback()
@@ -240,6 +245,39 @@ def generate_scene_author_content(
     previous_terminal: dict[str, str] = {}
     previous_arc_direction: str | None = None
     section_contexts = section_context_by_scene(template)
+    previous_prop_state: object = ""
+    inventory = ()
+    prop_prompts_enabled = all(system_prompts.get(key, "").strip() for key in (
+        "subject-prop-inventory", "scene-author-prop-decision", "prop-performance-addendum",
+    ))
+    if prop_prompts_enabled and any(
+        not _fixed(shot, "演技") for scene in template.scenes for shot in scene.shots
+    ):
+        first = template.scenes[0]
+        inventory_result = request_prop_inventory(
+            backend, subject_emd=concept_emd,
+            fixed_boundary={str(i): _fixed(shot, "演技")
+                            for i, shot in enumerate(first.shots, 1)
+                            if _fixed(shot, "演技")},
+            scene_number=first.scene_number,
+            system_prompt=system_prompts["subject-prop-inventory"],
+            runtime_config=runtime_config, interrupt_callback=interrupt_callback,
+        )
+        inventory = inventory_result.props
+        _LOGGER.log(
+            logging.INFO if inventory_result.status == "transport_valid" else logging.WARNING,
+            "[MV Director - Timeline Planner] prop inventory completed; status=%s; "
+            "props=%d; attempts=%d", inventory_result.status, len(inventory),
+            inventory_result.attempts,
+        )
+    # The inventory may be empty. Refine the progress estimate rather than
+    # counting skipped Scene decisions as completed inference calls.
+    configure_prop_progress = getattr(backend, "configure_prop_progress", None)
+    if prop_prompts_enabled and configure_prop_progress is not None:
+        configure_prop_progress(sum(
+            any(not _fixed(shot, "演技") for shot in scene.shots)
+            for scene in template.scenes
+        ) if inventory else 0)
     for scene in template.scenes:
         if interrupt_callback is not None:
             interrupt_callback()
@@ -365,6 +403,49 @@ def generate_scene_author_content(
                 "shot": composition[1], "source": composition[2],
                 "template": composition[3], "text": composition[4],
             }
+        prop_decisions = {}
+        if inventory and pending_actions:
+            prop_request = {
+                **shared,
+                "prop_inventory": list(inventory),
+                "fixed_performances": {str(i): v for i, v in fixed_actions.items()},
+                "previous_prop_state": previous_prop_state if scene.continuation else "",
+                "previous_scene_state": (
+                    previous_terminal.get("performance", "") if scene.continuation else ""
+                ),
+                "scene_motion": list(direction.motion_direction),
+                "scene_other": list(direction.other_direction),
+                "staging_candidates_optional": list(direction.staging_candidates),
+            }
+            if composition:
+                # Post-author supplements are advisory here, not silently
+                # moved into Performance. Their later selection also sees
+                # the accepted holding plan.
+                prop_request["planned_motion_composition"] = {
+                    "shot": composition[1], "text": composition[4],
+                    "timing": composition_timing,
+                }
+            decision_result = request_prop_decisions(
+                backend, shared=prop_request,
+                system_prompt=system_prompts["scene-author-prop-decision"],
+                runtime_config=runtime_config, interrupt_callback=interrupt_callback,
+            )
+            prop_decisions = dict(decision_result.decisions)
+            _LOGGER.log(
+                logging.INFO if decision_result.status == "transport_valid" else logging.WARNING,
+                "[MV Director - Timeline Planner] prop decisions completed; scene=%d; "
+                "status=%s; attempts=%d; fallback=%s", scene.scene_number,
+                decision_result.status, decision_result.attempts,
+                "none" if prop_decisions else "existing_authorship",
+            )
+            if prop_decisions:
+                shared["prop_inventory"] = list(inventory)
+                shared["accepted_prop_decisions"] = {
+                    str(i): value for i, value in prop_decisions.items()
+                }
+        performance_prompt = prompts["performance"]
+        if prop_decisions:
+            performance_prompt += "\n" + system_prompts["prop-performance-addendum"]
         if pending_actions:
             result, issues, retries, missing, recovered = request_entities(
                 backend,
@@ -391,7 +472,7 @@ def generate_scene_author_content(
                         previous_terminal.get("performance", "") if scene.continuation else ""
                     ),
                 },
-                system_prompt=prompts["performance"],
+                system_prompt=performance_prompt,
                 runtime_config=runtime_config,
                 interrupt_callback=interrupt_callback,
             )
@@ -533,9 +614,13 @@ def generate_scene_author_content(
                     system_prompt=system_prompts["scene-author-composition-choice"],
                     runtime_config=runtime_config,
                     interrupt_callback=interrupt_callback,
+                    prop_context={key: shared[key] for key in (
+                        "prop_inventory", "accepted_prop_decisions",
+                    ) if key in shared},
                 )
             motion_compositions.append(composition)
         last = len(scene.shots)
+        previous_prop_state = prop_decisions.get(last, {}).get("end_state", "")
         previous_terminal = {
             "event": event_states.get(last, ""),
             "performance": action_states.get(last, "") if pending_actions else "",

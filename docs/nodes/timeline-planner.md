@@ -8,6 +8,12 @@
 2. PerformanceがEventと現在歌詞に対応する身体・表情の演技を計画します。
 3. CameraがEventと演技を読んで撮影を計画します。
 
+自動演技を生成する場合、Subjectから携行物の一覧をLLMが一度抽出します。携行物があるSceneでは、Eventの後・Performanceの前に、各Shotの所在、左右の手の占有、移行と両立する演技を計画します。PerformanceとCamera、後段補完の候補再選択へ同じ保持計画を渡します。剣・盾などの名詞辞書や、Pythonによる収納・持ち替え文の合成は使いません。
+
+この計画は作者固定の演技・Cameraを変更しません。保持計画の終端は継続Sceneだけに渡し、映像の観測済み状態とは区別します。携行物のない入力ではSceneごとの保持推論を省略し、全ての演技が作者固定なら一覧抽出も省略します。
+
+一覧抽出と保持計画はそれぞれ最大2回の形式回復に限定します。取得できなければWARNINGを残して既存の演技生成へ戻り、新しい意味監査や停止条件にはしません。コンテキストに追加情報が収まらない場合も保持計画を省略でき、作者固定指示と現在Shotの必須内容は残します。構造検査は全携行物IDの受け渡しを確認するもので、H3映像の物理的一致を保証するものではありません。新経路の反映にはPlannerの再実行が必要です。
+
 各要求はScene内の対象Shotをまとめて扱います。元TemplateのScene/Shot時刻と継続指定を保持し、歌詞sectionを読み取り文脈として渡します。歌詞区間全体を現在Sceneへ描写する義務は作りません。
 
 Shotへ直接書いた`演出`、`演技`、`カメラ`は固定し、そのfieldの生成を省略します。ラベルなし作者本文も保持します。完成`# サブジェクト`から始まる全文EMDは検証後に生成を省略できます。Compilerへの直接接続も可能です。
@@ -71,6 +77,6 @@ lip_sync_modeはoff / context_loop / audio_reference / lyrics。対象と音声s
 
 contextは実効値と出力予約・安全余白から事前検査します。履歴を縮小し、必要なら同じSceneのslotを分割します。必須の固定指示・現在slot内容を削除して成功扱いにはしません。
 
-進捗は必要なEvent / Performance / Camera / 補完再選択の主呼出し数とモデル準備を基準にします。retry、cache、モデルload時間により実時間との比例は保証しません。`save_debug_output=true`ではtask、要求payload、応答等を保存します。
+進捗は必要なEvent / Performance / Camera / 補完再選択、携行物一覧と保持計画の主呼出し数とモデル準備を基準にします。一覧が空なら保持計画の予定数を減らします。retry、cache、モデルload時間により実時間との比例は保証しません。`save_debug_output=true`ではtask、要求payload、応答等を保存します。一覧と保持計画は文法付きで推論し、形式失敗・コンテキストによる省略もログに残ります。
 
 [EMD仕様](../spec/emd-spec.md)／[処理フロー](../architecture/direction-planner-flow.md)／[profile仕様](../../profiles/README.md)

@@ -16,7 +16,7 @@ from .template import (
 from .types import PlannerContent, TimelinePlannerBackend, TimelinePlannerResult
 from .mouth_performance import plan_mouth_performances
 
-PLANNER_ALGORITHM_VERSION = "mvd-scene-author-v3-mouth-performance"
+PLANNER_ALGORITHM_VERSION = "mvd-scene-author-v4-prop-holding"
 
 
 def generate_planner_content(

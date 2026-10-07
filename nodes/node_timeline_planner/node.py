@@ -18,6 +18,7 @@ try:
     from ...core.artifacts import DirectionArtifact, EMDTextArtifact, normalize_newlines, sha256_text
     from ...core.inference import (
         LlamaCppLifecycle,
+        ContextBudgetError,
         LlamaRuntimeConfig,
         SuccessCache,
         build_cache_key,
@@ -34,6 +35,8 @@ try:
     )
     from ...core.planner.scene_author import build_scene_author_grammar, build_composition_choice_grammar, count_motion_composition_choices
     from ...core.planner.requests import normalize_record_response
+    from ...core.planner.prop_inventory import build_prop_inventory_grammar
+    from ...core.planner.prop_decision import build_prop_decision_grammar
     from ...core.protocols import parse_llm_records
 except ImportError:  # Standalone repository tests.
     from core.direction.profiles import planner_profile_metadata
@@ -41,6 +44,7 @@ except ImportError:  # Standalone repository tests.
     from core.artifacts import DirectionArtifact, EMDTextArtifact, normalize_newlines, sha256_text
     from core.inference import (
         LlamaCppLifecycle,
+        ContextBudgetError,
         LlamaRuntimeConfig,
         SuccessCache,
         build_cache_key,
@@ -57,6 +61,8 @@ except ImportError:  # Standalone repository tests.
     )
     from core.planner.scene_author import build_scene_author_grammar, build_composition_choice_grammar, count_motion_composition_choices
     from core.planner.requests import normalize_record_response
+    from core.planner.prop_inventory import build_prop_inventory_grammar
+    from core.planner.prop_decision import build_prop_decision_grammar
     from core.protocols import parse_llm_records
 
 from ..common import gguf_model_choices, resolve_comfy_gguf_model
@@ -84,6 +90,11 @@ _SCENE_AUTHOR_RECORD_TYPES = {
     "scene-author-event": "EVENT",
     "scene-author-performance": "PERFORMANCE",
     "scene-author-camera": "CAMERA",
+}
+_PROP_PROMPT_FILES = {
+    "subject-prop-inventory": "timeline_planner_prop_inventory_system_prompt.txt",
+    "scene-author-prop-decision": "timeline_planner_prop_decision_system_prompt.txt",
+    "prop-performance-addendum": "timeline_planner_prop_performance_addendum.txt",
 }
 _PLANNER_TRANSPORT_CONSTRAINED = "grammar_v1"
 _PLANNER_TRANSPORT_26B_FAST = "26b_iq2_m_unconstrained_first_v1"
@@ -129,11 +140,13 @@ def _protocol_issue_shapes(response: str, issues: tuple[Any, ...]) -> str:
     return ",".join(shapes)
 
 
-def _system_prompts() -> dict[str, str]:
+def _system_prompts(*, prop_holding: bool = False) -> dict[str, str]:
     root = Path(__file__).resolve().parents[2] / "prompts"
     result = {
         task: (root / filename).read_text(encoding="utf-8").rstrip() + "\n"
-        for task, filename in _PROMPT_FILES.items()
+        for task, filename in {
+            **_PROMPT_FILES, **(_PROP_PROMPT_FILES if prop_holding else {}),
+        }.items()
     }
     if any(not value.strip() for value in result.values()):
         raise RuntimeError("Timeline Planner system prompt is empty")
@@ -197,6 +210,11 @@ class _LlamaPlannerBackend:
         )
         configure_node_progress(sum(self._expected_primary_calls.values()) + 1)
 
+    def configure_prop_progress(self, decision_count: int) -> None:
+        """Refine the estimate once the once-per-plan inventory is known."""
+        self._expected_primary_calls["scene-author-prop-decision"] = decision_count
+        configure_node_progress(sum(self._expected_primary_calls.values()) + 1)
+
     @staticmethod
     def _request_summary(payload: str) -> tuple[int, str, str]:
         try:
@@ -250,6 +268,7 @@ class _LlamaPlannerBackend:
         model_payload = f"/no_think\n{payload}"
         grammar_kwargs: dict[str, str] = {}
         scene_author_stage = task in _SCENE_AUTHOR_RECORD_TYPES
+        prop_stage = task in {"subject-prop-inventory", "scene-author-prop-decision"}
         if scene_author_stage:
             request = json.loads(payload)
             grammar_kwargs["grammar"] = build_scene_author_grammar(
@@ -261,6 +280,13 @@ class _LlamaPlannerBackend:
                 "scene-author-camera": 1024,
             }[task]
             config = replace(config, max_tokens=min(config.max_tokens, output_cap))
+        if prop_stage:
+            request = json.loads(payload)
+            grammar_kwargs["grammar"] = (
+                build_prop_inventory_grammar() if task == "subject-prop-inventory"
+                else build_prop_decision_grammar(request["slots"])
+            )
+            config = replace(config, max_tokens=min(config.max_tokens, 1536))
         if task == "scene-author-composition-choice":
             request = json.loads(payload)
             grammar_kwargs["grammar"] = build_composition_choice_grammar(
@@ -272,7 +298,7 @@ class _LlamaPlannerBackend:
                 "scene=%d; candidates=%d",
                 request["scene"], len(request["candidates"]),
             )
-        if not scene_author_stage and task != "scene-author-composition-choice":
+        if not scene_author_stage and not prop_stage and task != "scene-author-composition-choice":
             raise ValueError(f"unsupported Planner task: {task}")
         count = self.lifecycle.count_serialized_prompt(system_prompt + "\n" + model_payload)
         slot_count, scene_label, retry_label = self._request_summary(payload)
@@ -283,7 +309,7 @@ class _LlamaPlannerBackend:
             )
             and retry_label == "no"
         )
-        if scene_author_stage:
+        if scene_author_stage or prop_stage:
             _LOGGER.info(
                 "[MV Director - Timeline Planner] output protocol=scene_author_v1; "
                 "task=%s; slots=%d; sampling=%s",
@@ -291,19 +317,45 @@ class _LlamaPlannerBackend:
                 "unconstrained_first" if unconstrained_first else "grammar",
             )
         # Keep the same output budget regardless of the transport sampler.
-        if scene_author_stage:
+        if scene_author_stage or prop_stage:
             minimum_output = min(config.max_tokens, max(512, 384 * slot_count))
         else:
             minimum_output = min(config.max_tokens, max(
                 256 * max(1, slot_count), (config.max_tokens * 3 + 3) // 4,
             ))
-        budget = fit_context_budget(
-            count.count,
-            config.max_tokens,
-            self.lifecycle.effective_n_ctx or config.n_ctx,
-            minimum_output_tokens=minimum_output,
-            estimated=count.estimated,
-        )
+        budget_debug: dict[str, str] = {}
+        try:
+            budget = fit_context_budget(
+                count.count, config.max_tokens,
+                self.lifecycle.effective_n_ctx or config.n_ctx,
+                minimum_output_tokens=minimum_output, estimated=count.estimated,
+            )
+        except ContextBudgetError:
+            # The holding plan is advisory. Do not let its addition make a
+            # formerly runnable author request stall, or discard user fields.
+            if (not (scene_author_stage or task == "scene-author-composition-choice")
+                    or "accepted_prop_decisions" not in request):
+                raise
+            budget_debug["requested_payload"] = payload
+            request = {k: v for k, v in request.items()
+                       if k not in {"prop_inventory", "accepted_prop_decisions"}}
+            if task == "scene-author-performance":
+                addendum = _system_prompts(prop_holding=True)["prop-performance-addendum"]
+                if system_prompt.endswith(addendum):
+                    system_prompt = system_prompt[:-len(addendum)].rstrip("\n")
+            payload = json.dumps(request, ensure_ascii=False, separators=(",", ":"))
+            model_payload = f"/no_think\n{payload}"
+            count = self.lifecycle.count_serialized_prompt(system_prompt + "\n" + model_payload)
+            _LOGGER.warning(
+                "[MV Director - Timeline Planner] prop context omitted; task=%s; "
+                "scenes=%s; reason=context_budget; author fields retained", task, scene_label,
+            )
+            budget_debug["prop_context_fallback"] = "context_budget"
+            budget = fit_context_budget(
+                count.count, config.max_tokens,
+                self.lifecycle.effective_n_ctx or config.n_ctx,
+                minimum_output_tokens=minimum_output, estimated=count.estimated,
+            )
         if budget.reserved_output_tokens != config.max_tokens:
             _LOGGER.info(
                 "[MV Director - Timeline Planner] context output fitted; task=%s; "
@@ -428,7 +480,7 @@ class _LlamaPlannerBackend:
         )
         self.trace.append({
             "task": task, "payload": payload, "response": response,
-            **transport_debug,
+            **transport_debug, **budget_debug,
         })
         advance_progress()
         return response
@@ -613,7 +665,7 @@ class MVDirectorTimelinePlanner:
                     direction=selected_direction,
                     lip_sync_mode=lip_sync_mode,
                     lip_sync_target=lip_sync_target,
-                    system_prompts=_system_prompts(),
+                    system_prompts=_system_prompts(prop_holding=True),
                     runtime_config=config,
                     staging_candidate_policy=staging_candidate_policy,
                     interrupt_callback=_interrupt,
@@ -630,7 +682,10 @@ class MVDirectorTimelinePlanner:
             selection = model_name_override.strip() or model_name
             model = resolve_comfy_gguf_model(selection)
             self._backend.transport_policy = _planner_transport_policy(model.selection_id)
-            prompts = _system_prompts()
+            prompts = _system_prompts(prop_holding=True)
+            if author_counts["scene-author-performance"]:
+                author_counts["subject-prop-inventory"] = 1
+                author_counts["scene-author-prop-decision"] = author_counts["scene-author-performance"]
             if planner_profile_metadata(
                 selected_direction.camera_profile_id,
                 selected_direction.motion_policy_profile_id
