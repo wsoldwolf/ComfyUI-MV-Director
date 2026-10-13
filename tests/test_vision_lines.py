@@ -107,6 +107,30 @@ class VisionLineProtocolTests(unittest.TestCase):
         self.assertEqual(feature.visibility, "clear")
         self.assertTrue(any("missing END" in item for item in result.warnings))
 
+    def test_prompt_records_face_coverings_without_default_anatomy(self) -> None:
+        prompt = (Path(__file__).parents[1] / "prompts" / "vision_observation_system_prompt.txt").read_text(encoding="utf-8")
+        self.assertIn("intentionally featureless surface", prompt)
+        self.assertIn("Record head and face coverings", prompt)
+        self.assertIn("shallow facial contours beneath a", prompt)
+        self.assertIn("continuous covered surface", prompt)
+        self.assertIn("report UNCERTAINTY instead of guessing the construction", prompt)
+
+    def test_covered_face_observations_survive_subject_rendering(self) -> None:
+        source = FIXTURE.read_text(encoding="utf-8")
+        source = "\n".join(line for line in source.splitlines() if not line.startswith("SUBJECT_FEATURE\t"))
+        source = source.replace("PRIMARY_SUBJECT\t長い黒髪の人物", "PRIMARY_SUBJECT\t人物")
+        face = "顔面は赤色の連続した被覆面で、顔の輪郭が浅く浮き出ている。"
+        clothing = "頭部から足先まで赤い全身スーツで覆われ、胴と四肢に黒い曲線模様がある。"
+        source = source.replace("SUBJECT_POSE\t", f"SUBJECT_FEATURE\tface\t{face}\nSUBJECT_FEATURE\tclothing\t{clothing}\nSUBJECT_POSE\t")
+        result = render_subject_emd(
+            parse_vision_observations(source).observations,
+            concept_type="person", picture_index=1,
+        )
+        self.assertIn(face, result.emd_fragment)
+        self.assertIn(clothing, result.emd_fragment)
+        for invented in ("動物耳", "尻尾", "瞳", "黒髪"):
+            self.assertNotIn(invented, result.emd_fragment)
+
     def test_missing_protocol_header_is_restored_only_before_overview(self) -> None:
         source = FIXTURE.read_text(encoding="utf-8").replace(
             "MVD_VISION_OBSERVATION_LINES_V2\n", "", 1

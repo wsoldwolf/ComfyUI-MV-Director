@@ -78,7 +78,9 @@ DirectionはCompiler後の全Scene `prompt_prefix`へ共通適用されます。
 
 ## 保持方針とpass-through
 
-画風変換時は「参照の媒体表現まで保持する」と「別媒体として描き直す」が矛盾しやすいため、`retention_policy=profile`を基準にします。`illust_to_photoreal`は髪色、瞳色、衣装、配色、装飾等の識別要素を保持しつつ、物理的な実写表現へ変換します。
+画風変換時は「参照の媒体表現まで保持する」と「別媒体として描き直す」が矛盾しやすいため、`retention_policy=profile`を基準にします。`illust_to_photoreal`は各Subjectと参照画像にある形状、顔面の被覆、衣装、配色、装飾等の識別要素を保持しつつ、材質・照明・レンズ表現を物理的な実写表現へ変換します。通常の人間の顔や露出した身体、特定の動物部位を一律に追加するプロファイルではありません。顔まで覆う全身スーツ等は、被覆面自体をSubjectの特徴として記述してください。
+
+プロファイル変更後はComfyUIを再起動し、01_ WFでEMDとPlanを再生成してください。既存Planの`prompt_prefix`は更新されません。顔を覆ったまま身体演技を見せる用途では、歌唱口の可視性と競合しないようPlannerの`lip_sync_mode=off`も検討してください。これは今回の生成設定の選択であり、一般の歌唱MVのリップシンクを無効化する変更ではありません。
 
 ユーザーが全体方針を直接管理したい場合は、各profileを`passthrough`にして`direction_emd_passthrough`を接続します。pass-through本文はLLMによる言い換えを避けたい用途に使います。
 

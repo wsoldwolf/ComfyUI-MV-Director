@@ -226,10 +226,15 @@ class DirectionEnhancerTests(unittest.TestCase):
             )
         )
         self.assertIn("real human actors", style)
-        self.assertIn("natural facial bone structure", style)
-        self.assertIn("typical human eye proportions", style)
-        self.assertIn("skin visible with pores and fine hairs", style)
-        self.assertIn("actual physical materials", style)
+        self.assertIn("physical costumes", style)
+        self.assertIn("defined shape, head silhouette, facial surface, body covering", style)
+        self.assertIn("connected identity references determine which features are present", style)
+        self.assertIn("keep covered surfaces continuous", style)
+        for imposed_feature in (
+            "natural facial bone structure", "typical human eye proportions",
+            "skin visible with pores and fine hairs", "Animal ears and tails",
+        ):
+            self.assertNotIn(imposed_feature, style)
         self.assertTrue(payload["profiles"]["style"]["locked"])
         for source_medium_term in ("アニメ", "イラスト", "セル影", "線画", "保持しない"):
             self.assertNotIn(source_medium_term, style)
@@ -371,7 +376,8 @@ class DirectionEnhancerTests(unittest.TestCase):
         self.assertFalse(payload["profiles"]["style"]["locked"])
         self.assertEqual(
             payload["profiles"]["style"]["text"],
-            "参照画像の人物設計を保ち、自然な皮膚・布・材質、映画照明、"
+            "参照画像の人物設計、顔面の形状と被覆、衣装及び配色を保ち、"
+            "実際に見えている材質を自然な質感、映画照明、"
             "レンズによる奥行きで実写映画として描く。",
         )
 
@@ -729,7 +735,7 @@ class DirectionEnhancerTests(unittest.TestCase):
             self.assertNotIn(animation_term, cinema_motion)
         self.assertIn("移動が不要なら静止構図", CAMERA_PROFILES["cinema_mv"])
         self.assertIn("reference_anime", STYLE_PROFILES)
-        self.assertIn("動物耳、耳内部、尾", STYLE_PROFILES["anime_story_mv"])
+        self.assertIn("Subject定義と参照画像にある身体表面", STYLE_PROFILES["anime_story_mv"])
         self.assertIn("局所的なglow、bloom", STYLE_PROFILES["anime_story_mv"])
         self.assertIn("古傷", STYLE_PROFILES["anime_story_mv"])
         self.assertIn("完成EMDのShotが可視の状態として明示", STYLE_PROFILES["anime_story_mv"])
@@ -741,11 +747,11 @@ class DirectionEnhancerTests(unittest.TestCase):
             CAMERA_PROFILES["anime_emotional_mv"],
         )
         self.assertIn(
-            "つま先は親指側と残り四趾側の二つの連続した布形状",
+            "衣装及び履物の形、配色、材質、被覆範囲と装着関係を保つ",
             STYLE_PROFILES["anime_emotional_mv"],
         )
         self.assertIn(
-            "滑らかで不透明な白いsplit-toe足袋",
+            "指定された素材の連続した表面",
             STYLE_PROFILES["anime_emotional_mv"],
         )
         self.assertIn("単なる歩行", MOTION_PROFILES["anime_emotional_mv"])

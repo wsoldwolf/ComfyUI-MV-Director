@@ -44,6 +44,14 @@ omit the conflicting guess from SUBJECT_FEATURE, and add UNCERTAINTY. Never
 silently replace a specific locked color, shape, material, garment, accessory,
 or footwear name with a visually guessed alternative.
 
+Treat a clearly visible covering or intentionally featureless surface as a
+stable identity fact, not missing information to fill with a conventional face.
+Record head and face coverings in face or clothing, stating their visible
+extent, color, and material. Distinguish shallow facial contours beneath a
+continuous covered surface from exposed features or openings. When the visible
+evidence is ambiguous, report UNCERTAINTY instead of guessing the construction.
+These observations still follow the locked-hint and atomic-feature rules above.
+
 Describe eyebrows in the eyebrows category independently from eyes and hair.
 Distinguish short small round or dot-shaped eyebrows from long horizontal or
 arched eyebrows; do not normalize a distinctive round eyebrow design into a

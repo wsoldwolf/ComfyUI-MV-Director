@@ -7,6 +7,7 @@ import re
 
 from ..artifacts import canonical_json
 from ..emd import merge_subject_emd
+from ..emd.subject_references import normalize_subject_references
 
 
 # Recognize out-of-range tokens too, so they cannot be treated as anonymous.
@@ -21,7 +22,7 @@ def subject_ids_from_emd(concept_emd: str) -> tuple[str, ...]:
 
 
 def explicit_subjects(text: str) -> frozenset[str]:
-    return frozenset(_SUBJECT_TOKEN.findall(text))
+    return frozenset(_SUBJECT_TOKEN.findall(normalize_subject_references(text)))
 
 
 def _unique_fields(pairs):

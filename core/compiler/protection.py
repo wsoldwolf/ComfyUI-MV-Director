@@ -11,6 +11,7 @@ import re
 from dataclasses import dataclass
 
 from ..emd.ast import Subject
+from ..emd.subject_references import normalize_subject_references
 from ..h3_contract import (
     ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA,
     ANIME_EMOTIONAL_FACE_PERFORMANCE_CUT_CAMERA_H3,
@@ -146,6 +147,7 @@ class ProtectedUnit:
 
 
 def protect_unit(text: str, subjects: tuple[Subject, ...]) -> ProtectedUnit:
+    text = normalize_subject_references(text)
     renderer_directive = _RENDERER_DIRECTIVE_MAP.get(text)
     if renderer_directive is not None:
         return ProtectedUnit(("", ""), (renderer_directive,))

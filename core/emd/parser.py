@@ -24,6 +24,7 @@ from .errors import EMDParseError
 from .audio_activity import AudioActivity, ActivityRange, ReferenceCopy
 from .common import COMMON_HEADINGS, split_shot_directive
 from .scene_fragment import SceneEMDFragmentError, parse_scene_emd_fragment
+from .subject_references import normalize_subject_references
 
 
 _TIME_RE = re.compile(r"([0-9]{2,}):([0-5][0-9])\.([0-9]{3})\Z")
@@ -474,11 +475,11 @@ class _Parser:
                         self.take()
                         continue
                     if body_line.text.startswith("* "):
-                        text = body_line.text[2:]
+                        text = normalize_subject_references(body_line.text[2:])
                         typed = split_shot_directive(text)
                         if (
-                            _RESERVED_LIST_RE.match(body_line.text)
-                            and not _SHOT_CONCEPT_START_RE.match(body_line.text)
+                            _RESERVED_LIST_RE.match("* " + text)
+                            and not _SHOT_CONCEPT_START_RE.match("* " + text)
                             and typed is None
                         ):
                             raise EMDParseError(
