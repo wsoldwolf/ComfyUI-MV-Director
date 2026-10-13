@@ -503,7 +503,7 @@ class DistributableWorkflowTests(unittest.TestCase):
                 self.assertEqual(len((output_dir / plan_name).read_text(encoding="utf-8").splitlines()), 1)
                 self.assertEqual((output_dir / video_name).read_bytes(), original_video[video_name])
 
-    def test_six_base_workflows_and_four_variants_are_present(self) -> None:
+    def test_distributable_workflow_inventory(self) -> None:
         actual = {
             path.name
             for path in WORKFLOWS.glob("*.json")
@@ -513,6 +513,7 @@ class DistributableWorkflowTests(unittest.TestCase):
         expected.add(PLAN_26B_IQ2_M_FILENAME)
         expected.add(PLAN_26B_IQ2_M_29GPU_FILENAME)
         expected.add(PLAN_26B_IQ2_M_30GPU_FILENAME)
+        expected.update("_4subject_" + name for pair in FILES.values() for name in pair)
         self.assertEqual(actual, expected)
         self.assertEqual(list((WORKFLOWS / "development").glob("*.json")), [])
 

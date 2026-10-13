@@ -527,7 +527,7 @@ class DirectionEnhancerTests(unittest.TestCase):
             "nodes.node_direction_enhancer.node.resolve_comfy_gguf_model",
             side_effect=AssertionError("the author owns all selected profile fields"),
         ):
-            direction, _preview, status = node.enhance(
+            direction, _preview, status, _subjects = node.enhance(
                 user_request=source,
                 style_profile="anime_emotional_mv",
                 motion_profile="anime_emotional_mv",
@@ -577,7 +577,7 @@ class DirectionEnhancerTests(unittest.TestCase):
             "nodes.node_direction_enhancer.node.resolve_comfy_gguf_model",
             side_effect=AssertionError("model resolution must be skipped"),
         ):
-            direction, preview, status = node.enhance(
+            direction, preview, status, _subjects = node.enhance(
                 user_request="",
                 style_profile=PASSTHROUGH_PROFILE,
                 motion_profile=PASSTHROUGH_PROFILE,

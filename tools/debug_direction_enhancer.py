@@ -65,9 +65,10 @@ def main() -> None:
     started = time.monotonic()
     try:
         with patch.object(direction_node, "resolve_comfy_gguf_model", resolve):
-            result, preview, status = instance.enhance(**inputs)
+            result, preview, status, subjects_emd = instance.enhance(**inputs)
         (destination / "direction.json").write_text(json.dumps(result.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8")
         (destination / "preview.md").write_text(preview, encoding="utf-8")
+        (destination / "subjects.md").write_text(subjects_emd, encoding="utf-8")
         summary = {"status": status, "elapsed_seconds": time.monotonic() - started,
                    "model": str(resolve(inputs["model_name"]).path), "calls": len(calls),
                    "vision_inputs": "saved fragments; Vision was not re-run",

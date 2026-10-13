@@ -24,6 +24,8 @@ from ..h3_contract import (
 
 from .protection import protect_unit
 from .translator import PromptTranslator, translate_exact
+from .whole_field import needs_relation_translation
+from .errors import CompilerError
 
 
 _TRANSLATION_REQUIRED_RE = re.compile(
@@ -97,6 +99,7 @@ class _TranslationTable:
 
         protected = [protect_unit(text, self.document.subjects) for text in units]
         translated_fragments: dict[int, dict[int, str]] = {}
+        translated_fields: dict[int, str] = {}
         required_fields = sum(
             any(_TRANSLATION_REQUIRED_RE.search(fragment) for fragment in item.fragments)
             for item in protected
@@ -116,21 +119,32 @@ class _TranslationTable:
             digest = hashlib.sha256(units[unit_index].encode("utf-8")).hexdigest()
             _LOGGER.info("[MV Director - EMD Compiler (Ref2VA)] translation field started; field=%s; source_sha256=%s; fragments=%d",
                          field_id, digest, len(source))
-            translated = translate_exact(self.translator, source)
-            translated_fragments[unit_index] = dict(zip(indices, translated))
-            trace = getattr(self.translator, "record_field_translation", None)
-            if callable(trace):
-                trace(field_id=field_id, source_sha256=digest,
-                      source=units[unit_index], fragment_indices=indices,
-                      fragments=source, translated=translated,
-                      restored=item.restore(translated_fragments[unit_index]))
+            relation_translate = getattr(self.translator, "translate_protected_unit", None)
+            if needs_relation_translation(item) and callable(relation_translate):
+                _LOGGER.info("[MV Director - EMD Compiler (Ref2VA)] intact relation field; field=%s", field_id)
+                restored = relation_translate(item, field_id=field_id,
+                    source_sha256=digest, source=units[unit_index])
+                if not isinstance(restored, str) or not restored.strip():
+                    raise CompilerError("whole-field translator returned empty text")
+                translated_fields[unit_index] = restored
+                output_chars = len(restored)
+            else:
+                translated = translate_exact(self.translator, source)
+                translated_fragments[unit_index] = dict(zip(indices, translated))
+                trace = getattr(self.translator, "record_field_translation", None)
+                if callable(trace):
+                    trace(field_id=field_id, source_sha256=digest,
+                          source=units[unit_index], fragment_indices=indices,
+                          fragments=source, translated=translated,
+                          restored=item.restore(translated_fragments[unit_index]))
+                output_chars = sum(map(len, translated))
             _LOGGER.info("[MV Director - EMD Compiler (Ref2VA)] translation field completed; field=%s; output_chars=%d",
-                         field_id, sum(map(len, translated)))
+                         field_id, output_chars)
             completed_fields += 1
             if self.progress_callback is not None:
                 self.progress_callback(completed_fields, required_fields)
         self._values = {
-            key: item.restore(translated_fragments.get(index))
+            key: translated_fields[index] if index in translated_fields else item.restore(translated_fragments.get(index))
             for index, (key, item) in enumerate(zip(keys, protected))
         }
 
@@ -143,8 +157,8 @@ def _subject_definition(
 ) -> list[str]:
     description = translations.get(f"subject.{index}.description")
     singleton = (
-        " Render exactly one physical instance of this Subject, with one head "
-        "and one body. Never show a duplicate, twin, clone, reflection, "
+        " Render exactly one physical instance of this Subject, preserving its "
+        "described anatomy or structure. Never show a duplicate, twin, clone, reflection, "
         "background lookalike, inset view, split-screen copy, or second "
         "representation of this Subject."
     )

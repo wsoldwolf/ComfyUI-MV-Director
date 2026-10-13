@@ -15,6 +15,7 @@ try:
         compile_ref2va,
     )
     from ...core.emd import parse_emd
+    from ...core.compiler.whole_field import whole_field_prompt
     from ...core.h3_contract import DEFAULT_H3_TIMING_PROFILE, H3TimingProfile
     from ...core.inference import (
         LlamaCppLifecycle,
@@ -31,6 +32,7 @@ except ImportError:  # Standalone repository tests.
         compile_ref2va,
     )
     from core.emd import parse_emd
+    from core.compiler.whole_field import whole_field_prompt
     from core.h3_contract import DEFAULT_H3_TIMING_PROFILE, H3TimingProfile
     from core.inference import (
         LlamaCppLifecycle,
@@ -46,7 +48,7 @@ from ..common.node_progress import advance_progress, configure_progress
 TRANSLATION_MODES = ("ja_to_en", "already_english")
 CHAT_FORMATS = ("auto", "qwen", "gemma")
 CACHE_MODES = ("reuse", "refresh", "disabled")
-_COMPILER_CACHE_VERSION = "mvd-ref2va-compiler-cache-v21-mouth-performance"
+_COMPILER_CACHE_VERSION = "mvd-ref2va-compiler-cache-v24-subject-fields"
 _SYSTEM_PROMPT_PATH = (
     Path(__file__).resolve().parents[2]
     / "prompts"
@@ -249,6 +251,7 @@ class MVDirectorEMDCompiler:
                         "mtime_ns": model.mtime_ns,
                     },
                     "system_prompt_sha256": sha256_text(system_prompt),
+                    "whole_field_prompt_sha256": sha256_text(whole_field_prompt()),
                     "runtime": config.to_dict(),
                 },
             )
@@ -304,6 +307,7 @@ class MVDirectorEMDCompiler:
                     f"protocol_recovered={translator.protocol_recovered_count}; "
                     f"segmented_recovered={translator.segmented_recovered_count}; "
                     f"cleanup_recovered={translator.cleanup_recovered_count}; "
+                    f"whole_fields={translator.whole_field_count}; "
                     f"cache={cache_status(None)}"
                 )
                 return plan_json, result.required_references, status

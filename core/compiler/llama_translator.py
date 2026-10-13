@@ -17,9 +17,10 @@ from ..inference import (
 )
 from ..protocols import parse_llm_records
 from .errors import CompilerError
+from .whole_field import MaskedField, WholeFieldTranslator
 
 
-TRANSLATION_PROMPT_VERSION = "mvd-prompt-translation-ja-en-v15"
+TRANSLATION_PROMPT_VERSION = "mvd-prompt-translation-ja-en-v17-subject-fields"
 TRANSLATION_RECORD_TYPE = "TRANSLATION"
 TRANSLATION_MAX_BATCH_UNITS = 7
 TRANSLATION_RECOVERY_CHUNK_CHARS = 120
@@ -243,7 +244,30 @@ class LlamaPromptTranslator:
         self.protocol_recovered_count = 0
         self.segmented_recovered_count = 0
         self.cleanup_recovered_count = 0
+        self.whole_field_count = 0
         self.translation_trace: list[dict[str, object]] = []
+
+    def translate_protected_unit(
+        self, unit, *, field_id: str, source_sha256: str, source: str,
+    ) -> str:
+        """Keep inter-Subject relations intact; validate before restoring IDs."""
+        translator = WholeFieldTranslator(self.lifecycle,
+            runtime_config=self.runtime_config, interrupt_callback=self.interrupt_callback)
+        try:
+            restored = translator.translate_unit(unit)
+        finally:
+            self.batch_count += translator.batch_count
+            self.estimated_token_batches += translator.estimated_token_batches
+        self.whole_field_count += 1
+        self.protocol_recovered_count += translator.batch_count > 1
+        masked = MaskedField.from_unit(unit)
+        self.translation_trace.append({
+            "field_id": field_id, "source_sha256": source_sha256, "source": source,
+            "strategy": "whole_protected_field", "masked_source": masked.text,
+            "protected_values": list(masked.values), "attempts": translator.trace,
+            "restored": restored,
+        })
+        return restored
 
     def record_field_translation(
         self, *, field_id: str, source_sha256: str, source: str,

@@ -14,7 +14,7 @@ from ..artifacts import (
     normalize_newlines,
     sha256_text,
 )
-from ..emd import parse_scene_emd_fragment, render_scene_emd_fragment
+from ..emd import MergedSubjectEMD, merge_subject_emd, parse_scene_emd_fragment, render_scene_emd_fragment
 from ..emd.motion_templates import split_motion_templates
 from ..inference import LlamaRuntimeConfig
 from ..protocols import LLMRecord, LLMRecordIssue, parse_llm_records
@@ -141,10 +141,16 @@ class DirectionEnhancerInput:
     camera_profile: str = "anime_emotional_mv"
     retention_policy: str = "profile"
     direction_emd_passthrough: str = ""
+    concept_emd_2: str = ""
+    concept_emd_3: str = ""
+    concept_emd_4: str = ""
 
     def validate(self) -> None:
         for name in (
             "concept_emd",
+            "concept_emd_2",
+            "concept_emd_3",
+            "concept_emd_4",
             "scene_emd",
             "user_request",
             "direction_emd_passthrough",
@@ -163,13 +169,7 @@ class DirectionEnhancerInput:
         if self.retention_policy not in RETENTION_POLICIES:
             raise DirectionEnhancerError("unknown retention_policy")
         split_staging_directives(self.normalized_user_request)
-        concept = self.normalized_concept_emd
-        if concept:
-            headings = [line for line in concept.split("\n") if line.startswith("# ")]
-            if headings != ["# サブジェクト"]:
-                raise DirectionEnhancerError(
-                    "concept_emd must be one # サブジェクト fragment"
-                )
+        _ = self.merged_subjects
         if self.normalized_scene_emd:
             try:
                 parse_scene_emd_fragment(self.normalized_scene_emd)
@@ -198,7 +198,25 @@ class DirectionEnhancerInput:
 
     @property
     def normalized_concept_emd(self) -> str:
-        return normalize_newlines(self.concept_emd).strip()
+        return self.merged_subjects.text.strip()
+
+    @property
+    def merged_subjects(self) -> MergedSubjectEMD:
+        try:
+            return merge_subject_emd(
+                self.concept_emd, self.concept_emd_2,
+                self.concept_emd_3, self.concept_emd_4,
+            )
+        except ValueError as exc:
+            raise DirectionEnhancerError(str(exc)) from exc
+
+    @property
+    def subject_inputs(self) -> dict[str, str]:
+        return {
+            name: normalize_newlines(getattr(self, name)).strip()
+            for name in ("concept_emd", "concept_emd_2", "concept_emd_3", "concept_emd_4")
+            if getattr(self, name).strip()
+        }
 
     @property
     def normalized_scene_emd(self) -> str:
@@ -350,8 +368,8 @@ def _input_provenance(value: DirectionEnhancerInput) -> list[ProvenanceRecord]:
     items: list[tuple[str, str, str]] = []
     if value.normalized_user_request:
         items.append(("user", "user_request", value.normalized_user_request))
-    if value.normalized_concept_emd:
-        items.append(("vision", "concept_emd", value.normalized_concept_emd))
+    for name, text in value.subject_inputs.items():
+        items.append(("vision", name, text))
     if value.normalized_scene_emd:
         items.append(("vision", "scene_emd", value.normalized_scene_emd))
     for profile_id, profiles in (

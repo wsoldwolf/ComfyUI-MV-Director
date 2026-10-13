@@ -34,11 +34,26 @@ Arcの明示的な周回方向はCamera本文から別途読み取り、Zoom、P
 |---|---|
 | template_emd | Lyric Segmentationの時間枠と歌詞、又は作者EMD |
 | concept_emd | 人物Visionのemd_fragment |
+| concept_emd_2 / concept_emd_3 / concept_emd_4 | 追加のSubject断片。未接続可、統合後の合計は4 Subjectまで |
 | scene_emd | 背景Visionのemd_fragment |
 | direction | Enhancerのtyped Direction。preview本文は接続しない |
 | model_name_override | モデル選択を文字列で上書きする任意socket |
 
 出力は`emd_text`、typed `emd`、`status`です。背景IMAGEをPlannerへ直接渡しません。同じ背景画像は動画WFのPicture 2へ渡します。
+
+Subjectの入力統合はEnhancerと共通の構造処理を使います。通常はEnhancerの`subjects_emd`を`concept_emd`へ接続することで、両ノードが同じSubject定義を参照できます。Plannerへ最大4断片を直接接続する方法も可能です。空入力を除き、入力順・行順で番号を確定し、説明とメディア参照番号は書き換えません。`lip_sync_target`は統合後の番号を指定してください。対応はINFO／statusの`subject_map`と、`save_debug_output=true`のdebug JSONで確認できます。
+
+全文の作者EMDを`template_emd`へ渡した場合は、そのSubject定義が優先されます。別途接続したSubject入力は追記せず、無視した旨をWARNING／statusへ記録します。入力統合と下記の人物別処理はCPU検証済みです。2026-10-13にはGemma4 31B Q4_K_Sで4 Subject・2 Sceneの実推論と単一Subjectの対照推論も完了しました。人物別の演技対象・手の計画・継続状態を取得し、Compilerでは複数Subject関係文の全文英訳を追加しました。配布Plan WFはEnhancerの統合出力を受ける接続へ同期済みです。人物四人の同時演技や、英文の意味・映像品質全体を保証する検証ではありません。
+
+### 演技対象と人物別の状態
+
+Subjectが複数の場合、既存のPerformance要求へ定義済みIDを渡します。応答の任意輸送metadata `PERFORMER=サブジェクトN`は各Shotの主な演技者を示し、`END_STATE`は状態が変わった人物をキーにした短いJSONになります。複数人物の同時演技を禁止する指定ではなく、主役と相手の動きを本文で区別するための情報です。物体・場所を一律に人物として踊らせず、全Subjectの同時登場も要求しません。
+
+CameraへはShot別の演技者IDと演技本文を渡します。対象IDが本文にない生成演技には、PythonがそのIDだけを前置します。動作の意味は書き換えません。metadataは完成EMDの演技本文へ流さず、`save_debug_output=true`の生成内容では`performance_subjects`として確認できます。口元・リップシンク対象は独立したIDのままで、主な演技者へ自動変更しません。
+
+人物別の終端状態は継続Sceneへだけ渡し、CUTでは消去します。新しい演技や作者固定の境界から有効な終端状態を取得できなければ、古い姿勢を確定情報として残しません。演技者metadataが不明でも本文生成は停止せず、本文中に一意の明示Subject IDがある場合だけ構造的に補います。名前や名詞の辞書による人物推定、新しい人物別LLM段階は追加しません。
+
+携行物の一覧は各物の初期所有者をSubject IDで区別します。同じ名前でも所有者が異なれば別の携行物IDです。複数Subjectでは左右の手・移行・演技範囲を初期所有者ID別のJSONで受け取り、所在・終端は引き続き携行物ID別に保持します。場所などのSubjectへ自動で手の計画を作りません。受け渡しはLLMが双方と順序を本文に明記する方式で、Pythonが映像や意味を検証するものではありません。形式が回復できなければ保持計画だけを省略し、通常の演技生成へ戻ります。
 
 ## 演出候補と補完
 
@@ -51,9 +66,9 @@ Enhancerの`user_request`に`# 演出候補`を記述します。最大12件、�
 
 採用条件と運用上の注意は[TIPS：演出候補が採用される条件](../tips/staging-candidate-selection.md)を参照してください。
 
-`# モーション補完`は候補とは別の明示合成です。リスト省略はprofileを継承、空リストは無効、非空リストは全候補置換となります。単一人物、作者演技／一般本文なし、Camera未固定、4秒以上等の適格条件を満たすShotだけを対象にします。
+`# モーション補完`は候補とは別の明示合成です。リスト省略はprofileを継承、空リストは無効、非空リストは全候補置換となります。作者演技／一般本文なし、Camera未固定、4秒以上等の適格条件を満たすShotだけを対象にします。複数Subjectの場合、匿名の補完はPerformanceで特定できた演技者一人へだけ適用し、全員へ複製しません。補完本文に作者が`サブジェクトN`を明記した場合は、その対象を優先します。対象が曖昧又は未定義ならWARNINGを残し、その補完だけを見送ります。
 
-`pre_author`では予定補完を演技生成前に示し、Cameraへ合成済み演技を渡します。`post_author`では三段生成後に合成します。`guarded_no_drop`は生成結果を見て既存候補をLLMが再選択します。不正選択は一度再試行し、回復不能なら元の候補を保持します。作者確定演技・Cameraを変更する監査ではありません。
+`pre_author`では予定補完を演技生成前に示し、Cameraへ合成済み演技を渡します。`post_author`では三段生成後に合成します。`guarded_no_drop`は生成結果を見て既存候補をLLMが再選択します。不正選択は一度再試行し、回復不能なら元の候補を保持します。ただし複数Subjectで適用対象を特定できない補完は前述のとおり見送ります。作者確定演技・Cameraを変更する監査ではありません。
 
 補完の適用理由・出所と選択番号はINFO／debugへ残ります。LLMの演技原文は書き換えず、完成EMDでは別行として合成します。
 

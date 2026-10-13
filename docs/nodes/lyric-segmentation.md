@@ -32,7 +32,16 @@ Whisperが一部の短窓だけで文字列を返しながらword timestampを�
 サビの歌詞
 ```
 
-角括弧内は`VERSE`に限定されません。ASCIIのsection名であれば`CHORUS`、`BRIDGE`、`OUTRO`等も受け付け、大文字へ正規化します。見出し内側の前後空白は許容します。本文の物理行と空白runからatomic segmentを作ります。
+角括弧内は`VERSE`に限定されません。ASCIIのsection名であれば`CHORUS`、`BRIDGE`、`OUTRO`等も受け付け、大文字へ正規化します。
+Suno形式の`[Verse 1]`、`[Final Chorus]`、`[Instrumental Rave Break]`等、**名前の途中の空白も許容**します。
+見出し内側の前後空白と、途中の半角スペース・タブ・全角スペースを受け付け、途中の連続空白は内部section名で一つの`_`へ正規化します。
+例えば`[ Final  Chorus ]`は`FINAL_CHORUS`、`[Instrumental Rave Break]`は`INSTRUMENTAL_RAVE_BREAK`になります。
+ハイフンは保持するため`[Pre-Chorus]`は`PRE-CHORUS`です。歌詞本文はこの正規化で変更しません。
+
+歌詞のない`[Instrumental Rave Break]`や`[Guitar Solo]`も入力可能です。
+見出し自体を歌詞としてWhisperへ整列させたり、歌わせたりはしません。
+ただし見出しだけでは伴奏区間の時刻を確定できず、無声区間の判断は実ボーカル音声と音声活動情報に基づきます。
+本文の物理行と空白runからatomic segmentを作ります。
 
 LRC、SRT、VTT、timestamp、コメント、本文行の不必要な前後空白は入力しません。
 

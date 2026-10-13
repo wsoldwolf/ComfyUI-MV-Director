@@ -14,7 +14,7 @@ from typing import Any
 
 try:
     from ...core.direction.profiles import planner_profile_metadata
-    from ...core.emd import parse_emd
+    from ...core.emd import parse_emd, merge_subject_emd
     from ...core.artifacts import DirectionArtifact, EMDTextArtifact, normalize_newlines, sha256_text
     from ...core.inference import (
         LlamaCppLifecycle,
@@ -26,6 +26,7 @@ try:
     )
     from ...core.planner import (
         PLANNER_ALGORITHM_VERSION,
+        TimelinePlannerError,
         PlannerContent,
         generate_planner_content,
         normalize_concept_emd,
@@ -40,7 +41,7 @@ try:
     from ...core.protocols import parse_llm_records
 except ImportError:  # Standalone repository tests.
     from core.direction.profiles import planner_profile_metadata
-    from core.emd import parse_emd
+    from core.emd import parse_emd, merge_subject_emd
     from core.artifacts import DirectionArtifact, EMDTextArtifact, normalize_newlines, sha256_text
     from core.inference import (
         LlamaCppLifecycle,
@@ -52,6 +53,7 @@ except ImportError:  # Standalone repository tests.
     )
     from core.planner import (
         PLANNER_ALGORITHM_VERSION,
+        TimelinePlannerError,
         PlannerContent,
         generate_planner_content,
         normalize_concept_emd,
@@ -554,6 +556,9 @@ class MVDirectorTimelinePlanner:
                     "default": "optional",
                     "tooltip": "Scene Author専用。prefer_matchedは現在Shotの歌詞に適合する演出候補を優先します。確定Shotは変更せず、候補の採用を強制しません。",
                 }),
+                "concept_emd_2": ("STRING", {"forceInput": True}),
+                "concept_emd_3": ("STRING", {"forceInput": True}),
+                "concept_emd_4": ("STRING", {"forceInput": True}),
             },
         }
 
@@ -584,6 +589,9 @@ class MVDirectorTimelinePlanner:
         model_name_override: str = "",
         save_debug_output: bool = False,
         staging_candidate_policy: str = "optional",
+        concept_emd_2: str = "",
+        concept_emd_3: str = "",
+        concept_emd_4: str = "",
     ) -> Any:
         with self._lock:
             validate_staging_candidate_policy(staging_candidate_policy)
@@ -601,6 +609,12 @@ class MVDirectorTimelinePlanner:
                     normalize_newlines(template_emd),
                 )
                 status = "complete=yes; source=author_emd; model=skipped"
+                if any((concept_emd, concept_emd_2, concept_emd_3, concept_emd_4)):
+                    _LOGGER.warning(
+                        "[MV Director - Timeline Planner] Subject inputs ignored; "
+                        "full author EMD owns its Subject definitions"
+                    )
+                    status += "; subject_inputs=ignored_author_emd"
                 _LOGGER.info(
                     "[MV Director - Timeline Planner] full author EMD accepted; "
                     "LLM and profile generation skipped"
@@ -609,7 +623,15 @@ class MVDirectorTimelinePlanner:
             selected_direction = direction or DirectionArtifact()
             selected_direction.validate()
             template = parse_template_emd(template_emd)
-            concept = normalize_concept_emd(concept_emd)
+            try:
+                merged = merge_subject_emd(
+                    concept_emd, concept_emd_2, concept_emd_3, concept_emd_4,
+                )
+            except ValueError as exc:
+                raise TimelinePlannerError(str(exc)) from exc
+            concept = normalize_concept_emd(merged.text)
+            subject_status = merged.status if merged.text else "subjects=1; subject_map=default"
+            _LOGGER.info("[MV Director - Timeline Planner] Subject inputs merged; %s", subject_status)
             scene = normalize_scene_emd(scene_emd)
             config = LlamaRuntimeConfig(
                 chat_format="" if chat_format == "auto" else chat_format,
@@ -678,7 +700,7 @@ class MVDirectorTimelinePlanner:
                     lip_sync_mode=lip_sync_mode, lip_sync_target=lip_sync_target,
                     lip_sync_audio_slot=lip_sync_audio_slot,
                 )
-                return emd.text, emd, "complete=yes; source=author_shots; model=skipped"
+                return emd.text, emd, "complete=yes; source=author_shots; model=skipped; " + subject_status
             selection = model_name_override.strip() or model_name
             model = resolve_comfy_gguf_model(selection)
             self._backend.transport_policy = _planner_transport_policy(model.selection_id)
@@ -815,11 +837,14 @@ class MVDirectorTimelinePlanner:
                     f"retries={len(content.retried_scenes)}; "
                     f"protocol_recovered={content.protocol_recovered_count}; cache={cache_status}"
                 )
+            status += "; " + subject_status
             if save_debug_output:
                 debug_path = _debug_write(
                     key,
                     {
                         "cache_key": key,
+                        "subjects_emd": concept,
+                        "subject_map": [item.to_dict() for item in merged.bindings],
                         "status": status,
                         "content": None if content is None else content.to_dict(),
                         "trace": self._backend.trace,

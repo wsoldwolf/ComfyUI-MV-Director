@@ -27,7 +27,7 @@ class PropInventoryResult:
     status: str
 
 
-def parse_prop_inventory(response: str):
+def parse_prop_inventory(response: str, *, subject_ids: tuple[str, ...] | None = None):
     parsed = parse_llm_records(normalize_record_response(response, RECORD),
         allowed_slots={RECORD: frozenset({1})}, required=frozenset({(RECORD, 1)}))
     if parsed.issues or parsed.missing:
@@ -49,6 +49,8 @@ def parse_prop_inventory(response: str):
             return None
         if not re.fullmatch(r"P[1-9][0-9]*", prop["id"]) or prop["id"] in seen:
             return None
+        if subject_ids is not None and prop["subject"] not in subject_ids:
+            return None
         seen.add(prop["id"])
     # A valid empty inventory differs from an invalid response. This does not
     # certify that the LLM found every object in the source material.
@@ -58,11 +60,14 @@ def parse_prop_inventory(response: str):
 def request_prop_inventory(backend: Any, *, subject_emd: str,
                            fixed_boundary: Mapping[str, str], scene_number: int,
                            system_prompt: str, runtime_config: LlamaRuntimeConfig,
+                           subject_ids: tuple[str, ...] | None = None,
                            interrupt_callback=None) -> PropInventoryResult:
     request = {"protocol": "MVD_LLM_RECORDS_V1", "task": TASK,
                "scene_number": scene_number, "subject_emd": subject_emd,
                "fixed_boundary_performances": dict(fixed_boundary),
                "slots": [{"slot": 1}]}
+    if subject_ids is not None:
+        request["subject_ids"] = list(subject_ids)
     for attempt in range(1, 3):
         if interrupt_callback:
             interrupt_callback()
@@ -76,7 +81,7 @@ def request_prop_inventory(backend: Any, *, subject_emd: str,
             _LOGGER.warning("[MV Director - Timeline Planner] prop inventory skipped; "
                             "reason=context_budget; continuing existing authorship")
             return PropInventoryResult((), attempt, "context_budget")
-        props = parse_prop_inventory(response)
+        props = parse_prop_inventory(response, subject_ids=subject_ids)
         if props is not None:
             return PropInventoryResult(props, attempt, "transport_valid")
     return PropInventoryResult((), 2, "invalid_transport")

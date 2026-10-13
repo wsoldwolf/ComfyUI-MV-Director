@@ -22,6 +22,7 @@ TASK = "scene-author-prop-decision"
 RECORD = "PROP_DECISION"
 FIELDS = frozenset({"prop_locations", "right_hand", "left_hand", "transition",
                     "performance_scope", "end_state"})
+ACTOR_FIELDS = frozenset({"right_hand", "left_hand", "transition", "performance_scope"})
 DecisionValue = str | Mapping[str, str]
 _LOGGER = logging.getLogger("mv_director.nodes")
 
@@ -42,7 +43,9 @@ def _unique_object(pairs):
     return result
 
 
-def parse_prop_decisions(response: str, shots: tuple[int, ...], *, prop_ids: frozenset[str] | None = None):
+def parse_prop_decisions(response: str, shots: tuple[int, ...], *,
+                         prop_ids: frozenset[str] | None = None,
+                         owner_ids: frozenset[str] | None = None):
     """Reject partial/ambiguous transport; do not infer or repair meaning."""
     parsed = parse_llm_records(normalize_record_response(response, RECORD),
         allowed_slots={RECORD: frozenset(range(1, len(shots) + 1))},
@@ -61,7 +64,11 @@ def parse_prop_decisions(response: str, shots: tuple[int, ...], *, prop_ids: fro
             return (isinstance(v, str) and bool(v.strip()) and len(v) <= 400
                     and not any(ord(c) < 32 for c in v))
         for field, entry in value.items():
-            if field in {"prop_locations", "end_state"} and isinstance(entry, dict):
+            if owner_ids is not None and field in ACTOR_FIELDS:
+                if (not isinstance(entry, dict) or set(entry) != owner_ids
+                        or not all(valid_text(v) for v in entry.values())):
+                    return None
+            elif field in {"prop_locations", "end_state"} and isinstance(entry, dict):
                 if not entry or not all(valid_text(k) and valid_text(v) for k, v in entry.items()):
                     return None
             elif not valid_text(entry):
@@ -96,6 +103,13 @@ def request_prop_decisions(backend: Any, *, shared: Mapping[str, object],
                           for i, s in enumerate(shots, 1)])
     inventory = shared.get("prop_inventory")
     prop_ids = frozenset(p["id"] for p in inventory) if inventory is not None else None
+    subject_ids = shared.get("subject_ids", [])
+    owner_ids = None
+    if len(subject_ids) > 1 and inventory:
+        owner_ids = frozenset(p["subject"] for p in inventory)
+        if not owner_ids.issubset(subject_ids):
+            raise ValueError("prop owners must reference defined Subject IDs")
+        request["hand_owner_ids"] = sorted(owner_ids)
     for attempt in range(1, 3):
         if interrupt_callback:
             interrupt_callback()
@@ -103,6 +117,8 @@ def request_prop_decisions(backend: Any, *, shared: Mapping[str, object],
             request["retry"] = "invalid_prop_decision_transport_only"
             if prop_ids:
                 request["required_prop_ids_in_each_shot"] = sorted(prop_ids)
+            if owner_ids is not None:
+                request["required_owner_ids_in_actor_fields"] = sorted(owner_ids)
         try:
             response = backend.complete_planner(task=TASK, system_prompt=system_prompt,
                 payload=canonical_json(request), config=runtime_config,
@@ -112,7 +128,7 @@ def request_prop_decisions(backend: Any, *, shared: Mapping[str, object],
                             "scene=%s; reason=context_budget; continuing existing authorship",
                             shared["scene_number"])
             return PropDecisionResult({}, attempt, "context_budget")
-        decisions = parse_prop_decisions(response, shots, prop_ids=prop_ids)
+        decisions = parse_prop_decisions(response, shots, prop_ids=prop_ids, owner_ids=owner_ids)
         if decisions is not None:
             return PropDecisionResult(decisions, attempt, "transport_valid")
     return PropDecisionResult({}, 2, "invalid_transport")

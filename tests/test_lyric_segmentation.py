@@ -62,6 +62,38 @@ class PlainLyricsTests(unittest.TestCase):
             [("千年鳥居", "VERSE_1"), ("月明かり", "CHORUS")],
         )
 
+    def test_suno_multiword_headings_and_empty_instrumental_section(self) -> None:
+        segments = parse_plain_lyrics(
+            "[Intro]\n朝\n\n[Verse 1]\n風　光\n"
+            "[Pre-Chorus]\n道\n[Instrumental Rave Break]\n\n"
+            "[Verse 2]\n夜\n[Build-Up]\n星\n"
+            "[Final Chorus]\n明日\n[Outro]\n空\n"
+        )
+        self.assertEqual(
+            [(item.text, item.section) for item in segments],
+            [("朝", "INTRO"), ("風", "VERSE_1"), ("光", "VERSE_1"),
+             ("道", "PRE-CHORUS"), ("夜", "VERSE_2"), ("星", "BUILD-UP"),
+             ("明日", "FINAL_CHORUS"), ("空", "OUTRO")],
+        )
+        # The instrumental heading is metadata, never a lyric to be aligned.
+        self.assertEqual(segments[4].source_line, 11)
+        self.assertEqual((segments[2].source_start, segments[2].source_end), (2, 3))
+
+    def test_multiword_section_space_runs_preserve_lyric_text(self) -> None:
+        for heading in (
+            "[Instrumental Rave Break]", "[ Instrumental  Rave   Break ]",
+            "[\tInstrumental\tRave\tBreak\t]", "[　Instrumental　Rave　Break　]",
+        ):
+            with self.subTest(heading=heading):
+                segments = parse_plain_lyrics(heading + "\n息を吸う\n")
+                self.assertEqual(len(segments), 1)
+                self.assertEqual(segments[0].section, "INSTRUMENTAL_RAVE_BREAK")
+                self.assertEqual(segments[0].text, "息を吸う")
+                self.assertEqual(segments[0].source_line, 2)
+
+    def test_empty_multiword_section_does_not_create_lyrics(self) -> None:
+        self.assertEqual(parse_plain_lyrics("[Instrumental Rave Break]\n\n[Guitar Solo]\n"), ())
+
     def test_rejects_non_plain_metadata(self) -> None:
         invalid = (
             "歌詞\n[VERSE1]\n歌詞",
