@@ -159,6 +159,65 @@ class AlignmentTests(unittest.TestCase):
         ]
         self.assertEqual(repetitions, [2000, 10000])
 
+    def test_repeated_anchor_prefers_exact_phrase_over_fuzzy_prefix(self) -> None:
+        lyrics = parse_plain_lyrics(
+            "[INTRO]\nお顔は秘密\n次の歌詞\n"
+            "[OUTRO]\n直前の歌詞\n三人そろって　深くお辞儀\nお顔は秘密\n次の歌詞\n"
+        )
+        texts = (
+            ("お顔は秘密", 1000, 2000), ("次の歌詞", 2200, 3200),
+            ("直前の歌詞", 10000, 11000), ("三人注って", 11200, 12200),
+            ("深く大義", 12300, 14000), ("お顔は秘密", 14200, 15200),
+            ("次の歌詞", 15400, 16400),
+        )
+        words = tuple(WhisperWord(text, text, start, end, i)
+            for i, (text, start, end) in enumerate(texts, 1))
+        resolved, _ = align_lyrics(lyrics, words, voiced_intervals=(),
+            sample_rate=16000, audio_duration_ms=18000)
+        anchors = [l for l in resolved if l.source.text == "お顔は秘密"]
+        self.assertEqual([(l.start_ms, l.end_ms) for l in anchors],
+            [(1000, 2000), (14200, 15200)])
+
+    def test_repeated_chorus_anchor_leaves_short_lyric_gap_open(self) -> None:
+        lyrics = parse_plain_lyrics(
+            "[CHORUS]\n前の歌詞\n回れ　火花の中で\n次の歌詞\n"
+            "[CHORUS]\n前の歌詞\n回れ　火花の中で\n次の歌詞\n"
+        )
+        texts = (
+            ("前の歌詞", 1000, 2000), ("回れ", 2100, 2500),
+            ("火花の中で", 2600, 4000), ("次の歌詞", 4100, 5000),
+            ("前の歌詞", 10000, 11000), ("回", 11100, 11300),
+            ("り", 11300, 11500), ("火花の中で", 11600, 13000),
+            ("次の歌詞", 13100, 14000),
+        )
+        words = tuple(WhisperWord(text, text, start, end, i)
+            for i, (text, start, end) in enumerate(texts, 1))
+        resolved, unplaced = align_lyrics(lyrics, words, voiced_intervals=(),
+            sample_rate=16000, audio_duration_ms=16000)
+        self.assertFalse(unplaced)
+        anchors = [l for l in resolved if l.source.text == "火花の中で"]
+        self.assertEqual([l.start_ms for l in anchors], [2600, 11600])
+        recovered = [l for l in resolved if l.source.text == "回れ"][1]
+        self.assertGreaterEqual(recovered.start_ms, 11000)
+        self.assertLessEqual(recovered.end_ms, 11600)
+
+    def test_repeated_lyric_does_not_skip_fuzzy_first_occurrence(self) -> None:
+        lyrics = parse_plain_lyrics(
+            "[CHORUS]\n開始\n繰り返し\n確認\n繰り返し\n確認\n"
+        )
+        texts = (
+            ("開始", 1000, 1500), ("繰り返す", 2000, 2500),
+            ("確認", 2600, 3200), ("繰り返し", 4000, 4500),
+            ("確認", 4600, 5200),
+        )
+        words = tuple(WhisperWord(text, text, start, end, i)
+            for i, (text, start, end) in enumerate(texts, 1))
+        resolved, unplaced = align_lyrics(lyrics, words, voiced_intervals=(),
+            sample_rate=16000, audio_duration_ms=7000)
+        self.assertFalse(unplaced)
+        self.assertEqual([l.start_ms for l in resolved
+            if l.source.text == "繰り返し"], [2000, 4000])
+
     def test_candidate_that_better_matches_next_lyric_is_not_consumed(self) -> None:
         lyrics = parse_plain_lyrics(
             "[VERSE]\n開始\n灰を越える\n年を越える\n終了\n"

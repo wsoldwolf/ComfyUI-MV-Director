@@ -291,7 +291,7 @@ def _best_supported_repeated_candidate(
             maximum_span_ms=maximum_span_ms,
         )
     best: _WordCandidate | None = None
-    best_rank: tuple[int, float, int, float] | None = None
+    best_rank: tuple[int, float, int, float, int] | None = None
     for candidate in _word_candidates(
         lyrics[lyric_index].normalized,
         words,
@@ -305,6 +305,7 @@ def _best_supported_repeated_candidate(
         support_cursor = candidate.end_index + 1
         support_count = 0
         support_score = 0.0
+        first_support_index: int | None = None
         support_anchor_ms = words[candidate.end_index].end_ms
         for following_offset, next_lyric in enumerate(following):
             support = _best_word_candidate(
@@ -321,15 +322,22 @@ def _best_supported_repeated_candidate(
                 continue
             support_count += 1
             support_score += support.score
+            if first_support_index is None:
+                first_support_index = support.start_index
             support_cursor = support.end_index + 1
             support_anchor_ms = words[support.end_index].end_ms
-        if support_count == 0:
+        if support_count == 0 or first_support_index is None:
             continue
+        # Identify the occurrence by its following anchor, not a fuzzy prefix
+        # attached to the target. Within that occurrence prefer the target's
+        # textual fit. Keep the earlier following anchor ahead of a later
+        # exact repeat so a real chorus occurrence cannot be skipped.
         rank = (
             support_count,
             support_score,
-            -candidate.start_index,
+            -first_support_index,
             candidate.score,
+            -candidate.start_index,
         )
         if best_rank is None or rank > best_rank:
             best = candidate
