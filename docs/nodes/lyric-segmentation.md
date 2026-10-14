@@ -1,6 +1,6 @@
 # Lyric Segmentation
 
-UTF-8 plain lyricsとvocal stemをOpenAI Whisper、VAD、文字列照合で整列し、同じcanonical segment列からTemplate EMD、SRT、typed timelineを作ります。PlannerやH3へ接続せず、SRT生成だけにも使えます。
+UTF-8 plain lyricsとvocal stemをOpenAI Whisper、VAD、文字列照合で整列し、同じcanonical segment列からTemplate EMD、SRT、LRC、typed timelineを作ります。PlannerやH3へ接続せず、歌詞ファイル生成だけにも使えます。
 
 長尺音源は前文脈を引き継がない全体認識を行い、未解決部分だけを前後の確定歌詞で囲んだ12秒以下の短窓として再認識します。短窓の歌詞誘導結果は、誘導なし認識の実在word timestampと後続アンカーで確認できた場合だけ採用します。したがって、入力音声に存在しない歌詞へ推測時刻を付けることはありません。
 
@@ -17,7 +17,7 @@ Whisperが一部の短窓だけで文字列を返しながらword timestampを�
 | `whisper_model` | 自動列挙 | `models/whisper`以下のローカル`.pt` |
 | `language` | `ja` | 初期版は日本語のみ |
 | `max_scene_duration_ms` | `10000` | H3 Scene分割の最大目安 |
-| `srt_time_offset_ms` | `0` | SRT出力だけへ加えるoffset |
+| `srt_time_offset_ms` | `0` | SRT・LRC出力へ加えるoffset。Template EMDとtimelineは変更しない |
 | `cache_mode` | `reuse` | 成功結果の再利用方針 |
 | `keep_whisper_loaded` | `false` | 後段のGGUF/H3へGPUを解放する |
 | `h3_timing_profile` | 任意 | 未接続時も固定既定profileを使う |
@@ -53,10 +53,15 @@ LRC、SRT、VTT、timestamp、コメント、本文行の不必要な前後空�
 | `srt_text` | 外部字幕として保存可能なSRT本文 |
 | `timeline` | Audio Pad Pair等へ渡す元音源ms/H3 frame対応 |
 | `status` | resolved、unplaced、音源尺、Plan尺、Scene数、cache |
+| `lrc_text` | 歌詞プレイヤー向けLRC本文。既存4出力の末尾へ追加 |
+
+LRCは各確定歌詞の開始時刻を`[mm:ss.xx]歌詞`として出力します。時刻はSRTと同じ元音源timelineとoffsetを使い、1/100秒未満は切り捨てます。終了時刻は含めず、複数行の歌詞は空白で一行へまとめます。歌詞なしでは空文字列です。成功キャッシュからも追加のWhisper推論なしで生成でき、歌詞整列のキャッシュを作り直す必要はありません。
+
+ComfyUIを再起動してWFを開き直すと、末尾の`lrc_text`をSave Text等へ接続できます。同梱Save Textで`.txt`保存した場合は、内容を変えず拡張子を`.lrc`へ変更してください。既存の`template_emd`・`srt_text`・`timeline`・`status`のソケット番号は変更しません。保存済みWFの出力欄だけを同期する場合は、`python tools/generate_workflows.py --sync-lyric-outputs`を実行します。素材・保存済みPlan・既存接続は保持し、削除済みWFは作りません。
 
 Template EMDは先頭Sceneをカット、2件目以降を初期値`継続`として明示します。これはPlannerへ渡す暫定境界modeです。PlannerがMV編集上のカットを選ぶと、そのSceneから`継続`を外し、H3格子上の`H3長`とPlan時刻を再配分します。
 
-全歌詞が配置できない場合は赤いERRORを出し、Template EMD、SRT、timelineをExecutionBlockerで停止します。これは音源が歌詞後半を歌っていない場合を黙って成功にしないためです。
+全歌詞が配置できない場合は赤いERRORを出し、Template EMD、SRT、LRC、timelineをExecutionBlockerで停止します。これは音源が歌詞後半を歌っていない場合を黙って成功にしないためです。
 
 INFOログの`targeted retries completed`には、再探索した未解決run数、回収segment数、残数が表示されます。`remaining=0`なら全歌詞が実timestampへ配置されています。
 
@@ -64,7 +69,7 @@ INFOログの`targeted retries completed`には、再探索した未解決run数
 
 成功キャッシュには`payload.audio_activity`として、元PCMのsample位置、音源fingerprint、VAD条件、2秒以上のボーカル不在候補、歌詞との食い違い、Audio参照向けPCM再配置の対応を保存します。保存先はINFOログの`vocal activity saved in cache`に絶対パスで表示されます。`reuse`で古いキャッシュを読む場合も、追加のWhisper推論なしでCPU解析して補充します。
 
-Template EMDには任意の`# 音声活動`を追加し、PlannerのEvent・Performance・Cameraへ現在Sceneの実PCM区間だけを参考情報として渡します。歌詞のないSceneでは近接する前後歌詞も読み取り文脈として渡し、イントロ・間奏で身体候補を選べるようにします。候補の強制採用や品質停止条件にはしません。Scene/Shot枠、SRT、timeline、4本の出力ソケットは維持します。歌詞とVADが食い違う区間は`unknown`として残し、この診断を理由に生成を停止しません。
+Template EMDには任意の`# 音声活動`を追加し、PlannerのEvent・Performance・Cameraへ現在Sceneの実PCM区間だけを参考情報として渡します。歌詞のないSceneでは近接する前後歌詞も読み取り文脈として渡し、イントロ・間奏で身体候補を選べるようにします。候補の強制採用や品質停止条件にはしません。Scene/Shot枠、SRT、timeline、既存4本の出力ソケットは維持し、LRCを末尾へ追加しています。歌詞とVADが食い違う区間は`unknown`として残し、この診断を理由に生成を停止しません。
 
 音声活動を含むTemplateは`MVD_EMD_TEMPLATE_V2`です。Plannerが口元計画を追加した完成EMDは`MVD_EMD_V3`、口元計画がない完成EMDは`MVD_EMD_V2`です。従来のV1も受け付けます。診断生成に失敗した場合は警告して従来のEMDを返します。古い成功キャッシュはWhisperを再実行せずCPUで補充し、Templateも更新します。
 

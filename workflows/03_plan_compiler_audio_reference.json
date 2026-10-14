@@ -650,6 +650,11 @@
           "name": "status",
           "type": "STRING",
           "links": null
+        },
+        {
+          "name": "lrc_text",
+          "type": "STRING",
+          "links": null
         }
       ],
       "title": "Lyric Segmentation",

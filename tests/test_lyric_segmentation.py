@@ -990,8 +990,9 @@ class PublicNodeTests(unittest.TestCase):
         self.assertEqual(cls.CATEGORY, "MV Director/Input")
         self.assertEqual(
             cls.RETURN_TYPES,
-            ("STRING", "STRING", "MV_DIRECTOR_TIMELINE", "STRING"),
+            ("STRING", "STRING", "MV_DIRECTOR_TIMELINE", "STRING", "STRING"),
         )
+        self.assertEqual(cls.RETURN_NAMES, ("template_emd", "srt_text", "timeline", "status", "lrc_text"))
 
     def test_unplaced_lyrics_emit_error_and_block_all_data_outputs(self) -> None:
         from nodes.node_lyric_segmentation.node import _block_unplaced
@@ -1035,6 +1036,8 @@ class PublicNodeTests(unittest.TestCase):
             all(isinstance(item, FakeExecutionBlocker) for item in result["result"][:3])
         )
         self.assertIn("音源にない歌詞", result["result"][0].message)
+        self.assertIsInstance(result["result"][4], FakeExecutionBlocker)
+        self.assertEqual(len(result["result"]), 5)
         self.assertIn("MV Director - Lyric Segmentation", captured.output[0])
 
 

@@ -20,7 +20,7 @@ if str(ROOT) not in sys.path:
 
 from tools.generate_workflows import (
     _connect, _disconnect_input, _input_index, _json_text,
-    _markdown_note, sync_subject_inputs, validate_workflow,
+    _markdown_note, sync_subject_inputs, sync_lyric_outputs, validate_workflow,
 )
 
 WORKFLOW_FILENAMES = (
@@ -210,6 +210,7 @@ def build_video_workflow(source: dict[str, Any], mode: str) -> dict[str, Any]:
 def prepare_saved_workflow(source: dict[str, Any], *, plan: bool) -> dict[str, Any]:
     """Validate an existing four-Subject graph without resetting user settings."""
     workflow = copy.deepcopy(source)
+    sync_lyric_outputs(workflow)
     if plan:
         sync_subject_inputs(workflow)
         enhancer = _only(workflow, "MVDirectorDirectionEnhancer")

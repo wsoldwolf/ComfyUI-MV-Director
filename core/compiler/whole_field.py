@@ -59,7 +59,13 @@ class MaskedField:
                 pieces.append(field.markers[index])
         return cls("".join(pieces), unit.values)
 
-    def payload(self, *, retry_reason: str = "") -> str:
+    def marker_counts(self, translated: str) -> list[dict[str, object]]:
+        actual, expected = Counter(_MARKER_RE.findall(translated)), Counter(self.markers)
+        return [{"marker": marker, "expected": expected[marker], "actual": actual[marker]}
+                for marker in sorted(actual.keys() | expected.keys())]
+
+    def payload(self, *, retry_reason: str = "", previous_response: str | None = None,
+                previous_translation: str | None = None) -> str:
         spans = []
         for marker, value in zip(self.markers, self.values):
             dialogue = value.startswith("<d")
@@ -67,10 +73,18 @@ class MaskedField:
                 "authored_dialogue" if dialogue else "reference" if value.startswith("<")
                 else "camera_literal" if value in _H3_CAMERA_DIRECTIVES else "literal_term"),
                 "meaning": "literal dialogue retained by the caller" if dialogue else value})
-        return canonical_json({"protocol": "MVD_LLM_RECORDS_V1",
+        request = {"protocol": "MVD_LLM_RECORDS_V1",
             "task": "translation-whole-protected-ja-en", "slot": 1,
             "japanese_text": self.text, "immutable_spans": spans,
-            "retry_reason": retry_reason})
+            "retry_reason": retry_reason}
+        if previous_response is not None:
+            request["repair_context"] = {
+                "previous_response": previous_response,
+                "previous_translation": previous_translation,
+                "marker_counts": self.marker_counts(
+                    previous_translation if previous_translation is not None else previous_response),
+            }
+        return canonical_json(request)
 
     def restore(self, translated: str) -> str:
         if not isinstance(translated, str) or not translated.strip():
@@ -108,8 +122,10 @@ class WholeFieldTranslator:
     def translate_unit(self, unit: ProtectedUnit) -> str:
         field = MaskedField.from_unit(unit)
         reason = ""
+        previous_response = previous_translation = None
         for attempt in range(1, 3):
-            payload = "/no_think\n" + field.payload(retry_reason=reason)
+            payload = "/no_think\n" + field.payload(retry_reason=reason,
+                previous_response=previous_response, previous_translation=previous_translation)
             count = self.lifecycle.count_serialized_prompt(self.system_prompt + "\n" + payload)
             build_context_budget(count.count, self.runtime_config.max_tokens,
                 self.lifecycle.effective_n_ctx or self.runtime_config.n_ctx, estimated=count.estimated)
@@ -121,21 +137,28 @@ class WholeFieldTranslator:
             self.batch_count += 1
             self.estimated_token_batches += bool(count.estimated)
             row = {"attempt": attempt, "masked_source": field.text,
-                   "markers": list(field.markers), "response": response}
+                   "markers": list(field.markers), "response": response,
+                   "operation": "repair" if previous_response is not None else "translate",
+                   "retry_reason": reason}
             self.trace.append(row)
             normalized = re.sub(r"<think>.*?</think>", "", response, flags=re.S)
+            candidate = None
             try:
                 parsed = parse_llm_records(normalized,
                     allowed_slots={"TRANSLATION": frozenset({1})},
                     required=frozenset({("TRANSLATION", 1)}))
                 if parsed.issues or parsed.missing or len(parsed.records) != 1:
                     raise CompilerError("whole-field translation line protocol mismatch")
-                restored = field.restore(parsed.records[0].text)
+                candidate = parsed.records[0].text
+                row["masked_translation"] = candidate
+                restored = field.restore(candidate)
             except (CompilerError, ProtocolError) as exc:
                 reason = str(exc)
                 row["error"] = reason
+                row["marker_counts"] = field.marker_counts(candidate if candidate is not None else normalized)
+                previous_response, previous_translation = normalized, candidate
                 _LOGGER.warning("[MV Director - EMD Compiler (Ref2VA)] whole-field attempt %d/2 invalid: %s", attempt, reason)
                 continue
-            row["masked_translation"], row["restored"] = parsed.records[0].text, restored
+            row["restored"] = restored
             return restored
         raise CompilerError(f"whole-field translation invalid after 2 attempts: {reason}")

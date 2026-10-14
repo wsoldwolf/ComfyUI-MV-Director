@@ -253,20 +253,25 @@ class LlamaPromptTranslator:
         """Keep inter-Subject relations intact; validate before restoring IDs."""
         translator = WholeFieldTranslator(self.lifecycle,
             runtime_config=self.runtime_config, interrupt_callback=self.interrupt_callback)
-        try:
-            restored = translator.translate_unit(unit)
-        finally:
-            self.batch_count += translator.batch_count
-            self.estimated_token_batches += translator.estimated_token_batches
-        self.whole_field_count += 1
-        self.protocol_recovered_count += translator.batch_count > 1
         masked = MaskedField.from_unit(unit)
-        self.translation_trace.append({
+        row = {
             "field_id": field_id, "source_sha256": source_sha256, "source": source,
             "strategy": "whole_protected_field", "masked_source": masked.text,
             "protected_values": list(masked.values), "attempts": translator.trace,
-            "restored": restored,
-        })
+        }
+        try:
+            restored = translator.translate_unit(unit)
+        except Exception as exc:
+            row["outcome"], row["error"] = "failed", str(exc)
+            raise
+        finally:
+            self.batch_count += translator.batch_count
+            self.estimated_token_batches += translator.estimated_token_batches
+            # Terminal failures must retain the offending field and raw replies.
+            self.translation_trace.append(row)
+        self.whole_field_count += 1
+        self.protocol_recovered_count += translator.batch_count > 1
+        row["outcome"], row["restored"] = "success", restored
         return restored
 
     def record_field_translation(

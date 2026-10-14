@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 from pathlib import Path
+from datetime import datetime, timezone
+import json
+import logging
 import threading
 from typing import Any
+from uuid import uuid4
 
 try:
     from ...core.artifacts import RequiredReferencesArtifact, normalize_newlines, sha256_text
@@ -48,6 +52,7 @@ from ..common.node_progress import advance_progress, configure_progress
 TRANSLATION_MODES = ("ja_to_en", "already_english")
 CHAT_FORMATS = ("auto", "qwen", "gemma")
 CACHE_MODES = ("reuse", "refresh", "disabled")
+_LOGGER = logging.getLogger("mv_director.nodes")
 _COMPILER_CACHE_VERSION = "mvd-ref2va-compiler-cache-v26-anatomy-neutral-mouth"
 _SYSTEM_PROMPT_PATH = (
     Path(__file__).resolve().parents[2]
@@ -91,6 +96,31 @@ def _cached_result(
     if not isinstance(plan_json, str) or not isinstance(references, dict):
         return None
     return plan_json, RequiredReferencesArtifact.from_dict(references)
+
+
+def _write_failure_trace(*, cache_key: str, model_name: str, runtime: dict[str, Any],
+                         translator: LlamaPromptTranslator, error: Exception) -> str | None:
+    """Persist only the failed field, never a failed Plan or a cache entry."""
+    if not translator.translation_trace or translator.translation_trace[-1].get("outcome") != "failed":
+        return None
+    try:
+        import folder_paths  # type: ignore
+
+        root = Path(folder_paths.get_output_directory()) / "mv_director" / "compiler_failures"
+        root.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+        path = root / f"{timestamp}-{uuid4().hex}.json"
+        payload = {"schema": "mvd-compiler-failure-v1", "cache_key": cache_key,
+                   "model_name": model_name, "runtime": runtime, "error": str(error),
+                   "whole_field_prompt_sha256": sha256_text(whole_field_prompt()),
+                   "field": translator.translation_trace[-1]}
+        with path.open("x", encoding="utf-8", newline="\n") as file:
+            file.write(json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False) + "\n")
+        return str(path)
+    except Exception as exc:
+        # Diagnostic I/O must not replace the original Compiler exception.
+        _LOGGER.warning("[MV Director - EMD Compiler (Ref2VA)] failure trace unavailable: %s", exc)
+        return None
 
 
 class MVDirectorEMDCompiler:
@@ -311,6 +341,13 @@ class MVDirectorEMDCompiler:
                     f"cache={cache_status(None)}"
                 )
                 return plan_json, result.required_references, status
+            except Exception as exc:
+                if translator is not None:
+                    debug_path = _write_failure_trace(cache_key=key, model_name=model.selection_id,
+                        runtime=config.to_dict(), translator=translator, error=exc)
+                    if debug_path is not None:
+                        _LOGGER.error("[MV Director - EMD Compiler (Ref2VA)] failed field trace saved: %s", debug_path)
+                raise
             finally:
                 if not keep_model_loaded:
                     self._lifecycle.clear()

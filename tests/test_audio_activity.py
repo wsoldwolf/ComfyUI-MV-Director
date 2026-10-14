@@ -125,7 +125,7 @@ class ActivityNodeTests(unittest.TestCase):
             self.assertIsNone(node._activity_diagnostic(None, sample_rate=1000, total_samples=6000,
                               timeline=None, audio_sha256=DIGEST, fps=24, voiced=()))
 
-    def test_new_and_legacy_cache_preserve_four_outputs_without_whisper(self):
+    def test_new_and_legacy_cache_preserve_existing_outputs_and_append_lrc_without_whisper(self):
         import torch
         waveform = torch.zeros((1, 1, 6000))
         timeline = build_timeline((), (), source_audio_duration_ms=6000,
@@ -142,6 +142,8 @@ class ActivityNodeTests(unittest.TestCase):
                                   whisper_model="test", language="ja", max_scene_duration_ms=10000,
                                   srt_time_offset_ms=0, cache_mode="refresh", keep_whisper_loaded=False)
                     first = instance.segment(**kwargs)
+                    self.assertEqual(len(first), 5)
+                    self.assertEqual(first[4], "")
                     from core.emd import parse_emd
                     self.assertEqual(first[1:3], ("", timeline))
                     prefix = "# サブジェクト\n* 歌手。\n"
@@ -156,6 +158,7 @@ class ActivityNodeTests(unittest.TestCase):
                     payload["template_emd"] = template
                     cache.put_success(path.stem, payload)
                     legacy = instance.segment(**{**kwargs, "cache_mode": "reuse"})
+                    self.assertEqual(legacy[4], "")
                     self.assertEqual(legacy[:3], first[:3])
                     self.assertIn("cache=hit", legacy[3])
                     self.assertIn("audio_activity", cache.get(path.stem))

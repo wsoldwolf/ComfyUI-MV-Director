@@ -25,6 +25,7 @@ try:
         parse_plain_lyrics,
         prepare_whisper_audio,
         recover_unplaced_lyrics,
+        render_lrc,
         render_srt,
         render_template_emd,
         validate_comfy_audio,
@@ -45,6 +46,7 @@ except ImportError:  # Standalone repository tests.
         parse_plain_lyrics,
         prepare_whisper_audio,
         recover_unplaced_lyrics,
+        render_lrc,
         render_srt,
         render_template_emd,
         validate_comfy_audio,
@@ -154,7 +156,7 @@ def _block_unplaced(
         "Lyric Segmentation did not place every lyric segment; "
         f"unplaced={len(timeline.unplaced_lyrics)}; "
         f"sections={section_summary}; items={preview}. "
-        "The Template EMD, SRT, and timeline outputs were blocked. "
+        "The Template EMD, SRT, LRC, and timeline outputs were blocked. "
         "Use vocal audio containing every supplied lyric, or remove lyrics "
         "that are not sung in this audio."
     )
@@ -166,16 +168,16 @@ def _block_unplaced(
     blocker = ExecutionBlocker(message)
     return {
         "ui": {"status": [status]},
-        "result": (blocker, blocker, blocker, status),
+        "result": (blocker, blocker, blocker, status, blocker),
     }
 
 
 class MVDirectorLyricSegmentation:
-    RETURN_TYPES = ("STRING", "STRING", "MV_DIRECTOR_TIMELINE", "STRING")
-    RETURN_NAMES = ("template_emd", "srt_text", "timeline", "status")
+    RETURN_TYPES = ("STRING", "STRING", "MV_DIRECTOR_TIMELINE", "STRING", "STRING")
+    RETURN_NAMES = ("template_emd", "srt_text", "timeline", "status", "lrc_text")
     FUNCTION = "segment"
     CATEGORY = "MV Director/Input"
-    DESCRIPTION = "ボーカルとplain lyricsからTemplate EMD、SRT、整数ms timelineを生成します。"
+    DESCRIPTION = "ボーカルとplain lyricsからTemplate EMD、SRT、LRC、整数ms timelineを生成します。"
 
     def __init__(self) -> None:
         self._whisper = WhisperLifecycle()
@@ -211,7 +213,7 @@ class MVDirectorLyricSegmentation:
         cache_mode: str,
         keep_whisper_loaded: bool,
         h3_timing_profile: H3TimingProfile | None = None,
-    ) -> tuple[str, str, TimelineArtifact, str] | dict[str, Any]:
+    ) -> tuple[str, str, TimelineArtifact, str, str] | dict[str, Any]:
         with self._lock:
             configure_progress(5)
             if cache_mode not in CACHE_MODES:
@@ -267,7 +269,7 @@ class MVDirectorLyricSegmentation:
                         _LOGGER.warning("Optional activity cache update failed: %s", exc)
                 if activity is not None:
                     _log_activity_path(cache, key)
-                return template, srt, timeline, status
+                return template, srt, timeline, status, render_lrc(timeline, offset_ms=srt_time_offset_ms)
 
             try:
                 voiced = analyze_waveform(
@@ -354,7 +356,7 @@ class MVDirectorLyricSegmentation:
                     )
                     if activity is not None:
                         _log_activity_path(cache, key)
-                return template, srt, timeline, status
+                return template, srt, timeline, status, render_lrc(timeline, offset_ms=srt_time_offset_ms)
             finally:
                 if not keep_whisper_loaded:
                     self._whisper.clear()
