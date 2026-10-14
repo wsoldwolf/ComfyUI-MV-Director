@@ -20,7 +20,9 @@ from ..inference import LlamaRuntimeConfig
 from .template import PlannerTemplate
 from .section_context import section_context_by_scene
 from .motion_composition import select_motion_composition
-from .candidate_policy import validate_staging_candidate_policy
+from .candidate_policy import (
+    performance_candidate_preference_enabled, validate_staging_candidate_policy,
+)
 from .camera_continuity import arc_directions, inspect_arc_sequence
 from .requests import request_entities
 from .types import PlannerContent, PlannerEntity
@@ -466,6 +468,19 @@ def generate_scene_author_content(
                     str(i): value for i, value in prop_decisions.items()
                 }
         performance_prompt = prompts["performance"]
+        if performance_candidate_preference_enabled(
+            staging_candidate_policy, direction.staging_candidates,
+            shared.get("audio_activity"),
+            [positions[index - 1] for index in pending_actions],
+        ):
+            addendum = system_prompts.get("performance-candidate-addendum", "")
+            if addendum:
+                performance_prompt += "\n" + addendum
+                _LOGGER.info(
+                    "[MV Director - Timeline Planner] Performance candidate "
+                    "preference enabled; scene=%d; scope=long_no_vocal",
+                    scene.scene_number,
+                )
         if prop_decisions:
             performance_prompt += "\n" + system_prompts["prop-performance-addendum"]
         if pending_actions:

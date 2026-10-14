@@ -88,6 +88,9 @@ _PROMPT_FILES = {
     "scene-author-camera": "timeline_planner_scene_author_camera_system_prompt.txt",
     "scene-author-composition-choice": "timeline_planner_scene_author_composition_choice_system_prompt.txt",
 }
+_PERFORMANCE_CANDIDATE_PROMPT_FILES = {
+    "performance-candidate-addendum": "timeline_planner_performance_candidate_addendum.txt",
+}
 _SCENE_AUTHOR_RECORD_TYPES = {
     "scene-author-event": "EVENT",
     "scene-author-performance": "PERFORMANCE",
@@ -142,12 +145,15 @@ def _protocol_issue_shapes(response: str, issues: tuple[Any, ...]) -> str:
     return ",".join(shapes)
 
 
-def _system_prompts(*, prop_holding: bool = False) -> dict[str, str]:
+def _system_prompts(
+    *, prop_holding: bool = False, performance_candidates: bool = False,
+) -> dict[str, str]:
     root = Path(__file__).resolve().parents[2] / "prompts"
     result = {
         task: (root / filename).read_text(encoding="utf-8").rstrip() + "\n"
         for task, filename in {
             **_PROMPT_FILES, **(_PROP_PROMPT_FILES if prop_holding else {}),
+            **(_PERFORMANCE_CANDIDATE_PROMPT_FILES if performance_candidates else {}),
         }.items()
     }
     if any(not value.strip() for value in result.values()):
@@ -554,7 +560,7 @@ class MVDirectorTimelinePlanner:
                 "save_debug_output": ("BOOLEAN", {"default": False}),
                 "staging_candidate_policy": (list(STAGING_CANDIDATE_POLICIES), {
                     "default": "optional",
-                    "tooltip": "Scene Author専用。prefer_matchedは現在Shotの歌詞に適合する演出候補を優先します。確定Shotは変更せず、候補の採用を強制しません。",
+                    "tooltip": "Scene Author専用。prefer_matchedは歌詞に合う演出候補をEventで、長い無声区間に合う演技候補をPerformanceで優先検討します。確定Shotは変更せず、採用を強制しません。",
                 }),
                 "concept_emd_2": ("STRING", {"forceInput": True}),
                 "concept_emd_3": ("STRING", {"forceInput": True}),
@@ -687,7 +693,7 @@ class MVDirectorTimelinePlanner:
                     direction=selected_direction,
                     lip_sync_mode=lip_sync_mode,
                     lip_sync_target=lip_sync_target,
-                    system_prompts=_system_prompts(prop_holding=True),
+                    system_prompts=_system_prompts(prop_holding=True, performance_candidates=True),
                     runtime_config=config,
                     staging_candidate_policy=staging_candidate_policy,
                     interrupt_callback=_interrupt,
@@ -704,7 +710,7 @@ class MVDirectorTimelinePlanner:
             selection = model_name_override.strip() or model_name
             model = resolve_comfy_gguf_model(selection)
             self._backend.transport_policy = _planner_transport_policy(model.selection_id)
-            prompts = _system_prompts(prop_holding=True)
+            prompts = _system_prompts(prop_holding=True, performance_candidates=True)
             if author_counts["scene-author-performance"]:
                 author_counts["subject-prop-inventory"] = 1
                 author_counts["scene-author-prop-decision"] = author_counts["scene-author-performance"]
