@@ -120,6 +120,37 @@ class MouthPlannerPolicyTests(unittest.TestCase):
 
 
 class MouthEMDAndCompilerTests(unittest.TestCase):
+    def test_closed_mouth_supplement_is_anatomy_neutral_for_each_identity(self):
+        for description in ("目と丸い眉がある歌手。", "顔面を布で覆った人物。",
+                            "左目だけに眼帯がある人物。", "表示面を持つ機械。"):
+            with self.subTest(description=description):
+                source = "# サブジェクト\n* " + description + "\n" + AUTHOR_TEMPLATE
+                lines = compile_ref2va(source, IdentityTranslator()).plan["shots"][0]["prompt"]
+                closed = next(line for line in lines if "keeps the lips gently together" in line)
+                singing = next(line for line in lines if "visibly sings" in line)
+                self.assertIn("specified body actions and the specified expression", closed)
+                for term in ("eyes", "brows", "cheeks", "cover", "mask"):
+                    self.assertNotIn(term, closed)
+                self.assertIn("From 00:00.000 to 00:03.000", closed)
+                self.assertIn("From 00:03.000 to 00:06.000", singing)
+                self.assertIn("lip and jaw movements synchronized to its voiced phrases", singing)
+
+    def test_mixed_subject_mouth_states_do_not_spread_covering_or_singing(self):
+        source = ("# サブジェクト\n* 顔面全体を赤い布で覆った人物。\n"
+                  "* 通常の顔と丸い眉を持つ人物。\n" + TEMPLATE.replace(
+                      "## ショット 00:00.000",
+                      "> `口元` `サブジェクト1` 00:00.000 --> 00:06.000 `閉口`\n"
+                      "> `口元` `サブジェクト2` 00:00.000 --> 00:06.000 `歌唱`\n"
+                      "## ショット 00:00.000"))
+        lines = compile_ref2va(source, IdentityTranslator()).plan["shots"][0]["prompt"]
+        closed = next(line for line in lines if "keeps the lips gently together" in line)
+        singing = next(line for line in lines if "visibly sings" in line)
+        self.assertIn("<Subject 1> keeps the lips", closed)
+        self.assertNotIn("<Subject 2>", closed)
+        self.assertIn("<Subject 2> visibly sings", singing)
+        self.assertNotIn("<Subject 1>", singing)
+        self.assertNotIn("eyes, brows and cheeks", "\n".join(lines))
+
     def test_roundtrip_and_v3_artifact(self):
         document = parse_emd(CONCEPT + AUTHOR_TEMPLATE)
         self.assertEqual(rows(document.scenes[0].mouth_performances), [

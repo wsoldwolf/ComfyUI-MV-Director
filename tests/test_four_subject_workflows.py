@@ -5,7 +5,8 @@ import tempfile
 import unittest
 
 from tools.generate_4subject_workflows import (
-    PREFIX, SUBJECT_PICTURES, build_plan_workflow, build_video_workflow, write_workflows,
+    WORKFLOW_FILENAMES, SUBJECT_PICTURES, build_plan_workflow, build_video_workflow,
+    prepare_saved_workflow, write_workflows,
 )
 from tools.generate_workflows import MODES, validate_workflow
 
@@ -113,19 +114,76 @@ class FourSubjectWorkflowTests(unittest.TestCase):
                     self.assertEqual(rows[port["link"]][3:5], [node["id"], index])
 
     def test_writer_is_deterministic_and_leaves_sources_untouched(self):
-        before = {p: p.read_bytes() for p in WORKFLOWS.glob("*.json") if not p.name.startswith(PREFIX)}
+        before = {p: p.read_bytes() for p in WORKFLOWS.glob("*.json")}
         with tempfile.TemporaryDirectory() as temp_dir:
             paths = write_workflows(WORKFLOWS, Path(temp_dir))
-            self.assertEqual(len(paths), 6)
+            self.assertEqual([p.name for p in paths], list(WORKFLOW_FILENAMES))
             first = {p.name: p.read_bytes() for p in paths}
             write_workflows(WORKFLOWS, Path(temp_dir))
             self.assertEqual(first, {p.name: p.read_bytes() for p in paths})
             for path in paths:
-                self.assertTrue(path.name.startswith(PREFIX))
+                self.assertEqual(load(path.name), json.loads(path.read_text(encoding="utf-8")))
                 self.check_links(json.loads(path.read_text(encoding="utf-8")))
+            self.assertEqual({p.name for p in Path(temp_dir).glob("*.json")}, set(WORKFLOW_FILENAMES))
         self.assertEqual(before, {p: p.read_bytes() for p in before})
 
-    def test_saved_variants_match_generator_and_new_blocks_do_not_overlap(self):
+    def test_saved_pair_preserves_every_user_setting(self):
+        for index, name in enumerate(WORKFLOW_FILENAMES):
+            with self.subTest(name=name):
+                source = load(name)
+                before = copy.deepcopy(source)
+                workflow = prepare_saved_workflow(source, plan=index == 0)
+                self.assertEqual(source, before)
+                self.assertEqual(workflow, source)
+                self.check_links(workflow)
+
+    def test_in_place_generation_is_idempotent_and_ignores_other_files(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            for name in WORKFLOW_FILENAMES:
+                (root / name).write_bytes((WORKFLOWS / name).read_bytes())
+            unrelated = root / "01_plan_compiler_context_loop.json"
+            unrelated.write_text("unrelated source", encoding="utf-8")
+            write_workflows(root, root)
+            first = {p.name: p.read_bytes() for p in root.iterdir()}
+            write_workflows(root, root)
+            self.assertEqual(first, {p.name: p.read_bytes() for p in root.iterdir()})
+            self.assertEqual(unrelated.read_text(encoding="utf-8"), "unrelated source")
+            for name in WORKFLOW_FILENAMES:
+                self.assertEqual(load(name), json.loads((root / name).read_text(encoding="utf-8")))
+
+    def test_missing_second_source_does_not_write_first_or_restore_legacy(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / WORKFLOW_FILENAMES[0]).write_bytes((WORKFLOWS / WORKFLOW_FILENAMES[0]).read_bytes())
+            output = root / "output"
+            with self.assertRaises(FileNotFoundError):
+                write_workflows(root, output)
+            self.assertFalse(output.exists())
+
+    def test_single_subject_sources_are_rejected(self):
+        for plan, name in ((True, "01_plan_compiler_context_loop.json"),
+                           (False, "02_video_context_loop.json")):
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                prepare_saved_workflow(load(name), plan=plan)
+
+    def test_invalid_second_source_does_not_replace_output_pair(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            output = root / "output"
+            output.mkdir()
+            for name in WORKFLOW_FILENAMES:
+                (root / name).write_bytes((WORKFLOWS / name).read_bytes())
+                (output / name).write_text("existing output", encoding="utf-8")
+            workflow = load(WORKFLOW_FILENAMES[1])
+            node_of(workflow, "MiniMaxH3ReferenceToVideo")["inputs"] = []
+            (root / WORKFLOW_FILENAMES[1]).write_text(json.dumps(workflow), encoding="utf-8")
+            with self.assertRaises(ValueError):
+                write_workflows(root, output)
+            self.assertTrue(all(p.read_text(encoding="utf-8") == "existing output"
+                                for p in output.iterdir()))
+
+    def test_conversion_helpers_do_not_overlap_new_blocks(self):
         for mode, spec in MODES.items():
             for offset, phase, builder in ((-1, "plan_compiler", build_plan_workflow),
                                            (0, "video", build_video_workflow)):
@@ -133,7 +191,6 @@ class FourSubjectWorkflowTests(unittest.TestCase):
                 with self.subTest(name=name):
                     source = load(name)
                     workflow = builder(source, mode)
-                    self.assertEqual(workflow, load(PREFIX + name))
                     old_ids = {n["id"] for n in source["nodes"]}
                     for node in workflow["nodes"]:
                         if node["id"] in old_ids:

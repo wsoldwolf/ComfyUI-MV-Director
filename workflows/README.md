@@ -113,22 +113,22 @@ Lyric SegmentationのSRT本文は前段workflowで同じcanonical segment列か�
 ### 4 Subject専用WF
 
 通常版とは別名のWFと専用ジェネレーターを用意しています。
-既存6本の保存済み素材・モデル設定・レイアウト・配色を元に生成し、通常版は変更しません。
+現在の生成対象は、配置済みの次のContext Loop版2本だけです。
+この2本を編集可能な元データとして読み込み、素材・モデル設定・演出候補・プロファイル・
+バイパス・配線・レイアウト・配色・保存済みPlanを保持します。通常版は変更しません。
 
 | 方式 | Plan / Compiler | 動画生成 |
 | --- | --- | --- |
-| Context Loop（推奨） | `_4subject_01_plan_compiler_context_loop.json` | `_4subject_02_video_context_loop.json` |
-| Audio Reference | `_4subject_03_plan_compiler_audio_reference.json` | `_4subject_04_video_audio_reference.json` |
-| Lyrics | `_4subject_05_plan_compiler_lyrics.json` | `_4subject_06_video_lyrics.json` |
+| Context Loop（推奨） | `01_plan_compiler_context_loop_4subject.json` | `02_video_context_loop_4subject.json` |
 
 ```cmd
 python tools/generate_4subject_workflows.py
 ```
 
-追加のSubject 2〜4は、前段・動画WFの画像欄をそれぞれ設定してから実行します。
-未設定の画像欄は意図的に空欄で、同じ人物を自動複製しません。
-前段の追加Visionは人物固有のヒントを空にし、モデル・推論設定・seedは既存人物Visionから引き継ぎます。
-必要に応じて各Subjectの`subject_hint`を記述してください。物体を使う場合は`concept_type`も変更します。
+使用するSubjectは前段・動画WFの画像欄をそれぞれ設定してから実行します。
+使用しないSubjectの画像・Visionは両段でバイパスし、同じ人物を自動複製しません。
+現在の配置済みWFではSubject 4がバイパスされています。
+各Subjectの`subject_hint`はその人物に合う説明へ変更してください。物体を使う場合は`concept_type`も変更します。
 
 | 定義 | 前段Visionのpicture_index | 動画側H3入力 |
 | --- | ---: | --- |
@@ -146,12 +146,14 @@ Subject番号は入力順です。各Visionは一つのSubjectを定義し、合
 
 前段の保存先は`mv_director/4subject/`、動画のrun名は`mv_director_4subject_<方式>`です。
 対応する前段で新しく生成したPlan JSON(txt)を動画WFへ読み込み、両段で同じ画像を指定してください。
-動画WFへ通常版の保存済みPlanは引き継ぎません。追加画像を含むPlanの映像品質や
+再生成で動画WF内の保存済みPlanは差し替えません。追加画像を含むPlanの映像品質や
 参照画像5枚でのVRAM負荷・速度は素材次第であり、2人物の短区間検証と同等の結果は保証しません。
 
-通常版を編集・再生成した後に専用ジェネレーターを実行すると、4 Subject版を更新できます。
-**4 Subject版へ直接加えた編集は専用ジェネレーターの再実行で上書きされます。**
-`--source-dir`・`--output-dir`で入力・出力ディレクトリを変更できます。
+4 Subject版を直接編集して保存した後、専用ジェネレーターを実行すると配線を検査して同期します。
+通常版の設定で上書きせず、旧`_4subject_`プレフィクス版や削除済みの他方式を再作成しません。
+別ディレクトリへ生成する場合は`--output-dir`を指定します。
+`--source-dir`には上記2本を配置したディレクトリを指定できます（既定は`workflows`）。
+2本とも検査に成功してから書き込みます。元データが不足している場合、通常版からの自動補完は行いません。
 ノード更新後はComfyUIを再起動し、新しいWFを開き直してください。
 
 ### 通常版WF

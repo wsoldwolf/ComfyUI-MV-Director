@@ -347,7 +347,7 @@ def _mouth_prompt(document: EMDDocument, scene: Scene, context_ms: int) -> list[
         timing = f"From {start} to {end} in the generated clip, "
         if item.state == "閉口":
             body = (f"{target} keeps the lips gently together while continuing the specified "
-                    "body actions and expression in the eyes, brows and cheeks.")
+                    "body actions and the specified expression.")
         else:
             body = (f"{target} visibly sings the supplied vocal with syllable-by-syllable "
                     "lip and jaw movements synchronized to its voiced phrases, "

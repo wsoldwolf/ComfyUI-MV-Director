@@ -48,7 +48,7 @@ from ..common.node_progress import advance_progress, configure_progress
 TRANSLATION_MODES = ("ja_to_en", "already_english")
 CHAT_FORMATS = ("auto", "qwen", "gemma")
 CACHE_MODES = ("reuse", "refresh", "disabled")
-_COMPILER_CACHE_VERSION = "mvd-ref2va-compiler-cache-v25-grouped-subject-references"
+_COMPILER_CACHE_VERSION = "mvd-ref2va-compiler-cache-v26-anatomy-neutral-mouth"
 _SYSTEM_PROMPT_PATH = (
     Path(__file__).resolve().parents[2]
     / "prompts"

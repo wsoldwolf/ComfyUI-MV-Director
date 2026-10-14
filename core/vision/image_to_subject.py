@@ -21,7 +21,7 @@ from .subject_emd import render_subject_emd
 from .scene_emd import render_scene_emd
 
 
-VISION_PROMPT_VERSION = "mvd-vision-observation-v16"
+VISION_PROMPT_VERSION = "mvd-vision-observation-v17-local-covering"
 ANALYSIS_PROFILES = ("general", "subject_only", "scene_only")
 HINT_MODES = ("observe_only", "assist", "lock_identity")
 HINT_CONFLICT_POLICIES = ("warn", "strict")

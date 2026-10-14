@@ -6,6 +6,7 @@ import unittest
 
 from core.lyrics import parse_plain_lyrics
 from core.utilities import decode_embedded_text
+from tools.generate_4subject_workflows import WORKFLOW_FILENAMES
 from tools.generate_workflows import (CHARACTER_HINT, DEFAULT_USER_PROMPT, LOCAL_FACE_CANDIDATE,
                                       PLAN_12B_FILENAME, PLAN_12B_N_CTX, TEXT_MODEL_12B,
                                       PLAN_26B_IQ2_M_FILENAME, PLAN_26B_IQ2_M_29GPU_FILENAME,
@@ -82,8 +83,7 @@ def input_link(workflow: dict, node: dict, input_name: str) -> list:
 class DistributableWorkflowTests(unittest.TestCase):
     def test_26b_iq2_m_variant_preserves_wf01_and_offloads_vision_projector(self) -> None:
         source = load(FILES["context_loop"][0])
-        variant = load(PLAN_26B_IQ2_M_FILENAME)
-        self.assertEqual(variant, build_26b_iq2_m_plan_variant(source))
+        variant = build_26b_iq2_m_plan_variant(source)
         for key in ("links", "groups", "extra"):
             self.assertEqual(variant[key], source[key])
         slots = {
@@ -140,13 +140,9 @@ class DistributableWorkflowTests(unittest.TestCase):
 
     def test_26b_29gpu_variant_changes_only_planner_and_compiler_layers(self) -> None:
         source = load(FILES["context_loop"][0])
-        baseline = load(PLAN_26B_IQ2_M_FILENAME)
-        tuned = load(PLAN_26B_IQ2_M_29GPU_FILENAME)
-        self.assertEqual(
-            tuned,
-            build_26b_iq2_m_plan_variant(
-                source, planner_compiler_gpu_layers=PLAN_26B_IQ2_M_29GPU_LAYERS,
-            ),
+        baseline = build_26b_iq2_m_plan_variant(source)
+        tuned = build_26b_iq2_m_plan_variant(
+            source, planner_compiler_gpu_layers=PLAN_26B_IQ2_M_29GPU_LAYERS,
         )
         for original, changed in zip(baseline["nodes"], tuned["nodes"], strict=True):
             self.assertEqual(original["id"], changed["id"])
@@ -169,7 +165,7 @@ class DistributableWorkflowTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             output_dir = Path(temporary)
             source_bytes = (WORKFLOWS / source_name).read_bytes()
-            baseline_bytes = (WORKFLOWS / PLAN_26B_IQ2_M_FILENAME).read_bytes()
+            baseline_bytes = json.dumps(build_26b_iq2_m_plan_variant(load(source_name))).encode("utf-8")
             (output_dir / source_name).write_bytes(source_bytes)
             (output_dir / PLAN_26B_IQ2_M_FILENAME).write_bytes(baseline_bytes)
             write_workflows(
@@ -183,13 +179,9 @@ class DistributableWorkflowTests(unittest.TestCase):
 
     def test_26b_30gpu_variant_changes_only_planner_and_compiler_layers(self) -> None:
         source = load(FILES["context_loop"][0])
-        baseline = load(PLAN_26B_IQ2_M_FILENAME)
-        tuned = load(PLAN_26B_IQ2_M_30GPU_FILENAME)
-        self.assertEqual(
-            tuned,
-            build_26b_iq2_m_plan_variant(
-                source, planner_compiler_gpu_layers=PLAN_26B_IQ2_M_30GPU_LAYERS,
-            ),
+        baseline = build_26b_iq2_m_plan_variant(source)
+        tuned = build_26b_iq2_m_plan_variant(
+            source, planner_compiler_gpu_layers=PLAN_26B_IQ2_M_30GPU_LAYERS,
         )
         for original, changed in zip(baseline["nodes"], tuned["nodes"], strict=True):
             if original["type"] in {"MVDirectorTimelinePlanner", "MVDirectorEMDCompiler"}:
@@ -206,8 +198,7 @@ class DistributableWorkflowTests(unittest.TestCase):
 
     def test_12b_variant_preserves_wf01_layout_and_sets_every_inference_node(self) -> None:
         source = load(FILES["context_loop"][0])
-        variant = load(PLAN_12B_FILENAME)
-        self.assertEqual(variant, build_12b_plan_variant(source))
+        variant = build_12b_plan_variant(source)
         self.assertEqual(variant["links"], source["links"])
         self.assertEqual(variant["groups"], source["groups"])
         self.assertEqual(variant["extra"], source["extra"])
@@ -509,11 +500,7 @@ class DistributableWorkflowTests(unittest.TestCase):
             for path in WORKFLOWS.glob("*.json")
         }
         expected = {name for pair in FILES.values() for name in pair}
-        expected.add(PLAN_12B_FILENAME)
-        expected.add(PLAN_26B_IQ2_M_FILENAME)
-        expected.add(PLAN_26B_IQ2_M_29GPU_FILENAME)
-        expected.add(PLAN_26B_IQ2_M_30GPU_FILENAME)
-        expected.update("_4subject_" + name for pair in FILES.values() for name in pair)
+        expected.update(WORKFLOW_FILENAMES)
         self.assertEqual(actual, expected)
         self.assertEqual(list((WORKFLOWS / "development").glob("*.json")), [])
 

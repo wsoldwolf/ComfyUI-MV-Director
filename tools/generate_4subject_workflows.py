@@ -1,7 +1,8 @@
-"""Generate separate four-Subject workflows from the saved standard workflows.
+"""Regenerate the two saved four-Subject Context Loop workflows.
 
-The standard generator and its six source workflows remain untouched.  Media,
-model settings and existing layout are copied from those user-editable sources.
+The saved four-Subject files are the editable source of truth. Preserve their
+media, embedded text/Plan, model settings, bypasses, wiring and layout; do not
+derive them again from the single-Subject workflows or restore retired variants.
 """
 
 from __future__ import annotations
@@ -18,11 +19,14 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from tools.generate_workflows import (
-    MODES, _connect, _disconnect_input, _input_index, _json_text,
+    _connect, _disconnect_input, _input_index, _json_text,
     _markdown_note, sync_subject_inputs, validate_workflow,
 )
 
-PREFIX = "_4subject_"
+WORKFLOW_FILENAMES = (
+    "01_plan_compiler_context_loop_4subject.json",
+    "02_video_context_loop_4subject.json",
+)
 # Keep the established environment reference at Picture 2.
 SUBJECT_PICTURES = (1, 3, 4, 5)
 
@@ -118,6 +122,8 @@ def build_plan_workflow(source: dict[str, Any], mode: str) -> dict[str, Any]:
                   f"Subject {number} • Picture {picture} — 画像設定必須",
                   f"このSubjectの画像を選択してください。動画WFでも同じ画像をPicture {picture}へ設定します。\n\n"
                   "subject_hintは空欄です。衣装・顔・小道具等の補助説明が必要な場合だけ記入してください。"
+                  "被覆や模様は、この画像の人物の部位・範囲・色・素材を明記します。"
+                  "普通の顔や一時的な遮蔽を、恒常的な顔面被覆に読み替えないでください。"
                   "物体をSubjectにする場合はconcept_typeを変更します。")
         subject_image["title"] = f"Subject {number} Reference • <Picture {picture}>"
         subject_vision["title"] = f"Subject {number} Vision / EMD • <Picture {picture}>"
@@ -143,6 +149,8 @@ def build_plan_workflow(source: dict[str, Any], mode: str) -> dict[str, Any]:
           "各Visionは一つのSubjectを定義し、合計4件までです。人物だけでなく物体も指定できます。\n\n"
           "対応: Subject 1=Picture 1、Subject 2=Picture 3、Subject 3=Picture 4、Subject 4=Picture 5。"
           "背景はPicture 2で、Subject件数には含みません。歌唱対象はPlannerのlip_sync_targetで指定します。\n\n"
+          "外見補助は各Visionのsubject_hintへ人物別に記入します。lock_identityではその本文を保持します。"
+          "共通演出へ全員の被覆や装飾として書かず、確かな部位・範囲・材質を指定してください。\n\n"
           f"保存先: mv_director/4subject/{mode}_plan_*.txt。対応する_4subject_動画WFへ読み込みます。"
           "通常版WFと同じ歌詞・vocal・モデル設定を引き継ぎます。")
     validate_workflow(workflow)
@@ -199,22 +207,43 @@ def build_video_workflow(source: dict[str, Any], mode: str) -> dict[str, Any]:
     return workflow
 
 
+def prepare_saved_workflow(source: dict[str, Any], *, plan: bool) -> dict[str, Any]:
+    """Validate an existing four-Subject graph without resetting user settings."""
+    workflow = copy.deepcopy(source)
+    if plan:
+        sync_subject_inputs(workflow)
+        enhancer = _only(workflow, "MVDirectorDirectionEnhancer")
+        for number in range(1, 5):
+            name = "concept_emd" if number == 1 else f"concept_emd_{number}"
+            if _source(workflow, enhancer, name)["type"] != "MVDirectorImageToSubjectEMD":
+                raise ValueError(f"four-Subject source requires a Vision input: {name}")
+    else:
+        conditioning = _only(workflow, "MiniMaxH3ReferenceToVideo")
+        for picture in SUBJECT_PICTURES:
+            name = f"ref_images.ref_image_{picture - 1}"
+            if not any(port["name"] == name for port in conditioning["inputs"]):
+                raise ValueError(f"four-Subject source is missing reference input: {name}")
+            if _source(workflow, conditioning, name)["type"] != "LoadImage":
+                raise ValueError(f"four-Subject source requires an image input: {name}")
+    validate_workflow(workflow)
+    return workflow
+
+
 def write_workflows(source_dir: Path, output_dir: Path) -> list[Path]:
-    # Build and validate all six before writing any; only distinct names are used.
+    # Validate both before writing either. In-place synchronization is supported.
     outputs = []
-    for mode, spec in MODES.items():
-        for offset, phase, builder in ((-1, "plan_compiler", build_plan_workflow),
-                                       (0, "video", build_video_workflow)):
-            name = f"{spec['number'] * 2 + offset:02d}_{phase}_{mode}.json"
-            source_path = source_dir / name
-            target_path = output_dir / (PREFIX + name)
-            if source_path.resolve() == target_path.resolve():
-                raise ValueError("four-Subject output must not overwrite its source")
-            source = json.loads(source_path.read_text(encoding="utf-8"))
-            outputs.append((target_path, builder(source, mode)))
+    for index, name in enumerate(WORKFLOW_FILENAMES):
+        source_path = source_dir / name
+        source_text = source_path.read_text(encoding="utf-8")
+        source = json.loads(source_text)
+        workflow = prepare_saved_workflow(source, plan=index == 0)
+        # Keep browser-saved formatting too, unless a schema migration is needed.
+        formatted = source_text if workflow == source else _json_text(workflow) + "\n"
+        outputs.append((output_dir / name, formatted))
     output_dir.mkdir(parents=True, exist_ok=True)
-    for path, workflow in outputs:
-        path.write_text(_json_text(workflow) + "\n", encoding="utf-8")
+    for path, formatted in outputs:
+        if not path.exists() or path.read_text(encoding="utf-8") != formatted:
+            path.write_text(formatted, encoding="utf-8")
     return [path for path, _ in outputs]
 
 

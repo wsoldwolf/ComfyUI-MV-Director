@@ -12,6 +12,43 @@ from test_emd_compiler_node import ENGLISH_EMD, FakeLifecycle
 
 
 class CompilerTraceCacheTests(unittest.TestCase):
+    def test_pre_anatomy_neutral_cache_is_not_reused_in_either_mode(self):
+        source = ENGLISH_EMD.replace(
+            "## ショット 00:00.000",
+            "> `口元` `サブジェクト1` 00:00.000 --> 00:01.000 `閉口`\n"
+            "## ショット 00:00.000")
+        model = SimpleNamespace(path=Path("test.gguf"), selection_id="test.gguf",
+                                fingerprint="f" * 64, size=123, mtime_ns=456)
+        for mode in ("already_english", "ja_to_en"):
+            with self.subTest(mode=mode), TemporaryDirectory() as directory:
+                cache = SuccessCache(directory)
+                node = NODE_CLASS_MAPPINGS["MVDirectorEMDCompiler"]()
+                node._lifecycle = FakeLifecycle()
+                kwargs = dict(emd_text=source, translation_mode=mode, model_name="test.gguf",
+                              chat_format="auto", max_tokens=64, temperature=0.0,
+                              top_p=0.9, repetition_penalty=1.05, gpu_layers=-1, n_batch=256,
+                              n_ctx=1100, flash_attn=True, kv_cache_type="q8_0", op_offload=True,
+                              keep_model_loaded=False, seed=1, cache_mode="reuse")
+                with patch("nodes.node_emd_compiler.node._cache", return_value=cache), patch(
+                    "nodes.node_emd_compiler.node.resolve_comfy_gguf_model", return_value=model
+                ):
+                    with patch("nodes.node_emd_compiler.node._COMPILER_CACHE_VERSION",
+                               "mvd-ref2va-compiler-cache-v25-grouped-subject-references"):
+                        node.compile_emd(**kwargs)
+                    old_key = next(Path(directory).glob("*/*.json")).stem
+                    old_payload = cache.get(old_key)
+                    old_payload["plan_json"] = old_payload["plan_json"].replace(
+                        "the specified expression", "expression in the eyes, brows and cheeks")
+                    cache.put_success(old_key, old_payload)
+                    fresh = node.compile_emd(**kwargs)
+                    self.assertIn("cache=miss", fresh[2])
+                    self.assertIn("the specified expression", fresh[0])
+                    self.assertNotIn("eyes, brows and cheeks", fresh[0])
+                    reused = node.compile_emd(**kwargs)
+                    self.assertIn("cache=hit", reused[2])
+                    self.assertEqual(fresh[:2], reused[:2])
+                    self.assertEqual(len(list(Path(directory).glob("*/*.json"))), 2)
+
     def test_pre_step_ownership_cache_is_not_reused(self):
         node = NODE_CLASS_MAPPINGS["MVDirectorEMDCompiler"]()
         kwargs = dict(emd_text=ENGLISH_EMD, translation_mode="already_english",
