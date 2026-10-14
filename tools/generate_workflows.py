@@ -558,6 +558,7 @@ def _lyric_node(node_id: int, pos: tuple[int, int]) -> dict[str, Any]:
             _output("srt_text", "STRING"),
             _output("timeline", "MV_DIRECTOR_TIMELINE"),
             _output("status", "STRING"),
+            _output("lrc_text", "STRING"),
         ],
         widgets=[WHISPER_MODEL, "ja", 10000, 0, "reuse", False],
     )
@@ -885,7 +886,9 @@ def build_plan_workflow(mode: str) -> dict[str, Any]:
     _connect(workflow, 10, 0, 11, "text", "STRING")
     _connect(workflow, 9, 0, 12, "text", "STRING")
     _connect(workflow, 7, 1, 13, "text", "STRING")
-    return _decorate_plan_workflow(workflow, mode)
+    _decorate_plan_workflow(workflow, mode)
+    sync_subject_inputs(workflow)
+    return workflow
 
 
 def _decorate_plan_workflow(
@@ -1899,6 +1902,42 @@ def sync_step_ownership(workflow: dict[str, Any]) -> None:
                 named["plan_json"] = text
 
 
+def sync_subject_inputs(workflow: dict[str, Any]) -> None:
+    """Expose four Subject ports and migrate only the shared Vision route."""
+    enhancers = [n for n in workflow["nodes"] if n["type"] == "MVDirectorDirectionEnhancer"]
+    planners = [n for n in workflow["nodes"] if n["type"] == "MVDirectorTimelinePlanner"]
+    if not enhancers and not planners:
+        return
+    if len(enhancers) != 1 or len(planners) != 1:
+        raise ValueError("Subject migration requires one Enhancer and one Planner")
+    enhancer, planner = enhancers[0], planners[0]
+    outputs = enhancer["outputs"]
+    if len(outputs) == 3:
+        outputs.append(_output("subjects_emd", "STRING"))
+    elif len(outputs) != 4 or outputs[3]["name"] != "subjects_emd" or outputs[3]["type"] != "STRING":
+        raise ValueError("unexpected Enhancer output schema for Subject migration")
+    for node in (enhancer, planner):
+        for number in range(2, 5):
+            name = f"concept_emd_{number}"
+            matches = [item for item in node["inputs"] if item["name"] == name]
+            if not matches:
+                node["inputs"].append(_input(name, "STRING"))
+            elif len(matches) != 1 or matches[0]["type"] != "STRING":
+                raise ValueError(f"invalid Subject socket: {node['type']}.{name}")
+    # Leave custom author routes and separately connected Planner Subjects intact.
+    if any(item["name"] in {f"concept_emd_{n}" for n in range(2, 5)}
+           and item.get("link") is not None for item in planner["inputs"]):
+        return
+    sources = []
+    for node in (enhancer, planner):
+        link_id = node["inputs"][_input_index(node, "concept_emd")].get("link")
+        sources.append(next((tuple(link[1:3]) for link in workflow["links"]
+                             if link[0] == link_id), None))
+    if sources[0] is not None and sources[0] == sources[1]:
+        _disconnect_input(workflow, planner["id"], "concept_emd")
+        _connect(workflow, enhancer["id"], 3, planner["id"], "concept_emd", "STRING")
+
+
 def sync_planner_schema(workflow: dict[str, Any]) -> None:
     """Remove the retired batch widget without moving nodes or linked sockets."""
     for node in workflow["nodes"]:
@@ -2094,6 +2133,21 @@ def build_26b_iq2_m_plan_variant(
     return workflow
 
 
+def sync_lyric_outputs(workflow: dict[str, Any]) -> None:
+    """Append LRC without changing any existing output slot or user setting."""
+    expected = [("template_emd", "STRING"), ("srt_text", "STRING"),
+                ("timeline", "MV_DIRECTOR_TIMELINE"), ("status", "STRING")]
+    for node in workflow["nodes"]:
+        if node["type"] != "MVDirectorLyricSegmentation":
+            continue
+        outputs = node["outputs"]
+        shape = [(item["name"], item["type"]) for item in outputs]
+        if shape == expected:
+            outputs.append(_output("lrc_text", "STRING"))
+        elif shape != expected + [("lrc_text", "STRING")]:
+            raise ValueError("unexpected Lyric Segmentation output schema; manual migration required")
+
+
 def write_workflows(context_loop_root: Path, output_dir: Path, *, runtime_only: bool = False,
                     direction_only: bool = False, candidate_only: bool = False,
                     timing_only: bool = False, video_runtime_only: bool = False,
@@ -2101,7 +2155,38 @@ def write_workflows(context_loop_root: Path, output_dir: Path, *, runtime_only: 
                     acceleration_only: bool = False, variant_12b_only: bool = False,
                     variant_26b_iq2_m_only: bool = False,
                     variant_26b_iq2_m_29gpu_only: bool = False,
-                    variant_26b_iq2_m_30gpu_only: bool = False) -> None:
+                    variant_26b_iq2_m_30gpu_only: bool = False,
+                    subject_inputs_only: bool = False, lyric_outputs_only: bool = False) -> None:
+    if lyric_outputs_only:
+        pending = []
+        for path in sorted(output_dir.glob("*.json")):
+            text = path.read_text(encoding="utf-8")
+            workflow = json.loads(text)
+            before = copy.deepcopy(workflow)
+            sync_lyric_outputs(workflow)
+            validate_workflow(workflow)
+            if workflow != before:
+                formatted = (json.dumps(workflow, ensure_ascii=False, separators=(",", ":"))
+                             if len(text.splitlines()) == 1 else _json_text(workflow))
+                pending.append((path, formatted + "\n"))
+        for path, text in pending:
+            path.write_text(text, encoding="utf-8")
+        return
+    if subject_inputs_only:
+        pending_writes = []
+        for path in sorted(output_dir.glob("*.json")):
+            original_text = path.read_text(encoding="utf-8")
+            workflow = json.loads(original_text)
+            if not any(n["type"] == "MVDirectorDirectionEnhancer" for n in workflow["nodes"]):
+                continue
+            sync_subject_inputs(workflow)
+            validate_workflow(workflow)
+            formatted = (json.dumps(workflow, ensure_ascii=False, separators=(",", ":"))
+                         if len(original_text.splitlines()) == 1 else _json_text(workflow))
+            pending_writes.append((path, formatted + "\n"))
+        for path, formatted in pending_writes:
+            path.write_text(formatted, encoding="utf-8")
+        return
     if (variant_12b_only or variant_26b_iq2_m_only
             or variant_26b_iq2_m_29gpu_only or variant_26b_iq2_m_30gpu_only):
         source_path = output_dir / "01_plan_compiler_context_loop.json"
@@ -2257,6 +2342,10 @@ def main() -> None:
     parser.add_argument("--output-dir", type=Path, default=ROOT / "workflows")
     parser.add_argument("--sync-model-runtime", action="store_true",
                         help="Update model settings without rebuilding layout or saved Plan")
+    parser.add_argument("--sync-subject-inputs", action="store_true",
+                        help="Expose four Subject inputs and route merged Subjects, preserving user settings")
+    parser.add_argument("--sync-lyric-outputs", action="store_true",
+                        help="Append LRC output without changing existing sockets, media or saved Plan")
     parser.add_argument("--sync-direction-settings", action="store_true",
                         help="Apply current motion profile and user prompt, preserving layout and video Plan")
     parser.add_argument("--sync-candidate-policy", action="store_true",
@@ -2290,7 +2379,9 @@ def main() -> None:
                     variant_12b_only=args.sync_12b_variant,
                     variant_26b_iq2_m_only=args.sync_26b_iq2_m_variant,
                     variant_26b_iq2_m_29gpu_only=args.sync_26b_iq2_m_29gpu_variant,
-                    variant_26b_iq2_m_30gpu_only=args.sync_26b_iq2_m_30gpu_variant)
+                    variant_26b_iq2_m_30gpu_only=args.sync_26b_iq2_m_30gpu_variant,
+                    subject_inputs_only=args.sync_subject_inputs,
+                    lyric_outputs_only=args.sync_lyric_outputs)
 
 
 if __name__ == "__main__":

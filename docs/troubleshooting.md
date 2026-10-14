@@ -20,7 +20,10 @@ Visionで`MTMDChatHandler`がない場合は[導入マニュアル](installation
 
 Lyric Segmentationは、入力した全atomic lyric segmentが音源内に歌われていることを要求します。Suno等が後半の歌詞を歌わず終了した音源では、未歌唱分を正しく停止として報告します。対応音声を用意するか、歌われていない歌詞を入力から除きます。
 
-入力はUTF-8 plain lyricsです。`[VERSE]`、`[CHORUS]`、`[BRIDGE]`等、任意のASCII section名を使えます。LRC、SRT、VTT、timestampは入力できません。
+入力はUTF-8 plain lyricsです。`[VERSE]`、`[CHORUS]`、`[BRIDGE]`等、任意のASCII section名を使えます。
+`[Verse 1]`、`[Final Chorus]`、`[Instrumental Rave Break]`のような角括弧内の空白も許容します。
+本文のない伴奏見出しも有効ですが、見出しだけで伴奏の時刻は確定しません。
+LRC、SRT、VTT、timestampは入力できません。
 
 ## LLMの行protocol不整合が発生する
 

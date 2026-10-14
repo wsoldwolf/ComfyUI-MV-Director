@@ -14,6 +14,7 @@ from ..direction.profiles import (
     render_profile_direction,
 )
 from ..emd import parse_emd
+from ..emd.subject_references import normalize_subject_references
 from ..h3_contract import DEFAULT_H3_TIMING_PROFILE, H3TimingProfile
 from ..lyrics import format_emd_time
 from .errors import TimelinePlannerError
@@ -164,7 +165,7 @@ def render_completed_emd(
                 body.append(scene_reinforcement)
             if not body:
                 body.append("未計画")
-            lines.extend(f"* {value}" for value in body)
+            lines.extend(f"* {normalize_subject_references(value)}" for value in body)
             if lip_sync_mode == "lyrics":
                 lines.extend(
                     f"* `リップシンク` `歌詞` `{lip_sync_target}` 「{lyric.text}」"

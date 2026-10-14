@@ -12,7 +12,31 @@ import importlib.metadata
 import json
 import math
 from pathlib import Path
+import re
 import time
+
+
+def analysis_windows(values, duration):
+    """Validate explicit source-clock windows; retain the original probe defaults."""
+    if not math.isfinite(duration) or duration <= 0:
+        raise ValueError("invalid source duration")
+    values = values if values is not None else [
+        ("intro", 0.0, 20.0), ("interlude", 85.680, 106.0), ("return", 108.0, 123.0),
+    ]
+    if not values:
+        raise ValueError("at least one analysis window is required")
+    result, labels = [], set()
+    for label, start, end in values:
+        if not isinstance(label, str) or not re.fullmatch(r"[a-z][a-z0-9_-]*", label):
+            raise ValueError("window labels must be lowercase safe filename components")
+        if label in labels:
+            raise ValueError("duplicate analysis window label")
+        start, end = float(start), float(end)
+        if not (math.isfinite(start) and math.isfinite(end) and 0 <= start < end <= duration):
+            raise ValueError("analysis window exceeds source duration or has invalid bounds")
+        labels.add(label)
+        result.append((label, start, end))
+    return result
 
 
 def window_beats(times, start, end):
@@ -148,6 +172,8 @@ def run(args):
     import matplotlib.pyplot as plt
 
     source = args.fullmix.resolve(strict=True)
+    source_info = sf.info(source)
+    windows = analysis_windows(getattr(args, "window", None), source_info.frames / source_info.samplerate)
     output = args.output.resolve()
     if output.exists() and any(output.iterdir()):
         raise ValueError("Use a new empty research directory; previous evidence is not overwritten")
@@ -194,9 +220,6 @@ def run(args):
         writer.writerows((float(t), float(o), float(rms[min(i, len(rms) - 1)]))
                          for i, (t, o) in enumerate(zip(frame_times, onset)))
 
-    windows = [("intro", 0.0, 20.0), ("interlude", 85.680, 106.0), ("return", 108.0, 123.0)]
-    if duration < max(end for _, _, end in windows):
-        raise ValueError("Momiji2 research windows exceed source duration")
     result = {"schema": "MVD_RHYTHM_PROBE_V1", "timebase": "original_fullmix_pcm",
               "source": str(source), "file_sha256": source_hash, "sample_rate": rate,
               "source_samples": len(audio), "duration_s": duration,
@@ -210,7 +233,8 @@ def run(args):
               "versions": {key: importlib.metadata.version(key) for key in
                            ["librosa", "numpy", "scipy", "soundfile", "numba", "soxr"]},
               "windows": []}
-    fig, axes = plt.subplots(3, 1, figsize=(14, 8), constrained_layout=True)
+    fig, axes = plt.subplots(len(windows), 1, figsize=(14, max(3, len(windows) * 2.7)), constrained_layout=True)
+    axes = np.atleast_1d(axes)
     for axis, (label, start, end) in zip(axes, windows):
         begin_sample, end_sample = source_sample(start, rate, len(audio)), source_sample(end, rate, len(audio))
         start = begin_sample / rate
@@ -282,6 +306,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--fullmix", type=Path)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--window", nargs=3, action="append", metavar=("LABEL", "START", "END"),
+                        help="Repeat for explicit original-source windows; defaults to the legacy Momiji2 windows")
     modes = parser.add_mutually_exclusive_group()
     modes.add_argument("--audible-preview", action="store_true")
     modes.add_argument("--bpm-candidate", type=float)

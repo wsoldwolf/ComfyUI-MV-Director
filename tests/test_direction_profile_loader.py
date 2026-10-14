@@ -10,6 +10,32 @@ from core.direction.profile_loader import (
 
 
 class DirectionProfileLoaderTests(unittest.TestCase):
+    def test_bundled_profiles_do_not_inject_material_specific_identity(self) -> None:
+        catalog = load_direction_profiles(Path(__file__).parents[1] / "profiles")
+        for kind, profiles in (
+            ("style", catalog.style), ("motion", catalog.motion),
+            ("camera", catalog.camera),
+        ):
+            for name, text in profiles.items():
+                with self.subTest(kind=kind, profile=name):
+                    for example in (
+                        "動物耳", "耳内部", "split-toe足袋", "黒い木下駄",
+                        "Animal ears and tails", "typical human eye proportions",
+                    ):
+                        self.assertNotIn(example, text)
+        self.assertNotIn("アニメMV", catalog.camera["cinema_mv"])
+        self.assertIn("映画的なMV", catalog.camera["cinema_mv"])
+
+    def test_photoreal_metadata_preserves_defined_surfaces(self) -> None:
+        catalog = load_direction_profiles(Path(__file__).parents[1] / "profiles")
+        retention = catalog.style_retention["illust_to_photoreal"]
+        self.assertTrue(retention.startswith("`partially_preserved` "))
+        self.assertIn("facial surface, body covering", retention)
+        self.assertIn("defined shape and covering", catalog.style_scene_reinforcement["illust_to_photoreal"])
+        for name in ("anime_emotional_mv", "anime_story_mv"):
+            self.assertIn("被覆された顔面はその形状と素材を保つ", catalog.render_prompts["motion"][name])
+            self.assertIn("被覆された顔面はその形状と素材を保つ", catalog.render_prompts["camera"][name])
+
     def test_loads_user_profiles_from_three_external_directories(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

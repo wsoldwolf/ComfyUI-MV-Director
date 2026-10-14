@@ -110,6 +110,54 @@ Lyric SegmentationのSRT本文は前段workflowで同じcanonical segment列か�
 
 ## 再生成
 
+### 4 Subject専用WF
+
+通常版とは別名のWFと専用ジェネレーターを用意しています。
+現在の生成対象は、配置済みの次のContext Loop版2本だけです。
+この2本を編集可能な元データとして読み込み、素材・モデル設定・演出候補・プロファイル・
+バイパス・配線・レイアウト・配色・保存済みPlanを保持します。通常版は変更しません。
+
+| 方式 | Plan / Compiler | 動画生成 |
+| --- | --- | --- |
+| Context Loop（推奨） | `01_plan_compiler_context_loop_4subject.json` | `02_video_context_loop_4subject.json` |
+
+```cmd
+python tools/generate_4subject_workflows.py
+```
+
+使用するSubjectは前段・動画WFの画像欄をそれぞれ設定してから実行します。
+使用しないSubjectの画像・Visionは両段でバイパスし、同じ人物を自動複製しません。
+現在の配置済みWFではSubject 4がバイパスされています。
+各Subjectの`subject_hint`はその人物に合う説明へ変更してください。物体を使う場合は`concept_type`も変更します。
+
+| 定義 | 前段Visionのpicture_index | 動画側H3入力 |
+| --- | ---: | --- |
+| Subject 1 | 1 | `ref_images.ref_image_0` |
+| 背景（Subject件数に含まない） | 2 | `ref_images.ref_image_1` |
+| Subject 2 | 3 | `ref_images.ref_image_2` |
+| Subject 3 | 4 | `ref_images.ref_image_3` |
+| Subject 4 | 5 | `ref_images.ref_image_4` |
+
+前段では4件のVision EMDをEnhancerの`concept_emd`〜`concept_emd_4`へ接続し、
+統合した`subjects_emd`だけをPlannerの`concept_emd`へ渡します。
+Plannerの追加3入力は未接続にし、同じSubjectの二重登録を防ぎます。
+Subject番号は入力順です。各Visionは一つのSubjectを定義し、合計4件までです。
+歌唱対象はPlannerの`lip_sync_target`で指定します。4 Subjectは必ずしも4人を意味しません。
+
+前段の保存先は`mv_director/4subject/`、動画のrun名は`mv_director_4subject_<方式>`です。
+対応する前段で新しく生成したPlan JSON(txt)を動画WFへ読み込み、両段で同じ画像を指定してください。
+再生成で動画WF内の保存済みPlanは差し替えません。追加画像を含むPlanの映像品質や
+参照画像5枚でのVRAM負荷・速度は素材次第であり、2人物の短区間検証と同等の結果は保証しません。
+
+4 Subject版を直接編集して保存した後、専用ジェネレーターを実行すると配線を検査して同期します。
+通常版の設定で上書きせず、旧`_4subject_`プレフィクス版や削除済みの他方式を再作成しません。
+別ディレクトリへ生成する場合は`--output-dir`を指定します。
+`--source-dir`には上記2本を配置したディレクトリを指定できます（既定は`workflows`）。
+2本とも検査に成功してから書き込みます。元データが不足している場合、通常版からの自動補完は行いません。
+ノード更新後はComfyUIを再起動し、新しいWFを開き直してください。
+
+### 通常版WF
+
 Context Loop 0.7.0のLoop Trim入力定義へ移行する場合は、
 `python tools/generate_workflows.py --sync-context-loop-runtime`を実行します。
 旧`retain_overlap_frames`を除去し、MVの音画同期を維持する

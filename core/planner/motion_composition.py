@@ -12,8 +12,6 @@ def select_motion_composition(scene, positions, direction, concept_emd):
                  else MOTION_TEMPLATES.get(profile, ()))
     if not templates:
         return None, "disabled"
-    if sum(line.startswith("* ") for line in concept_emd.splitlines()) != 1:
-        return None, "requires_one_subject"
     if any(p["fixed_performance"] or p["author_body"] for p in positions):
         return None, "authored_performance"
     eligible = [p for p in positions if not p["fixed_camera"]

@@ -12,6 +12,7 @@ Subject EMD、Scene EMD、ユーザー希望、三つのprofileを統合し、MV
 | `motion_profile` | `anime_emotional_mv` | 全体の身体演技方針 |
 | `camera_profile` | `anime_emotional_mv` | 全体の撮影方針。Shot固有のカメラはPlannerが決める |
 | `concept_emd` | 任意 | Image to Subject EMD等の概念EMD |
+| `concept_emd_2` / `concept_emd_3` / `concept_emd_4` | 未接続 | 追加のSubject EMD断片。統合後のSubjectは合計4件まで |
 | `scene_emd` | 任意 | scene-only Visionが確定した環境、時刻・照明baseline、背景Picture。Plannerにも同じ断片を渡す |
 | `direction_emd_passthrough` | 任意 | profileを使わず、利用者が直接書く演出EMD |
 | `cache_mode` | `reuse` | 成功結果の再利用方針 |
@@ -59,10 +60,27 @@ DirectionはCompiler後の全Scene `prompt_prefix`へ共通適用されます。
 | `direction` | Timeline Plannerへ渡すtyped artifact |
 | `direction_emd_preview` | 人が確認・保存できる演出EMD |
 | `status` | cache hit/miss、issue等 |
+| `subjects_emd` | 入力順に統合したSubject EMD。Plannerの`concept_emd`へ接続できる |
+
+## 複数Subject入力
+
+各入力は`# サブジェクト`と箇条書きだけを持つEMD断片です。既存の`concept_emd`一つに複数行を書く方法も維持します。空入力は無視し、入力番号順・断片内の行順に`サブジェクト1`〜`サブジェクト4`を割り当てます。途中の入力が空の場合も番号を詰めるため、`status`とINFOログの`subject_map`で対応を確認してください。
+
+説明文と画像・動画・音声参照は原文のまま保持します。画像番号はSubject番号と独立しており、自動で振り直しません。複数のVisionノードを使う場合は、各ノードの画像slotと動画WFの実参照slotを一致させてください。同じ画像・説明を持つ行も別Subjectとして残し、意味による重複除去はしません。`scene_emd`はこのSubject件数に含みません。
+
+推奨接続は、最大4断片をEnhancerへ渡し、`subjects_emd`をPlannerの`concept_emd`へ渡す方法です。Plannerの追加入力へ同じ断片を再接続すると、重複して別Subjectに数えられます。既存の出力0〜2は変えず、統合済み出力を末尾の3へ追加しています。全入力が空なら出力も空とし、未指定人物の補完は従来どおりPlanner側だけで行います。
+
+配布のPlan WFはこの統合出力をPlannerへ接続し、両ノードの`concept_emd_2`〜`concept_emd_4`を公開しています。ノード更新後はComfyUIを再起動し、同期したWFを読み込んでください。人物を追加する場合は、Image to Subject EMDを複製して画像slotを指定し、その出力をEnhancerの追加入力へ接続します。動画WFでは同じ画像を対応する`ref_images.ref_image_N`へ接続してください。例えば`画像3`はゼロベースの`ref_images.ref_image_2`です。既定の素材は一人のままです。
+
+既存WFはジェネレーターの`--sync-subject-inputs`で更新できます。レイアウト・配色・widget値・素材を保持し、従来の同じVision出力をEnhancerとPlannerへ二重に渡す配線だけを統合出力へ変更します。Plannerへ別の作者断片や追加入力を独自接続している場合は、その配線を保持するため、必要に応じて手動で統合してください。
+
+入力統合とCompilerへの受け渡しに加え、Plannerの演技対象・人物別終端状態、補完の適用対象、小道具の所有者別の手の計画までCPU試験しています。Enhancerは人物別の演技を追加推論せず、同じSubject定義をPlannerへ渡します。2026-10-13のGemma4 31B Q4_K_S実推論では、人物二人・木・舞台の4入力を統合し、単一Subjectの対照入力も完了しました。続く英訳比較では、断片英訳で主体と対象が分断される問題を確認し、複数Subjectの関係文を一時記号で保護した全文英訳へ変更しました。配布Plan WFの接続同期に加え、実画像を使う人物二人・古木・岩の4 Subjectを通常3段で推論し、16.5秒のH3生成も完了しています。四人の同時演技や、英文の意味・映像品質全体を保証するものではありません。詳細は[Compilerの翻訳境界](emd-compiler.md#翻訳の出典分離とログ)を参照してください。
 
 ## 保持方針とpass-through
 
-画風変換時は「参照の媒体表現まで保持する」と「別媒体として描き直す」が矛盾しやすいため、`retention_policy=profile`を基準にします。`illust_to_photoreal`は髪色、瞳色、衣装、配色、装飾等の識別要素を保持しつつ、物理的な実写表現へ変換します。
+画風変換時は「参照の媒体表現まで保持する」と「別媒体として描き直す」が矛盾しやすいため、`retention_policy=profile`を基準にします。`illust_to_photoreal`は各Subjectと参照画像にある形状、顔面の被覆、衣装、配色、装飾等の識別要素を保持しつつ、材質・照明・レンズ表現を物理的な実写表現へ変換します。通常の人間の顔や露出した身体、特定の動物部位を一律に追加するプロファイルではありません。顔まで覆う全身スーツ等は、被覆面自体をSubjectの特徴として記述してください。
+
+プロファイル変更後はComfyUIを再起動し、01_ WFでEMDとPlanを再生成してください。既存Planの`prompt_prefix`は更新されません。顔を覆ったまま身体演技を見せる用途では、歌唱口の可視性と競合しないようPlannerの`lip_sync_mode=off`も検討してください。これは今回の生成設定の選択であり、一般の歌唱MVのリップシンクを無効化する変更ではありません。
 
 ユーザーが全体方針を直接管理したい場合は、各profileを`passthrough`にして`direction_emd_passthrough`を接続します。pass-through本文はLLMによる言い換えを避けたい用途に使います。
 

@@ -1,4 +1,4 @@
-"""Render Template EMD and SRT from the canonical timeline."""
+"""Render Template EMD, SRT and LRC from the canonical timeline."""
 
 from __future__ import annotations
 
@@ -65,3 +65,16 @@ def render_srt(timeline: TimelineArtifact, *, offset_ms: int = 0) -> str:
             f"{index}\n{format_srt_time(start)} --> {format_srt_time(end)}\n{lyric.text}"
         )
     return "\n\n".join(blocks) + ("\n" if blocks else "")
+
+
+def render_lrc(timeline: TimelineArtifact, *, offset_ms: int = 0) -> str:
+    """Simple LRC: start times at centisecond precision, no end-time records."""
+    timeline.validate()
+    lines = []
+    for lyric in timeline.lyrics:
+        start = max(0, lyric.start_ms + offset_ms)
+        minutes, remainder = divmod(start, 60000)
+        seconds, milliseconds = divmod(remainder, 1000)
+        text = " ".join(line.strip() for line in lyric.text.splitlines() if line.strip())
+        lines.append(f"[{minutes:02d}:{seconds:02d}.{milliseconds // 10:02d}]{text}")
+    return "\n".join(lines) + ("\n" if lines else "")

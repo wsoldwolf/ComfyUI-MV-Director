@@ -1,6 +1,6 @@
 {
   "last_node_id": 26,
-  "last_link_id": 22,
+  "last_link_id": 23,
   "nodes": [
     {
       "id": 5,
@@ -650,6 +650,11 @@
           "name": "status",
           "type": "STRING",
           "links": null
+        },
+        {
+          "name": "lrc_text",
+          "type": "STRING",
+          "links": null
         }
       ],
       "title": "Lyric Segmentation",
@@ -701,8 +706,7 @@
           "name": "emd_fragment",
           "type": "STRING",
           "links": [
-            5,
-            9
+            5
           ]
         },
         {
@@ -922,6 +926,21 @@
           "widget": {
             "name": "user_request"
           }
+        },
+        {
+          "name": "concept_emd_2",
+          "type": "STRING",
+          "link": null
+        },
+        {
+          "name": "concept_emd_3",
+          "type": "STRING",
+          "link": null
+        },
+        {
+          "name": "concept_emd_4",
+          "type": "STRING",
+          "link": null
         }
       ],
       "outputs": [
@@ -941,6 +960,13 @@
           "name": "status",
           "type": "STRING",
           "links": null
+        },
+        {
+          "name": "subjects_emd",
+          "type": "STRING",
+          "links": [
+            23
+          ]
         }
       ],
       "title": "Direction Enhancer",
@@ -998,7 +1024,7 @@
         {
           "name": "concept_emd",
           "type": "STRING",
-          "link": 9
+          "link": 23
         },
         {
           "name": "scene_emd",
@@ -1022,6 +1048,21 @@
           "widget": {
             "name": "seed"
           }
+        },
+        {
+          "name": "concept_emd_2",
+          "type": "STRING",
+          "link": null
+        },
+        {
+          "name": "concept_emd_3",
+          "type": "STRING",
+          "link": null
+        },
+        {
+          "name": "concept_emd_4",
+          "type": "STRING",
+          "link": null
         }
       ],
       "outputs": [
@@ -1298,14 +1339,6 @@
       "STRING"
     ],
     [
-      9,
-      3,
-      0,
-      9,
-      1,
-      "STRING"
-    ],
-    [
       10,
       15,
       0,
@@ -1407,6 +1440,14 @@
       0,
       8,
       3,
+      "STRING"
+    ],
+    [
+      23,
+      8,
+      3,
+      9,
+      1,
       "STRING"
     ]
   ],

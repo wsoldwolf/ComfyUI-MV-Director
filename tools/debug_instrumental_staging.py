@@ -86,7 +86,7 @@ def align(args):
             cache_mode="refresh", keep_whisper_loaded=False)
     if not isinstance(result, tuple):
         raise RuntimeError("lyric alignment was blocked; inspect saved Whisper trace")
-    template, srt, timeline, status = result
+    template, srt, timeline, status, lrc = result
     fullmix, mix_rate, mix_digest = decode_audio(args.fullmix.resolve(strict=True), args.ffmpeg)
     if mix_rate != rate or abs(fullmix.shape[-1] - wave.shape[-1]) > 1:
         raise ValueError("fullmix differs by more than the approved one-sample tail")
@@ -99,6 +99,7 @@ def align(args):
     template = render_template_emd(timeline, audio_activity=metadata).text
     (output / "template.md").write_text(template, encoding="utf-8")
     (output / "lyrics.srt").write_text(srt, encoding="utf-8")
+    (output / "lyrics.lrc").write_text(lrc, encoding="utf-8")
     save(output / "timeline.json", timeline.to_dict())
     save(output / "activity.json", diagnostic)
     save(output / "alignment-summary.json", {"status": status, "elapsed_s": time.perf_counter()-start,

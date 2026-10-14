@@ -144,8 +144,8 @@ class _LlamaDirectionBackend:
 
 
 class MVDirectorDirectionEnhancer:
-    RETURN_TYPES = ("MV_DIRECTOR_DIRECTION", "STRING", "STRING")
-    RETURN_NAMES = ("direction", "direction_emd_preview", "status")
+    RETURN_TYPES = ("MV_DIRECTOR_DIRECTION", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("direction", "direction_emd_preview", "status", "subjects_emd")
     FUNCTION = "enhance"
     CATEGORY = "MV Director/Core"
     DESCRIPTION = (
@@ -195,6 +195,9 @@ class MVDirectorDirectionEnhancer:
                 "concept_emd": ("STRING", {"default": "", "multiline": True}),
                 "scene_emd": ("STRING", {"default": "", "multiline": True}),
                 "direction_emd_passthrough": ("STRING", {"forceInput": True}),
+                "concept_emd_2": ("STRING", {"forceInput": True}),
+                "concept_emd_3": ("STRING", {"forceInput": True}),
+                "concept_emd_4": ("STRING", {"forceInput": True}),
             },
         }
 
@@ -223,13 +226,19 @@ class MVDirectorDirectionEnhancer:
         concept_emd: str = "",
         scene_emd: str = "",
         direction_emd_passthrough: str = "",
-    ) -> tuple[DirectionArtifact, str, str]:
+        concept_emd_2: str = "",
+        concept_emd_3: str = "",
+        concept_emd_4: str = "",
+    ) -> tuple[DirectionArtifact, str, str, str]:
         with self._lock:
             configure_progress(3)
             if cache_mode not in CACHE_MODES:
                 raise ValueError("cache_mode must be reuse, refresh, or disabled")
             value = DirectionEnhancerInput(
                 concept_emd=concept_emd,
+                concept_emd_2=concept_emd_2,
+                concept_emd_3=concept_emd_3,
+                concept_emd_4=concept_emd_4,
                 scene_emd=scene_emd,
                 user_request=user_request,
                 style_profile=style_profile,
@@ -239,6 +248,8 @@ class MVDirectorDirectionEnhancer:
                 direction_emd_passthrough=direction_emd_passthrough,
             )
             value.validate()
+            merged = value.merged_subjects
+            LOGGER.info("[MV Director - Direction Enhancer] Subject inputs merged; %s", merged.status)
             advance_progress()
             config = LlamaRuntimeConfig(
                 chat_format=chat_format,
@@ -273,7 +284,8 @@ class MVDirectorDirectionEnhancer:
                     result.direction_emd_preview,
                     "cache=bypass; model=not_loaded; passthrough=yes; "
                     f"issues={len(result.issues)}; missing_retry=no; "
-                    f"staging_candidates={len(result.direction.staging_candidates)}",
+                    f"staging_candidates={len(result.direction.staging_candidates)}; {merged.status}",
+                    merged.text,
                 )
             model = resolve_comfy_gguf_model(model_name)
             system_prompt = _system_prompt()
@@ -293,6 +305,7 @@ class MVDirectorDirectionEnhancer:
                     ),
                     "input": {
                         "concept_emd": value.normalized_concept_emd,
+                        "subject_inputs": value.subject_inputs,
                         "scene_emd": value.normalized_scene_emd,
                         "user_request": value.normalized_user_request,
                         "style_profile": style_profile,
@@ -349,4 +362,4 @@ class MVDirectorDirectionEnhancer:
                 f"missing_retry={'yes' if retried else 'no'}; "
                 f"staging_candidates={len(direction.staging_candidates)}"
             )
-            return direction, preview, status
+            return direction, preview, status + "; " + merged.status, merged.text

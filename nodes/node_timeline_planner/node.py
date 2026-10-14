@@ -14,7 +14,7 @@ from typing import Any
 
 try:
     from ...core.direction.profiles import planner_profile_metadata
-    from ...core.emd import parse_emd
+    from ...core.emd import parse_emd, merge_subject_emd
     from ...core.artifacts import DirectionArtifact, EMDTextArtifact, normalize_newlines, sha256_text
     from ...core.inference import (
         LlamaCppLifecycle,
@@ -26,6 +26,7 @@ try:
     )
     from ...core.planner import (
         PLANNER_ALGORITHM_VERSION,
+        TimelinePlannerError,
         PlannerContent,
         generate_planner_content,
         normalize_concept_emd,
@@ -40,7 +41,7 @@ try:
     from ...core.protocols import parse_llm_records
 except ImportError:  # Standalone repository tests.
     from core.direction.profiles import planner_profile_metadata
-    from core.emd import parse_emd
+    from core.emd import parse_emd, merge_subject_emd
     from core.artifacts import DirectionArtifact, EMDTextArtifact, normalize_newlines, sha256_text
     from core.inference import (
         LlamaCppLifecycle,
@@ -52,6 +53,7 @@ except ImportError:  # Standalone repository tests.
     )
     from core.planner import (
         PLANNER_ALGORITHM_VERSION,
+        TimelinePlannerError,
         PlannerContent,
         generate_planner_content,
         normalize_concept_emd,
@@ -85,6 +87,9 @@ _PROMPT_FILES = {
     "scene-author-performance": "timeline_planner_scene_author_performance_system_prompt.txt",
     "scene-author-camera": "timeline_planner_scene_author_camera_system_prompt.txt",
     "scene-author-composition-choice": "timeline_planner_scene_author_composition_choice_system_prompt.txt",
+}
+_PERFORMANCE_CANDIDATE_PROMPT_FILES = {
+    "performance-candidate-addendum": "timeline_planner_performance_candidate_addendum.txt",
 }
 _SCENE_AUTHOR_RECORD_TYPES = {
     "scene-author-event": "EVENT",
@@ -140,12 +145,15 @@ def _protocol_issue_shapes(response: str, issues: tuple[Any, ...]) -> str:
     return ",".join(shapes)
 
 
-def _system_prompts(*, prop_holding: bool = False) -> dict[str, str]:
+def _system_prompts(
+    *, prop_holding: bool = False, performance_candidates: bool = False,
+) -> dict[str, str]:
     root = Path(__file__).resolve().parents[2] / "prompts"
     result = {
         task: (root / filename).read_text(encoding="utf-8").rstrip() + "\n"
         for task, filename in {
             **_PROMPT_FILES, **(_PROP_PROMPT_FILES if prop_holding else {}),
+            **(_PERFORMANCE_CANDIDATE_PROMPT_FILES if performance_candidates else {}),
         }.items()
     }
     if any(not value.strip() for value in result.values()):
@@ -552,8 +560,11 @@ class MVDirectorTimelinePlanner:
                 "save_debug_output": ("BOOLEAN", {"default": False}),
                 "staging_candidate_policy": (list(STAGING_CANDIDATE_POLICIES), {
                     "default": "optional",
-                    "tooltip": "Scene Author専用。prefer_matchedは現在Shotの歌詞に適合する演出候補を優先します。確定Shotは変更せず、候補の採用を強制しません。",
+                    "tooltip": "Scene Author専用。prefer_matchedは歌詞に合う演出候補をEventで、長い無声区間に合う演技候補をPerformanceで優先検討します。確定Shotは変更せず、採用を強制しません。",
                 }),
+                "concept_emd_2": ("STRING", {"forceInput": True}),
+                "concept_emd_3": ("STRING", {"forceInput": True}),
+                "concept_emd_4": ("STRING", {"forceInput": True}),
             },
         }
 
@@ -584,6 +595,9 @@ class MVDirectorTimelinePlanner:
         model_name_override: str = "",
         save_debug_output: bool = False,
         staging_candidate_policy: str = "optional",
+        concept_emd_2: str = "",
+        concept_emd_3: str = "",
+        concept_emd_4: str = "",
     ) -> Any:
         with self._lock:
             validate_staging_candidate_policy(staging_candidate_policy)
@@ -601,6 +615,12 @@ class MVDirectorTimelinePlanner:
                     normalize_newlines(template_emd),
                 )
                 status = "complete=yes; source=author_emd; model=skipped"
+                if any((concept_emd, concept_emd_2, concept_emd_3, concept_emd_4)):
+                    _LOGGER.warning(
+                        "[MV Director - Timeline Planner] Subject inputs ignored; "
+                        "full author EMD owns its Subject definitions"
+                    )
+                    status += "; subject_inputs=ignored_author_emd"
                 _LOGGER.info(
                     "[MV Director - Timeline Planner] full author EMD accepted; "
                     "LLM and profile generation skipped"
@@ -609,7 +629,15 @@ class MVDirectorTimelinePlanner:
             selected_direction = direction or DirectionArtifact()
             selected_direction.validate()
             template = parse_template_emd(template_emd)
-            concept = normalize_concept_emd(concept_emd)
+            try:
+                merged = merge_subject_emd(
+                    concept_emd, concept_emd_2, concept_emd_3, concept_emd_4,
+                )
+            except ValueError as exc:
+                raise TimelinePlannerError(str(exc)) from exc
+            concept = normalize_concept_emd(merged.text)
+            subject_status = merged.status if merged.text else "subjects=1; subject_map=default"
+            _LOGGER.info("[MV Director - Timeline Planner] Subject inputs merged; %s", subject_status)
             scene = normalize_scene_emd(scene_emd)
             config = LlamaRuntimeConfig(
                 chat_format="" if chat_format == "auto" else chat_format,
@@ -665,7 +693,7 @@ class MVDirectorTimelinePlanner:
                     direction=selected_direction,
                     lip_sync_mode=lip_sync_mode,
                     lip_sync_target=lip_sync_target,
-                    system_prompts=_system_prompts(prop_holding=True),
+                    system_prompts=_system_prompts(prop_holding=True, performance_candidates=True),
                     runtime_config=config,
                     staging_candidate_policy=staging_candidate_policy,
                     interrupt_callback=_interrupt,
@@ -678,11 +706,11 @@ class MVDirectorTimelinePlanner:
                     lip_sync_mode=lip_sync_mode, lip_sync_target=lip_sync_target,
                     lip_sync_audio_slot=lip_sync_audio_slot,
                 )
-                return emd.text, emd, "complete=yes; source=author_shots; model=skipped"
+                return emd.text, emd, "complete=yes; source=author_shots; model=skipped; " + subject_status
             selection = model_name_override.strip() or model_name
             model = resolve_comfy_gguf_model(selection)
             self._backend.transport_policy = _planner_transport_policy(model.selection_id)
-            prompts = _system_prompts(prop_holding=True)
+            prompts = _system_prompts(prop_holding=True, performance_candidates=True)
             if author_counts["scene-author-performance"]:
                 author_counts["subject-prop-inventory"] = 1
                 author_counts["scene-author-prop-decision"] = author_counts["scene-author-performance"]
@@ -815,11 +843,14 @@ class MVDirectorTimelinePlanner:
                     f"retries={len(content.retried_scenes)}; "
                     f"protocol_recovered={content.protocol_recovered_count}; cache={cache_status}"
                 )
+            status += "; " + subject_status
             if save_debug_output:
                 debug_path = _debug_write(
                     key,
                     {
                         "cache_key": key,
+                        "subjects_emd": concept,
+                        "subject_map": [item.to_dict() for item in merged.bindings],
                         "status": status,
                         "content": None if content is None else content.to_dict(),
                         "trace": self._backend.trace,

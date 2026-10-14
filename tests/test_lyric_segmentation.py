@@ -62,6 +62,38 @@ class PlainLyricsTests(unittest.TestCase):
             [("千年鳥居", "VERSE_1"), ("月明かり", "CHORUS")],
         )
 
+    def test_suno_multiword_headings_and_empty_instrumental_section(self) -> None:
+        segments = parse_plain_lyrics(
+            "[Intro]\n朝\n\n[Verse 1]\n風　光\n"
+            "[Pre-Chorus]\n道\n[Instrumental Rave Break]\n\n"
+            "[Verse 2]\n夜\n[Build-Up]\n星\n"
+            "[Final Chorus]\n明日\n[Outro]\n空\n"
+        )
+        self.assertEqual(
+            [(item.text, item.section) for item in segments],
+            [("朝", "INTRO"), ("風", "VERSE_1"), ("光", "VERSE_1"),
+             ("道", "PRE-CHORUS"), ("夜", "VERSE_2"), ("星", "BUILD-UP"),
+             ("明日", "FINAL_CHORUS"), ("空", "OUTRO")],
+        )
+        # The instrumental heading is metadata, never a lyric to be aligned.
+        self.assertEqual(segments[4].source_line, 11)
+        self.assertEqual((segments[2].source_start, segments[2].source_end), (2, 3))
+
+    def test_multiword_section_space_runs_preserve_lyric_text(self) -> None:
+        for heading in (
+            "[Instrumental Rave Break]", "[ Instrumental  Rave   Break ]",
+            "[\tInstrumental\tRave\tBreak\t]", "[　Instrumental　Rave　Break　]",
+        ):
+            with self.subTest(heading=heading):
+                segments = parse_plain_lyrics(heading + "\n息を吸う\n")
+                self.assertEqual(len(segments), 1)
+                self.assertEqual(segments[0].section, "INSTRUMENTAL_RAVE_BREAK")
+                self.assertEqual(segments[0].text, "息を吸う")
+                self.assertEqual(segments[0].source_line, 2)
+
+    def test_empty_multiword_section_does_not_create_lyrics(self) -> None:
+        self.assertEqual(parse_plain_lyrics("[Instrumental Rave Break]\n\n[Guitar Solo]\n"), ())
+
     def test_rejects_non_plain_metadata(self) -> None:
         invalid = (
             "歌詞\n[VERSE1]\n歌詞",
@@ -126,6 +158,65 @@ class AlignmentTests(unittest.TestCase):
             item.start_ms for item in resolved if item.source.text == "繰り返し"
         ]
         self.assertEqual(repetitions, [2000, 10000])
+
+    def test_repeated_anchor_prefers_exact_phrase_over_fuzzy_prefix(self) -> None:
+        lyrics = parse_plain_lyrics(
+            "[INTRO]\nお顔は秘密\n次の歌詞\n"
+            "[OUTRO]\n直前の歌詞\n三人そろって　深くお辞儀\nお顔は秘密\n次の歌詞\n"
+        )
+        texts = (
+            ("お顔は秘密", 1000, 2000), ("次の歌詞", 2200, 3200),
+            ("直前の歌詞", 10000, 11000), ("三人注って", 11200, 12200),
+            ("深く大義", 12300, 14000), ("お顔は秘密", 14200, 15200),
+            ("次の歌詞", 15400, 16400),
+        )
+        words = tuple(WhisperWord(text, text, start, end, i)
+            for i, (text, start, end) in enumerate(texts, 1))
+        resolved, _ = align_lyrics(lyrics, words, voiced_intervals=(),
+            sample_rate=16000, audio_duration_ms=18000)
+        anchors = [l for l in resolved if l.source.text == "お顔は秘密"]
+        self.assertEqual([(l.start_ms, l.end_ms) for l in anchors],
+            [(1000, 2000), (14200, 15200)])
+
+    def test_repeated_chorus_anchor_leaves_short_lyric_gap_open(self) -> None:
+        lyrics = parse_plain_lyrics(
+            "[CHORUS]\n前の歌詞\n回れ　火花の中で\n次の歌詞\n"
+            "[CHORUS]\n前の歌詞\n回れ　火花の中で\n次の歌詞\n"
+        )
+        texts = (
+            ("前の歌詞", 1000, 2000), ("回れ", 2100, 2500),
+            ("火花の中で", 2600, 4000), ("次の歌詞", 4100, 5000),
+            ("前の歌詞", 10000, 11000), ("回", 11100, 11300),
+            ("り", 11300, 11500), ("火花の中で", 11600, 13000),
+            ("次の歌詞", 13100, 14000),
+        )
+        words = tuple(WhisperWord(text, text, start, end, i)
+            for i, (text, start, end) in enumerate(texts, 1))
+        resolved, unplaced = align_lyrics(lyrics, words, voiced_intervals=(),
+            sample_rate=16000, audio_duration_ms=16000)
+        self.assertFalse(unplaced)
+        anchors = [l for l in resolved if l.source.text == "火花の中で"]
+        self.assertEqual([l.start_ms for l in anchors], [2600, 11600])
+        recovered = [l for l in resolved if l.source.text == "回れ"][1]
+        self.assertGreaterEqual(recovered.start_ms, 11000)
+        self.assertLessEqual(recovered.end_ms, 11600)
+
+    def test_repeated_lyric_does_not_skip_fuzzy_first_occurrence(self) -> None:
+        lyrics = parse_plain_lyrics(
+            "[CHORUS]\n開始\n繰り返し\n確認\n繰り返し\n確認\n"
+        )
+        texts = (
+            ("開始", 1000, 1500), ("繰り返す", 2000, 2500),
+            ("確認", 2600, 3200), ("繰り返し", 4000, 4500),
+            ("確認", 4600, 5200),
+        )
+        words = tuple(WhisperWord(text, text, start, end, i)
+            for i, (text, start, end) in enumerate(texts, 1))
+        resolved, unplaced = align_lyrics(lyrics, words, voiced_intervals=(),
+            sample_rate=16000, audio_duration_ms=7000)
+        self.assertFalse(unplaced)
+        self.assertEqual([l.start_ms for l in resolved
+            if l.source.text == "繰り返し"], [2000, 4000])
 
     def test_candidate_that_better_matches_next_lyric_is_not_consumed(self) -> None:
         lyrics = parse_plain_lyrics(
@@ -899,8 +990,9 @@ class PublicNodeTests(unittest.TestCase):
         self.assertEqual(cls.CATEGORY, "MV Director/Input")
         self.assertEqual(
             cls.RETURN_TYPES,
-            ("STRING", "STRING", "MV_DIRECTOR_TIMELINE", "STRING"),
+            ("STRING", "STRING", "MV_DIRECTOR_TIMELINE", "STRING", "STRING"),
         )
+        self.assertEqual(cls.RETURN_NAMES, ("template_emd", "srt_text", "timeline", "status", "lrc_text"))
 
     def test_unplaced_lyrics_emit_error_and_block_all_data_outputs(self) -> None:
         from nodes.node_lyric_segmentation.node import _block_unplaced
@@ -944,6 +1036,8 @@ class PublicNodeTests(unittest.TestCase):
             all(isinstance(item, FakeExecutionBlocker) for item in result["result"][:3])
         )
         self.assertIn("音源にない歌詞", result["result"][0].message)
+        self.assertIsInstance(result["result"][4], FakeExecutionBlocker)
+        self.assertEqual(len(result["result"]), 5)
         self.assertIn("MV Director - Lyric Segmentation", captured.output[0])
 
 

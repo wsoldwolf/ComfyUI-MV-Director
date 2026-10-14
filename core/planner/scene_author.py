@@ -12,7 +12,7 @@ import json
 import re
 from typing import Any, Mapping, Sequence
 
-from ..artifacts import DirectionArtifact
+from ..artifacts import DirectionArtifact, canonical_json
 from ..direction.profiles import (CAMERA_ARC_ROLL_POLICIES, MOTION_COMPOSITION_RESELECTIONS,
                                   MOTION_COMPOSITION_TIMINGS, MOTION_TEMPLATES)
 from ..emd.ast import MouthPerformance, Scene, Shot
@@ -20,13 +20,19 @@ from ..inference import LlamaRuntimeConfig
 from .template import PlannerTemplate
 from .section_context import section_context_by_scene
 from .motion_composition import select_motion_composition
-from .candidate_policy import validate_staging_candidate_policy
+from .candidate_policy import (
+    performance_candidate_preference_enabled, validate_staging_candidate_policy,
+)
 from .camera_continuity import arc_directions, inspect_arc_sequence
 from .requests import request_entities
 from .types import PlannerContent, PlannerEntity
 from .mouth_performance import mouth_scene_payload
 from .prop_inventory import request_prop_inventory
 from .prop_decision import request_prop_decisions
+from .subject_ownership import (
+    bind_motion_composition, explicit_subjects, performer_states,
+    split_performer_metadata, subject_ids_from_emd,
+)
 
 
 _LOGGER = logging.getLogger("mv_director.nodes")
@@ -36,14 +42,14 @@ _END_STATE_SUFFIX = re.compile(
 _MAX_END_STATE_LENGTH = 240
 
 
-def _split_terminal_state(value: str) -> tuple[str, str]:
+def _split_terminal_state(value: str, *, max_state_length: int = _MAX_END_STATE_LENGTH) -> tuple[str, str]:
     """Separate transport metadata without changing the authored prose."""
     matched = _END_STATE_SUFFIX.search(value)
     if matched:
         prefix = value[:matched.start()]
         state = matched.group(1).strip()
         if (prefix and prefix[-1] in "｜|。．. \u3000" and state
-                and len(state) <= _MAX_END_STATE_LENGTH):
+                and len(state) <= max_state_length):
             prose = prefix.rstrip("｜| \u3000")
             if prose:
                 return prose, state
@@ -238,6 +244,7 @@ def generate_scene_author_content(
     actions: list[tuple[int, int, str]] = []
     cameras: list[tuple[int, int, str]] = []
     motion_compositions: list[tuple[int, int, str, int, str]] = []
+    performance_subjects: list[tuple[int, int, str]] = []
     terminal_states: list[tuple[int, str, str, str]] = []
     issue_count = 0
     retried_scenes: set[int] = set()
@@ -247,6 +254,8 @@ def generate_scene_author_content(
     section_contexts = section_context_by_scene(template)
     previous_prop_state: object = ""
     inventory = ()
+    subject_ids = subject_ids_from_emd(concept_emd)
+    multi_subject = len(subject_ids) > 1
     prop_prompts_enabled = all(system_prompts.get(key, "").strip() for key in (
         "subject-prop-inventory", "scene-author-prop-decision", "prop-performance-addendum",
     ))
@@ -262,6 +271,7 @@ def generate_scene_author_content(
             scene_number=first.scene_number,
             system_prompt=system_prompts["subject-prop-inventory"],
             runtime_config=runtime_config, interrupt_callback=interrupt_callback,
+            subject_ids=subject_ids,
         )
         inventory = inventory_result.props
         _LOGGER.log(
@@ -314,6 +324,12 @@ def generate_scene_author_content(
             "shot_positions": positions,
             "staging_candidate_policy": staging_candidate_policy,
         }
+        if multi_subject:
+            shared["subject_ids"] = list(subject_ids)
+            shared["previous_performer_states"] = (
+                performer_states(previous_terminal.get("performance", ""), subject_ids)
+                if scene.continuation else {}
+            )
         if template.audio_activity is not None:
             shared["audio_activity"] = template.audio_activity.scene_payload(
                 start_ms=scene.start_ms, end_ms=scene.end_ms, audio_mode=lip_sync_mode,
@@ -398,11 +414,19 @@ def generate_scene_author_content(
             if index not in fixed_actions
         ]
         action_texts = dict(fixed_actions)
+        action_subjects = {}
+        if multi_subject:
+            for index, text in fixed_actions.items():
+                identifiers = explicit_subjects(text)
+                if len(identifiers) == 1 and identifiers.issubset(subject_ids):
+                    action_subjects[index] = next(iter(identifiers))
         if composition and composition_timing == "pre_author":
             shared["scheduled_motion_composition"] = {
                 "shot": composition[1], "source": composition[2],
                 "template": composition[3], "text": composition[4],
             }
+            if multi_subject:
+                shared["scheduled_motion_composition"]["requires_subject_target"] = True
         prop_decisions = {}
         if inventory and pending_actions:
             prop_request = {
@@ -444,6 +468,19 @@ def generate_scene_author_content(
                     str(i): value for i, value in prop_decisions.items()
                 }
         performance_prompt = prompts["performance"]
+        if performance_candidate_preference_enabled(
+            staging_candidate_policy, direction.staging_candidates,
+            shared.get("audio_activity"),
+            [positions[index - 1] for index in pending_actions],
+        ):
+            addendum = system_prompts.get("performance-candidate-addendum", "")
+            if addendum:
+                performance_prompt += "\n" + addendum
+                _LOGGER.info(
+                    "[MV Director - Timeline Planner] Performance candidate "
+                    "preference enabled; scene=%d; scope=long_no_vocal",
+                    scene.scene_number,
+                )
         if prop_decisions:
             performance_prompt += "\n" + system_prompts["prop-performance-addendum"]
         if pending_actions:
@@ -483,18 +520,51 @@ def generate_scene_author_content(
                 return None, tuple(missing)
             action_states: dict[int, str] = {}
             for index in pending_actions:
-                action_texts[index], action_states[index] = _split_terminal_state(
-                    result[(index,)]
+                prose, state = _split_terminal_state(
+                    result[(index,)], max_state_length=1200 if multi_subject else _MAX_END_STATE_LENGTH,
                 )
-            actions.extend(
-                (scene.scene_number, index, action_texts[index])
-                for index in pending_actions
+                if multi_subject:
+                    # A structural actor prefix does not rewrite the action.
+                    prose, performer, state = split_performer_metadata(prose, state, subject_ids)
+                    if performer:
+                        action_subjects[index] = performer
+                        if performer not in explicit_subjects(prose):
+                            prose = f"`{performer}` {prose}"
+                    else:
+                        _LOGGER.warning(
+                            "[MV Director - Timeline Planner] performer identity unavailable; "
+                            "scene=%d; shot=%d; original performance retained; "
+                            "anonymous composition may be skipped", scene.scene_number, index,
+                        )
+                action_texts[index], action_states[index] = prose, state
+            actions.extend((scene.scene_number, i, action_texts[i]) for i in pending_actions)
+        if multi_subject:
+            performance_subjects.extend(
+                (scene.scene_number, i, performer) for i, performer in sorted(action_subjects.items())
             )
+            shared["performance_subjects"] = {str(i): performer for i, performer in action_subjects.items()}
         if composition:
             if composition_timing == "pre_author":
-                motion_compositions.append(composition)
                 target = composition[1]
-                action_texts[target] = action_texts[target] + " " + composition[4]
+                if multi_subject:
+                    composition = bind_motion_composition(composition, action_subjects.get(target, ""), subject_ids)
+                    if composition is None:
+                        shared.pop("scheduled_motion_composition", None)
+                        _LOGGER.warning(
+                            "[MV Director - Timeline Planner] motion composition skipped; "
+                            "scene=%d; shot=%d; reason=ambiguous_or_undefined_subject; "
+                            "performance retained", scene.scene_number, target,
+                        )
+                    else:
+                        targets = sorted(explicit_subjects(composition[4]))
+                        shared["scheduled_motion_composition"].update(
+                            text=composition[4], target_subjects=targets,
+                        )
+                        if len(targets) == 1:
+                            shared["scheduled_motion_composition"]["target_subject"] = targets[0]
+                if composition:
+                    motion_compositions.append(composition)
+                    action_texts[target] = action_texts[target] + " " + composition[4]
         shared["accepted_performances"] = {
             str(index): value for index, value in action_texts.items()
         }
@@ -616,9 +686,20 @@ def generate_scene_author_content(
                     interrupt_callback=interrupt_callback,
                     prop_context={key: shared[key] for key in (
                         "prop_inventory", "accepted_prop_decisions",
+                        "subject_ids", "performance_subjects",
                     ) if key in shared},
                 )
-            motion_compositions.append(composition)
+            if multi_subject:
+                target = composition[1]
+                composition = bind_motion_composition(composition, action_subjects.get(target, ""), subject_ids)
+                if composition is None:
+                    _LOGGER.warning(
+                        "[MV Director - Timeline Planner] motion composition skipped; "
+                        "scene=%d; shot=%d; reason=ambiguous_or_undefined_subject; "
+                        "performance retained", scene.scene_number, target,
+                    )
+            if composition:
+                motion_compositions.append(composition)
         last = len(scene.shots)
         previous_prop_state = prop_decisions.get(last, {}).get("end_state", "")
         previous_terminal = {
@@ -626,6 +707,26 @@ def generate_scene_author_content(
             "performance": action_states.get(last, "") if pending_actions else "",
             "camera": camera_states.get(last, "") if pending_cameras else "",
         }
+        if multi_subject and last in pending_actions:
+            # Merge only validated actor states in Shot order. An authored
+            # boundary or a new performance without fresh state invalidates
+            # inferred states for its actors; an anonymous boundary clears all.
+            states = dict(shared["previous_performer_states"])
+            for index in range(1, last + 1):
+                if index in fixed_actions:
+                    identifiers = explicit_subjects(fixed_actions[index])
+                    if identifiers:
+                        states = {key: value for key, value in states.items() if key not in identifiers}
+                    else:
+                        states = {}
+                else:
+                    identifiers = explicit_subjects(action_texts[index])
+                    if index in action_subjects:
+                        identifiers = identifiers | {action_subjects[index]}
+                    states = ({key: value for key, value in states.items() if key not in identifiers}
+                              if identifiers else {})
+                    states.update(performer_states(action_states.get(index, ""), subject_ids))
+            previous_terminal["performance"] = canonical_json(states) if states else ""
         terminal_states.append((
             scene.scene_number,
             previous_terminal["event"],
@@ -654,4 +755,5 @@ def generate_scene_author_content(
             for scene in template.scenes
             for i in (mouth_performances or {}).get(scene.scene_number, scene.mouth_performances)
         ),
+        performance_subjects=tuple(performance_subjects),
     ), ()

@@ -27,6 +27,11 @@ from .scene_fragment import (
     parse_scene_emd_fragment,
     render_scene_emd_fragment,
 )
+from .subject_fragment import (
+    MergedSubjectEMD,
+    SubjectEMDFragmentError,
+    merge_subject_emd,
+)
 
 __all__ = [
     "AudioDirective",
@@ -37,6 +42,7 @@ __all__ = [
     "EMDParseError",
     "LyricAnnotation",
     "MouthPerformance",
+    "MergedSubjectEMD",
     "RetentionDirective",
     "Scene",
     "SceneEMDFragmentError",
@@ -44,6 +50,8 @@ __all__ = [
     "Shot",
     "ShotDirective",
     "Subject",
+    "SubjectEMDFragmentError",
+    "merge_subject_emd",
     "parse_emd",
     "parse_common_prompt_fragment",
     "shot_prose",

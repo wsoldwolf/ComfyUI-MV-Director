@@ -11,6 +11,7 @@ from ..emd import (
     parse_emd,
     parse_scene_emd_fragment,
     render_scene_emd_fragment,
+    merge_subject_emd,
 )
 from ..emd.errors import EMDParseError
 from ..emd.audio_activity import AudioActivity
@@ -21,15 +22,6 @@ from .errors import TimelinePlannerError
 DEFAULT_CONCEPT_EMD = """# サブジェクト
 * 詳細未指定の主要人物。
 """
-
-_PROBE_SCENE = """
-> `シーン` 1
-# シーン 00:00.000 --> 00:00.208
-* `H3長` 5
-## ショット 00:00.000
-* 未計画
-"""
-
 
 @dataclass(frozen=True, slots=True)
 class PlannerTemplate:
@@ -50,19 +42,11 @@ def normalize_concept_emd(
     *,
     timing_profile: H3TimingProfile = DEFAULT_H3_TIMING_PROFILE,
 ) -> str:
-    if not isinstance(concept_emd, str):
-        raise TimelinePlannerError("concept_emd must be a string")
-    normalized = normalize_newlines(concept_emd).strip()
-    if not normalized:
-        normalized = DEFAULT_CONCEPT_EMD.strip()
-    headings = [line for line in normalized.split("\n") if line.startswith("# ")]
-    if headings != ["# サブジェクト"]:
-        raise TimelinePlannerError("concept_emd must be one # サブジェクト fragment")
     try:
-        parse_emd(normalized + "\n" + _PROBE_SCENE, timing_profile=timing_profile)
-    except EMDParseError as exc:
-        raise TimelinePlannerError(f"invalid concept_emd: {exc}") from exc
-    return normalized + "\n"
+        merged = merge_subject_emd(concept_emd, timing_profile=timing_profile)
+    except ValueError as exc:
+        raise TimelinePlannerError(str(exc)) from exc
+    return merged.text or DEFAULT_CONCEPT_EMD
 
 
 def normalize_scene_emd(scene_emd: str) -> str:

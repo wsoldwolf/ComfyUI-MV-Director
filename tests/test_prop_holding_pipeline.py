@@ -14,9 +14,9 @@ from nodes.node_timeline_planner.node import (
 from scene_author_fixtures import Backend, TEMPLATE, _runtime
 
 PROPS = [
-    {"id": "P1", "subject": "人物1", "label": "道具A", "evidence": "道具A",
+    {"id": "P1", "subject": "サブジェクト1", "label": "道具A", "evidence": "道具A",
      "initial_state": "右手"},
-    {"id": "P2", "subject": "人物1", "label": "道具B", "evidence": "道具B",
+    {"id": "P2", "subject": "サブジェクト1", "label": "道具B", "evidence": "道具B",
      "initial_state": "未確定"},
 ]
 DECISION = {

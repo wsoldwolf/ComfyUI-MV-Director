@@ -326,7 +326,7 @@ class Ref2VACompilerTests(unittest.TestCase):
             "Use these connected references only for its visual identity and "
             "design: <Picture 1>. Treat every panel or alternate view as identity "
             "material for the same single physical instance. Render exactly one "
-            "physical instance of this Subject, with one head and one body. Never "
+            "physical instance of this Subject, preserving its described anatomy or structure. Never "
             "show a duplicate, twin, clone, reflection, background lookalike, "
             "inset view, split-screen copy, or second representation of this "
             "Subject. "

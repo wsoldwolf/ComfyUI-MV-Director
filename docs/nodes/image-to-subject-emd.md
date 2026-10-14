@@ -47,4 +47,6 @@
 
 `auto_h3`で異なるPicture番号へ同時分岐した場合は曖昧として停止します。H3へ未接続でもEMD生成は成功し、bindingは`unbound`になります。
 
+顔を覆った全身スーツや意図的に特徴のない顔面は、被覆面の範囲・色・材質自体が識別情報です。Visionには、被覆下の浅い顔の輪郭と露出した部位を区別し、曖昧な構造は推測せず不確実性として残すよう指示します。記述が不足する場合は`subject_hint`へ、例えば`頭部から足先まで赤い全身スーツで覆われている。顔面は同色の連続した被覆面で、顔の輪郭が浅く浮き出ている。`と指定できます。顔の被覆を保つ用途では、歌唱口を見せる指示との整合性も確認してください。プロンプト変更後のVision再推論が正しい観察を保証するわけではないため、出力Subjectを確認してください。
+
 `scene_only`は人物のいない背景画像を対象にできます。全profileで、protocol上「値又は空」と定義された単値record（`PRIMARY_SUBJECT`、`SUBJECT_POSE`、構図・背景・style各fieldなど）の行自体を小型modelが省略した場合は、本文を生成せず空値へ復元してwarningを残します。名前が既知のrecordの順序入替えや応答再開による重複も正規順へ決定論的に復旧します。schema wrapperとして混入した`protocol_id`はpayloadの有無や位置にかかわらずtransport metadataとして除外します。履物category `footwear`を正式に受理します。`SUBJECT_FEATURE`でcategoryだけが欠けた場合、又はmodelが未知categoryを生成した場合は、本文を一切変更せず汎用category `distinctive_feature`と保守的なvisibility `partial`へ収容してwarningを残します。本文欠落、その他の未知record、`HINT_STATUS`などの必須値欠落及び不正なfield値は推測せず、format retry又は明示エラーにします。
