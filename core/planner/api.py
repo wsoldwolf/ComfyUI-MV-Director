@@ -15,6 +15,7 @@ from .template import (
 )
 from .types import PlannerContent, TimelinePlannerBackend, TimelinePlannerResult
 from .mouth_performance import plan_mouth_performances
+from .lip_sync import parse_lip_sync_targets
 
 PLANNER_ALGORITHM_VERSION = "mvd-scene-author-v6-grouped-subject-references"
 
@@ -39,6 +40,9 @@ def generate_planner_content(
         raise TimelinePlannerError("unknown lip_sync_mode")
     direction.validate()
     runtime_config.validate()
+    subject_count = sum(line.startswith("* ") for line in concept_emd.splitlines())
+    targets = parse_lip_sync_targets(lip_sync_target,
+        subject_count=subject_count if lip_sync_mode != "off" else None)
     required = {"scene-author-event", "scene-author-performance", "scene-author-camera"}
     if not required.issubset(system_prompts) or any(
         not system_prompts[key].strip() for key in required
@@ -50,9 +54,10 @@ def generate_planner_content(
         system_prompts=system_prompts, runtime_config=runtime_config,
         staging_candidate_policy=staging_candidate_policy,
         lip_sync_mode=lip_sync_mode,
+        lip_sync_targets=targets,
         mouth_performances=plan_mouth_performances(
             template, lip_sync_mode=lip_sync_mode, lip_sync_target=lip_sync_target,
-            subject_count=sum(line.startswith("* ") for line in concept_emd.splitlines()),
+            subject_count=subject_count,
         ),
         interrupt_callback=interrupt_callback,
     )

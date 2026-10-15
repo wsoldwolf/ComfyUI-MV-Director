@@ -32,6 +32,7 @@ try:
         normalize_concept_emd,
         normalize_scene_emd,
         parse_template_emd,
+        parse_lip_sync_targets,
         render_planner_content,
     )
     from ...core.planner.scene_author import build_scene_author_grammar, build_composition_choice_grammar, count_motion_composition_choices
@@ -59,6 +60,7 @@ except ImportError:  # Standalone repository tests.
         normalize_concept_emd,
         normalize_scene_emd,
         parse_template_emd,
+        parse_lip_sync_targets,
         render_planner_content,
     )
     from core.planner.scene_author import build_scene_author_grammar, build_composition_choice_grammar, count_motion_composition_choices
@@ -526,7 +528,8 @@ class MVDirectorTimelinePlanner:
             "required": {
                 "template_emd": ("STRING", {"default": "", "multiline": True, "forceInput": True}),
                 "lip_sync_mode": (list(LIP_SYNC_MODES), {"default": "lyrics"}),
-                "lip_sync_target": ("STRING", {"default": "サブジェクト1"}),
+                "lip_sync_target": ("STRING", {"default": "サブジェクト1",
+                    "tooltip": "歌唱対象。例: サブジェクト1,サブジェクト2。複数対象は同じボーカル／歌詞を共有します。"}),
                 "lip_sync_audio_slot": ("INT", {"default": 1, "min": 1, "max": 3}),
                 "model_name": (models, {"default": models[0]}),
                 "chat_format": (list(CHAT_FORMATS), {"default": "auto"}),
@@ -636,6 +639,9 @@ class MVDirectorTimelinePlanner:
             except ValueError as exc:
                 raise TimelinePlannerError(str(exc)) from exc
             concept = normalize_concept_emd(merged.text)
+            lip_sync_target = ",".join(parse_lip_sync_targets(lip_sync_target,
+                subject_count=sum(line.startswith("* ") for line in concept.splitlines())
+                if lip_sync_mode != "off" else None))
             subject_status = merged.status if merged.text else "subjects=1; subject_map=default"
             _LOGGER.info("[MV Director - Timeline Planner] Subject inputs merged; %s", subject_status)
             scene = normalize_scene_emd(scene_emd)

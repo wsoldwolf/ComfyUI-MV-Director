@@ -635,8 +635,11 @@ class _Parser:
         lip_modes = [
             directive for directive in directives if directive.mode in {"context_loop", "audio_reference"}
         ]
-        if len(lip_modes) > 1:
+        if len({directive.mode for directive in lip_modes}) > 1:
             raise EMDParseError(lip_modes[1].line_number, "lip-sync modes are exclusive")
+        audio_slots = {directive.audio_slot for directive in lip_modes if directive.mode == "audio_reference"}
+        if len(audio_slots) > 1:
+            raise EMDParseError(lip_modes[-1].line_number, "multiple lip-sync audio slots are not supported")
         if lyric_mode and lip_modes:
             raise EMDParseError(
                 lip_modes[0].line_number, "lip-sync modes are exclusive"
@@ -646,13 +649,14 @@ class _Parser:
             raise EMDParseError(
                 silence.line_number, "silence cannot be combined with audio directives"
             )
-        seen: set[str] = set()
+        seen: set[tuple[str, str | None]] = set()
         for directive in directives:
-            if directive.mode in seen:
+            key = (directive.mode, directive.target_concept_id)
+            if key in seen:
                 raise EMDParseError(
                     directive.line_number, "duplicate audio directive"
                 )
-            seen.add(directive.mode)
+            seen.add(key)
 
 
 def parse_emd(

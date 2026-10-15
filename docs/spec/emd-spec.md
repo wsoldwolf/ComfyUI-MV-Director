@@ -411,6 +411,14 @@ Timeline Plannerで`context_loop`を選んだ場合は、歌詞annotationのな�
 * `リップシンク` `Context Loop` `サブジェクト1`
 ```
 
+同じ音声を複数Subjectへ適用する場合は、対象ごとに一行ずつ記す。対象ID自体を`サブジェクト1,サブジェクト2`のように一つのバッククォート内へまとめない。
+
+```markdown
+## 音響
+* `リップシンク` `Context Loop` `サブジェクト1`
+* `リップシンク` `Context Loop` `サブジェクト2`
+```
+
 ```markdown
 ## 音響
 * `リップシンク` `Audio参照` `サブジェクト1` `音声1`
@@ -429,6 +437,8 @@ Timeline Plannerで`context_loop`を選んだ場合は、歌詞annotationのな�
 規則:
 
 - `Context Loop`、`Audio参照`及びShotの`歌詞`方式はScene内で相互排他。
+- 同じSceneの同一方式では、異なるSubjectを複数指定できる。同一方式・同一Subjectの重複directiveは不正。`Audio参照`で複数対象を指定する場合は同じ`音声N`を共有し、複数音声slotの人物別割当は扱わない。歌詞方式では対象ごとに同じ歌詞のdirectiveを記述できる。
+- 複数対象の口元の時刻・状態は、各Subjectの`口元`アノテーションで個別に指定する。一人の閉口を他の歌唱対象へ適用しない。音声latent・時間マスクを人物ごとに分離する仕様ではなく、同じボーカルに合わせた可視歌唱を各対象へ指示する。
 - `Context Loop`は`source_audio_target=locked`等の音声設定に加え、指定Subjectが入力ボーカルの有声句に合わせて歌い、既存の身体演技と並行して口・顎を音節に同期させる固定文を`overall_soundscape`へ出力する。音声の同期対象と人物の可視歌唱を結び付ける音響契約であり、個別Action／Cameraによる共通文の継承抑制とは独立する。Action／Camera本文・Scene長・歌詞時刻は変更せず、顔アップを強制しない。有声句に限定する指示であり、無声区間への歌唱の追加や音素同期の保証ではない。
 - Compilerが生成する説明用の固定文へ、未閉鎖の発話特殊トークンを含めない。明示された発話・歌詞の`<d>...</d>`は従来どおり保持する。
 - `Audio参照`の`音声N`は`<Audio N>`及び対応するrequired inputへ機械変換する。

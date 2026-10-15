@@ -11,6 +11,7 @@ import math
 
 from ..emd import MouthPerformance, Scene
 from .errors import TimelinePlannerError
+from .lip_sync import parse_lip_sync_targets
 from .template import PlannerTemplate
 
 
@@ -53,6 +54,8 @@ def plan_mouth_performances(
     before Scene clipping. Unknowns, padding and unmapped inputs add no policy.
     """
     subjects = {f"サブジェクト{i}" for i in range(1, subject_count + 1)}
+    targets = parse_lip_sync_targets(lip_sync_target,
+        subject_count=subject_count if lip_sync_mode != "off" else None)
     for scene in template.scenes:
         for item in scene.mouth_performances:
             if item.target_concept_id not in subjects:
@@ -61,8 +64,6 @@ def plan_mouth_performances(
     activity = template.audio_activity
     if activity is None or lip_sync_mode == "off":
         return result
-    if lip_sync_target not in subjects:
-        raise TimelinePlannerError("lip-sync target references undefined concept ID")
     # Reuse the same source/reference-copy mapping as Scene authorship. Read
     # the whole timeline first so a Scene split does not shorten a long gap.
     last_sample = activity.source_samples
@@ -93,15 +94,18 @@ def plan_mouth_performances(
     candidates = [(a, b, "閉口") for a, b in rests] + [(a, b, "歌唱") for a, b in voices]
     for scene in template.scenes:
         authored = list(scene.mouth_performances)
-        blocked = _authored_shot_ranges(scene) + [
-            (i.start_ms, i.end_ms) for i in authored if i.target_concept_id == lip_sync_target
-        ]
-        generated = [
-            MouthPerformance(lip_sync_target, start, end, state)
-            for a, b, state in candidates
-            for start, end in _subtract(max(scene.start_ms, a), min(scene.end_ms, b), blocked)
-            if end > start
-        ]
+        fixed_ranges = _authored_shot_ranges(scene)
+        generated = []
+        for target in targets:
+            blocked = fixed_ranges + [
+                (i.start_ms, i.end_ms) for i in authored if i.target_concept_id == target
+            ]
+            generated.extend(
+                MouthPerformance(target, start, end, state)
+                for a, b, state in candidates
+                for start, end in _subtract(max(scene.start_ms, a), min(scene.end_ms, b), blocked)
+                if end > start
+            )
         combined = sorted(authored + generated, key=lambda i: (i.start_ms, i.target_concept_id))
         result[scene.scene_number] = tuple(combined)
         if combined:
