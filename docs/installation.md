@@ -182,9 +182,9 @@ C:\Software\ComfyUI\models\LLM\GGUF\
 Visionには追加で同系列のmmprojを使用します。各ノードは既定で処理後にモデルを
 解放し、H3動画生成と同時に31BをVRAMへ常駐させない運用です。
 
-### `01_plan_compiler_context_loop.json`の既定モデル
+### `01_plan_compiler.json`の既定モデル
 
-配布workflowの`01_plan_compiler_context_loop.json`は、次のモデルを選択した状態で保存されています。Visionは本体GGUFだけでなく、同じディレクトリに対応する`gemma-4-31b-it-heretic-ara.mmproj-f16.gguf`も必要です。
+配布workflowの`01_plan_compiler.json`は、次のモデルを選択した状態で保存されています。Visionは本体GGUFだけでなく、同じディレクトリに対応する`gemma-4-31b-it-heretic-ara.mmproj-f16.gguf`も必要です。
 
 | 用途 / 使用ノード | workflowで選択されるファイル | 取得元 |
 | --- | --- | --- |
@@ -275,7 +275,7 @@ IQ3_XSへの切り替えは、主にVRAM 16 GBへ収めるためのモデル選�
 
 ### 動画workflowの既定H3 Hybrid Loader
 
-配布workflowの動画生成側（`02_video_context_loop.json`、`04_video_audio_reference.json`、`06_video_lyrics.json`）は`MiniMaxH3HybridLoader`を使用します。FL2VAをベースに、Ref2VAの一部のAdaLN変調重みをオーバーレイします。これはFL2VAの画質・動きとRef2VAの参照条件付けを併用するための構成で、[Hybrid Loader作者の説明](https://github.com/scottmudge/ComfyUI_MinimaxH3HybridLoader)もこの組合せを提案しています。本workflowはユーザーが`02_video_context_loop.json`で設定した`block_range_adaln`、開始block `25`、終了block `49`、`final_adaln_from_overlay=false`をそのまま既定値とします。
+配布workflowの動画生成側（`02_video_generator.json`）は`MiniMaxH3HybridLoader`を使用します。FL2VAをベースに、Ref2VAの一部のAdaLN変調重みをオーバーレイします。これはFL2VAの画質・動きとRef2VAの参照条件付けを併用するための構成で、[Hybrid Loader作者の説明](https://github.com/scottmudge/ComfyUI_MinimaxH3HybridLoader)もこの組合せを提案しています。本workflowはユーザーが`02_video_generator.json`で設定した`block_range_adaln`、開始block `25`、終了block `49`、`final_adaln_from_overlay=false`をそのまま既定値とします。
 
 モデルファイルの配布元は[Comfy-Org/MiniMax-H3](https://huggingface.co/Comfy-Org/MiniMax-H3)です。FL2VAとRef2VAの両方をダウンロードし、表の配置先へ保存してください。
 

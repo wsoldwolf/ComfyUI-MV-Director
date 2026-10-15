@@ -32,9 +32,18 @@ class DirectionProfileLoaderTests(unittest.TestCase):
         self.assertTrue(retention.startswith("`partially_preserved` "))
         self.assertIn("facial surface, body covering", retention)
         self.assertIn("defined shape and covering", catalog.style_scene_reinforcement["illust_to_photoreal"])
-        for name in ("anime_emotional_mv", "anime_story_mv"):
-            self.assertIn("被覆された顔面はその形状と素材を保つ", catalog.render_prompts["motion"][name])
-            self.assertIn("被覆された顔面はその形状と素材を保つ", catalog.render_prompts["camera"][name])
+        self.assertIn("各Shotの演技に従い", catalog.render_prompts["motion"]["anime_emotional_mv"])
+        self.assertIn("被覆された顔面はその形状と素材を保つ",
+                      catalog.render_prompts["camera"]["anime_emotional_mv"])
+
+    def test_emotional_motion_file_is_composed_copy_and_retired_profiles_are_absent(self):
+        root = Path(__file__).parents[1] / "profiles"
+        self.assertEqual((root / "motion/anime_emotional_mv.md").read_text(encoding="utf-8"),
+                         (root / "motion/anime_scene_composed_mv.md").read_text(encoding="utf-8"))
+        catalog = load_direction_profiles(root)
+        for profiles in (catalog.style, catalog.motion, catalog.camera):
+            for retired in ("anime_scene_author_mv", "anime_story_mv", "limited_animation"):
+                self.assertNotIn(retired, profiles)
 
     def test_loads_user_profiles_from_three_external_directories(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

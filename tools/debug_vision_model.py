@@ -18,7 +18,7 @@ from core.vision.model_discovery import resolve_vision_model_pair
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--workflow", type=Path, default=ROOT / "workflows/01_plan_compiler_context_loop.json")
+    parser.add_argument("--workflow", type=Path, default=ROOT / "workflows/01_plan_compiler.json")
     parser.add_argument("--gguf-root", type=Path, required=True)
     parser.add_argument("--model", required=True)
     parser.add_argument("--input-dir", type=Path, required=True)

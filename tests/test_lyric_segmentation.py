@@ -702,7 +702,8 @@ class TargetedRecoveryTests(unittest.TestCase):
         )
         self.assertEqual([item.text for item in unplaced], ["存在しない歌詞"])
         self.assertEqual(stats.recovered_segments, 0)
-        self.assertEqual(len(backend.calls), 2)
+        # Original and shifted-window evidence/guided pairs both reject it.
+        self.assertEqual(len(backend.calls), 4)
 
     def test_guided_retry_uses_only_missing_segment_from_same_source_line(self) -> None:
         lyrics = parse_plain_lyrics(

@@ -108,6 +108,16 @@ class MultiLipSyncTests(unittest.TestCase):
         self.assertEqual({m.target_concept_id for m in mouths if m.state == '歌唱'}, {'サブジェクト1', 'サブジェクト2'})
         self.assertNotIn('サブジェクト3', {m.target_concept_id for m in mouths})
 
+    def test_zero_post_margin_closes_each_selected_target_at_vocal_end(self):
+        template = parse_template_emd(TEMPLATE)
+        value = activity((0, 3000, 'vocal_candidate'), (3000, 6000, 'no_vocal_candidate'))
+        mouths = plan_mouth_performances(PlannerTemplate(template.scenes, value),
+            lip_sync_mode='context_loop', lip_sync_target=TARGETS, subject_count=3)[1]
+        self.assertEqual([(m.target_concept_id, m.start_ms, m.end_ms)
+                          for m in mouths if m.state == '閉口'], [
+            ('サブジェクト1', 3000, 6000), ('サブジェクト2', 3000, 6000)])
+        self.assertNotIn('サブジェクト3', {m.target_concept_id for m in mouths})
+
     def test_one_closed_target_does_not_suppress_other_singer(self):
         source = rendered().text.replace('> `歌詞開始`',
             '> `口元` `サブジェクト1` 00:00.000 --> 00:06.000 `閉口`\n> `歌詞開始`', 1)

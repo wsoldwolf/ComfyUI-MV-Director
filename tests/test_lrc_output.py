@@ -103,7 +103,7 @@ class LrcOutputTests(unittest.TestCase):
     def test_sync_command_does_not_create_deleted_workflows(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            path = root / '01_plan_compiler_context_loop_4subject.json'
+            path = root / '01_plan_compiler.json'
             workflow = json.loads((ROOT / 'workflows' / path.name).read_text(encoding='utf-8'))
             for item in workflow['nodes']:
                 if item['type'] == 'MVDirectorLyricSegmentation':

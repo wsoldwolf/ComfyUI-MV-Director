@@ -184,9 +184,8 @@ class MultiSubjectPipelineTests(unittest.TestCase):
     def test_default_profiles_do_not_require_only_one_person(self):
         from core.direction.profile_loader import load_direction_profiles
         catalog = load_direction_profiles(Path(__file__).resolve().parents[1] / "profiles")
-        for name in ("anime_emotional_mv", "anime_story_mv"):
-            self.assertNotIn("一人の人物", catalog.style[name])
-            self.assertNotIn("一人の歌唱者", catalog.camera[name])
+        self.assertNotIn("一人の人物", catalog.style["anime_emotional_mv"])
+        self.assertNotIn("一人の歌唱者", catalog.camera["anime_emotional_mv"])
 
     def test_object_subjects_have_no_human_anatomy_requirement(self):
         compiled = compile_ref2va(SUBJECTS + TEMPLATE.replace(

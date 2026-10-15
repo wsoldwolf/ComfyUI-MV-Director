@@ -21,6 +21,8 @@ _CONTEXT_AFTER_MS = 1_000
 _ADAPTIVE_PREFIX_LEAD_MS = 3_000
 _FOCUSED_LEAD_MS = 1_000
 _FOCUSED_ANCHOR_TAIL_MS = 500
+# Small, bounded decoder-grid perturbation, not an adjustment to lyric times.
+_RETRY_START_SHIFT_MS = 140
 _DUPLICATE_CENTER_MS = 350
 _MIN_ANCHOR_OVERLAP_RATIO = 0.5
 _MAX_REFINEMENT_PASSES = 8
@@ -562,11 +564,36 @@ def recover_unplaced_lyrics(
                 # the target-only prompt, without repeating the whole line.
                 guided_prefixes += (lyrics[run_start - 1].text,)
             last_guided_error: LyricSegmentationError | None = None
-            for guided_prefix in guided_prefixes:
+            guided_attempts = [(prefix, windows) for prefix in guided_prefixes]
+            if (
+                previous is not None
+                and following is not None
+                and len(windows) == 1
+                and _RETRY_START_SHIFT_MS < anchor_start_ms - slice_start_ms
+            ):
+                # Only remove already-resolved preceding context. Keep the
+                # whole unresolved interval and following anchor in the audio.
+                # Try this pair once, after all existing prompt retries fail.
+                guided_attempts.append(
+                    ("", ((_RETRY_START_SHIFT_MS, slice_duration_ms),))
+                )
+            for guided_prefix, attempt_windows in guided_attempts:
                 try:
+                    evidence_words = unguided_words
+                    if attempt_windows != windows:
+                        _LOGGER.info(
+                            "[MV Director - Lyric Segmentation] shifted-window retry; "
+                            "source=%d..%dms; segments=%s..%s",
+                            slice_start_ms + _RETRY_START_SHIFT_MS, slice_end_ms,
+                            run_lyrics[0].segment_id, run_lyrics[-1].segment_id,
+                        )
+                        evidence_words = decode(
+                            guided=False, decode_windows=attempt_windows,
+                        )
                     guided_words = decode(
                         guided=True,
                         guided_prefix=guided_prefix,
+                        decode_windows=attempt_windows,
                     )
                     guided_lyrics = (
                         (*run_lyrics, following.source)
@@ -610,10 +637,13 @@ def recover_unplaced_lyrics(
                     # This extra decode receives no lyrics or preceding text;
                     # all original evidence/anchor checks below still apply.
                     missing_evidence = any(
-                        not _has_word_evidence(guided_by_id[source.segment_id], unguided_words)
+                        not _has_word_evidence(guided_by_id[source.segment_id], evidence_words)
                         for source in run_lyrics
                     )
-                    if missing_evidence and following is not None and not focused_attempted:
+                    if (
+                        missing_evidence and following is not None
+                        and not focused_attempted and attempt_windows == windows
+                    ):
                         focused_attempted = True
                         first_target = min(guided_by_id[s.segment_id].start_ms for s in run_lyrics)
                         focused_start = max(0, (first_target - _FOCUSED_LEAD_MS) // 1000 * 1000)
@@ -638,6 +668,7 @@ def recover_unplaced_lyrics(
                                     decode_windows=(focused_window,),
                                 )
                                 unguided_words = _merge_words([*unguided_words, *extra_words])
+                                evidence_words = unguided_words
                             except LyricSegmentationError as exc:
                                 _LOGGER.warning(
                                     "[MV Director - Lyric Segmentation] focused unguided "
@@ -647,7 +678,7 @@ def recover_unplaced_lyrics(
                     previous_end_ms = anchor_start_ms
                     for source in run_lyrics:
                         local = guided_by_id[source.segment_id]
-                        if not _has_word_evidence(local, unguided_words):
+                        if not _has_word_evidence(local, evidence_words):
                             raise LyricSegmentationError(
                                 f"guided retry lacks acoustic evidence for {source.segment_id}"
                             )

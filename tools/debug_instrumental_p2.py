@@ -54,7 +54,7 @@ def main():
     concept = reference.split("\n# シーン設定", 1)[0].strip() + "\n"
     scene_emd = reference.split("# シーン設定", 1)[1].split("# 共通プロンプト", 1)[0]
     scene_emd = "# シーン設定" + scene_emd
-    direction = DirectionArtifact(motion_profile_id="anime_scene_author_mv", motion_templates=(),
+    direction = DirectionArtifact(motion_profile_id="anime_emotional_mv", motion_templates=(),
         environment_direction=("秋の山稜と谷、岩場や滝がある自然の空間。",),
         motion_direction=("伴奏と歌詞の感情に呼応した明瞭な身体フレーズを選ぶ。",),
         staging_candidates=(

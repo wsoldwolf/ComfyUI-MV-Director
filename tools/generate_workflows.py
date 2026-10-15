@@ -1,9 +1,8 @@
-"""Generate six base MV Director workflows and model-specific Plan variants.
+"""Synchronize the two saved Context Loop workflows without resetting inputs.
 
-The video graphs deliberately start from the pinned Context Loop Ref2V Basic
-workflow.  This preserves its recursive sampling, checkpoint, review, and
-assembly wiring while replacing its stock diffusion loader with the MiniMax
-H3 Hybrid Loader: FL2VA base plus selected Ref2VA modulation blocks.
+Normal generation preserves the saved four-Subject Plan/Compiler and Video
+graphs, including their media, settings, Plan Studio, checkpoint and assembly
+wiring. Compatibility builders below are not the default distribution route.
 """
 
 from __future__ import annotations
@@ -47,7 +46,7 @@ H3_ATTENTION_BACKEND = "comfy kitchen attention"
 H3_REFERENCE_IMAGE_SIZE = "max"
 REVIEW_ENABLED = False
 OUTPUT_ASPECT_RATIO = "16:9 (Widescreen)"
-OUTPUT_MEGAPIXELS = 0.4
+OUTPUT_MEGAPIXELS = 0.9
 OUTPUT_MULTIPLE = 32
 TURBO_LORA_NAME = (
     "MiniMaxH3\\minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors"
@@ -1797,7 +1796,6 @@ def sync_model_runtime(workflow: dict[str, Any], mode: str) -> None:
     """Update model settings, preserving UI metadata and saved media Plan."""
     sync_planner_schema(workflow)
     sync_compiler_schema(workflow)
-    generated = build_plan_workflow(mode)
     text_types = {
         "MVDirectorDirectionEnhancer",
         "MVDirectorTimelinePlanner",
@@ -1817,7 +1815,17 @@ def sync_model_runtime(workflow: dict[str, Any], mode: str) -> None:
             continue
         if node["type"] not in text_types:
             continue
-        source = next(n for n in generated["nodes"] if n["type"] == node["type"])
+        # Runtime migration must not build a demo graph or read demo lyrics.
+        contexts = {
+            "MVDirectorDirectionEnhancer": ENHANCER_N_CTX,
+            "MVDirectorTimelinePlanner": PLANNER_N_CTX,
+            "MVDirectorEMDCompiler": COMPILER_N_CTX,
+        }
+        settings = (
+            TEXT_MODEL, "" if node["type"] == "MVDirectorDirectionEnhancer" else "auto",
+            4096, 0.0 if node["type"] == "MVDirectorEMDCompiler" else 0.2,
+            0.9, 1.05, -1, 256, contexts[node["type"]], True, "q8_0", True, False,
+        )
         # UI-only upload/seed controls can differ; all runtime widgets precede
         # those controls and occupy stable positions for these three nodes.
         start, stop = {
@@ -1827,8 +1835,8 @@ def sync_model_runtime(workflow: dict[str, Any], mode: str) -> None:
         }[node["type"]]
         indexes = list(range(start, stop))
         named = node.get("widgets_values_named")
-        for field, index in zip(runtime_fields, indexes, strict=True):
-            node["widgets_values"][index] = source["widgets_values"][index]
+        for field, index, value in zip(runtime_fields, indexes, settings, strict=True):
+            node["widgets_values"][index] = value
             if isinstance(named, dict) and field in named:
                 named[field] = node["widgets_values"][index]
 
@@ -2156,178 +2164,73 @@ def write_workflows(context_loop_root: Path, output_dir: Path, *, runtime_only: 
                     variant_26b_iq2_m_only: bool = False,
                     variant_26b_iq2_m_29gpu_only: bool = False,
                     variant_26b_iq2_m_30gpu_only: bool = False,
-                    subject_inputs_only: bool = False, lyric_outputs_only: bool = False) -> None:
-    if lyric_outputs_only:
-        pending = []
-        for path in sorted(output_dir.glob("*.json")):
-            text = path.read_text(encoding="utf-8")
-            workflow = json.loads(text)
-            before = copy.deepcopy(workflow)
-            sync_lyric_outputs(workflow)
-            validate_workflow(workflow)
-            if workflow != before:
-                formatted = (json.dumps(workflow, ensure_ascii=False, separators=(",", ":"))
-                             if len(text.splitlines()) == 1 else _json_text(workflow))
-                pending.append((path, formatted + "\n"))
-        for path, text in pending:
-            path.write_text(text, encoding="utf-8")
-        return
-    if subject_inputs_only:
-        pending_writes = []
-        for path in sorted(output_dir.glob("*.json")):
-            original_text = path.read_text(encoding="utf-8")
-            workflow = json.loads(original_text)
-            if not any(n["type"] == "MVDirectorDirectionEnhancer" for n in workflow["nodes"]):
-                continue
-            sync_subject_inputs(workflow)
-            validate_workflow(workflow)
-            formatted = (json.dumps(workflow, ensure_ascii=False, separators=(",", ":"))
-                         if len(original_text.splitlines()) == 1 else _json_text(workflow))
-            pending_writes.append((path, formatted + "\n"))
-        for path, formatted in pending_writes:
-            path.write_text(formatted, encoding="utf-8")
-        return
+                    subject_inputs_only: bool = False, lyric_outputs_only: bool = False,
+                    source_dir: Path | None = None,
+                    reassembly_only: bool = False) -> list[Path]:
+    """Preserve the two saved Context Loop workflows; never restore retired files.
+
+    context_loop_root remains an API compatibility argument. Regeneration no
+    longer depends on an external example workflow or builds model variants.
+    Explicit migrations touch only the current filenames already in output_dir.
+    """
+    from tools.generate_4subject_workflows import (
+        WORKFLOW_FILENAMES, write_workflows as write_saved_pair,
+    )
+
     if (variant_12b_only or variant_26b_iq2_m_only
             or variant_26b_iq2_m_29gpu_only or variant_26b_iq2_m_30gpu_only):
-        source_path = output_dir / "01_plan_compiler_context_loop.json"
-        source_text = source_path.read_text(encoding="utf-8")
-        source = json.loads(source_text)
-        variants = []
-        if variant_12b_only:
-            variants.append((PLAN_12B_FILENAME, build_12b_plan_variant(source)))
-        if variant_26b_iq2_m_only:
-            variants.append((PLAN_26B_IQ2_M_FILENAME, build_26b_iq2_m_plan_variant(source)))
-        if variant_26b_iq2_m_29gpu_only:
-            variants.append((
-                PLAN_26B_IQ2_M_29GPU_FILENAME,
-                build_26b_iq2_m_plan_variant(
-                    source, planner_compiler_gpu_layers=PLAN_26B_IQ2_M_29GPU_LAYERS,
-                ),
-            ))
-        if variant_26b_iq2_m_30gpu_only:
-            variants.append((
-                PLAN_26B_IQ2_M_30GPU_FILENAME,
-                build_26b_iq2_m_plan_variant(
-                    source, planner_compiler_gpu_layers=PLAN_26B_IQ2_M_30GPU_LAYERS,
-                ),
-            ))
-        for filename, workflow in variants:
-            formatted = (
-                json.dumps(workflow, ensure_ascii=False, separators=(",", ":"))
-                if len(source_text.splitlines()) == 1 else _json_text(workflow)
-            )
-            (output_dir / filename).write_text(formatted + "\n", encoding="utf-8")
-        return
-    if acceleration_only:
-        pending_writes = []
-        for mode, spec in MODES.items():
-            path = output_dir / f"{int(spec['number']) * 2:02d}_video_{mode}.json"
-            original_text = path.read_text(encoding="utf-8")
-            workflow = json.loads(original_text)
-            sync_video_acceleration(workflow)
-            validate_workflow(workflow)
-            formatted = (json.dumps(workflow, ensure_ascii=False, separators=(",", ":"))
-                         if len(original_text.splitlines()) == 1 else _json_text(workflow))
-            pending_writes.append((path, formatted + "\n"))
-        for path, formatted in pending_writes:
-            path.write_text(formatted, encoding="utf-8")
-        if not (runtime_only or direction_only or candidate_only or planner_schema_only
-                or timing_only or video_runtime_only or step_ownership_only):
-            return
-    if step_ownership_only:
-        pending_writes = []
-        for path in sorted(output_dir.glob("*.json")):
-            original_text = path.read_text(encoding="utf-8")
-            workflow = json.loads(original_text)
+        raise ValueError("Model-specific workflow variants are no longer distributed; "
+                         "edit model settings in 01_plan_compiler.json instead.")
+    migrating = any((runtime_only, direction_only, candidate_only, timing_only,
+                     video_runtime_only, planner_schema_only, step_ownership_only,
+                     acceleration_only, subject_inputs_only, lyric_outputs_only,
+                     reassembly_only))
+    if not migrating:
+        return write_saved_pair(source_dir or ROOT / "workflows", output_dir)
+
+    pending = []
+    for index, name in enumerate(WORKFLOW_FILENAMES):
+        path = output_dir / name
+        if not path.is_file():
+            continue
+        original_text = path.read_text(encoding="utf-8")
+        workflow = json.loads(original_text)
+        before = copy.deepcopy(workflow)
+        is_plan = index == 0
+        if lyric_outputs_only and is_plan:
+            sync_lyric_outputs(workflow)
+        if subject_inputs_only and is_plan:
+            sync_subject_inputs(workflow)
+        if step_ownership_only:
             sync_step_ownership(workflow)
-            validate_workflow(workflow)
-            formatted = (json.dumps(workflow, ensure_ascii=False, separators=(",", ":"))
-                         if len(original_text.splitlines()) == 1 else _json_text(workflow))
-            pending_writes.append((path, formatted + "\n"))
-        # Validate every graph before overwriting any of the user's files.
-        for path, formatted in pending_writes:
-            path.write_text(formatted, encoding="utf-8")
-        if not (runtime_only or direction_only or candidate_only or planner_schema_only
-                or timing_only or video_runtime_only):
-            return
-    if timing_only or video_runtime_only:
-        for mode, spec in MODES.items():
-            for suffix, number in (("plan_compiler", int(spec["number"]) * 2 - 1),
-                                   ("video", int(spec["number"]) * 2)):
-                path = output_dir / f"{number:02d}_{suffix}_{mode}.json"
-                if video_runtime_only and not timing_only and suffix != "video":
-                    continue
-                original_text = path.read_text(encoding="utf-8")
-                workflow = json.loads(original_text)
-                if timing_only:
-                    sync_timing_contract(workflow, mode)
-                if video_runtime_only and suffix == "video":
-                    sync_context_loop_runtime(workflow)
-                validate_workflow(workflow)
-                formatted = (json.dumps(workflow, ensure_ascii=False, separators=(",", ":"))
-                             if len(original_text.splitlines()) == 1 else _json_text(workflow))
-                path.write_text(formatted + "\n", encoding="utf-8")
-        if not (runtime_only or direction_only or candidate_only or planner_schema_only):
-            return
-    if runtime_only or direction_only or candidate_only or planner_schema_only:
-        for mode, spec in MODES.items():
-            path = output_dir / f"{int(spec['number']) * 2 - 1:02d}_plan_compiler_{mode}.json"
-            original_text = path.read_text(encoding="utf-8")
-            workflow = json.loads(original_text)
+        if timing_only:
+            sync_timing_contract(workflow, "context_loop")
+        if is_plan:
             if planner_schema_only:
                 sync_planner_schema(workflow)
             if runtime_only:
-                sync_model_runtime(workflow, mode)
+                sync_model_runtime(workflow, "context_loop")
             if direction_only:
                 sync_direction_settings(workflow)
             if candidate_only:
                 sync_candidate_policy(workflow)
-            validate_workflow(workflow)
-            formatted = (
-                json.dumps(workflow, ensure_ascii=False, separators=(",", ":"))
-                if len(original_text.splitlines()) == 1 else _json_text(workflow)
-            )
-            path.write_text(formatted + "\n", encoding="utf-8")
-        return
-    base_path = (
-        context_loop_root
-        / "example_workflows"
-        / "Ref2V Basic - MiniMax H3 0.6.json"
-    )
-    if not base_path.is_file():
-        raise FileNotFoundError(base_path)
-    output_dir.mkdir(parents=True, exist_ok=True)
-    for mode, spec in MODES.items():
-        number = int(spec["number"])
-        plan = build_plan_workflow(mode)
-        video = build_video_workflow(mode, base_path)
-        validate_workflow(plan)
-        validate_workflow(video)
-        plan_path = output_dir / f"{number * 2 - 1:02d}_plan_compiler_{mode}.json"
-        video_path = output_dir / f"{number * 2:02d}_video_{mode}.json"
-        plan_path.write_text(_json_text(plan) + "\n", encoding="utf-8")
-        video_path.write_text(_json_text(video) + "\n", encoding="utf-8")
-        if mode == "context_loop":
-            variant = build_12b_plan_variant(plan)
-            (output_dir / PLAN_12B_FILENAME).write_text(
-                _json_text(variant) + "\n", encoding="utf-8"
-            )
-            variant = build_26b_iq2_m_plan_variant(plan)
-            (output_dir / PLAN_26B_IQ2_M_FILENAME).write_text(
-                _json_text(variant) + "\n", encoding="utf-8"
-            )
-            variant = build_26b_iq2_m_plan_variant(
-                plan, planner_compiler_gpu_layers=PLAN_26B_IQ2_M_29GPU_LAYERS,
-            )
-            (output_dir / PLAN_26B_IQ2_M_29GPU_FILENAME).write_text(
-                _json_text(variant) + "\n", encoding="utf-8"
-            )
-            variant = build_26b_iq2_m_plan_variant(
-                plan, planner_compiler_gpu_layers=PLAN_26B_IQ2_M_30GPU_LAYERS,
-            )
-            (output_dir / PLAN_26B_IQ2_M_30GPU_FILENAME).write_text(
-                _json_text(variant) + "\n", encoding="utf-8"
-            )
+        else:
+            if reassembly_only:
+                from tools.workflow_reassembly import sync_reassembly_path
+                sync_reassembly_path(workflow)
+            if video_runtime_only:
+                sync_context_loop_runtime(workflow)
+            if acceleration_only:
+                sync_video_acceleration(workflow)
+        validate_workflow(workflow)
+        if workflow != before:
+            formatted = (json.dumps(workflow, ensure_ascii=False, separators=(",", ":"))
+                         if len(original_text.splitlines()) == 1 else _json_text(workflow))
+            pending.append((path, formatted + "\n"))
+    # Validate all selected graphs before overwriting any.
+    for path, text in pending:
+        path.write_text(text, encoding="utf-8")
+    return [path for path, _ in pending]
 
 
 def main() -> None:
@@ -2338,8 +2241,11 @@ def main() -> None:
         default=Path(
             r"C:\Software\ComfyUI\custom_nodes\ComfyUI-MiniMaxH3-Contex-Loop"
         ),
+        help="Compatibility argument; saved-pair generation does not read this checkout",
     )
     parser.add_argument("--output-dir", type=Path, default=ROOT / "workflows")
+    parser.add_argument("--source-dir", type=Path, default=ROOT / "workflows",
+                        help="Saved 01_plan_compiler.json and 02_video_generator.json")
     parser.add_argument("--sync-model-runtime", action="store_true",
                         help="Update model settings without rebuilding layout or saved Plan")
     parser.add_argument("--sync-subject-inputs", action="store_true",
@@ -2351,7 +2257,7 @@ def main() -> None:
     parser.add_argument("--sync-candidate-policy", action="store_true",
                         help="Append optional candidate selection control, preserving existing settings")
     parser.add_argument("--sync-timing-contract", action="store_true",
-                        help="Update all six timing contracts while retaining layouts, user inputs and saved Plan")
+                        help="Update the two current timing contracts, preserving user inputs and saved Plan")
     parser.add_argument("--sync-context-loop-runtime", action="store_true",
                         help="Migrate video node schemas without replacing saved Plan or layout")
     parser.add_argument("--sync-planner-schema", action="store_true",
@@ -2360,14 +2266,16 @@ def main() -> None:
                         help="Remove Compiler steps and stored Plan overrides; preserve Plan default_steps")
     parser.add_argument("--sync-video-acceleration", action="store_true",
                         help="Apply WF02 acceleration and 20-step defaults without rebuilding video inputs")
+    parser.add_argument("--sync-reassembly-path", action="store_true",
+                        help="Add exclusive generation/reassembly groups, preserving media and model settings")
     parser.add_argument("--sync-12b-variant", action="store_true",
-                        help="Clone the current WF01 layout into the 12B variant with 12288 context")
+                        help="Retired: model-specific variants are no longer distributed")
     parser.add_argument("--sync-26b-iq2-m-variant", action="store_true",
-                        help="Clone WF01 for 26B IQ2_M on a 12 GiB GPU")
+                        help="Retired: model-specific variants are no longer distributed")
     parser.add_argument("--sync-26b-iq2-m-29gpu-variant", action="store_true",
-                        help="Clone WF01 for 26B IQ2_M with 29 Planner/Compiler GPU layers")
+                        help="Retired: model-specific variants are no longer distributed")
     parser.add_argument("--sync-26b-iq2-m-30gpu-variant", action="store_true",
-                        help="Clone WF01 for 26B IQ2_M with 30 Planner/Compiler GPU layers")
+                        help="Retired: model-specific variants are no longer distributed")
     args = parser.parse_args()
     write_workflows(args.context_loop_root, args.output_dir, runtime_only=args.sync_model_runtime,
                     direction_only=args.sync_direction_settings, candidate_only=args.sync_candidate_policy,
@@ -2381,7 +2289,9 @@ def main() -> None:
                     variant_26b_iq2_m_29gpu_only=args.sync_26b_iq2_m_29gpu_variant,
                     variant_26b_iq2_m_30gpu_only=args.sync_26b_iq2_m_30gpu_variant,
                     subject_inputs_only=args.sync_subject_inputs,
-                    lyric_outputs_only=args.sync_lyric_outputs)
+                    lyric_outputs_only=args.sync_lyric_outputs,
+                    reassembly_only=args.sync_reassembly_path,
+                    source_dir=args.source_dir)
 
 
 if __name__ == "__main__":

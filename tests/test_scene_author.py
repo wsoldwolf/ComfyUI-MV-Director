@@ -19,12 +19,12 @@ from scene_author_fixtures import Backend, CONCEPT, TEMPLATE, _runtime
 class SceneAuthorTests(unittest.TestCase):
     def test_arc_roll_policy_reaches_camera_only_and_preserves_fixed_fields(self):
         for profile, expected in (("anime_emotional_mv", "selective_arc"),
-                                  ("anime_story_mv", "off")):
+                                  ("readable_depth", "off")):
             with self.subTest(profile=profile):
                 backend = Backend()
                 result = plan_timeline(
                     backend, template_emd=TEMPLATE, concept_emd=CONCEPT,
-                    direction=DirectionArtifact(motion_profile_id="anime_scene_author_mv",
+                    direction=DirectionArtifact(motion_profile_id="natural_performance",
                                                 camera_profile_id=profile),
                     lip_sync_mode="off", lip_sync_target="サブジェクト1",
                     lip_sync_audio_slot=1,
@@ -62,7 +62,7 @@ class SceneAuthorTests(unittest.TestCase):
         result = plan_timeline(
             backend, template_emd=TEMPLATE, concept_emd=CONCEPT,
             direction=DirectionArtifact(
-                motion_profile_id="anime_scene_author_mv",
+                motion_profile_id="natural_performance",
                 staging_candidates=("花の場面で花びらが舞う。",),
             ),
             lip_sync_mode="off", lip_sync_target="サブジェクト1",
@@ -134,7 +134,7 @@ class SceneAuthorTests(unittest.TestCase):
 
     def test_profile_and_prompt_load(self):
         from core.direction.profile_loader import load_direction_profile
-        path = Path(__file__).resolve().parents[1] / "profiles/motion/anime_scene_author_mv.md"
+        path = Path(__file__).resolve().parents[1] / "profiles/motion/natural_performance.md"
         self.assertEqual(load_direction_profile(path, "motion").kind, "motion")
         prompts = _system_prompts()
         self.assertTrue(all(prompts[f"scene-author-{kind}"] for kind in ("event", "performance", "camera")))
@@ -160,7 +160,7 @@ class SceneAuthorTests(unittest.TestCase):
                     "## モーション\n* 作者の振付。\n"
                     "## カメラ\n* 作者の撮影。\n"
                 ),
-                motion_profile="anime_scene_author_mv",
+                motion_profile="natural_performance",
                 retention_policy="compiler_default",
             ),
             system_prompt="",
@@ -168,11 +168,11 @@ class SceneAuthorTests(unittest.TestCase):
         )
         direction = result.direction
         self.assertEqual(direction.motion_profile_id, "passthrough")
-        self.assertEqual(direction.motion_policy_profile_id, "anime_scene_author_mv")
+        self.assertEqual(direction.motion_policy_profile_id, "natural_performance")
         self.assertEqual(direction.motion_direction, ("作者の振付。",))
         self.assertEqual(
             DirectionArtifact.from_dict(direction.to_dict()).motion_policy_profile_id,
-            "anime_scene_author_mv",
+            "natural_performance",
         )
         backend = Backend()
         planned = plan_timeline(
@@ -193,7 +193,7 @@ class SceneAuthorTests(unittest.TestCase):
         result = plan_timeline(
             backend, template_emd=TEMPLATE, concept_emd=CONCEPT,
             direction=DirectionArtifact(
-                motion_profile_id="anime_scene_author_mv",
+                motion_profile_id="natural_performance",
                 staging_candidates=("使わなくてもよい候補。",),
             ),
             lip_sync_mode="off", lip_sync_target="サブジェクト1",
@@ -229,7 +229,7 @@ class SceneAuthorTests(unittest.TestCase):
             "* `演技` 人物が視線を上げる。\n* `カメラ` 横から追う。")
         result = plan_timeline(
             backend, template_emd=source, concept_emd=CONCEPT,
-            direction=DirectionArtifact(motion_profile_id="anime_scene_author_mv"),
+            direction=DirectionArtifact(motion_profile_id="natural_performance"),
             lip_sync_mode="off", lip_sync_target="サブジェクト1",
             lip_sync_audio_slot=1,
             system_prompts=_system_prompts(), runtime_config=_runtime(),
@@ -249,7 +249,7 @@ class SceneAuthorTests(unittest.TestCase):
         prompts = _system_prompts()
         result = plan_timeline(
             backend, template_emd=source, concept_emd=CONCEPT,
-            direction=DirectionArtifact(motion_profile_id="anime_scene_author_mv"),
+            direction=DirectionArtifact(motion_profile_id="natural_performance"),
             lip_sync_mode="context_loop", lip_sync_target="サブジェクト1",
             lip_sync_audio_slot=1,
             system_prompts=prompts, runtime_config=_runtime(),
@@ -273,7 +273,7 @@ class SceneAuthorTests(unittest.TestCase):
         result = plan_timeline(
             backend, template_emd=TEMPLATE, concept_emd=CONCEPT,
             direction=DirectionArtifact(
-                motion_profile_id="anime_scene_author_mv",
+                motion_profile_id="natural_performance",
                 staging_candidates=(candidate,),
             ),
             lip_sync_mode="off", lip_sync_target="サブジェクト1",
@@ -309,7 +309,7 @@ class SceneAuthorTests(unittest.TestCase):
         backend = Backend()
         result = plan_timeline(
             backend, template_emd=source, concept_emd=CONCEPT,
-            direction=DirectionArtifact(motion_profile_id="anime_scene_author_mv"),
+            direction=DirectionArtifact(motion_profile_id="natural_performance"),
             lip_sync_mode="off", lip_sync_target="サブジェクト1",
             lip_sync_audio_slot=1,
             system_prompts=_system_prompts(), runtime_config=_runtime(),
@@ -336,7 +336,7 @@ class SceneAuthorTests(unittest.TestCase):
         result = plan_timeline(
             backend, template_emd=template, concept_emd=CONCEPT,
             direction=DirectionArtifact(
-                motion_profile_id="anime_scene_author_mv",
+                motion_profile_id="natural_performance",
                 staging_candidates=("任意の候補。",),
                 environment_direction=("広い舞台。",),
                 time_lighting_direction=("夜。",),
@@ -373,7 +373,7 @@ class SceneAuthorTests(unittest.TestCase):
         template = TEMPLATE.replace("* `演出` 木の根元に苔がある。\n", "")
         result = plan_timeline(
             backend, template_emd=template, concept_emd=CONCEPT,
-            direction=DirectionArtifact(motion_profile_id="anime_scene_author_mv"),
+            direction=DirectionArtifact(motion_profile_id="natural_performance"),
             lip_sync_mode="off", lip_sync_target="サブジェクト1",
             lip_sync_audio_slot=1,
             system_prompts=_system_prompts(), runtime_config=_runtime(),
@@ -407,7 +407,7 @@ class SceneAuthorTests(unittest.TestCase):
         backend = TwoEvents()
         result = plan_timeline(
             backend, template_emd=template, concept_emd=CONCEPT,
-            direction=DirectionArtifact(motion_profile_id="anime_scene_author_mv"),
+            direction=DirectionArtifact(motion_profile_id="natural_performance"),
             lip_sync_mode="off", lip_sync_target="サブジェクト1",
             lip_sync_audio_slot=1,
             system_prompts=_system_prompts(), runtime_config=_runtime(),
@@ -448,7 +448,7 @@ class SceneAuthorTests(unittest.TestCase):
         backend = MissingShotEvent()
         result = plan_timeline(
             backend, template_emd=TEMPLATE, concept_emd=CONCEPT,
-            direction=DirectionArtifact(motion_profile_id="anime_scene_author_mv"),
+            direction=DirectionArtifact(motion_profile_id="natural_performance"),
             lip_sync_mode="off", lip_sync_target="サブジェクト1",
             lip_sync_audio_slot=1,
             system_prompts=_system_prompts(), runtime_config=_runtime(),
@@ -476,7 +476,7 @@ class SceneAuthorTests(unittest.TestCase):
         result = plan_timeline(
             backend, template_emd=LONG_TEMPLATE + INSTRUMENTAL_TAIL,
             concept_emd=CONCEPT,
-            direction=DirectionArtifact(motion_profile_id="anime_scene_author_mv"),
+            direction=DirectionArtifact(motion_profile_id="natural_performance"),
             lip_sync_mode="off", lip_sync_target="サブジェクト1",
             lip_sync_audio_slot=1,
             system_prompts=_system_prompts(), runtime_config=_runtime(),
@@ -519,7 +519,7 @@ class SceneAuthorTests(unittest.TestCase):
         result = plan_timeline(
             backend, template_emd=LONG_TEMPLATE + INSTRUMENTAL_TAIL,
             concept_emd=CONCEPT,
-            direction=DirectionArtifact(motion_profile_id="anime_scene_author_mv"),
+            direction=DirectionArtifact(motion_profile_id="natural_performance"),
             lip_sync_mode="off", lip_sync_target="サブジェクト1",
             lip_sync_audio_slot=1,
             system_prompts=_system_prompts(), runtime_config=_runtime(),
@@ -548,7 +548,7 @@ class SceneAuthorTests(unittest.TestCase):
         concept = "# サブジェクト\n* `画像1` 刀と盾を持つ人物。\n"
         result = plan_timeline(
             backend, template_emd=LONG_TEMPLATE + INSTRUMENTAL_TAIL,
-            concept_emd=concept, direction=DirectionArtifact(motion_profile_id="anime_scene_author_mv"),
+            concept_emd=concept, direction=DirectionArtifact(motion_profile_id="natural_performance"),
             lip_sync_mode="off", lip_sync_target="サブジェクト1", lip_sync_audio_slot=1,
             system_prompts=_system_prompts(), runtime_config=_runtime())
         self.assertTrue(result.complete)
@@ -566,7 +566,7 @@ class SceneAuthorTests(unittest.TestCase):
         backend = Backend()
         result = plan_timeline(
             backend, template_emd=source, concept_emd=CONCEPT,
-            direction=DirectionArtifact(motion_profile_id="anime_scene_author_mv"),
+            direction=DirectionArtifact(motion_profile_id="natural_performance"),
             lip_sync_mode="off", lip_sync_target="サブジェクト1", lip_sync_audio_slot=1,
             system_prompts=_system_prompts(), runtime_config=_runtime())
         self.assertTrue(result.complete)
@@ -617,7 +617,7 @@ class SceneAuthorTests(unittest.TestCase):
         ):
             text, artifact, status = MVDirectorTimelinePlanner().plan(
                 template_emd=template, concept_emd=CONCEPT,
-                direction=DirectionArtifact(motion_profile_id="anime_scene_author_mv"),
+                direction=DirectionArtifact(motion_profile_id="natural_performance"),
                 lip_sync_mode="off", lip_sync_target="サブジェクト1",
                 lip_sync_audio_slot=1, model_name="unused",
                 chat_format="auto", max_tokens=512, temperature=0.1,

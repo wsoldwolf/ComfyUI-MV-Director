@@ -22,7 +22,7 @@ from nodes.common.gguf_discovery import resolve_comfy_gguf_model
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--workflow", type=Path, default=ROOT / "workflows/01_plan_compiler_context_loop.json")
+    parser.add_argument("--workflow", type=Path, default=ROOT / "workflows/01_plan_compiler.json")
     parser.add_argument("--models-dir", type=Path, required=True)
     parser.add_argument("--concept", type=Path, required=True)
     parser.add_argument("--scene", type=Path, required=True)

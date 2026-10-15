@@ -4,6 +4,7 @@
 
 | TIPS | 内容 |
 |---|---|
+| [TODOと保留事項](TODO.md) | 保留中の懸念、品質・環境の残課題、将来の研究案、実映像の確認待ち |
 | [プロジェクトのコード規模](project-code-scale.md) | 本体・テスト・開発ツール・シスプロ・プロファイル・WFの規模、集計範囲と保守負荷の考察 |
 | [RTX 5080でGemma4 31B IQ3 XSを使う設定](rtx5080-gemma31b-iq3-xs.md) | VRAM 16GB向けcontext・KV概算、通常PlannerのQ4_K_S／IQ3_XS高速化、SWA設定とmmproj CPU配置の注意点 |
 | [H3高速化設定と安定性](h3-acceleration-and-stability.md) | Comfy Kitchen・SLA・Spectrum・FP16 accumulationの設定、Spectrum更新と全編完走の記録、低速化の切り分け |

@@ -24,8 +24,8 @@ from tools.generate_workflows import (
 )
 
 WORKFLOW_FILENAMES = (
-    "01_plan_compiler_context_loop_4subject.json",
-    "02_video_context_loop_4subject.json",
+    "01_plan_compiler.json",
+    "02_video_generator.json",
 )
 # Keep the established environment reference at Picture 2.
 SUBJECT_PICTURES = (1, 3, 4, 5)
@@ -208,11 +208,42 @@ def build_video_workflow(source: dict[str, Any], mode: str) -> dict[str, Any]:
 
 
 def prepare_saved_workflow(source: dict[str, Any], *, plan: bool) -> dict[str, Any]:
-    """Validate an existing four-Subject graph without resetting user settings."""
+    """Use the browser-saved graph as the layout/settings source of truth.
+
+    Never re-run legacy layout builders or the one-time reassembly placement
+    here: node/group positions, sizes, viewport and saved modes belong to the
+    edited workflow, including manually repositioned execution controls.
+    """
     workflow = copy.deepcopy(source)
+    for node in workflow["nodes"]:
+        if node["type"] != "MarkdownNote":
+            continue
+        values = node.get("widgets_values", [])
+        if not values or not isinstance(values[0], str):
+            continue
+        text = values[0]
+        for old, new in (
+            ("01_plan_compiler_context_loop_4subject.json", WORKFLOW_FILENAMES[0]),
+            ("02_video_context_loop_4subject.json", WORKFLOW_FILENAMES[1]),
+            ("01_plan_compiler_context_loop.json", WORKFLOW_FILENAMES[0]),
+            ("02_video_context_loop.json", WORKFLOW_FILENAMES[1]),
+            ("次の三ファイル", "次の四ファイル"),
+            ("上方の切替パネル", "切替パネル"),
+            ("Review Gateはこの複製版では有効です。", "採否を目視確認する場合はReview Gateを有効にしてください。"),
+            ("Planを変更したい場合はこのworkflowでJSONを手編集せず、前段から再生成します。",
+             "演出全体を変更する場合は01_から再生成します。生成済みSceneの局所修正にはPlan StudioのALTを使用できます。"),
+        ):
+            text = text.replace(old, new)
+        values[0] = text
+        named = node.get("widgets_values_named")
+        if isinstance(named, dict) and "text" in named:
+            named["text"] = text
     sync_lyric_outputs(workflow)
     if plan:
         sync_subject_inputs(workflow)
+        planner = _only(workflow, "MVDirectorTimelinePlanner")
+        if planner["widgets_values"][0] != "context_loop":
+            raise ValueError("Only Context Loop workflows are currently distributed")
         enhancer = _only(workflow, "MVDirectorDirectionEnhancer")
         for number in range(1, 5):
             name = "concept_emd" if number == 1 else f"concept_emd_{number}"
