@@ -29,10 +29,14 @@ LLMの出力は確率的で、行protocol違反や必須出力の欠落が起き
 
 ## 簡単な利用方法
 
+演出を考える際は、[歌詞・シーン・キャラクターから演出候補を作るTIPS](docs/tips/staging-candidate-authoring-prompt.md)を利用できます。再利用用プロンプトと歌詞全文・舞台・人物設定をChatGPT／Codexへ渡し、生成した`# 共通プロンプト`・`# 演出候補`を01_ WFのDirection Enhancerの`user_request`へ設定します。歌詞の意味を具体的な演技やCameraへ展開するための補助であり、候補の採用や映像での再現を保証するものではありません。
+
+**参照画像だけでなく、人物のヒントも作品に合わせて変更してください。** 通常版の配布WFには、狐耳・尻尾などを指定した検証用の`subject_hint`が入っています。画像だけを差し替えてヒントを残すと、画像にないケモミミや尻尾、以前の衣装などが生成される場合があります。[Image to Subject EMD](docs/nodes/image-to-subject-emd.md)の`subject_hint`を自分の人物の識別特徴・衣装・小道具等へ書き換えるか、不要なら空欄にしてください。`additional_instruction`も観察方針に合わせて確認します。`hint_mode=lock_identity`ではヒントが外見推定より優先されます。複数Subject版では人物ごとに確認し、演出候補の検証用題材も置き換えてください。
+
 1. `01_plan_compiler_context_loop.json`をComfyUIで開き、参照画像・歌詞・音源を設定して実行します。Plan JSONは、ComfyUIの`output/mv_director`以下へ`.txt`形式で保存されます。
 2. `02_video_context_loop.json`を開き、保存した`.txt`を「Compiled Plan JSON (.txt handoff)」へ読み込みます。01と同じ参照画像・音源を指定し、実行すると動画を生成します。
 
-同じPlanで動画を再生成する場合は、02だけを再実行できます。歌詞や演出方針を変更した場合は、01でPlanを作り直し、02へ読み込み直してください。
+同じPlanで動画を再生成する場合は、02だけを再実行できます。歌詞、人物のヒント、演出方針を変更した場合は、01でPlanを作り直し、生成されたEMDのSubject定義を確認してから02へ読み込み直してください。既存Planの人物設定は、元ノードのヒントを変更するだけでは更新されません。
 
 ## 文書索引
 
