@@ -187,7 +187,7 @@ def inference(prepared, destination, models_dir):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--case", type=Path, required=True)
-    parser.add_argument("--workflow", type=Path, default=ROOT / "workflows/01_plan_compiler_context_loop.json")
+    parser.add_argument("--workflow", type=Path, default=ROOT / "workflows/01_plan_compiler.json")
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--models-dir", type=Path, default=Path("C:/Software/ComfyUI/models"))
     parser.add_argument("--infer", action="store_true", help="Requires prior user authorization for GPU use")

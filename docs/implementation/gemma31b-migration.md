@@ -21,7 +21,7 @@
 python tools/generate_workflows.py --sync-planner-schema
 ```
 
-前段3WFの廃止widgetだけを取り除きます。配置、色、素材、seed、入力本文、配線を保持します。動画3WFと保存Planは変更しません。外部接続された旧widgetは手動移行を要求します。
+現在は`01_plan_compiler.json`の廃止widgetだけを取り除きます。配置、色、素材、seed、入力本文、配線を保持し、`02_video_generator.json`と保存Planは変更しません。Audio参照・歌詞方式の旧WFは配布保留中で、この同期でも復元しません。外部接続された旧widgetは手動移行を要求します。
 
 モデルruntimeを配布既定値へ更新する場合は`--sync-model-runtime`を別途使用します。全生成は配置を作り直すため、編集済みWFへの更新は限定syncを優先してください。更新後はComfyUIを再起動してWFを開き直してください。
 

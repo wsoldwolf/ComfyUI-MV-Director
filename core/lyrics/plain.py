@@ -12,7 +12,7 @@ from .errors import LyricSegmentationError
 
 _SECTION_RE = re.compile(
     r"\[[ \t\u3000]*"
-    r"([A-Z][A-Z0-9_-]*(?:[ \t\u3000]+[A-Z0-9][A-Z0-9_-]*)*)"
+    r"([A-Z][A-Z0-9_-]*(?:[ \t\u3000]+(?:-[ \t\u3000]+)?[A-Z0-9][A-Z0-9_-]*)*)"
     r"[ \t\u3000]*\]\Z",
     re.IGNORECASE | re.ASCII,
 )

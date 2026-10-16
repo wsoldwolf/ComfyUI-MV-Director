@@ -94,6 +94,43 @@ class PlainLyricsTests(unittest.TestCase):
     def test_empty_multiword_section_does_not_create_lyrics(self) -> None:
         self.assertEqual(parse_plain_lyrics("[Instrumental Rave Break]\n\n[Guitar Solo]\n"), ())
 
+    def test_suno_headings_allow_spaced_hyphen_annotations(self) -> None:
+        for heading in (
+            "[Verse 1 - Female Vocal 1]",
+            "[ verse  1  -  female  vocal  1 ]",
+            "[\tVerse\t1\t-\tFemale\tVocal\t1\t]",
+            "[　Verse　1　-　Female　Vocal　1　]",
+        ):
+            with self.subTest(heading=heading):
+                segments = parse_plain_lyrics(heading + "\n月　光\n")
+                self.assertEqual([i.section for i in segments],
+                                 ["VERSE_1_-_FEMALE_VOCAL_1"] * 2)
+                self.assertEqual([i.text for i in segments], ["月", "光"])
+                self.assertEqual((segments[1].source_line, segments[1].source_start,
+                                  segments[1].source_end), (2, 2, 3))
+
+    def test_hyphen_annotations_coexist_with_existing_compound_names(self) -> None:
+        segments = parse_plain_lyrics(
+            "[Pre-Chorus - Female Vocal 2]\n声\n"
+            "[Chorus - Duet]\n歌\n"
+            "[Verse 1 - Female Vocal 1 - Soft]\n息\n"
+            "[Pre-Chorus]\n風\n"
+        )
+        self.assertEqual([i.section for i in segments],
+                         ["PRE-CHORUS_-_FEMALE_VOCAL_2", "CHORUS_-_DUET",
+                          "VERSE_1_-_FEMALE_VOCAL_1_-_SOFT", "PRE-CHORUS"])
+
+    def test_empty_hyphen_annotated_sections_are_not_sung_text(self) -> None:
+        self.assertEqual(parse_plain_lyrics(
+            "[Intro - Instrumental]\n\n[Chorus - Duet]\n"), ())
+
+    def test_hyphen_support_does_not_allow_timestamps_or_malformed_metadata(self) -> None:
+        for heading in ("[00:01.00 - Female Vocal 1]", "[ar: Singer - Vocal 1]",
+                        "[Verse 1 -]", "[Verse 1 - - Female Vocal 1]",
+                        "[- Female Vocal 1]", "[Verse 1 - 女性 Vocal 1]"):
+            with self.subTest(heading=heading), self.assertRaises(LyricSegmentationError):
+                parse_plain_lyrics("[Intro]\n歌詞\n" + heading + "\n声\n")
+
     def test_rejects_non_plain_metadata(self) -> None:
         invalid = (
             "歌詞\n[VERSE1]\n歌詞",
@@ -665,7 +702,8 @@ class TargetedRecoveryTests(unittest.TestCase):
         )
         self.assertEqual([item.text for item in unplaced], ["存在しない歌詞"])
         self.assertEqual(stats.recovered_segments, 0)
-        self.assertEqual(len(backend.calls), 2)
+        # Original and shifted-window evidence/guided pairs both reject it.
+        self.assertEqual(len(backend.calls), 4)
 
     def test_guided_retry_uses_only_missing_segment_from_same_source_line(self) -> None:
         lyrics = parse_plain_lyrics(
@@ -1036,6 +1074,7 @@ class PublicNodeTests(unittest.TestCase):
             all(isinstance(item, FakeExecutionBlocker) for item in result["result"][:3])
         )
         self.assertIn("音源にない歌詞", result["result"][0].message)
+        self.assertIn("recognition misses", result["result"][0].message)
         self.assertIsInstance(result["result"][4], FakeExecutionBlocker)
         self.assertEqual(len(result["result"]), 5)
         self.assertIn("MV Director - Lyric Segmentation", captured.output[0])

@@ -58,6 +58,42 @@ class MouthPlannerPolicyTests(unittest.TestCase):
         self.assertEqual(rows(result[1]), [
             ("サブジェクト1", 0, 2800, "閉口"), ("サブジェクト1", 3000, 6000, "歌唱")])
 
+    def test_long_rest_starts_closure_at_vocal_end_without_post_margin(self):
+        result = resolve(activity((0, 3000, "vocal_candidate"),
+                                  (3000, 6000, "no_vocal_candidate")))
+        self.assertEqual(rows(result[1]), [
+            ("サブジェクト1", 0, 3000, "歌唱"),
+            ("サブジェクト1", 3000, 6000, "閉口")])
+
+    def test_internal_rest_preserves_only_pre_voice_margin(self):
+        result = resolve(activity((0, 1000, "vocal_candidate"),
+                                  (1000, 4000, "instrumental_candidate"),
+                                  (4000, 6000, "vocal_candidate")))
+        self.assertEqual(rows(result[1]), [
+            ("サブジェクト1", 0, 1000, "歌唱"),
+            ("サブジェクト1", 1000, 3800, "閉口"),
+            ("サブジェクト1", 4000, 6000, "歌唱")])
+
+    def test_vocal_end_at_scene_boundary_does_not_delay_closure(self):
+        scenes = tuple(Scene(i + 1, i * 2000, (i + 1) * 2000, 22, (),
+                             (Shot(i * 2000, ("未計画",), (), (), 1),), (), 1)
+                       for i in range(3))
+        result = resolve(activity((0, 2000, "vocal_candidate"),
+                                  (2000, 6000, "no_vocal_candidate")), scenes=scenes)
+        self.assertEqual(rows(result[2]), [("サブジェクト1", 2000, 4000, "閉口")])
+        self.assertEqual(rows(result[3]), [("サブジェクト1", 4000, 6000, "閉口")])
+
+    def test_author_free_at_vocal_end_still_overrides_closure(self):
+        scene = parse_template_emd(TEMPLATE).scenes[0]
+        author = MouthPerformance("サブジェクト1", 3000, 3500, "自由", 5)
+        result = resolve(activity((0, 3000, "vocal_candidate"),
+                                  (3000, 6000, "no_vocal_candidate")),
+                         scenes=(replace(scene, mouth_performances=(author,)),))
+        self.assertEqual(rows(result[1]), [
+            ("サブジェクト1", 0, 3000, "歌唱"),
+            ("サブジェクト1", 3000, 3500, "自由"),
+            ("サブジェクト1", 3500, 6000, "閉口")])
+
     def test_scene_split_does_not_reduce_long_gap_to_breath(self):
         scenes = tuple(Scene(i + 1, i * 1000, (i + 1) * 1000, 22, (),
                              (Shot(i * 1000, ("未計画",), (), (), 1),), (), 1)
@@ -252,12 +288,36 @@ class MouthEMDAndCompilerTests(unittest.TestCase):
 
 
 class MouthPipelineTests(unittest.TestCase):
+    def test_zero_post_margin_reaches_planner_emd_and_compiled_prompt(self):
+        value = activity((0, 3000, "vocal_candidate"),
+                         (3000, 6000, "instrumental_candidate"))
+        backend = Backend()
+        result = plan_timeline(backend,
+            template_emd="\n".join(value.render_lines()) + "\n" + TEMPLATE,
+            concept_emd=CONCEPT, direction=DirectionArtifact(motion_profile_id="natural_performance"),
+            lip_sync_mode="context_loop", lip_sync_target="サブジェクト1", lip_sync_audio_slot=1,
+            system_prompts=_system_prompts(), runtime_config=_runtime())
+        self.assertTrue(result.complete)
+        for task, payload in backend.calls:
+            if task != "scene-author-event":
+                closed = [i for i in payload["mouth_performance"]["intervals"]
+                          if i["state"] == "閉口"]
+                self.assertEqual([(i["start_ms"], i["end_ms"]) for i in closed], [(3000, 6000)])
+        doc = parse_emd(result.emd.text)
+        self.assertEqual(rows(doc.scenes[0].mouth_performances), [
+            ("サブジェクト1", 0, 3000, "歌唱"), ("サブジェクト1", 3000, 6000, "閉口")])
+        compiled = compile_ref2va(result.emd.text, IdentityTranslator())
+        shot = compiled.plan["shots"][0]
+        closed_line = next(line for line in shot["prompt"] if "keeps the lips gently together" in line)
+        self.assertIn("From 00:03.000 to 00:06.000", closed_line)
+        self.assertEqual(shot["source_audio_target"], "locked")
+
     def test_normal_pipeline_passes_policy_only_to_performance_and_camera(self):
         value = activity((0, 3000, "instrumental_candidate"), (3000, 6000, "vocal_candidate"))
         backend = Backend()
         result = plan_timeline(backend,
             template_emd="\n".join(value.render_lines()) + "\n" + TEMPLATE,
-            concept_emd=CONCEPT, direction=DirectionArtifact(motion_profile_id="anime_scene_author_mv"),
+            concept_emd=CONCEPT, direction=DirectionArtifact(motion_profile_id="natural_performance"),
             lip_sync_mode="context_loop", lip_sync_target="サブジェクト1", lip_sync_audio_slot=1,
             system_prompts=_system_prompts(), runtime_config=_runtime())
         self.assertTrue(result.complete)

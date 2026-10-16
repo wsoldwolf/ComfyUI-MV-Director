@@ -1,15 +1,15 @@
 {
   "id": "29310d04-4691-4643-a35c-1db5cfe02a76",
   "revision": 0,
-  "last_node_id": 36,
-  "last_link_id": 33,
+  "last_node_id": 40,
+  "last_link_id": 35,
   "nodes": [
     {
       "id": 5,
       "type": "MVDirectorLoadTextFile",
       "pos": [
-        50,
-        1550
+        80,
+        4610
       ],
       "size": [
         330,
@@ -67,15 +67,15 @@
         }
       },
       "widgets_values": [
-        "W0ludHJvXQ0K44GK6aGU44Gv56eY5a+GDQrjgYrlkI3liY3jgoLnp5jlr4YNCuS7iuWuteOBrumZjeS4iw0K44GK5L6b44GX44G+44GX44KH44GGDQoNCltWZXJzZSAxXQ0K5Y2I5YmN6Zu25pmC44Gu56m644GM6ZaL44GPDQrkuInjgaTjga7lvbHjgYzlhYnjgpLoo4LjgYTjgZ8NCuWPs+OBrueUt+OBr+eNsueJqeOCkuaOouOBlw0K5bem44Gu55S344Gv6KGj6KOF44KS5o6i44GZDQoNCuecn+OCk+S4reOBoOOBkeOBjOa3seOBj+OBiui+nuWEgA0K552A5Zyw44Gu5aC05omA44Gv5pW144Gu5YmNDQrmjIfjga7lhYjjgb7jgafmsJflj5bjgaPjgabjgb/jgabjgoINCuW8vuOBjOOBquOBkeOCjOOBsOi4iuOCi+OBoOOBkQ0KDQpbUHJlLUNob3J1c10NCuS4gOatqei/keOBpeOBjeOAgOS6jOatqemBoOOBluOBi+OCiw0K6LWk44GE5ZCI5Zuz44Gr44CA6Lqr44KS5a+E44Gb44KLDQroqrDjgYzlhYjjgafjgoLjgIDni6zjgorjgavjgZXjgZvjgawNCuS4ieOBpOOBruW9seOBp+WknOOCkuihjOOBjw0KDQpbQ2hvcnVzXQ0K6LiK44KM44CA5pyA5b6M44Gu44Oq44Oz44Kw44GnDQrov6vjgovlhYnjgpLjgZnjgormipzjgZHjgaYNCumhlOOCguWQjeWJjeOCguimi+OBiOOBquOBhOOBkeOCjOOBqQ0K6IOM5Lit44KS6aCQ44GR44KL55u45omL44GM44GE44KLDQoNCuWbnuOCjOOAgOeBq+iKseOBruS4reOBpw0K5Ymy44KM44Gf44K344O844Or44OJ44CA5oqx44GN5a+E44Gb44GmDQrjgYLjgarjgZ/jgYzlgJLjgozjgovjgIDjgZ3jga7nnqzplpPjgasNCuS6jOOBpOOBruW9seOBjOOAgOaJi+OCkuS8uOOBsOOBmQ0KDQpbSW5zdHJ1bWVudGFsIFJhdmUgQnJlYWtdDQoNCltWZXJzZSAyXQ0K5Y+z44Gu55S344GM6Iad44KS44Gk44GE44Gf44KJDQrlt6bjga7nlLfjgYznhZnjgpLlvLXjgaPjgZ8NCuecn+OCk+S4reOBoOOBkeOBjOS4oeaJi+OCkuW6g+OBkg0K5pW144Gr5ZCR44GL44Gj44Gm56S844KS44GZ44KLDQoNCueuseOBruS4reOBq+OBr+WkouOBjOWxseOBu+OBqQ0K5qyy44GX44GE54mp44Gg44GR6KaL44Gk44GL44KJ44GsDQrlhKrpm4XjgarmjIfjgaflkIjlm7PjgpLpgIHjgozjgbANCuiqsOOCguOBjOWQjOOBmOaJieOCkuimi+OCiw0KDQpbUHJlLUNob3J1c10NCuS4gOS6uuOBjOiqmOOBhOOAgOS6jOS6uuOBjOWbnuOCiw0K55uu44Gr44Gv6KaL44GI44Gq44GE57O444KS5byV44GPDQrog4zkuK3lkIjjgo/jgZvjga7ljbHjgYbjgYTlnYfooaENCuWQiOWbs+OBsuOBqOOBpOOBp+mnhuOBkeWHuuOBl+OBnw0KDQpbQ2hvcnVzXQ0K6LiK44KM44CA5pyA5b6M44Gu44Oq44Oz44Kw44GnDQrov6vjgovlhYnjgpLjgZnjgormipzjgZHjgaYNCumhlOOCguWQjeWJjeOCguimi+OBiOOBquOBhOOBkeOCjOOBqQ0K6IOM5Lit44KS6aCQ44GR44KL55u45omL44GM44GE44KLDQoNCuWbnuOCjOOAgOeBq+iKseOBruS4reOBpw0K5Ymy44KM44Gf44K344O844Or44OJ44CA5oqx44GN5a+E44Gb44GmDQrjgYLjgarjgZ/jgYzlgJLjgozjgovjgIDjgZ3jga7nnqzplpPjgasNCuS6jOOBpOOBruW9seOBjOOAgOaJi+OCkuS8uOOBsOOBmQ0KDQpbQnJpZGdlXQ0K44GK5pyb44G/44Gq44KJ44Gw44CA5Zuu44Gr44Gq44KK44G+44GX44KH44GGDQrjgYrlgJLjgozjgarjgonjgbDjgIDov47jgYjjgavooYzjgY3jgb7jgZfjgofjgYYNCuOBkeOCjOOBqeeJqeizh+OBrw0K5bCR44GX5YiG44GR44Gm44GP44Gg44GV44GEDQoNCltCdWlsZC1VcF0NCuWPs+OBuOOAgOW3puOBuA0K44Oq44Oz44Kw44Gu5Lit44G4DQrkvI/jgZvjgo3jgIDmjK/jgorlkJHjgZENCuOBleOBguOAgOOCguOBhuS4gOW6pg0KDQpbRmluYWxDaG9ydXNdDQrouIrjgozjgIDmnIDlvozjga7jg6rjg7PjgrDjgacNCueLreOBhOiInuWPsOOCkui4j+OBv+mztOOCieOBmw0K6aGU44KC5ZCN5YmN44KC5YiG44GL44KJ44Gs44G+44G+44GnDQrkuInjgaTjga7pvJPli5XjgYzjgbLjgajjgaTjgavjgarjgosNCg0K5Zue44KM44CA5pyA5b6M44Gu5pW144GoDQrlpJzjga7ntYLjgo/jgorjgpLlparjgYTlkIjjgYgNCuWLneWIqeOBruWFieOBjOmZjeOCiuazqOOBhOOBoOOCiQ0K5LiJ5Lq644Gd44KN44Gj44Gm44CA5rex44GP44GK6L6e5YSADQoNCltPdXRyb10NCuOBiumhlOOBr+enmOWvhg0K44GK5ZCN5YmN44KC56eY5a+GDQrku4rlrrXjga7jg4Hjg6Pjg7Pjg5Tjgqrjg7MNCuOBvuOBn+asoeOBruWknOOBqw==",
-        "lyrics.txt",
-        "{\"lastModified\":1791890161588,\"size\":2194,\"type\":\"text/plain\"}",
+        "W0ludHJvXQ0K44GP44KL44KK44CA44G144KP44KK44CA44GX44Gj44G944GM5o+644KM44GmDQrku4rlpJzjga7np5jlr4bjgpLjgIDjgbLjgajjgaTjgaHjgofjgYbjgaDjgYQNClRyaWNrIG9yIHRyZWF0IQ0K44GV44GC44CA44GK44GE44Gn77yBDQoNCltWZXJzZSAxXQ0K5bCW44Gj44Gf5bi95a2Q44Gr44CA5LiJ5pel5pyI44Gy44Go44GkDQrnrpLjga7lhYjjgYvjgonjgIDjgZPjgbzjgozjgovngavoirENCumAgOWxiOOBquOCk+OBpuOAgOe9ruOBhOOBpuOBhOOCieOBo+OBl+OCg+OBhA0K55SY44GE5ZGq5paH44Gn44CA44G744Gp44GE44Gm44GC44GS44KLDQoNCltWZXJzZSAyXQ0K5Y2X55Oc44Gu6aas6LuK44Gq44KJ44CA44Gf44Gg44GE44G+5rqA5ZOhDQrjgYrjgbDjgZHjgoLkuKbjgpPjgafjgIDjgYroj5PlrZDjgpLjga3jgaDjgosNCuOBj+OBmeOBj+OBmeeskeOBiOOBsOOAgOeBr+OCiuOBjOi3s+OBreOCiw0K44GC44Gq44Gf44Gu5YiG44G+44Gn44CA5q6L44GX44Gm44GC44KL44KIDQoNCltQcmUtQ2hvcnVzXQ0K6LWk44GE44Kt44Oj44Oz44OH44Kj77yfDQrjgZ3jgozjgajjgoLprZTms5XvvJ8NCumBuOOCk+OBoOOBneOBruaJi+OCkuOAgOmbouOBleOBquOBhA0K6ZCY44GM6bO044Gj44Gf44KJ44CA5aeL44KB44G+44GX44KH44GGDQrni5DngavjgajjgoLjgZfjgabjgIDouIrjgorjgb7jgZfjgofjgYbvvIENCg0KW0Nob3J1c10NCuOBj+OCi+OBj+OCi+WbnuOCjOOAgOOCreODo+ODs+ODh+OCo+ODiuOCpOODiA0K44GX44Gj44G944Gn5o+P44GE44Gf44CA56eY5a+G44Gu44K144Kk44OzDQrljJbjgYvjgZfjgabjgIDnrJHjgaPjgabjgIDjgoLjgYbkuIDlm54NCuaciOOBvuOBp+mfv+OBkeOCiOOAgFRyaWNrIG9yIHRyZWF0IQ0KDQrjgbLjgonjgbLjgonouIrjgozjgIDjg5Hjg7Pjg5fjgq3jg7Pjg6njgqTjg4gNCuaAluOBjOOCi+mhlOOBq+OCguOAgOeUmOOBhOOBlOikkue+jg0K5LuK5aSc44Gv6Kqw44Gn44KC44CA5Li75b2544Gn44GX44KH44GG77yfDQrlpJzmmI7jgZHjgYzmnaXjgovjgb7jgafjgIDluLDjgZXjgarjgYTvvIENCg0KW1ZlcnNlIDNdDQrpj6HjgavmmKDjgaPjgZ/jgIDnn6XjgonjgarjgYTjgo/jgZ/jgZcNCuOBhOOBpOOCguOCiOOCiuWwkeOBl+OAgOWkp+iDhuOBqumhlA0K5Luu6Z2i44Gu5ZCR44GT44GG44Gn44CA55uu44Go55uu44GM5ZCI44GI44GwDQrjgYTjgZ/jgZrjgonlv4PjgavjgIDngavjgYzjgaTjgYTjgZ8NCg0KW1ByZS1DaG9ydXNdDQrprZTms5XjgYzop6PjgZHjgZ/jgonvvJ8NCuOBvuOBn+OBi+OBkeOCjOOBsOOBhOOBhO+8gQ0K44GK6I+T5a2Q44GM5bC944GN44Gf44KJ77yfDQrnrJHjgaPjgabjgZTjgb7jgYvjgZvvvIENCuaZguioiOOBrumHneOBvuOBp+OAgOW3u+OBjei+vOOCk+OBpw0K54uQ44Gu5a6044Gv44CA57WC44KP44KJ44Gq44GE77yBDQoNCltDaG9ydXNdDQrjgY/jgovjgY/jgovlm57jgozjgIDjgq3jg6Pjg7Pjg4fjgqPjg4rjgqTjg4gNCuOBl+OBo+OBveOBp+aPj+OBhOOBn+OAgOenmOWvhuOBruOCteOCpOODsw0K5YyW44GL44GX44Gm44CA56yR44Gj44Gm44CA44KC44GG5LiA5ZueDQrmnIjjgb7jgafpn7/jgZHjgojjgIBUcmljayBvciB0cmVhdCENCg0KW0JyaWRnZV0NCuOBu+OCk+OBqOOBruWnv+OCkuOAgOmaoOOBl+OBn+WknOOBqw0K44G744KT44Go44Gu56yR6aGU44GM44CA44GT44G844KM44Gm44GX44G+44GGDQrmmI7ml6XjgavjgarjgaPjgZ/jgonjgIDlhoXnt5LjgavjgZfjgabjga0NCuOBguOBquOBn+OBruWQjeWJjeOCkuOAgOWRquaWh+OBq+OBmeOCi+OBrg0KDQpbRmluYWwgQ2hvcnVzXQ0K44GP44KL44GP44KL5Zue44KM44CA44Kt44Oj44Oz44OH44Kj44OK44Kk44OIDQrjgbXjgZ/jgaTjga7ni5DngavjgIDph43jgarjgovjgrnjg4bjg4Pjg5cNCuWMluOBi+OBl+OBpuOAgOeskeOBo+OBpuOAgOOCguOBhuS4gOWbng0K44GC44Gq44Gf44KC5LiA57eS44Gr44CAVHJpY2sgb3IgdHJlYXQhDQoNCuOBsuOCieOBsuOCiei4iuOCjOOAgOODkeODs+ODl+OCreODs+ODqeOCpOODiA0K5pyA5b6M44Gu44Gy44Go57KS44CA5Y2K5YiG44GC44GS44KLDQrlpJzmmI7jgZHjga7miYvliY3jgafjgIDmjIfliIfjgorjgZfjgb7jgZfjgofjgYYNCuadpeW5tOOCguOBk+OBk+OBp+OAgOmAouOBhOOBvuOBl+OCh+OBhu+8gQ0KDQpbT3V0cm9dDQrjgY/jgovjgorjgIDjgbXjgo/jgorjgIDjgZfjgaPjgb3jgpLlr4TjgZvjgaYNCuOBguOBquOBn+OBruenmOWvhuOCkuOAgOOBsuOBqOOBpOOCguOCieOBo+OBnw0KVHJpY2sgb3IgdHJlYXQhDQrjgb7jgZ/jgIDjgYrjgYTjgafvvIE=",
+        "candynight_lyrics.txt",
+        "{\"lastModified\":1792045769916,\"size\":2318,\"type\":\"text/plain\"}",
         null
       ],
       "widgets_values_named": {
-        "file_data_base64": "W0ludHJvXQ0K44GK6aGU44Gv56eY5a+GDQrjgYrlkI3liY3jgoLnp5jlr4YNCuS7iuWuteOBrumZjeS4iw0K44GK5L6b44GX44G+44GX44KH44GGDQoNCltWZXJzZSAxXQ0K5Y2I5YmN6Zu25pmC44Gu56m644GM6ZaL44GPDQrkuInjgaTjga7lvbHjgYzlhYnjgpLoo4LjgYTjgZ8NCuWPs+OBrueUt+OBr+eNsueJqeOCkuaOouOBlw0K5bem44Gu55S344Gv6KGj6KOF44KS5o6i44GZDQoNCuecn+OCk+S4reOBoOOBkeOBjOa3seOBj+OBiui+nuWEgA0K552A5Zyw44Gu5aC05omA44Gv5pW144Gu5YmNDQrmjIfjga7lhYjjgb7jgafmsJflj5bjgaPjgabjgb/jgabjgoINCuW8vuOBjOOBquOBkeOCjOOBsOi4iuOCi+OBoOOBkQ0KDQpbUHJlLUNob3J1c10NCuS4gOatqei/keOBpeOBjeOAgOS6jOatqemBoOOBluOBi+OCiw0K6LWk44GE5ZCI5Zuz44Gr44CA6Lqr44KS5a+E44Gb44KLDQroqrDjgYzlhYjjgafjgoLjgIDni6zjgorjgavjgZXjgZvjgawNCuS4ieOBpOOBruW9seOBp+WknOOCkuihjOOBjw0KDQpbQ2hvcnVzXQ0K6LiK44KM44CA5pyA5b6M44Gu44Oq44Oz44Kw44GnDQrov6vjgovlhYnjgpLjgZnjgormipzjgZHjgaYNCumhlOOCguWQjeWJjeOCguimi+OBiOOBquOBhOOBkeOCjOOBqQ0K6IOM5Lit44KS6aCQ44GR44KL55u45omL44GM44GE44KLDQoNCuWbnuOCjOOAgOeBq+iKseOBruS4reOBpw0K5Ymy44KM44Gf44K344O844Or44OJ44CA5oqx44GN5a+E44Gb44GmDQrjgYLjgarjgZ/jgYzlgJLjgozjgovjgIDjgZ3jga7nnqzplpPjgasNCuS6jOOBpOOBruW9seOBjOOAgOaJi+OCkuS8uOOBsOOBmQ0KDQpbSW5zdHJ1bWVudGFsIFJhdmUgQnJlYWtdDQoNCltWZXJzZSAyXQ0K5Y+z44Gu55S344GM6Iad44KS44Gk44GE44Gf44KJDQrlt6bjga7nlLfjgYznhZnjgpLlvLXjgaPjgZ8NCuecn+OCk+S4reOBoOOBkeOBjOS4oeaJi+OCkuW6g+OBkg0K5pW144Gr5ZCR44GL44Gj44Gm56S844KS44GZ44KLDQoNCueuseOBruS4reOBq+OBr+WkouOBjOWxseOBu+OBqQ0K5qyy44GX44GE54mp44Gg44GR6KaL44Gk44GL44KJ44GsDQrlhKrpm4XjgarmjIfjgaflkIjlm7PjgpLpgIHjgozjgbANCuiqsOOCguOBjOWQjOOBmOaJieOCkuimi+OCiw0KDQpbUHJlLUNob3J1c10NCuS4gOS6uuOBjOiqmOOBhOOAgOS6jOS6uuOBjOWbnuOCiw0K55uu44Gr44Gv6KaL44GI44Gq44GE57O444KS5byV44GPDQrog4zkuK3lkIjjgo/jgZvjga7ljbHjgYbjgYTlnYfooaENCuWQiOWbs+OBsuOBqOOBpOOBp+mnhuOBkeWHuuOBl+OBnw0KDQpbQ2hvcnVzXQ0K6LiK44KM44CA5pyA5b6M44Gu44Oq44Oz44Kw44GnDQrov6vjgovlhYnjgpLjgZnjgormipzjgZHjgaYNCumhlOOCguWQjeWJjeOCguimi+OBiOOBquOBhOOBkeOCjOOBqQ0K6IOM5Lit44KS6aCQ44GR44KL55u45omL44GM44GE44KLDQoNCuWbnuOCjOOAgOeBq+iKseOBruS4reOBpw0K5Ymy44KM44Gf44K344O844Or44OJ44CA5oqx44GN5a+E44Gb44GmDQrjgYLjgarjgZ/jgYzlgJLjgozjgovjgIDjgZ3jga7nnqzplpPjgasNCuS6jOOBpOOBruW9seOBjOOAgOaJi+OCkuS8uOOBsOOBmQ0KDQpbQnJpZGdlXQ0K44GK5pyb44G/44Gq44KJ44Gw44CA5Zuu44Gr44Gq44KK44G+44GX44KH44GGDQrjgYrlgJLjgozjgarjgonjgbDjgIDov47jgYjjgavooYzjgY3jgb7jgZfjgofjgYYNCuOBkeOCjOOBqeeJqeizh+OBrw0K5bCR44GX5YiG44GR44Gm44GP44Gg44GV44GEDQoNCltCdWlsZC1VcF0NCuWPs+OBuOOAgOW3puOBuA0K44Oq44Oz44Kw44Gu5Lit44G4DQrkvI/jgZvjgo3jgIDmjK/jgorlkJHjgZENCuOBleOBguOAgOOCguOBhuS4gOW6pg0KDQpbRmluYWxDaG9ydXNdDQrouIrjgozjgIDmnIDlvozjga7jg6rjg7PjgrDjgacNCueLreOBhOiInuWPsOOCkui4j+OBv+mztOOCieOBmw0K6aGU44KC5ZCN5YmN44KC5YiG44GL44KJ44Gs44G+44G+44GnDQrkuInjgaTjga7pvJPli5XjgYzjgbLjgajjgaTjgavjgarjgosNCg0K5Zue44KM44CA5pyA5b6M44Gu5pW144GoDQrlpJzjga7ntYLjgo/jgorjgpLlparjgYTlkIjjgYgNCuWLneWIqeOBruWFieOBjOmZjeOCiuazqOOBhOOBoOOCiQ0K5LiJ5Lq644Gd44KN44Gj44Gm44CA5rex44GP44GK6L6e5YSADQoNCltPdXRyb10NCuOBiumhlOOBr+enmOWvhg0K44GK5ZCN5YmN44KC56eY5a+GDQrku4rlrrXjga7jg4Hjg6Pjg7Pjg5Tjgqrjg7MNCuOBvuOBn+asoeOBruWknOOBqw==",
-        "basename": "lyrics.txt",
-        "browser_metadata_json": "{\"lastModified\":1791890161588,\"size\":2194,\"type\":\"text/plain\"}",
+        "file_data_base64": "W0ludHJvXQ0K44GP44KL44KK44CA44G144KP44KK44CA44GX44Gj44G944GM5o+644KM44GmDQrku4rlpJzjga7np5jlr4bjgpLjgIDjgbLjgajjgaTjgaHjgofjgYbjgaDjgYQNClRyaWNrIG9yIHRyZWF0IQ0K44GV44GC44CA44GK44GE44Gn77yBDQoNCltWZXJzZSAxXQ0K5bCW44Gj44Gf5bi95a2Q44Gr44CA5LiJ5pel5pyI44Gy44Go44GkDQrnrpLjga7lhYjjgYvjgonjgIDjgZPjgbzjgozjgovngavoirENCumAgOWxiOOBquOCk+OBpuOAgOe9ruOBhOOBpuOBhOOCieOBo+OBl+OCg+OBhA0K55SY44GE5ZGq5paH44Gn44CA44G744Gp44GE44Gm44GC44GS44KLDQoNCltWZXJzZSAyXQ0K5Y2X55Oc44Gu6aas6LuK44Gq44KJ44CA44Gf44Gg44GE44G+5rqA5ZOhDQrjgYrjgbDjgZHjgoLkuKbjgpPjgafjgIDjgYroj5PlrZDjgpLjga3jgaDjgosNCuOBj+OBmeOBj+OBmeeskeOBiOOBsOOAgOeBr+OCiuOBjOi3s+OBreOCiw0K44GC44Gq44Gf44Gu5YiG44G+44Gn44CA5q6L44GX44Gm44GC44KL44KIDQoNCltQcmUtQ2hvcnVzXQ0K6LWk44GE44Kt44Oj44Oz44OH44Kj77yfDQrjgZ3jgozjgajjgoLprZTms5XvvJ8NCumBuOOCk+OBoOOBneOBruaJi+OCkuOAgOmbouOBleOBquOBhA0K6ZCY44GM6bO044Gj44Gf44KJ44CA5aeL44KB44G+44GX44KH44GGDQrni5DngavjgajjgoLjgZfjgabjgIDouIrjgorjgb7jgZfjgofjgYbvvIENCg0KW0Nob3J1c10NCuOBj+OCi+OBj+OCi+WbnuOCjOOAgOOCreODo+ODs+ODh+OCo+ODiuOCpOODiA0K44GX44Gj44G944Gn5o+P44GE44Gf44CA56eY5a+G44Gu44K144Kk44OzDQrljJbjgYvjgZfjgabjgIDnrJHjgaPjgabjgIDjgoLjgYbkuIDlm54NCuaciOOBvuOBp+mfv+OBkeOCiOOAgFRyaWNrIG9yIHRyZWF0IQ0KDQrjgbLjgonjgbLjgonouIrjgozjgIDjg5Hjg7Pjg5fjgq3jg7Pjg6njgqTjg4gNCuaAluOBjOOCi+mhlOOBq+OCguOAgOeUmOOBhOOBlOikkue+jg0K5LuK5aSc44Gv6Kqw44Gn44KC44CA5Li75b2544Gn44GX44KH44GG77yfDQrlpJzmmI7jgZHjgYzmnaXjgovjgb7jgafjgIDluLDjgZXjgarjgYTvvIENCg0KW1ZlcnNlIDNdDQrpj6HjgavmmKDjgaPjgZ/jgIDnn6XjgonjgarjgYTjgo/jgZ/jgZcNCuOBhOOBpOOCguOCiOOCiuWwkeOBl+OAgOWkp+iDhuOBqumhlA0K5Luu6Z2i44Gu5ZCR44GT44GG44Gn44CA55uu44Go55uu44GM5ZCI44GI44GwDQrjgYTjgZ/jgZrjgonlv4PjgavjgIDngavjgYzjgaTjgYTjgZ8NCg0KW1ByZS1DaG9ydXNdDQrprZTms5XjgYzop6PjgZHjgZ/jgonvvJ8NCuOBvuOBn+OBi+OBkeOCjOOBsOOBhOOBhO+8gQ0K44GK6I+T5a2Q44GM5bC944GN44Gf44KJ77yfDQrnrJHjgaPjgabjgZTjgb7jgYvjgZvvvIENCuaZguioiOOBrumHneOBvuOBp+OAgOW3u+OBjei+vOOCk+OBpw0K54uQ44Gu5a6044Gv44CA57WC44KP44KJ44Gq44GE77yBDQoNCltDaG9ydXNdDQrjgY/jgovjgY/jgovlm57jgozjgIDjgq3jg6Pjg7Pjg4fjgqPjg4rjgqTjg4gNCuOBl+OBo+OBveOBp+aPj+OBhOOBn+OAgOenmOWvhuOBruOCteOCpOODsw0K5YyW44GL44GX44Gm44CA56yR44Gj44Gm44CA44KC44GG5LiA5ZueDQrmnIjjgb7jgafpn7/jgZHjgojjgIBUcmljayBvciB0cmVhdCENCg0KW0JyaWRnZV0NCuOBu+OCk+OBqOOBruWnv+OCkuOAgOmaoOOBl+OBn+WknOOBqw0K44G744KT44Go44Gu56yR6aGU44GM44CA44GT44G844KM44Gm44GX44G+44GGDQrmmI7ml6XjgavjgarjgaPjgZ/jgonjgIDlhoXnt5LjgavjgZfjgabjga0NCuOBguOBquOBn+OBruWQjeWJjeOCkuOAgOWRquaWh+OBq+OBmeOCi+OBrg0KDQpbRmluYWwgQ2hvcnVzXQ0K44GP44KL44GP44KL5Zue44KM44CA44Kt44Oj44Oz44OH44Kj44OK44Kk44OIDQrjgbXjgZ/jgaTjga7ni5DngavjgIDph43jgarjgovjgrnjg4bjg4Pjg5cNCuWMluOBi+OBl+OBpuOAgOeskeOBo+OBpuOAgOOCguOBhuS4gOWbng0K44GC44Gq44Gf44KC5LiA57eS44Gr44CAVHJpY2sgb3IgdHJlYXQhDQoNCuOBsuOCieOBsuOCiei4iuOCjOOAgOODkeODs+ODl+OCreODs+ODqeOCpOODiA0K5pyA5b6M44Gu44Gy44Go57KS44CA5Y2K5YiG44GC44GS44KLDQrlpJzmmI7jgZHjga7miYvliY3jgafjgIDmjIfliIfjgorjgZfjgb7jgZfjgofjgYYNCuadpeW5tOOCguOBk+OBk+OBp+OAgOmAouOBhOOBvuOBl+OCh+OBhu+8gQ0KDQpbT3V0cm9dDQrjgY/jgovjgorjgIDjgbXjgo/jgorjgIDjgZfjgaPjgb3jgpLlr4TjgZvjgaYNCuOBguOBquOBn+OBruenmOWvhuOCkuOAgOOBsuOBqOOBpOOCguOCieOBo+OBnw0KVHJpY2sgb3IgdHJlYXQhDQrjgb7jgZ/jgIDjgYrjgYTjgafvvIE=",
+        "basename": "candynight_lyrics.txt",
+        "browser_metadata_json": "{\"lastModified\":1792045769916,\"size\":2318,\"type\":\"text/plain\"}",
         "select .txt file": null
       },
       "color": "#232",
@@ -141,11 +141,11 @@
         }
       },
       "widgets_values": [
-        "5613ce8d-65c8-4c27-9ca0-f1dc081f08b1.png",
+        "fox_A.jpg",
         "image"
       ],
       "widgets_values_named": {
-        "image": "5613ce8d-65c8-4c27-9ca0-f1dc081f08b1.png",
+        "image": "fox_A.jpg",
         "upload": "image"
       },
       "color": "#232",
@@ -156,7 +156,7 @@
       "type": "LoadImage",
       "pos": [
         40,
-        750
+        1190
       ],
       "size": [
         340,
@@ -211,11 +211,11 @@
         }
       },
       "widgets_values": [
-        "896d8348-39d4-413d-8c3b-868f79d2ab5b.png",
+        "background.jpg",
         "image"
       ],
       "widgets_values_named": {
-        "image": "896d8348-39d4-413d-8c3b-868f79d2ab5b.png",
+        "image": "background.jpg",
         "upload": "image"
       },
       "color": "#232",
@@ -225,8 +225,8 @@
       "id": 19,
       "type": "MarkdownNote",
       "pos": [
-        -340,
-        760
+        -360,
+        1200
       ],
       "size": [
         350,
@@ -258,8 +258,8 @@
       "id": 23,
       "type": "MarkdownNote",
       "pos": [
-        2540,
-        1120
+        2530,
+        1370
       ],
       "size": [
         370,
@@ -279,10 +279,10 @@
         }
       },
       "widgets_values": [
-        "ComfyUI\\output\\mv_director に次の三ファイルを保存します。\n\n|名称|説明|\n|----|----|\n|context_loop_plan_XXXXX.txt|動画生成Plan JSON|\n|context_loop_emd_XXXXX.md|Compiler入力前の完成EMD|\n|context_loop_lyrics_XXXXX.txt|拡張子を.srtへ変更できる字幕本文|\n\n対応するVideo workflowへ人物・背景画像、vocal、full mixと保存済みPlanを指定してください。\n\n> ComfyUI-MV-Director\\workflows\\02_video_context_loop.json"
+        "ComfyUI\\output\\mv_director に次の四ファイルを保存します。\n\n|名称|説明|\n|----|----|\n|context_loop_plan_XXXXX.txt|動画生成Plan JSON|\n|context_loop_emd_XXXXX.md|Compiler入力前の完成EMD|\n|context_loop_lyrics_srt_XXXXX.txt|拡張子を.srtへ変更できる字幕本文|\n|context_loop_lyrics_lrc_XXXXX.txt|拡張子を.lrcへ変更できる歌詞ファイル本文|\n\n対応するVideo workflowへ人物・背景画像、vocal、full mixと保存済みPlanを指定してください。\n\n> ComfyUI-MV-Director\\workflows\\02_video_generator.json"
       ],
       "widgets_values_named": {
-        "text": "ComfyUI\\output\\mv_director に次の三ファイルを保存します。\n\n|名称|説明|\n|----|----|\n|context_loop_plan_XXXXX.txt|動画生成Plan JSON|\n|context_loop_emd_XXXXX.md|Compiler入力前の完成EMD|\n|context_loop_lyrics_XXXXX.txt|拡張子を.srtへ変更できる字幕本文|\n\n対応するVideo workflowへ人物・背景画像、vocal、full mixと保存済みPlanを指定してください。\n\n> ComfyUI-MV-Director\\workflows\\02_video_context_loop.json"
+        "text": "ComfyUI\\output\\mv_director に次の四ファイルを保存します。\n\n|名称|説明|\n|----|----|\n|context_loop_plan_XXXXX.txt|動画生成Plan JSON|\n|context_loop_emd_XXXXX.md|Compiler入力前の完成EMD|\n|context_loop_lyrics_srt_XXXXX.txt|拡張子を.srtへ変更できる字幕本文|\n|context_loop_lyrics_lrc_XXXXX.txt|拡張子を.lrcへ変更できる歌詞ファイル本文|\n\n対応するVideo workflowへ人物・背景画像、vocal、full mixと保存済みPlanを指定してください。\n\n> ComfyUI-MV-Director\\workflows\\02_video_generator.json"
       },
       "color": "#432",
       "bgcolor": "#653"
@@ -295,7 +295,7 @@
         53.858399792818155
       ],
       "size": [
-        1451.859375,
+        1149.65625,
         48
       ],
       "flags": {
@@ -305,7 +305,7 @@
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "4 SUBJECT • MV-Director Context Loop Lip-Sync 言語ワークフロー",
+      "title": "MV-Director Context Loop Lip-Sync 言語ワークフロー",
       "properties": {
         "fontSize": 48,
         "fontFamily": "Arial",
@@ -366,7 +366,7 @@
       ],
       "size": [
         730,
-        140
+        150
       ],
       "flags": {},
       "order": 7,
@@ -382,10 +382,10 @@
         }
       },
       "widgets_values": [
-        "このワークフローはMV生成を自動化する言語フロントエンドです。人物・背景画像、歌詞、ボーカルステムから、動画生成段階で使用するContext Loop Plan JSONを生成します。\n\nPlan / CompilerとVideoは意図的に分離しています。生成したPlanを固定したままVideo段階だけを再Queueでき、動画側で停止してもVision、Whisper、Planner及びCompilerを再実行せずに済みます。\n\nこの版はContext Loop標準リップシンクを使用します。Gemma4 31B構成が現行の検証対象です。Audio Reference版とLyrics版は別の口形誘導方式です。"
+        "このワークフローはMV生成を自動化する言語フロントエンドです。人物・背景画像、歌詞、ボーカルステムから、動画生成段階で使用するContext Loop Plan JSONを生成します。\n\nPlan / CompilerとVideoは意図的に分離しています。生成したPlanを固定したままVideo段階だけを再Queueでき、動画側で停止してもVision、Whisper、Planner及びCompilerを再実行せずに済みます。\n\nこの版はContext Loop標準リップシンクを使用します。Gemma4 31B構成が現行の検証対象です。\n\n通常は緑のノードのみ操作してください。"
       ],
       "widgets_values_named": {
-        "text": "このワークフローはMV生成を自動化する言語フロントエンドです。人物・背景画像、歌詞、ボーカルステムから、動画生成段階で使用するContext Loop Plan JSONを生成します。\n\nPlan / CompilerとVideoは意図的に分離しています。生成したPlanを固定したままVideo段階だけを再Queueでき、動画側で停止してもVision、Whisper、Planner及びCompilerを再実行せずに済みます。\n\nこの版はContext Loop標準リップシンクを使用します。Gemma4 31B構成が現行の検証対象です。Audio Reference版とLyrics版は別の口形誘導方式です。"
+        "text": "このワークフローはMV生成を自動化する言語フロントエンドです。人物・背景画像、歌詞、ボーカルステムから、動画生成段階で使用するContext Loop Plan JSONを生成します。\n\nPlan / CompilerとVideoは意図的に分離しています。生成したPlanを固定したままVideo段階だけを再Queueでき、動画側で停止してもVision、Whisper、Planner及びCompilerを再実行せずに済みます。\n\nこの版はContext Loop標準リップシンクを使用します。Gemma4 31B構成が現行の検証対象です。\n\n通常は緑のノードのみ操作してください。"
       },
       "color": "#322",
       "bgcolor": "#533"
@@ -394,8 +394,8 @@
       "id": 4,
       "type": "LoadAudio",
       "pos": [
-        50,
-        1780
+        80,
+        4840
       ],
       "size": [
         330,
@@ -453,11 +453,11 @@
         }
       },
       "widgets_values": [
-        "0 Lead Vocal.wav",
+        "candynight_vocal.mp3",
         null
       ],
       "widgets_values_named": {
-        "audio": "0 Lead Vocal.wav",
+        "audio": "candynight_vocal.mp3",
         "upload": null
       },
       "color": "#232",
@@ -467,8 +467,8 @@
       "id": 16,
       "type": "MVDirectorSeed32",
       "pos": [
-        50,
-        1180
+        1370,
+        170
       ],
       "size": [
         330,
@@ -608,8 +608,8 @@
       "id": 20,
       "type": "MarkdownNote",
       "pos": [
-        -330,
-        1190
+        990,
+        180
       ],
       "size": [
         330,
@@ -641,11 +641,11 @@
       "id": 21,
       "type": "MarkdownNote",
       "pos": [
-        -330,
-        1550
+        -290,
+        4610
       ],
       "size": [
-        330,
+        320,
         180
       ],
       "flags": {},
@@ -674,8 +674,8 @@
       "id": 22,
       "type": "MarkdownNote",
       "pos": [
-        -320,
-        1780
+        -290,
+        4840
       ],
       "size": [
         320,
@@ -707,12 +707,12 @@
       "id": 26,
       "type": "MarkdownNote",
       "pos": [
-        -320,
-        2010
+        -290,
+        5070
       ],
       "size": [
-        320,
-        430
+        340,
+        710
       ],
       "flags": {},
       "order": 14,
@@ -740,15 +740,15 @@
       "id": 7,
       "type": "MVDirectorLyricSegmentation",
       "pos": [
-        453.2777777777778,
-        2040
+        460.2522226881006,
+        4603.049840988792
       ],
       "size": [
         490,
-        240
+        258
       ],
       "flags": {},
-      "order": 25,
+      "order": 24,
       "mode": 0,
       "inputs": [
         {
@@ -855,9 +855,12 @@
           "links": null
         },
         {
+          "localized_name": "lrc_text",
           "name": "lrc_text",
           "type": "STRING",
-          "links": null
+          "links": [
+            34
+          ]
         }
       ],
       "title": "Lyric Segmentation",
@@ -900,7 +903,7 @@
         800
       ],
       "flags": {},
-      "order": 23,
+      "order": 22,
       "mode": 0,
       "inputs": [
         {
@@ -1169,7 +1172,7 @@
       "widgets_values": [
         "gemma-4-31b-it-heretic-ara-GGUF/gemma-4-31b-it-heretic-ara.Q4_K_S.gguf",
         "subject_only",
-        "頭から足先まで赤い布製の全身タイツを着た人物。顔面全体も同じ赤い布の連続した滑らかな面で覆われる。黒い鋭い模様は胸・腹部・腕・脚にある。歌唱時の口の動きは許容する。",
+        "狐の女、頭にはトンガリ帽子を付けており、狐耳が帽子から飛び出ている。右手に一本の箒を持つ。箒は一本の茶色い木の柄と、その下端に結束された一つの藁の穂束からなる。上端は丸く滑らかな木の柄尻で、柄尻まで木の軸が連続している。目尻は赤い化粧が施されている。眉は左右それぞれ一つずつ、髪と同じ色の小さく塗りつぶされた楕円の点として、各目の少し上にある。",
         "",
         "lock_identity",
         "warn",
@@ -1197,7 +1200,7 @@
       "widgets_values_named": {
         "model_name": "gemma-4-31b-it-heretic-ara-GGUF/gemma-4-31b-it-heretic-ara.Q4_K_S.gguf",
         "analysis_profile": "subject_only",
-        "subject_hint": "頭から足先まで赤い布製の全身タイツを着た人物。顔面全体も同じ赤い布の連続した滑らかな面で覆われる。黒い鋭い模様は胸・腹部・腕・脚にある。歌唱時の口の動きは許容する。",
+        "subject_hint": "狐の女、頭にはトンガリ帽子を付けており、狐耳が帽子から飛び出ている。右手に一本の箒を持つ。箒は一本の茶色い木の柄と、その下端に結束された一つの藁の穂束からなる。上端は丸く滑らかな木の柄尻で、柄尻まで木の軸が連続している。目尻は赤い化粧が施されている。眉は左右それぞれ一つずつ、髪と同じ色の小さく塗りつぶされた楕円の点として、各目の少し上にある。",
         "additional_instruction": "",
         "hint_mode": "lock_identity",
         "hint_conflict": "warn",
@@ -1222,8 +1225,8 @@
         "mmproj_use_gpu": "<Picture 1>",
         "resolved_picture_reference": "<Picture 1>"
       },
-      "color": "#223",
-      "bgcolor": "#335"
+      "color": "#232",
+      "bgcolor": "#353"
     },
     {
       "id": 15,
@@ -1237,7 +1240,7 @@
         800
       ],
       "flags": {},
-      "order": 24,
+      "order": 23,
       "mode": 0,
       "inputs": [
         {
@@ -1560,22 +1563,22 @@
         "mmproj_use_gpu": "<Picture 2>",
         "resolved_picture_reference": "<Picture 2>"
       },
-      "color": "#223",
-      "bgcolor": "#335"
+      "color": "#232",
+      "bgcolor": "#353"
     },
     {
       "id": 13,
       "type": "SaveText",
       "pos": [
-        2170.631977777781,
-        1558.0316289243062
+        2160,
+        1800
       ],
       "size": [
         350,
-        170
+        180
       ],
       "flags": {},
-      "order": 29,
+      "order": 28,
       "mode": 0,
       "inputs": [
         {
@@ -1621,11 +1624,11 @@
         }
       },
       "widgets_values": [
-        "mv_director/4subject/context_loop_lyrics",
+        "mv_director/4subject/context_loop_lyrics_srt",
         "txt"
       ],
       "widgets_values_named": {
-        "filename_prefix": "mv_director/4subject/context_loop_lyrics",
+        "filename_prefix": "mv_director/4subject/context_loop_lyrics_srt",
         "format": "txt"
       },
       "color": "#223",
@@ -1635,12 +1638,12 @@
       "id": 8,
       "type": "MVDirectorDirectionEnhancer",
       "pos": [
-        1020,
-        330
+        1010,
+        580
       ],
       "size": [
         500,
-        736
+        736.000000000001
       ],
       "flags": {},
       "order": 30,
@@ -1922,9 +1925,9 @@
       "widgets_values": [
         "profile",
         "",
-        "illust_to_photoreal",
-        "expressive_mv",
-        "rhythmic_mv",
+        "anime_emotional_mv",
+        "anime_scene_composed_mv",
+        "anime_emotional_mv",
         "gemma-4-31b-it-heretic-ara-GGUF/gemma-4-31b-it-heretic-ara.Q4_K_S.gguf",
         "",
         4096,
@@ -1947,9 +1950,9 @@
       "widgets_values_named": {
         "retention_policy": "profile",
         "user_request": "",
-        "style_profile": "illust_to_photoreal",
-        "motion_profile": "expressive_mv",
-        "camera_profile": "rhythmic_mv",
+        "style_profile": "anime_emotional_mv",
+        "motion_profile": "anime_scene_composed_mv",
+        "camera_profile": "anime_emotional_mv",
         "model_name": "gemma-4-31b-it-heretic-ara-GGUF/gemma-4-31b-it-heretic-ara.Q4_K_S.gguf",
         "chat_format": "",
         "max_tokens": 4096,
@@ -1976,8 +1979,8 @@
       "id": 9,
       "type": "MVDirectorTimelinePlanner",
       "pos": [
-        1020,
-        1120
+        1010,
+        1370
       ],
       "size": [
         500,
@@ -2261,7 +2264,7 @@
       },
       "widgets_values": [
         "context_loop",
-        "サブジェクト1",
+        "サブジェクト1,サブジェクト2",
         1,
         "gemma-4-31b-it-heretic-ara-GGUF/gemma-4-31b-it-heretic-ara.Q4_K_S.gguf",
         "auto",
@@ -2284,7 +2287,7 @@
       ],
       "widgets_values_named": {
         "lip_sync_mode": "context_loop",
-        "lip_sync_target": "サブジェクト1",
+        "lip_sync_target": "サブジェクト1,サブジェクト2",
         "lip_sync_audio_slot": 1,
         "model_name": "gemma-4-31b-it-heretic-ara-GGUF/gemma-4-31b-it-heretic-ara.Q4_K_S.gguf",
         "chat_format": "auto",
@@ -2312,8 +2315,8 @@
       "id": 10,
       "type": "MVDirectorEMDCompiler",
       "pos": [
-        1590.631977777778,
-        1118.0316289243062
+        1580,
+        1360
       ],
       "size": [
         500,
@@ -2559,8 +2562,8 @@
       "id": 12,
       "type": "SaveText",
       "pos": [
-        2170.631977777781,
-        1338.0316289243062
+        2160,
+        1580
       ],
       "size": [
         350,
@@ -2627,8 +2630,8 @@
       "id": 11,
       "type": "SaveText",
       "pos": [
-        2170.631977777781,
-        1118.0316289243062
+        2160,
+        1360
       ],
       "size": [
         350,
@@ -2695,12 +2698,12 @@
       "id": 25,
       "type": "PrimitiveStringMultiline",
       "pos": [
-        50,
-        2010
+        80,
+        5070
       ],
       "size": [
         330,
-        430
+        710
       ],
       "flags": {},
       "order": 15,
@@ -2738,10 +2741,10 @@
         }
       },
       "widgets_values": [
-        "# 演出候補\n* ボーカルのないイントロや間奏で、`サブジェクト1`、`サブジェクト2`、`サブジェクト3`が伴奏に合わせて踊り続ける。踏み替え、膝の弾み、腰と胸の捻りをつなぎ、肩と腕の動きがその流れに呼応する。三人は互いの位置を保ちながら異なる腕の軌道で応え、各動作の勢いを次の動きへ渡す。歌唱が戻るところで歌う演技へ自然につなぐ。\n* イントロでは、3人が横一列に立ち、中央の人物が膝を曲げて荷重を溜める。音楽の立ち上がりに合わせて胸を起こし、左右の人物も順に身体を開く。3人が踏み替えを始めると、カメラが正面から近づき、全身の動きを見せる。\n* リズムが明確な場面では、3人が揃って左右へ荷重を移しながら踊り続ける。骨盤の動きに遅れて胸と肩を捻り、片腕を胴の前へ通してから外側へほどく。足の踏み替えと腕の軌道が次の動作へ連なり、カメラは3人の全身を正面から捉える。\n* 力強い場面では、3人が短く膝を曲げて溜め、足を踏み替えて勢いよく同じ方向へ半回転する。正面、横顔、背中が順に見え、衣装と腕が回転に追従する。回転の勢いを次の踏み替えへつなぎ、そのまま踊り続ける。カメラは正面位置から動きを追う。\n* 掛け合いに合う場面では、中央の人物が肩と胸を捻って片腕を伸ばし、その動きを左、右の人物が短い時間差で受け継ぐ。3人を横断するように動作の波が伝わり、最後は全員が同時に胸を開く。カメラは横へ移動して演技の受け渡しを見せる。\n* 盛り上がる場面では、中央の人物が前へ踏み出し、左右の人物が斜め後方へ広がって三角形の隊形を作る。3人が胸と腰を交互に捻り、両腕を異なる高さで大きく動かす。カメラは開始直後から一定方向へ力強くArcし、隊形の奥行きを見せる。\n* 静かな場面では、3人が片足へ荷重を預け、胸を小さく畳んで腕を身体の近くへ引き寄せる。次の音楽の変化で支持足を踏み替え、胸を起こしながら腕を斜めへほどく。小さな動きが途切れずにつながり、カメラは上半身へゆっくり近づく。\n* 長い伴奏区間では、3人が踏み替え、体幹の捻り、腕の交差と開きを連ねて踊り続ける。中央の人物が前へ出ると左右の人物が後方へ回り込み、次に左右の人物が前へ進んで隊形を入れ替える。カメラは早い段階から一定方向へArcし、後半は上半身へ寄って動作のアクセントを見せる。\n* ソロに合う場面では、中央の人物が深く荷重を溜めてから胸と肩を起こし、足を踏み替えながら大きく身体を捻る。左右の人物は小さな踏み替えと腕の動きでリズムを保つ。カメラが中央の人物へ近づき、左右の人物も画面の両端で踊り続ける。\n* 終盤の盛り上がりでは、3人が揃って前へ進み、踏み込みに合わせて肩、胸、腕を順に開く。一度の半回転から正面へ戻り、その勢いで次の動作へつなぐ。カメラは3人を捉えたまま後退し、全身の演技と隊形の変化を見せる。\n* アウトロでは、3人が直前のダンスの流れを引き継ぎ、踏み替えと腕の軌道を次第に小さくする。最後の音に合わせて中央の人物が胸を起こし、左右の人物がその動きを受けて揃う。3人が異なる腕の形で余韻を残し、カメラがゆっくり引いて締めくくる。"
+        "# 演出候補\n* 舞台は月夜の墓場。古い墓石の間を低い霧が流れ、南瓜のランタンが暖かく灯る。サブジェクト1とサブジェクト2が墓石の間の開けた場所で踊る。妖しくも楽しいハロウィンの雰囲気にする。\n* 歌唱Sceneでは顔のクローズアップを積極的に選ぶ。顔全体と口元が明瞭に見える距離で、肩や首の小さな動きも残す。顔を画面の片側へ配置し、反対側には後編集のテキストを重ねられる背景の余白を確保する。\n* 歌唱句の切り替わりでは、サブジェクト1の顔アップからサブジェクト2の顔アップへカットを切り替える。二人が観客へ交互に語りかけるように歌い、カメラへ視線を結ぶ。\n* 二人が呼応する歌唱Sceneでは、サブジェクト1を手前、サブジェクト2を斜め後ろに配置する。手前の顔へ寄り、歌唱句の変化で奥の人物へ焦点を移す。続くカットでは前後の役割を交代する。\n* 秘密やいたずらを感じさせる歌唱Sceneでは、人物が少し顔を傾け、口元に笑みを浮かべてカメラへ視線を戻す。Cameraは斜め前から顔へ短く寄り、歌いかける表情を見せる。\n* キャンディや魔法を扱うSceneでは、人物が片手を胸前へ持ち上げ、掌の上に小さな光を灯す。光を見た後にカメラへ視線を戻して歌う。顔と掌を同じ画面へ収め、光が表情を照らす。\n* 狐火を扱うSceneでは、二人の胸前に狐火が現れる。サブジェクト1が腕で円弧を描くと火が流れ、サブジェクト2が反対側でその流れを受け渡す。狐火が二人の周囲を旋回し、墓石の間へ広がる。\n* 回転や踊りを扱うSceneでは、二人が膝を短く曲げて荷重を溜め、踏み替えながら同じ方向へ勢いよく半回転する。肩と胸郭が腰の動きに続き、衣装と尻尾が遅れて流れる。回転後も次の踏み替えへつなぎ、踊り続ける。\n* 歌詞のない伴奏区間では、二人が踊り続ける。交互の踏み替えに腰と胸郭の捻りを重ね、腕の動きを次へ受け渡す。Cameraは開始直後から一方向のArc Shotで二人を回り込み、中盤で距離を詰めて動きの勢いを見せる。\n* 伴奏から歌唱へ戻る直前は、Cameraが全身から上半身へ寄る。人物は踏み替えを小さくして短く荷重を溜め、歌い出しと同時に顔を上げて歌う。ダンスの流れを表情のアップへつなぐ。\n* 終盤の盛り上がりでは、二人の顔アップと、狐火や南瓜の灯りに囲まれたダンスを切り替える。最後は二人を上半身の距離で収め、観客へ微笑みかける。後編集の締めのテキストを置ける余白を残す。"
       ],
       "widgets_values_named": {
-        "value": "# 演出候補\n* ボーカルのないイントロや間奏で、`サブジェクト1`、`サブジェクト2`、`サブジェクト3`が伴奏に合わせて踊り続ける。踏み替え、膝の弾み、腰と胸の捻りをつなぎ、肩と腕の動きがその流れに呼応する。三人は互いの位置を保ちながら異なる腕の軌道で応え、各動作の勢いを次の動きへ渡す。歌唱が戻るところで歌う演技へ自然につなぐ。\n* イントロでは、3人が横一列に立ち、中央の人物が膝を曲げて荷重を溜める。音楽の立ち上がりに合わせて胸を起こし、左右の人物も順に身体を開く。3人が踏み替えを始めると、カメラが正面から近づき、全身の動きを見せる。\n* リズムが明確な場面では、3人が揃って左右へ荷重を移しながら踊り続ける。骨盤の動きに遅れて胸と肩を捻り、片腕を胴の前へ通してから外側へほどく。足の踏み替えと腕の軌道が次の動作へ連なり、カメラは3人の全身を正面から捉える。\n* 力強い場面では、3人が短く膝を曲げて溜め、足を踏み替えて勢いよく同じ方向へ半回転する。正面、横顔、背中が順に見え、衣装と腕が回転に追従する。回転の勢いを次の踏み替えへつなぎ、そのまま踊り続ける。カメラは正面位置から動きを追う。\n* 掛け合いに合う場面では、中央の人物が肩と胸を捻って片腕を伸ばし、その動きを左、右の人物が短い時間差で受け継ぐ。3人を横断するように動作の波が伝わり、最後は全員が同時に胸を開く。カメラは横へ移動して演技の受け渡しを見せる。\n* 盛り上がる場面では、中央の人物が前へ踏み出し、左右の人物が斜め後方へ広がって三角形の隊形を作る。3人が胸と腰を交互に捻り、両腕を異なる高さで大きく動かす。カメラは開始直後から一定方向へ力強くArcし、隊形の奥行きを見せる。\n* 静かな場面では、3人が片足へ荷重を預け、胸を小さく畳んで腕を身体の近くへ引き寄せる。次の音楽の変化で支持足を踏み替え、胸を起こしながら腕を斜めへほどく。小さな動きが途切れずにつながり、カメラは上半身へゆっくり近づく。\n* 長い伴奏区間では、3人が踏み替え、体幹の捻り、腕の交差と開きを連ねて踊り続ける。中央の人物が前へ出ると左右の人物が後方へ回り込み、次に左右の人物が前へ進んで隊形を入れ替える。カメラは早い段階から一定方向へArcし、後半は上半身へ寄って動作のアクセントを見せる。\n* ソロに合う場面では、中央の人物が深く荷重を溜めてから胸と肩を起こし、足を踏み替えながら大きく身体を捻る。左右の人物は小さな踏み替えと腕の動きでリズムを保つ。カメラが中央の人物へ近づき、左右の人物も画面の両端で踊り続ける。\n* 終盤の盛り上がりでは、3人が揃って前へ進み、踏み込みに合わせて肩、胸、腕を順に開く。一度の半回転から正面へ戻り、その勢いで次の動作へつなぐ。カメラは3人を捉えたまま後退し、全身の演技と隊形の変化を見せる。\n* アウトロでは、3人が直前のダンスの流れを引き継ぎ、踏み替えと腕の軌道を次第に小さくする。最後の音に合わせて中央の人物が胸を起こし、左右の人物がその動きを受けて揃う。3人が異なる腕の形で余韻を残し、カメラがゆっくり引いて締めくくる。"
+        "value": "# 演出候補\n* 舞台は月夜の墓場。古い墓石の間を低い霧が流れ、南瓜のランタンが暖かく灯る。サブジェクト1とサブジェクト2が墓石の間の開けた場所で踊る。妖しくも楽しいハロウィンの雰囲気にする。\n* 歌唱Sceneでは顔のクローズアップを積極的に選ぶ。顔全体と口元が明瞭に見える距離で、肩や首の小さな動きも残す。顔を画面の片側へ配置し、反対側には後編集のテキストを重ねられる背景の余白を確保する。\n* 歌唱句の切り替わりでは、サブジェクト1の顔アップからサブジェクト2の顔アップへカットを切り替える。二人が観客へ交互に語りかけるように歌い、カメラへ視線を結ぶ。\n* 二人が呼応する歌唱Sceneでは、サブジェクト1を手前、サブジェクト2を斜め後ろに配置する。手前の顔へ寄り、歌唱句の変化で奥の人物へ焦点を移す。続くカットでは前後の役割を交代する。\n* 秘密やいたずらを感じさせる歌唱Sceneでは、人物が少し顔を傾け、口元に笑みを浮かべてカメラへ視線を戻す。Cameraは斜め前から顔へ短く寄り、歌いかける表情を見せる。\n* キャンディや魔法を扱うSceneでは、人物が片手を胸前へ持ち上げ、掌の上に小さな光を灯す。光を見た後にカメラへ視線を戻して歌う。顔と掌を同じ画面へ収め、光が表情を照らす。\n* 狐火を扱うSceneでは、二人の胸前に狐火が現れる。サブジェクト1が腕で円弧を描くと火が流れ、サブジェクト2が反対側でその流れを受け渡す。狐火が二人の周囲を旋回し、墓石の間へ広がる。\n* 回転や踊りを扱うSceneでは、二人が膝を短く曲げて荷重を溜め、踏み替えながら同じ方向へ勢いよく半回転する。肩と胸郭が腰の動きに続き、衣装と尻尾が遅れて流れる。回転後も次の踏み替えへつなぎ、踊り続ける。\n* 歌詞のない伴奏区間では、二人が踊り続ける。交互の踏み替えに腰と胸郭の捻りを重ね、腕の動きを次へ受け渡す。Cameraは開始直後から一方向のArc Shotで二人を回り込み、中盤で距離を詰めて動きの勢いを見せる。\n* 伴奏から歌唱へ戻る直前は、Cameraが全身から上半身へ寄る。人物は踏み替えを小さくして短く荷重を溜め、歌い出しと同時に顔を上げて歌う。ダンスの流れを表情のアップへつなぐ。\n* 終盤の盛り上がりでは、二人の顔アップと、狐火や南瓜の灯りに囲まれたダンスを切り替える。最後は二人を上半身の距離で収め、観客へ微笑みかける。後編集の締めのテキストを置ける余白を残す。"
       },
       "color": "#232",
       "bgcolor": "#353"
@@ -2750,8 +2753,8 @@
       "id": 27,
       "type": "LoadImage",
       "pos": [
-        40,
-        2740
+        50,
+        2040
       ],
       "size": [
         340,
@@ -2806,11 +2809,11 @@
         }
       },
       "widgets_values": [
-        "67c35590-064f-4226-bdce-7df672678ce7.png",
+        "fox_B.jpg",
         "image"
       ],
       "widgets_values_named": {
-        "image": "67c35590-064f-4226-bdce-7df672678ce7.png",
+        "image": "fox_B.jpg",
         "upload": "image"
       },
       "color": "#232",
@@ -2821,14 +2824,14 @@
       "type": "MVDirectorImageToSubjectEMD",
       "pos": [
         450,
-        2740
+        2040
       ],
       "size": [
         500,
         800
       ],
       "flags": {},
-      "order": 26,
+      "order": 25,
       "mode": 0,
       "inputs": [
         {
@@ -3097,7 +3100,7 @@
       "widgets_values": [
         "gemma-4-31b-it-heretic-ara-GGUF/gemma-4-31b-it-heretic-ara.Q4_K_S.gguf",
         "subject_only",
-        "頭から足先まで黄色い布製の全身タイツを着た人物。顔面全体も同じ黄色い布の連続した滑らかな面で覆われる。黒い曲線模様は胸・腹部・腕・脚にある。歌唱時の口の動きは許容する。",
+        "狐の女、頭にはカボチャの帽子を付けている。右手にはカボチャのバッグを持っている。眉は左右それぞれ一つずつ、髪と同じ色の小さく塗りつぶされた楕円の点として、各目の少し上にある。",
         "",
         "lock_identity",
         "warn",
@@ -3125,7 +3128,7 @@
       "widgets_values_named": {
         "model_name": "gemma-4-31b-it-heretic-ara-GGUF/gemma-4-31b-it-heretic-ara.Q4_K_S.gguf",
         "analysis_profile": "subject_only",
-        "subject_hint": "頭から足先まで黄色い布製の全身タイツを着た人物。顔面全体も同じ黄色い布の連続した滑らかな面で覆われる。黒い曲線模様は胸・腹部・腕・脚にある。歌唱時の口の動きは許容する。",
+        "subject_hint": "狐の女、頭にはカボチャの帽子を付けている。右手にはカボチャのバッグを持っている。眉は左右それぞれ一つずつ、髪と同じ色の小さく塗りつぶされた楕円の点として、各目の少し上にある。",
         "additional_instruction": "",
         "hint_mode": "lock_identity",
         "hint_conflict": "warn",
@@ -3150,26 +3153,26 @@
         "mmproj_use_gpu": "<Picture 3>",
         "resolved_picture_reference": "<Picture 3>"
       },
-      "color": "#223",
-      "bgcolor": "#335"
+      "color": "#232",
+      "bgcolor": "#353"
     },
     {
       "id": 29,
       "type": "MarkdownNote",
       "pos": [
-        40,
-        2510
+        -340,
+        2040
       ],
       "size": [
-        910,
-        170
+        350,
+        250
       ],
       "flags": {},
       "order": 17,
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "Subject 2 • Picture 3 — 画像設定必須",
+      "title": "Subject 2 • Picture 3",
       "properties": {
         "ue_properties": {
           "widget_ue_connectable": {},
@@ -3178,90 +3181,20 @@
         }
       },
       "widgets_values": [
-        "このSubjectの画像を選択してください。動画WFでも同じ画像をPicture 3へ設定します。\n\nsubject_hintは空欄です。衣装・顔・小道具等の補助説明が必要な場合だけ記入してください。物体をSubjectにする場合はconcept_typeを変更します。"
+        "このSubjectの画像を選択してください。動画WFでも同じ画像をPicture 3へ設定します。\n\nsubject_hintは衣装・顔・小道具等の補助説明が必要な場合だけ記入してください。物体をSubjectにする場合はconcept_typeを変更します。\n\nこのサブジェクトを定義しない場合、画像ロードノードとImage to Subject EMDノードをCtrl+Bでバイパスしてください。"
       ],
       "widgets_values_named": {
-        "text": "このSubjectの画像を選択してください。動画WFでも同じ画像をPicture 3へ設定します。\n\nsubject_hintは空欄です。衣装・顔・小道具等の補助説明が必要な場合だけ記入してください。物体をSubjectにする場合はconcept_typeを変更します。"
+        "text": "このSubjectの画像を選択してください。動画WFでも同じ画像をPicture 3へ設定します。\n\nsubject_hintは衣装・顔・小道具等の補助説明が必要な場合だけ記入してください。物体をSubjectにする場合はconcept_typeを変更します。\n\nこのサブジェクトを定義しない場合、画像ロードノードとImage to Subject EMDノードをCtrl+Bでバイパスしてください。"
       },
       "color": "#432",
       "bgcolor": "#653"
     },
     {
-      "id": 30,
-      "type": "LoadImage",
-      "pos": [
-        1140,
-        2740
-      ],
-      "size": [
-        340,
-        360
-      ],
-      "flags": {},
-      "order": 18,
-      "mode": 0,
-      "inputs": [
-        {
-          "localized_name": "画像",
-          "name": "image",
-          "type": "COMBO",
-          "widget": {
-            "name": "image"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "アップロードするファイルを選択",
-          "name": "upload",
-          "type": "IMAGEUPLOAD",
-          "widget": {
-            "name": "upload"
-          },
-          "link": null
-        }
-      ],
-      "outputs": [
-        {
-          "localized_name": "画像",
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            27
-          ]
-        },
-        {
-          "localized_name": "マスク",
-          "name": "MASK",
-          "type": "MASK",
-          "links": null
-        }
-      ],
-      "title": "Subject 3 Reference • <Picture 4>",
-      "properties": {
-        "Node name for S&R": "LoadImage",
-        "ue_properties": {
-          "widget_ue_connectable": {},
-          "version": "7.8",
-          "input_ue_unconnectable": {}
-        }
-      },
-      "widgets_values": [
-        "cfea6621-993e-4575-81a5-4a63051a9858.png",
-        "image"
-      ],
-      "widgets_values_named": {
-        "image": "cfea6621-993e-4575-81a5-4a63051a9858.png",
-        "upload": "image"
-      },
-      "color": "#232",
-      "bgcolor": "#353"
-    },
-    {
       "id": 31,
       "type": "MVDirectorImageToSubjectEMD",
       "pos": [
-        1550,
-        2740
+        450,
+        2890
       ],
       "size": [
         500,
@@ -3269,13 +3202,13 @@
       ],
       "flags": {},
       "order": 27,
-      "mode": 0,
+      "mode": 4,
       "inputs": [
         {
           "localized_name": "image",
           "name": "image",
           "type": "IMAGE",
-          "link": 27
+          "link": 35
         },
         {
           "localized_name": "model_name",
@@ -3590,55 +3523,22 @@
         "mmproj_use_gpu": "<Picture 4>",
         "resolved_picture_reference": "<Picture 4>"
       },
-      "color": "#223",
-      "bgcolor": "#335"
-    },
-    {
-      "id": 32,
-      "type": "MarkdownNote",
-      "pos": [
-        1140,
-        2510
-      ],
-      "size": [
-        910,
-        170
-      ],
-      "flags": {},
-      "order": 19,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [],
-      "title": "Subject 3 • Picture 4 — 画像設定必須",
-      "properties": {
-        "ue_properties": {
-          "widget_ue_connectable": {},
-          "version": "7.8",
-          "input_ue_unconnectable": {}
-        }
-      },
-      "widgets_values": [
-        "このSubjectの画像を選択してください。動画WFでも同じ画像をPicture 4へ設定します。\n\nsubject_hintは空欄です。衣装・顔・小道具等の補助説明が必要な場合だけ記入してください。物体をSubjectにする場合はconcept_typeを変更します。"
-      ],
-      "widgets_values_named": {
-        "text": "このSubjectの画像を選択してください。動画WFでも同じ画像をPicture 4へ設定します。\n\nsubject_hintは空欄です。衣装・顔・小道具等の補助説明が必要な場合だけ記入してください。物体をSubjectにする場合はconcept_typeを変更します。"
-      },
-      "color": "#432",
-      "bgcolor": "#653"
+      "color": "#232",
+      "bgcolor": "#353"
     },
     {
       "id": 33,
       "type": "LoadImage",
       "pos": [
-        2240,
-        2740
+        70.98993274921513,
+        3744.2273260881225
       ],
       "size": [
         340,
         360
       ],
       "flags": {},
-      "order": 20,
+      "order": 18,
       "mode": 4,
       "inputs": [
         {
@@ -3686,11 +3586,11 @@
         }
       },
       "widgets_values": [
-        "",
+        "image005_fox_B.jpg",
         "image"
       ],
       "widgets_values_named": {
-        "image": "",
+        "image": "image005_fox_B.jpg",
         "upload": "image"
       },
       "color": "#232",
@@ -3700,15 +3600,15 @@
       "id": 34,
       "type": "MVDirectorImageToSubjectEMD",
       "pos": [
-        2650,
-        2740
+        450,
+        3740
       ],
       "size": [
         500,
         800
       ],
       "flags": {},
-      "order": 28,
+      "order": 26,
       "mode": 4,
       "inputs": [
         {
@@ -4030,26 +3930,197 @@
         "mmproj_use_gpu": "<Picture 5>",
         "resolved_picture_reference": "unbound"
       },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 37,
+      "type": "SaveText",
+      "pos": [
+        2160,
+        2030
+      ],
+      "size": [
+        350,
+        180
+      ],
+      "flags": {},
+      "order": 29,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "text",
+          "name": "text",
+          "type": "STRING",
+          "link": 34
+        },
+        {
+          "localized_name": "filename_prefix",
+          "name": "filename_prefix",
+          "type": "STRING",
+          "widget": {
+            "name": "filename_prefix"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "format",
+          "name": "format",
+          "type": "COMBO",
+          "widget": {
+            "name": "format"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "text",
+          "name": "text",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "title": "Save LRCT body (.txt; rename to .lrc)",
+      "properties": {
+        "Node name for S&R": "SaveText",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "mv_director/4subject/context_loop_lyrics_lrc",
+        "txt"
+      ],
+      "widgets_values_named": {
+        "filename_prefix": "mv_director/4subject/context_loop_lyrics_lrc",
+        "format": "txt"
+      },
       "color": "#223",
       "bgcolor": "#335"
     },
     {
-      "id": 35,
-      "type": "MarkdownNote",
+      "id": 38,
+      "type": "LoadImage",
       "pos": [
-        2240,
-        2510
+        70,
+        2890
       ],
       "size": [
-        910,
-        170
+        340,
+        360
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 4,
+      "inputs": [
+        {
+          "localized_name": "画像",
+          "name": "image",
+          "type": "COMBO",
+          "widget": {
+            "name": "image"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "アップロードするファイルを選択",
+          "name": "upload",
+          "type": "IMAGEUPLOAD",
+          "widget": {
+            "name": "upload"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "画像",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            35
+          ]
+        },
+        {
+          "localized_name": "マスク",
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "title": "Subject 3 Reference • <Picture 4>",
+      "properties": {
+        "Node name for S&R": "LoadImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "image004_fox_A.jpg",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "image004_fox_A.jpg",
+        "upload": "image"
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 39,
+      "type": "MarkdownNote",
+      "pos": [
+        -320,
+        2890
+      ],
+      "size": [
+        350,
+        250
+      ],
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Subject 3• Picture 4",
+      "properties": {
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "このSubjectの画像を選択してください。動画WFでも同じ画像をPicture 4へ設定します。\n\nsubject_hintは衣装・顔・小道具等の補助説明が必要な場合だけ記入してください。物体をSubjectにする場合はconcept_typeを変更します。\n\nこのサブジェクトを定義しない場合、画像ロードノードとImage to Subject EMDノードをCtrl+Bでバイパスしてください。"
+      ],
+      "widgets_values_named": {
+        "text": "このSubjectの画像を選択してください。動画WFでも同じ画像をPicture 4へ設定します。\n\nsubject_hintは衣装・顔・小道具等の補助説明が必要な場合だけ記入してください。物体をSubjectにする場合はconcept_typeを変更します。\n\nこのサブジェクトを定義しない場合、画像ロードノードとImage to Subject EMDノードをCtrl+Bでバイパスしてください。"
+      },
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 40,
+      "type": "MarkdownNote",
+      "pos": [
+        -310,
+        3750
+      ],
+      "size": [
+        350,
+        250
       ],
       "flags": {},
       "order": 21,
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "Subject 4 • Picture 5 — 画像設定必須",
+      "title": "Subject 4• Picture 5",
       "properties": {
         "ue_properties": {
           "widget_ue_connectable": {},
@@ -4058,43 +4129,10 @@
         }
       },
       "widgets_values": [
-        "このSubjectの画像を選択してください。動画WFでも同じ画像をPicture 5へ設定します。\n\nsubject_hintは空欄です。衣装・顔・小道具等の補助説明が必要な場合だけ記入してください。物体をSubjectにする場合はconcept_typeを変更します。"
+        "このSubjectの画像を選択してください。動画WFでも同じ画像をPicture 4へ設定します。\n\nsubject_hintは衣装・顔・小道具等の補助説明が必要な場合だけ記入してください。物体をSubjectにする場合はconcept_typeを変更します。\n\nこのサブジェクトを定義しない場合、画像ロードノードとImage to Subject EMDノードをCtrl+Bでバイパスしてください。"
       ],
       "widgets_values_named": {
-        "text": "このSubjectの画像を選択してください。動画WFでも同じ画像をPicture 5へ設定します。\n\nsubject_hintは空欄です。衣装・顔・小道具等の補助説明が必要な場合だけ記入してください。物体をSubjectにする場合はconcept_typeを変更します。"
-      },
-      "color": "#432",
-      "bgcolor": "#653"
-    },
-    {
-      "id": 36,
-      "type": "MarkdownNote",
-      "pos": [
-        -350,
-        3580
-      ],
-      "size": [
-        3500,
-        220
-      ],
-      "flags": {},
-      "order": 22,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [],
-      "title": "4 Subject — 前段の使い方",
-      "properties": {
-        "ue_properties": {
-          "widget_ue_connectable": {},
-          "version": "7.8",
-          "input_ue_unconnectable": {}
-        }
-      },
-      "widgets_values": [
-        "Subject 1〜4の画像を各一枚設定して実行します。追加3欄は意図的に空欄です。\n\n番号はEnhancerのconcept_emd → concept_emd_2 → concept_emd_3 → concept_emd_4の順。各Visionは一つのSubjectを定義し、合計4件までです。人物だけでなく物体も指定できます。\n\n対応: Subject 1=Picture 1、Subject 2=Picture 3、Subject 3=Picture 4、Subject 4=Picture 5。背景はPicture 2で、Subject件数には含みません。歌唱対象はPlannerのlip_sync_targetで指定します。\n\n保存先: mv_director/4subject/context_loop_plan_*.txt。対応する_4subject_動画WFへ読み込みます。通常版WFと同じ歌詞・vocal・モデル設定を引き継ぎます。"
-      ],
-      "widgets_values_named": {
-        "text": "Subject 1〜4の画像を各一枚設定して実行します。追加3欄は意図的に空欄です。\n\n番号はEnhancerのconcept_emd → concept_emd_2 → concept_emd_3 → concept_emd_4の順。各Visionは一つのSubjectを定義し、合計4件までです。人物だけでなく物体も指定できます。\n\n対応: Subject 1=Picture 1、Subject 2=Picture 3、Subject 3=Picture 4、Subject 4=Picture 5。背景はPicture 2で、Subject件数には含みません。歌唱対象はPlannerのlip_sync_targetで指定します。\n\n保存先: mv_director/4subject/context_loop_plan_*.txt。対応する_4subject_動画WFへ読み込みます。通常版WFと同じ歌詞・vocal・モデル設定を引き継ぎます。"
+        "text": "このSubjectの画像を選択してください。動画WFでも同じ画像をPicture 4へ設定します。\n\nsubject_hintは衣装・顔・小道具等の補助説明が必要な場合だけ記入してください。物体をSubjectにする場合はconcept_typeを変更します。\n\nこのサブジェクトを定義しない場合、画像ロードノードとImage to Subject EMDノードをCtrl+Bでバイパスしてください。"
       },
       "color": "#432",
       "bgcolor": "#653"
@@ -4246,14 +4284,6 @@
       "INT"
     ],
     [
-      27,
-      30,
-      0,
-      31,
-      0,
-      "IMAGE"
-    ],
-    [
       28,
       16,
       0,
@@ -4348,16 +4378,32 @@
       9,
       24,
       "INT"
+    ],
+    [
+      34,
+      7,
+      4,
+      37,
+      0,
+      "STRING"
+    ],
+    [
+      35,
+      38,
+      0,
+      31,
+      0,
+      "IMAGE"
     ]
   ],
   "groups": [],
   "config": {},
   "extra": {
     "ds": {
-      "scale": 1.054152000000005,
+      "scale": 0.5950413223140592,
       "offset": [
-        38.26985091812573,
-        -1166.4133914514496
+        832.3318987880575,
+        27.524058318304416
       ]
     },
     "mv_director": {

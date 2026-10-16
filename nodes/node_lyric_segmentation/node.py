@@ -157,8 +157,9 @@ def _block_unplaced(
         f"unplaced={len(timeline.unplaced_lyrics)}; "
         f"sections={section_summary}; items={preview}. "
         "The Template EMD, SRT, LRC, and timeline outputs were blocked. "
-        "Use vocal audio containing every supplied lyric, or remove lyrics "
-        "that are not sung in this audio."
+        "Unplaced lyrics may be caused by recognition misses, not only absent singing. "
+        "Inspect or retry recognition if these lyrics are sung; remove lyrics "
+        "only when they are genuinely absent from this audio."
     )
     _LOGGER.error("[MV Director - Lyric Segmentation] %s", message)
     try:

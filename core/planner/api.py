@@ -17,7 +17,7 @@ from .types import PlannerContent, TimelinePlannerBackend, TimelinePlannerResult
 from .mouth_performance import plan_mouth_performances
 from .lip_sync import parse_lip_sync_targets
 
-PLANNER_ALGORITHM_VERSION = "mvd-scene-author-v6-grouped-subject-references"
+PLANNER_ALGORITHM_VERSION = "mvd-scene-author-v7-zero-post-voice-margin"
 
 
 def generate_planner_content(

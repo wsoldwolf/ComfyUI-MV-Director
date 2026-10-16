@@ -15,11 +15,19 @@ EMDは **Easy MarkDown** の略です。Extended Markdownではありません�
 ## はじめに
 
 1. [導入マニュアル](docs/installation.md)に従ってカスタムノード、`llama-cpp-python`、Whisper、各モデルを準備します。
-2. [配布workflow](workflows/README.md)のPlan / CompilerとVideoを一組で使います。現在の検証はContext Loop標準リップシンク方式を中心に行っています。Audio参照方式と歌詞方式もありますが、同等の同期精度は保証しません。
+2. [配布workflow](workflows/README.md)の`01_plan_compiler.json`と`02_video_generator.json`を一組で使います。配布するのはContext Loop標準リップシンク方式の2本で、どちらも最大4Subjectに対応します。Audio参照方式と歌詞方式は保留中で、現在は同梱していません。
 3. [ノードマニュアル](docs/nodes/README.md)で各入力、出力、既定値、接続方法を確認します。
 4. EMDを直接編集する場合は[EMD仕様書](docs/spec/emd-spec.md)を参照します。
 
-現行の開発構成は`dev`ブランチです。既存のリリースタグとはモデル・パイプラインが異なります。基準環境はComfyUI v0.37.2 commit `830232b856045ca2892833212d7771078a13edd5`、Context Loop 0.7.0 commit `d80304f05ecc2f504e64cbfb636e2a21d4409909`です。ComfyUI v0.37.4とSpectrum v0.2.27での全編完走も確認しています。高速化設定と検証条件は[TIPS](docs/tips/h3-acceleration-and-stability.md)を参照してください。
+現行の開発構成は`dev`ブランチです。既存のリリースタグとはモデル・パイプラインが異なります。2026-10-15にローカルで確認した導入環境は次のとおりです。
+
+| コンポーネント | バージョン | コミット |
+|---|---|---|
+| ComfyUI | v0.39.2 | `3c1b7a17fdf239d35ce98cc777756f572d089795` |
+| MiniMax H3 Context Loop | 0.7.3 | `3c2af7308b9f709f9e10795332181f41597757ee` |
+| Spectrum MiniMax H3 | v0.2.27 | `120d72e2f48b781235b34149e39bbdf0f1317d82` |
+
+これは導入済みコードの確認値であり、全設定での安定動作を保証するものではありません。高速化設定、過去の全編完走実績と検証条件は[TIPS](docs/tips/h3-acceleration-and-stability.md)を参照してください。
 
 Gemma4 31B構成はRTX 5090・RTX 5080環境で検証しています。VRAM 8 GB環境は現在の対象外です。必要なVRAM・メインメモリは量子化、context、オフロード設定で変わるため、未検証環境の最低容量は断定していません。
 
@@ -29,10 +37,16 @@ LLMの出力は確率的で、行protocol違反や必須出力の欠落が起き
 
 ## 簡単な利用方法
 
-1. `01_plan_compiler_context_loop.json`をComfyUIで開き、参照画像・歌詞・音源を設定して実行します。Plan JSONは、ComfyUIの`output/mv_director`以下へ`.txt`形式で保存されます。
-2. `02_video_context_loop.json`を開き、保存した`.txt`を「Compiled Plan JSON (.txt handoff)」へ読み込みます。01と同じ参照画像・音源を指定し、実行すると動画を生成します。
+演出を考える際は、[歌詞・シーン・キャラクターから演出候補を作るTIPS](docs/tips/staging-candidate-authoring-prompt.md)を利用できます。再利用用プロンプトと歌詞全文・舞台・人物設定をChatGPT／Codexへ渡し、生成した`# 共通プロンプト`・`# 演出候補`を01_ WFのDirection Enhancerの`user_request`へ設定します。歌詞の意味を具体的な演技やCameraへ展開するための補助であり、候補の採用や映像での再現を保証するものではありません。
 
-同じPlanで動画を再生成する場合は、02だけを再実行できます。歌詞や演出方針を変更した場合は、01でPlanを作り直し、02へ読み込み直してください。
+**参照画像だけでなく、人物のヒントも作品に合わせて変更してください。** 配布WFには、狐耳・尻尾などを指定した検証用の`subject_hint`が入っています。画像だけを差し替えてヒントを残すと、画像にないケモミミや尻尾、以前の衣装などが生成される場合があります。[Image to Subject EMD](docs/nodes/image-to-subject-emd.md)の`subject_hint`を自分の人物の識別特徴・衣装・小道具等へ書き換えるか、不要なら空欄にしてください。`additional_instruction`も観察方針に合わせて確認します。`hint_mode=lock_identity`ではヒントが外見推定より優先されます。使用する各Subjectで確認し、演出候補の検証用題材も置き換えてください。
+
+1. [01_plan_compiler.json](workflows/01_plan_compiler.json)をComfyUIで開き、人物・背景の参照画像、歌詞テキスト、ボーカルステムと演出方針を設定して実行します。EMD・Plan JSON・SRT・LRC本文がComfyUIの`output/mv_director/4subject`以下へ保存されます。Plan JSONの保存形式は`.txt`です。SRT・LRC本文も`.txt`で保存されるため、字幕・歌詞ファイルとして使う場合は拡張子を`.srt`・`.lrc`へ変更します。
+2. [02_video_generator.json](workflows/02_video_generator.json)を開き、Plan JSONの`.txt`を「Compiled Plan JSON (.txt handoff)」へ読み込みます。01と同じ参照画像・ボーカルステムと、完成動画用のフルミックスを指定して実行します。Plan Studioも組み込まれており、生成済みSceneのALT作成と採用後の全編再連結については[配布workflowの説明](workflows/README.md#plan-studioで一つのsceneを差し替える)を参照してください。
+
+現在の2本は最大4Subject対応です。**使用しないSubjectの参照画像ローダーと、それに接続されたImage to Subject EMDの両ノードをバイパス**してください。例えば二人だけを使う場合は、Subject 3・4の各画像ローダーと各Image to Subject EMDをバイパスします。画像欄を空にするだけではなく、未使用の組をまとめてバイパスしてください。背景用のノードはSubjectとは別なので、背景を使う場合は有効のままにします。
+
+同じPlanで動画を再生成する場合は、02だけを再実行できます。歌詞、人物のヒント、演出方針を変更した場合は、01でPlanを作り直し、生成されたEMDのSubject定義を確認してから02へ読み込み直してください。既存Planの人物設定は、元ノードのヒントを変更するだけでは更新されません。
 
 ## 文書索引
 
@@ -43,7 +57,7 @@ LLMの出力は確率的で、行protocol違反や必須出力の欠落が起き
 | [`docs/spec/`](docs/spec/README.md) | EMD、protocol、最小コアの規範仕様 |
 | [`docs/implementation/`](docs/implementation/README.md) | 内部構造、公開surface、実装順序 |
 | [`profiles/`](profiles/README.md) | ユーザー拡張可能なStyle、Motion、Camera profile EMD |
-| [`workflows/`](workflows/README.md) | 三つのリップシンク方式に対応する基本6 workflowと12B・26B検証用Plan派生版 |
+| [`workflows/`](workflows/README.md) | Context Loop標準リップシンクのPlan生成・動画生成の2本（最大4Subject対応） |
 | [`docs/assets/`](docs/assets/README.md) | READMEや文書で使うPNG/SVG図版 |
 | [`docs/tips/`](docs/tips/README.md) | 参照画像の分離、再現率、配線など実運用のTIPS |
 | [Direction / Planner処理フロー](docs/architecture/direction-planner-flow.md) | LLM task、Python所有処理、AS IS境界の図解 |

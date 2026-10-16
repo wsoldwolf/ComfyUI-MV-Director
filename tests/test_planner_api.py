@@ -24,10 +24,10 @@ class PlannerApiTests(unittest.TestCase):
         return backend, plan_timeline(backend, **kwargs)
 
     def test_every_profile_and_passthrough_uses_scene_author(self):
-        for profile in ("", "passthrough", "anime_emotional_mv", "anime_story_mv",
-                        "natural_performance", "limited_animation"):
+        from core.direction.profiles import MOTION_PROFILES
+        for profile in ("", "passthrough", *MOTION_PROFILES):
             with self.subTest(profile=profile):
-                backend, result = self.plan(DirectionArtifact(motion_profile_id=profile))
+                backend, result = self.plan(DirectionArtifact(motion_profile_id=profile, motion_templates=()))
                 self.assertTrue(result.complete)
                 self.assertEqual([task for task, _ in backend.calls],
                                  ["scene-author-event", "scene-author-performance", "scene-author-camera"])

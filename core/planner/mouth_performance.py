@@ -17,7 +17,8 @@ from .template import PlannerTemplate
 
 _LOGGER = logging.getLogger("mv_director.nodes")
 LONG_GAP_MS = 2000
-VOICE_MARGIN_MS = 200
+VOICE_PRE_MARGIN_MS = 200
+VOICE_POST_MARGIN_MS = 0
 _REST_STATES = frozenset({
     "no_vocal_candidate", "instrumental_candidate", "fullmix_silence_candidate",
 })
@@ -80,7 +81,10 @@ def plan_mouth_performances(
         return result
     voices = [(math.floor(i["start_ms"]), math.ceil(i["end_ms"]))
               for i in intervals if i["state"] == "vocal_candidate"]
-    protected_voice = [(a - VOICE_MARGIN_MS, b + VOICE_MARGIN_MS) for a, b in voices]
+    # Preserve preparation before singing, but do not delay closure after it.
+    protected_voice = [
+        (a - VOICE_PRE_MARGIN_MS, b + VOICE_POST_MARGIN_MS) for a, b in voices
+    ]
     runs: list[tuple[float, float]] = []
     for item in intervals:
         if item["state"] in _REST_STATES:
@@ -111,11 +115,13 @@ def plan_mouth_performances(
         if combined:
             _LOGGER.info(
                 "[MV Director - Timeline Planner] mouth plan; scene=%d; author=%d; "
-                "generated=%d; closed=%d; singing=%d; free=%d; voice_margin_ms=%d",
+                "generated=%d; closed=%d; singing=%d; free=%d; "
+                "voice_pre_margin_ms=%d; voice_post_margin_ms=%d",
                 scene.scene_number, len(authored), len(generated),
                 sum(i.state == "閉口" for i in combined),
                 sum(i.state == "歌唱" for i in combined),
-                sum(i.state == "自由" for i in combined), VOICE_MARGIN_MS,
+                sum(i.state == "自由" for i in combined),
+                VOICE_PRE_MARGIN_MS, VOICE_POST_MARGIN_MS,
             )
     return result
 

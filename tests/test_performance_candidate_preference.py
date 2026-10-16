@@ -104,7 +104,7 @@ class ProductionPreferenceTests(unittest.TestCase):
         activity = AudioActivity(1000, 6000, "a" * 64, intervals)
         template = "\n".join(activity.render_lines()) + "\n" + TEMPLATE
         result = plan_timeline(backend, template_emd=template, concept_emd=CONCEPT,
-            direction=DirectionArtifact(motion_profile_id="anime_scene_author_mv", staging_candidates=candidates),
+            direction=DirectionArtifact(motion_profile_id="natural_performance", staging_candidates=candidates),
             lip_sync_mode="context_loop", lip_sync_target="サブジェクト1", lip_sync_audio_slot=1,
             system_prompts=_system_prompts(prop_holding=props, performance_candidates=True),
             runtime_config=_runtime(), staging_candidate_policy=policy)

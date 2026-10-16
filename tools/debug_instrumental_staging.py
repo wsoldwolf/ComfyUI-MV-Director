@@ -126,7 +126,7 @@ def compare(args):
     scenes = {name: next(s for s in template.scenes if s.start_ms <= t < s.end_ms)
               for name, t in windows.items()}
     # Neutral candidates: no song-specific props are hardcoded into the pipeline.
-    direction = DirectionArtifact(motion_profile_id="anime_scene_author_mv", motion_templates=(),
+    direction = DirectionArtifact(motion_profile_id="anime_emotional_mv", motion_templates=(),
         environment_direction=("秋の山稜と谷、岩場や滝がある自然の空間。",),
         motion_direction=("伴奏と歌詞の感情に呼応した明瞭な身体フレーズを選ぶ。",),
         staging_candidates=(

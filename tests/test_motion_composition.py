@@ -207,9 +207,22 @@ class MotionCompositionTests(unittest.TestCase):
                 self.assertTrue(result.complete)
                 self.assertEqual(result.content.motion_compositions, ())
 
-    def test_existing_profile_keeps_composition_off(self):
-        result = run(Backend(), DirectionArtifact(motion_profile_id="anime_scene_author_mv"))
+    def test_explicit_disabled_templates_keep_composition_off(self):
+        result = run(Backend(), DirectionArtifact(motion_profile_id="anime_emotional_mv", motion_templates=()))
         self.assertEqual(result.content.motion_compositions, ())
+
+    def test_emotional_and_compatibility_name_use_same_post_author_composition(self):
+        results = [run(Backend(), DirectionArtifact(motion_profile_id=profile))
+                   for profile in ("anime_emotional_mv", "anime_scene_composed_mv")]
+        self.assertTrue(all(result.complete for result in results))
+        self.assertEqual(results[0].content.actions, results[1].content.actions)
+        self.assertEqual(results[0].content.cameras, results[1].content.cameras)
+        compositions = [result.content.motion_compositions for result in results]
+        self.assertTrue(all(items for items in compositions))
+        self.assertEqual([i[:2] + i[3:] for i in compositions[0]],
+                         [i[:2] + i[3:] for i in compositions[1]])
+        self.assertTrue(all(i[2] == "profile:anime_emotional_mv" for i in compositions[0]))
+        self.assertTrue(all(i[2] == "profile:anime_scene_composed_mv" for i in compositions[1]))
 
     def test_cycle_and_authored_common_priority(self):
         positions = [{"shot": 1, "start_ms": 0, "end_ms": 4000, "fixed_camera": "",

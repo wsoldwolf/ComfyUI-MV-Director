@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from tools.generate_workflows import build_plan_workflow, sync_subject_inputs, validate_workflow, write_workflows
 
@@ -11,8 +12,13 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class SubjectWorkflowTests(unittest.TestCase):
+    def setUp(self):
+        lyrics = patch("tools.generate_workflows._lyrics_text", return_value="[Verse 1]\n検証用の歌詞\n")
+        lyrics.start()
+        self.addCleanup(lyrics.stop)
+
     def legacy(self):
-        workflow = json.loads((ROOT / 'workflows/01_plan_compiler_context_loop.json').read_text(encoding='utf-8'))
+        workflow = build_plan_workflow('context_loop')
         # Manufacture the previous shared-Vision route even after fixtures migrate.
         from tools.generate_workflows import _connect, _disconnect_input
         _disconnect_input(workflow, 9, 'concept_emd')
@@ -87,9 +93,9 @@ class SubjectWorkflowTests(unittest.TestCase):
     def test_writer_leaves_video_bytes_untouched(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / 'plan.json').write_text(json.dumps(self.legacy()), encoding='utf-8')
-            video = (ROOT / 'workflows/02_video_context_loop.json').read_bytes()
-            (root / 'video.json').write_bytes(video)
+            (root / '01_plan_compiler.json').write_text(json.dumps(self.legacy()), encoding='utf-8')
+            video = (ROOT / 'workflows/02_video_generator.json').read_bytes()
+            (root / '02_video_generator.json').write_bytes(video)
             write_workflows(Path('unused'), root, subject_inputs_only=True)
-            self.assertEqual((root / 'video.json').read_bytes(), video)
-            validate_workflow(json.loads((root / 'plan.json').read_text(encoding='utf-8')))
+            self.assertEqual((root / '02_video_generator.json').read_bytes(), video)
+            validate_workflow(json.loads((root / '01_plan_compiler.json').read_text(encoding='utf-8')))

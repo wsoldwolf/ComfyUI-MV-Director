@@ -118,7 +118,7 @@ def prepare(output):
     if common_request or len(candidates) != 4:
         raise ValueError("Expected four optional staging candidates")
     direction = DirectionArtifact(environment_direction=common.get("環境", ()),
-        motion_direction=common.get("モーション", ()), motion_profile_id="anime_scene_author_mv",
+        motion_direction=common.get("モーション", ()), motion_profile_id="anime_emotional_mv",
         motion_templates=(), staging_candidates=candidates)
     # CPU decode proves the saved energy/Whisper analysis is still applicable.
     audio = []

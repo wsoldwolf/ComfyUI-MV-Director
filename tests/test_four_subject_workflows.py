@@ -31,9 +31,9 @@ def origin(workflow, node, input_name):
 
 class FourSubjectWorkflowTests(unittest.TestCase):
     def test_four_visions_merge_once_and_preserve_inputs(self):
-        source = load("01_plan_compiler_context_loop.json")
+        source = load(WORKFLOW_FILENAMES[0])
         before = copy.deepcopy(source)
-        workflow = build_plan_workflow(source, "context_loop")
+        workflow = prepare_saved_workflow(source, plan=True)
         self.assertEqual(source, before)
         enhancer = node_of(workflow, "MVDirectorDirectionEnhancer")
         planner = node_of(workflow, "MVDirectorTimelinePlanner")
@@ -49,8 +49,8 @@ class FourSubjectWorkflowTests(unittest.TestCase):
             image, _ = origin(workflow, vision, "image")
             self.assertEqual(image["type"], "LoadImage")
             if number > 1:
-                self.assertEqual(image["widgets_values"][0], "")
-                self.assertEqual(vision["widgets_values"][2:4], ["", ""])
+                self.assertEqual(image["widgets_values"], source_node(before, image["id"])["widgets_values"])
+                self.assertEqual(vision["widgets_values"][2:4], source_node(before, vision["id"])["widgets_values"][2:4])
             seed, slot = origin(workflow, vision, "seed")
             old_seed, old_slot = origin(before, source_node(before, 3), "seed")
             self.assertEqual((seed["id"], slot), (old_seed["id"], old_slot))
@@ -67,11 +67,11 @@ class FourSubjectWorkflowTests(unittest.TestCase):
             self.assertEqual(node_of(workflow, type_name)["widgets_values"], node_of(source, type_name)["widgets_values"])
 
     def test_video_reference_mapping_and_shifted_audio_links(self):
-        for mode, spec in MODES.items():
+        for mode, spec in (("context_loop", MODES["context_loop"]),):
             with self.subTest(mode=mode):
-                source = load(f"{spec['number'] * 2:02d}_video_{mode}.json")
+                source = load(WORKFLOW_FILENAMES[1])
                 before = copy.deepcopy(source)
-                workflow = build_video_workflow(source, mode)
+                workflow = prepare_saved_workflow(source, plan=False)
                 self.assertEqual(source, before)
                 conditioning = node_of(workflow, "MiniMaxH3ReferenceToVideo")
                 for number, picture in enumerate(SUBJECT_PICTURES, 1):
@@ -80,7 +80,7 @@ class FourSubjectWorkflowTests(unittest.TestCase):
                     self.assertEqual(slot, 0)
                     self.assertIn(f"Subject {number}", image["title"])
                     if number > 1:
-                        self.assertEqual(image["widgets_values"][0], "")
+                        self.assertEqual(image["widgets_values"], source_node(before, image["id"])["widgets_values"])
                 self.assertEqual(origin(workflow, conditioning, "ref_images.ref_image_1"),
                                  origin(source, node_of(source, "MiniMaxH3ReferenceToVideo"), "ref_images.ref_image_1"))
                 for link in before["links"]:
@@ -92,7 +92,7 @@ class FourSubjectWorkflowTests(unittest.TestCase):
                     self.assertEqual((old_origin["id"], old_slot), (new_origin["id"], new_slot))
                 splitter = node_of(workflow, "MVDirectorSceneDebugSplitter")
                 loader, _ = origin(workflow, splitter, "plan_json")
-                self.assertEqual(loader["widgets_values"][:3], ["", "", ""])
+                self.assertEqual(loader["widgets_values"], source_node(before, loader["id"])["widgets_values"])
                 if mode == "audio_reference":
                     lyrics = [n for n in workflow["nodes"] if n["type"] == "MVDirectorLoadTextFile" and n["id"] != loader["id"]]
                     self.assertEqual(len(lyrics), 1)
@@ -152,6 +152,31 @@ class FourSubjectWorkflowTests(unittest.TestCase):
             for name in WORKFLOW_FILENAMES:
                 self.assertEqual(load(name), json.loads((root / name).read_text(encoding="utf-8")))
 
+    def test_browser_edited_layout_and_viewport_remain_the_generation_source(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            source_dir = Path(temp_dir) / 'edited'
+            source_dir.mkdir()
+            expected = {}
+            for name in WORKFLOW_FILENAMES:
+                workflow = load(name)
+                for index, node in enumerate(workflow['nodes']):
+                    node['pos'] = [node['pos'][0] + 125.25, node['pos'][1] - 61.5]
+                    node['size'] = [node['size'][0] + 15, node['size'][1] + 9]
+                    node.setdefault('flags', {})['collapsed'] = index % 3 == 0
+                for group in workflow['groups']:
+                    x, y, width, height = group['bounding']
+                    group['bounding'] = [x + 125.25, y - 61.5, width + 15, height + 9]
+                workflow.setdefault('extra', {})['ds'] = {'scale': 0.35, 'offset': [103.5, -42]}
+                source_dir.joinpath(name).write_text(json.dumps(workflow, ensure_ascii=False), encoding='utf-8')
+                expected[name] = workflow
+            output_dir = Path(temp_dir) / 'generated'
+            paths = write_workflows(source_dir, output_dir)
+            for path in paths:
+                self.assertEqual(json.loads(path.read_text(encoding='utf-8')), expected[path.name])
+            first = {path.name: path.read_bytes() for path in paths}
+            write_workflows(output_dir, output_dir)
+            self.assertEqual(first, {path.name: path.read_bytes() for path in paths})
+
     def test_missing_second_source_does_not_write_first_or_restore_legacy(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
@@ -161,11 +186,14 @@ class FourSubjectWorkflowTests(unittest.TestCase):
                 write_workflows(root, output)
             self.assertFalse(output.exists())
 
-    def test_single_subject_sources_are_rejected(self):
-        for plan, name in ((True, "01_plan_compiler_context_loop.json"),
-                           (False, "02_video_context_loop.json")):
+    def test_incomplete_subject_sources_are_rejected(self):
+        for plan, name in ((True, WORKFLOW_FILENAMES[0]), (False, WORKFLOW_FILENAMES[1])):
+            source = load(name)
+            target = node_of(source, "MVDirectorDirectionEnhancer" if plan else "MiniMaxH3ReferenceToVideo")
+            missing = "concept_emd_4" if plan else "ref_images.ref_image_4"
+            target["inputs"] = [p for p in target["inputs"] if p["name"] != missing]
             with self.subTest(name=name), self.assertRaises(ValueError):
-                prepare_saved_workflow(load(name), plan=plan)
+                prepare_saved_workflow(source, plan=plan)
 
     def test_invalid_second_source_does_not_replace_output_pair(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -183,27 +211,6 @@ class FourSubjectWorkflowTests(unittest.TestCase):
             self.assertTrue(all(p.read_text(encoding="utf-8") == "existing output"
                                 for p in output.iterdir()))
 
-    def test_conversion_helpers_do_not_overlap_new_blocks(self):
-        for mode, spec in MODES.items():
-            for offset, phase, builder in ((-1, "plan_compiler", build_plan_workflow),
-                                           (0, "video", build_video_workflow)):
-                name = f"{spec['number'] * 2 + offset:02d}_{phase}_{mode}.json"
-                with self.subTest(name=name):
-                    source = load(name)
-                    workflow = builder(source, mode)
-                    old_ids = {n["id"] for n in source["nodes"]}
-                    for node in workflow["nodes"]:
-                        if node["id"] in old_ids:
-                            continue
-                        ax, ay = node["pos"]
-                        aw, ah = node["size"]
-                        for other in workflow["nodes"]:
-                            if node["id"] == other["id"]:
-                                continue
-                            bx, by = other["pos"]
-                            bw, bh = other["size"]
-                            overlap = ax < bx + bw and ax + aw > bx and ay < by + bh and ay + ah > by
-                            self.assertFalse(overlap, (node["id"], other["id"]))
 
 
 def source_node(workflow, node_id):
