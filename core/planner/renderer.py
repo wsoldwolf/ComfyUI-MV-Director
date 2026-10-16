@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 import logging
 import hashlib
 from typing import Mapping
@@ -18,11 +17,11 @@ from ..emd.subject_references import normalize_subject_references
 from ..h3_contract import DEFAULT_H3_TIMING_PROFILE, H3TimingProfile
 from ..lyrics import format_emd_time
 from .errors import TimelinePlannerError
+from .lip_sync import parse_lip_sync_targets
 from .template import PlannerTemplate
 from .text_normalization import strip_generated_line_continuation
 
 
-_TARGET_RE = re.compile(r"サブジェクト[1-4]\Z")
 _LOGGER = logging.getLogger("mv_director.nodes")
 
 
@@ -54,8 +53,8 @@ def render_completed_emd(
     direction.validate()
     if lip_sync_mode not in {"off", "context_loop", "audio_reference", "lyrics"}:
         raise TimelinePlannerError("unknown lip_sync_mode")
-    if not _TARGET_RE.fullmatch(lip_sync_target):
-        raise TimelinePlannerError("lip_sync_target must be サブジェクト1..4")
+    targets = parse_lip_sync_targets(lip_sync_target,
+        subject_count=_concept_subject_count(concept_emd) if lip_sync_mode != "off" else None)
     if not isinstance(lip_sync_audio_slot, int) or isinstance(lip_sync_audio_slot, bool) or not 1 <= lip_sync_audio_slot <= 3:
         raise TimelinePlannerError("lip_sync_audio_slot must be in 1..3")
 
@@ -168,19 +167,20 @@ def render_completed_emd(
             lines.extend(f"* {normalize_subject_references(value)}" for value in body)
             if lip_sync_mode == "lyrics":
                 lines.extend(
-                    f"* `リップシンク` `歌詞` `{lip_sync_target}` 「{lyric.text}」"
+                    f"* `リップシンク` `歌詞` `{target}` 「{lyric.text}」"
                     for lyric in shot.lyric_annotations
+                    for target in targets
                 )
         if lip_sync_mode == "context_loop" or (
             scene_has_lyrics and lip_sync_mode == "audio_reference"
         ):
             lines.append("## 音響")
             if lip_sync_mode == "context_loop":
-                lines.append(f"* `リップシンク` `Context Loop` `{lip_sync_target}`")
+                lines.extend(f"* `リップシンク` `Context Loop` `{target}`" for target in targets)
             else:
-                lines.append(
-                    f"* `リップシンク` `Audio参照` `{lip_sync_target}` `音声{lip_sync_audio_slot}`"
-                )
+                lines.extend(
+                    f"* `リップシンク` `Audio参照` `{target}` `音声{lip_sync_audio_slot}`"
+                    for target in targets)
     if cleaned_generated_lines:
         _LOGGER.info(
             "[MV Director - Timeline Planner] removed standalone trailing backslash at EMD render; lines=%d",

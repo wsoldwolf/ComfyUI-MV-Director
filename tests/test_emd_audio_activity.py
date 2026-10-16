@@ -62,7 +62,7 @@ class EMDAudioActivityTests(unittest.TestCase):
         template = "\n".join(activity().render_lines()) + "\n\n" + TEMPLATE
         backend = Backend()
         result = plan_timeline(backend, template_emd=template, concept_emd=CONCEPT,
-            direction=DirectionArtifact(motion_profile_id="anime_scene_author_mv"),
+            direction=DirectionArtifact(motion_profile_id="natural_performance"),
             lip_sync_mode="context_loop", lip_sync_target="サブジェクト1", lip_sync_audio_slot=1,
             system_prompts=_system_prompts(), runtime_config=_runtime())
         self.assertTrue(result.complete)

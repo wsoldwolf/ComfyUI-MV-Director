@@ -11,12 +11,14 @@ import math
 
 from ..emd import MouthPerformance, Scene
 from .errors import TimelinePlannerError
+from .lip_sync import parse_lip_sync_targets
 from .template import PlannerTemplate
 
 
 _LOGGER = logging.getLogger("mv_director.nodes")
 LONG_GAP_MS = 2000
-VOICE_MARGIN_MS = 200
+VOICE_PRE_MARGIN_MS = 200
+VOICE_POST_MARGIN_MS = 0
 _REST_STATES = frozenset({
     "no_vocal_candidate", "instrumental_candidate", "fullmix_silence_candidate",
 })
@@ -53,6 +55,8 @@ def plan_mouth_performances(
     before Scene clipping. Unknowns, padding and unmapped inputs add no policy.
     """
     subjects = {f"サブジェクト{i}" for i in range(1, subject_count + 1)}
+    targets = parse_lip_sync_targets(lip_sync_target,
+        subject_count=subject_count if lip_sync_mode != "off" else None)
     for scene in template.scenes:
         for item in scene.mouth_performances:
             if item.target_concept_id not in subjects:
@@ -61,8 +65,6 @@ def plan_mouth_performances(
     activity = template.audio_activity
     if activity is None or lip_sync_mode == "off":
         return result
-    if lip_sync_target not in subjects:
-        raise TimelinePlannerError("lip-sync target references undefined concept ID")
     # Reuse the same source/reference-copy mapping as Scene authorship. Read
     # the whole timeline first so a Scene split does not shorten a long gap.
     last_sample = activity.source_samples
@@ -79,7 +81,10 @@ def plan_mouth_performances(
         return result
     voices = [(math.floor(i["start_ms"]), math.ceil(i["end_ms"]))
               for i in intervals if i["state"] == "vocal_candidate"]
-    protected_voice = [(a - VOICE_MARGIN_MS, b + VOICE_MARGIN_MS) for a, b in voices]
+    # Preserve preparation before singing, but do not delay closure after it.
+    protected_voice = [
+        (a - VOICE_PRE_MARGIN_MS, b + VOICE_POST_MARGIN_MS) for a, b in voices
+    ]
     runs: list[tuple[float, float]] = []
     for item in intervals:
         if item["state"] in _REST_STATES:
@@ -93,25 +98,30 @@ def plan_mouth_performances(
     candidates = [(a, b, "閉口") for a, b in rests] + [(a, b, "歌唱") for a, b in voices]
     for scene in template.scenes:
         authored = list(scene.mouth_performances)
-        blocked = _authored_shot_ranges(scene) + [
-            (i.start_ms, i.end_ms) for i in authored if i.target_concept_id == lip_sync_target
-        ]
-        generated = [
-            MouthPerformance(lip_sync_target, start, end, state)
-            for a, b, state in candidates
-            for start, end in _subtract(max(scene.start_ms, a), min(scene.end_ms, b), blocked)
-            if end > start
-        ]
+        fixed_ranges = _authored_shot_ranges(scene)
+        generated = []
+        for target in targets:
+            blocked = fixed_ranges + [
+                (i.start_ms, i.end_ms) for i in authored if i.target_concept_id == target
+            ]
+            generated.extend(
+                MouthPerformance(target, start, end, state)
+                for a, b, state in candidates
+                for start, end in _subtract(max(scene.start_ms, a), min(scene.end_ms, b), blocked)
+                if end > start
+            )
         combined = sorted(authored + generated, key=lambda i: (i.start_ms, i.target_concept_id))
         result[scene.scene_number] = tuple(combined)
         if combined:
             _LOGGER.info(
                 "[MV Director - Timeline Planner] mouth plan; scene=%d; author=%d; "
-                "generated=%d; closed=%d; singing=%d; free=%d; voice_margin_ms=%d",
+                "generated=%d; closed=%d; singing=%d; free=%d; "
+                "voice_pre_margin_ms=%d; voice_post_margin_ms=%d",
                 scene.scene_number, len(authored), len(generated),
                 sum(i.state == "閉口" for i in combined),
                 sum(i.state == "歌唱" for i in combined),
-                sum(i.state == "自由" for i in combined), VOICE_MARGIN_MS,
+                sum(i.state == "自由" for i in combined),
+                VOICE_PRE_MARGIN_MS, VOICE_POST_MARGIN_MS,
             )
     return result
 

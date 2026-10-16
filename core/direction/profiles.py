@@ -55,13 +55,8 @@ DIRECTION_PRESETS = {
         "anime_emotional_mv",
         "anime_emotional_mv",
     ),
-    "cinematic_anime_story_mv": (
-        "anime_story_mv",
-        "anime_story_mv",
-        "anime_story_mv",
-    ),
     "cinema_mv": (
-        "anime_story_mv",
+        "anime_emotional_mv",
         "cinema_mv",
         "cinema_mv",
     ),

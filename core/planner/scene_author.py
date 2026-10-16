@@ -226,6 +226,7 @@ def generate_scene_author_content(
     runtime_config: LlamaRuntimeConfig,
     staging_candidate_policy: str = "optional",
     lip_sync_mode: str = "off",
+    lip_sync_targets: tuple[str, ...] = (),
     mouth_performances: Mapping[int, tuple[MouthPerformance, ...]] | None = None,
     interrupt_callback: Any = None,
 ) -> tuple[Any | None, tuple[tuple[str, int, int], ...]]:
@@ -402,6 +403,8 @@ def generate_scene_author_content(
         }
 
         scene_mouths = (mouth_performances or {}).get(scene.scene_number, scene.mouth_performances)
+        if len(lip_sync_targets) > 1 and lip_sync_mode != "off":
+            shared["lip_sync_targets"] = list(lip_sync_targets)
         if scene_mouths:
             shared["mouth_performance"] = mouth_scene_payload(scene, scene_mouths)
         fixed_actions = {

@@ -11,6 +11,7 @@ from .dialogue import (
 from .api import PLANNER_ALGORITHM_VERSION, generate_planner_content, plan_timeline, render_planner_content
 from .types import PlannerContent, TimelinePlannerBackend, TimelinePlannerResult
 from .errors import TimelinePlannerError
+from .lip_sync import parse_lip_sync_targets
 from .renderer import render_completed_emd
 from .template import (
     DEFAULT_CONCEPT_EMD,
@@ -37,6 +38,7 @@ __all__ = [
     "normalize_scene_emd",
     "generate_planner_content",
     "plan_timeline",
+    "parse_lip_sync_targets",
     "parse_template_emd",
     "render_completed_emd",
     "render_planner_content",

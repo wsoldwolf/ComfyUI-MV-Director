@@ -9,7 +9,7 @@ from tools.debug_multi_subject_pipeline import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-WORKFLOW = ROOT / "workflows/01_plan_compiler_context_loop.json"
+WORKFLOW = ROOT / "workflows/01_plan_compiler.json"
 CASE = {
     "seed": 20261013,
     "concept_emd": "# サブジェクト\n* 一人目の人物。\n",
@@ -47,7 +47,7 @@ class MultiSubjectProbeTests(unittest.TestCase):
         cls = NODE_STAGES[1][2]
         settings = workflow_settings(self.workflow, cls)
         self.assertEqual(settings["seed"], 1)
-        self.assertEqual(settings["staging_candidate_policy"], "optional")
+        self.assertEqual(settings["staging_candidate_policy"], "prefer_matched")
         self.assertIs(settings["save_debug_output"], False)
 
     def test_schema_drift_requires_explicit_migration(self):

@@ -2,6 +2,8 @@
 
 Comfy Kitchen、SLA、Spectrum、FP16 accumulationの運用上の注意と、2026-09-27〜28の低速化・全編検証をまとめます。導入に必要なclone手順は[導入マニュアル](../installation.md)、配布WFの使い方は[workflowマニュアル](../../workflows/README.md)を参照してください。
 
+2026-10-15のローカル導入環境は、ComfyUI `v0.39.2`（`3c1b7a17fdf239d35ce98cc777756f572d089795`）、Context Loop `0.7.3`（`3c2af7308b9f709f9e10795332181f41597757ee`）、Spectrum MiniMax H3 `v0.2.27`（`120d72e2f48b781235b34149e39bbdf0f1317d82`）です。ComfyUIとSpectrumはcheckoutのタグ、Context Loopは`pyproject.toml`のversionとHEADを照合しました。以下の2026-09-27〜28の結果は当時の構成での記録であり、この導入環境の全編試験結果へ読み替えないでください。
+
 現在の動画workflowは、次の順序でモデルへ設定を適用します。これらはTurbo LoRAの代替となる高速化構成ですが、同じ画質や速度をすべての環境で保証するものではありません。
 
 ```text

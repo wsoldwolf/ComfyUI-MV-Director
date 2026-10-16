@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from core.lyrics import parse_plain_lyrics
 from core.utilities import decode_embedded_text
@@ -18,7 +19,7 @@ from tools.generate_workflows import (CHARACTER_HINT, DEFAULT_USER_PROMPT, LOCAL
                                       sync_candidate_policy, sync_direction_settings, sync_model_runtime, sync_planner_schema,
                                       sync_timing_contract, sync_context_loop_runtime,
                                       sync_compiler_schema, sync_step_ownership, sync_video_acceleration,
-                                      validate_workflow, write_workflows)
+                                      validate_workflow, write_workflows, build_plan_workflow as _build_legacy_plan_workflow)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -34,20 +35,28 @@ H3_TEXT_ENCODER = (
     "MiniMaxH3\\qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors"
 )
 
-FILES = {
-    "context_loop": (
-        "01_plan_compiler_context_loop.json",
-        "02_video_context_loop.json",
-    ),
-    "audio_reference": (
-        "03_plan_compiler_audio_reference.json",
-        "04_video_audio_reference.json",
-    ),
-    "lyrics": (
-        "05_plan_compiler_lyrics.json",
-        "06_video_lyrics.json",
-    ),
-}
+FILES = {"context_loop": WORKFLOW_FILENAMES}
+
+
+def build_legacy_plan_workflow(mode):
+    # Compatibility helper tests use synthetic lyrics, not retired demo assets.
+    with patch("tools.generate_workflows._lyrics_text", return_value="[Verse 1]\n検証用の歌詞\n"):
+        workflow = _build_legacy_plan_workflow(mode)
+    slots = {
+        "MVDirectorImageToSubjectEMD": (0, 14, 15, 16),
+        "MVDirectorDirectionEnhancer": (5, 11, 12, 13),
+        "MVDirectorTimelinePlanner": (3, 9, 10, 11),
+        "MVDirectorEMDCompiler": (1, 7, 8, 9),
+    }
+    for node in workflow["nodes"]:
+        if node["type"] in slots:
+            node["widgets_values_named"] = {
+                key: node["widgets_values"][index]
+                for key, index in zip(("model_name", "gpu_layers", "n_batch", "n_ctx"), slots[node["type"]])
+            }
+            if node["type"] == "MVDirectorTimelinePlanner":
+                node["widgets_values_named"]["staging_candidate_policy"] = "optional"
+    return workflow
 
 
 def load(name: str) -> dict:
@@ -82,7 +91,7 @@ def input_link(workflow: dict, node: dict, input_name: str) -> list:
 
 class DistributableWorkflowTests(unittest.TestCase):
     def test_26b_iq2_m_variant_preserves_wf01_and_offloads_vision_projector(self) -> None:
-        source = load(FILES["context_loop"][0])
+        source = build_legacy_plan_workflow("context_loop")
         variant = build_26b_iq2_m_plan_variant(source)
         for key in ("links", "groups", "extra"):
             self.assertEqual(variant[key], source[key])
@@ -117,29 +126,23 @@ class DistributableWorkflowTests(unittest.TestCase):
             if changed["type"] == "MVDirectorImageToSubjectEMD":
                 self.assertFalse(values[24])
                 self.assertFalse(named["mmproj_use_gpu"])
-                self.assertEqual(changed["inputs"][-1]["name"], "mmproj_use_gpu")
+                self.assertIn("mmproj_use_gpu", [p["name"] for p in changed["inputs"]])
         validate_workflow(variant)
 
-    def test_26b_variant_sync_does_not_rewrite_wf01(self) -> None:
-        source_name = FILES["context_loop"][0]
-        with tempfile.TemporaryDirectory() as temporary:
-            output_dir = Path(temporary)
-            original = (WORKFLOWS / source_name).read_bytes()
-            (output_dir / source_name).write_bytes(original)
-            write_workflows(
-                Path("unused-context-loop-root"), output_dir,
-                variant_26b_iq2_m_only=True,
-            )
-            first = (output_dir / PLAN_26B_IQ2_M_FILENAME).read_bytes()
-            self.assertEqual((output_dir / source_name).read_bytes(), original)
-            write_workflows(
-                Path("unused-context-loop-root"), output_dir,
-                variant_26b_iq2_m_only=True,
-            )
-            self.assertEqual((output_dir / PLAN_26B_IQ2_M_FILENAME).read_bytes(), first)
+    def test_retired_variant_sync_fails_without_writing(self) -> None:
+        for flag in ("variant_12b_only", "variant_26b_iq2_m_only",
+                     "variant_26b_iq2_m_29gpu_only", "variant_26b_iq2_m_30gpu_only"):
+            with self.subTest(flag=flag), tempfile.TemporaryDirectory() as directory:
+                target = Path(directory)
+                source = (WORKFLOWS / WORKFLOW_FILENAMES[0]).read_bytes()
+                (target / WORKFLOW_FILENAMES[0]).write_bytes(source)
+                with self.assertRaisesRegex(ValueError, "no longer distributed"):
+                    write_workflows(Path("unused"), target, **{flag: True})
+                self.assertEqual(list(p.name for p in target.iterdir()), [WORKFLOW_FILENAMES[0]])
+                self.assertEqual((target / WORKFLOW_FILENAMES[0]).read_bytes(), source)
 
     def test_26b_29gpu_variant_changes_only_planner_and_compiler_layers(self) -> None:
-        source = load(FILES["context_loop"][0])
+        source = build_legacy_plan_workflow("context_loop")
         baseline = build_26b_iq2_m_plan_variant(source)
         tuned = build_26b_iq2_m_plan_variant(
             source, planner_compiler_gpu_layers=PLAN_26B_IQ2_M_29GPU_LAYERS,
@@ -160,25 +163,8 @@ class DistributableWorkflowTests(unittest.TestCase):
                 self.assertEqual(changed, original)
         validate_workflow(tuned)
 
-    def test_26b_29gpu_sync_preserves_wf01_and_baseline(self) -> None:
-        source_name = FILES["context_loop"][0]
-        with tempfile.TemporaryDirectory() as temporary:
-            output_dir = Path(temporary)
-            source_bytes = (WORKFLOWS / source_name).read_bytes()
-            baseline_bytes = json.dumps(build_26b_iq2_m_plan_variant(load(source_name))).encode("utf-8")
-            (output_dir / source_name).write_bytes(source_bytes)
-            (output_dir / PLAN_26B_IQ2_M_FILENAME).write_bytes(baseline_bytes)
-            write_workflows(
-                Path("unused-context-loop-root"), output_dir,
-                variant_26b_iq2_m_29gpu_only=True,
-            )
-            self.assertEqual((output_dir / source_name).read_bytes(), source_bytes)
-            self.assertEqual(
-                (output_dir / PLAN_26B_IQ2_M_FILENAME).read_bytes(), baseline_bytes,
-            )
-
     def test_26b_30gpu_variant_changes_only_planner_and_compiler_layers(self) -> None:
-        source = load(FILES["context_loop"][0])
+        source = build_legacy_plan_workflow("context_loop")
         baseline = build_26b_iq2_m_plan_variant(source)
         tuned = build_26b_iq2_m_plan_variant(
             source, planner_compiler_gpu_layers=PLAN_26B_IQ2_M_30GPU_LAYERS,
@@ -197,7 +183,7 @@ class DistributableWorkflowTests(unittest.TestCase):
         validate_workflow(tuned)
 
     def test_12b_variant_preserves_wf01_layout_and_sets_every_inference_node(self) -> None:
-        source = load(FILES["context_loop"][0])
+        source = build_legacy_plan_workflow("context_loop")
         variant = build_12b_plan_variant(source)
         self.assertEqual(variant["links"], source["links"])
         self.assertEqual(variant["groups"], source["groups"])
@@ -223,26 +209,25 @@ class DistributableWorkflowTests(unittest.TestCase):
         validate_workflow(variant)
 
     def test_acceleration_sync_preserves_inputs_and_is_idempotent(self) -> None:
-        for _, video_name in FILES.values():
-            workflow = load(video_name)
-            before = copy.deepcopy(workflow)
-            sync_video_acceleration(workflow)
-            validate_workflow(workflow)
-            self.assertEqual(workflow, before)
-            for original in before["nodes"]:
-                current = next(n for n in workflow["nodes"] if n["id"] == original["id"])
-                self.assertEqual(current["pos"], original["pos"])
-                self.assertEqual(current["size"], original["size"])
-                if current["type"] not in {"MiniMaxH3ChainPlanModern", "BasicScheduler",
-                                          "LoraLoaderModelOnly", "ResolutionSelector",
-                                          "MiniMaxH3ChainLoopEnd", "ModelAttentionBackend",
-                                          "BlockSparseAttention", "SpectrumApplyMiniMaxH3",
-                                          "ModelPatchTorchSettings"}:
-                    self.assertEqual(current, original)
+        workflow = load(WORKFLOW_FILENAMES[1])
+        before = copy.deepcopy(workflow)
+        sync_video_acceleration(workflow)
+        validate_workflow(workflow)
+        self.assertEqual(only_type(workflow, "MVDirectorLoadTextFile"),
+                         only_type(before, "MVDirectorLoadTextFile"))
+        self.assertEqual(only_type(workflow, "MiniMaxH3ChainPlanStudio"),
+                         only_type(before, "MiniMaxH3ChainPlanStudio"))
+        for original in before["nodes"]:
+            current = next(n for n in workflow["nodes"] if n["id"] == original["id"])
+            self.assertEqual(current["pos"], original["pos"])
+            self.assertEqual(current["size"], original["size"])
+        snapshot = copy.deepcopy(workflow)
+        sync_video_acceleration(workflow)
+        self.assertEqual(workflow, snapshot)
 
     def test_acceleration_sync_migrates_old_chain_without_rebuilding(self) -> None:
         from tools.generate_workflows import _remove_nodes, _connect
-        workflow = load(FILES["lyrics"][1])
+        workflow = load(FILES["context_loop"][1])
         attention = only_type(workflow, "ModelAttentionBackend")
         sigma = only_type(workflow, "MiniMaxH3SigmaShift")
         retired = {node["id"] for node in workflow["nodes"] if node["type"] in {
@@ -321,7 +306,7 @@ class DistributableWorkflowTests(unittest.TestCase):
                     self.assertEqual(workflow, synced)
 
     def test_candidate_policy_migration_preserves_existing_settings(self) -> None:
-        workflow = load("01_plan_compiler_context_loop.json")
+        workflow = build_legacy_plan_workflow("context_loop")
         planner = only_type(workflow, "MVDirectorTimelinePlanner")
         planner["widgets_values"] = planner["widgets_values"][:20]
         before = copy.deepcopy(workflow)
@@ -338,7 +323,7 @@ class DistributableWorkflowTests(unittest.TestCase):
         self.assertEqual(planner["widgets_values"][20], "prefer_matched")
 
     def test_compiler_steps_migration_preserves_widgets_and_layout(self) -> None:
-        workflow = load("01_plan_compiler_context_loop.json")
+        workflow = load("01_plan_compiler.json")
         node = only_type(workflow, "MVDirectorEMDCompiler")
         expected = copy.deepcopy(workflow)
         node["widgets_values"].insert(3, 12)
@@ -348,7 +333,7 @@ class DistributableWorkflowTests(unittest.TestCase):
         self.assertEqual(workflow, expected)
 
     def test_compiler_steps_migration_rejects_linked_steps_before_mutation(self) -> None:
-        workflow = load("01_plan_compiler_context_loop.json")
+        workflow = load("01_plan_compiler.json")
         node = only_type(workflow, "MVDirectorEMDCompiler")
         node["widgets_values"].insert(3, 12)
         node["inputs"].append({"name": "steps", "link": 123})
@@ -358,7 +343,7 @@ class DistributableWorkflowTests(unittest.TestCase):
         self.assertEqual(workflow, before)
 
     def test_compiler_steps_migration_reindexes_later_input_links(self) -> None:
-        workflow = load("01_plan_compiler_context_loop.json")
+        workflow = load("01_plan_compiler.json")
         node = only_type(workflow, "MVDirectorEMDCompiler")
         expected = copy.deepcopy(workflow)
         only_type(expected, "MVDirectorEMDCompiler").pop("widgets_values_named", None)
@@ -374,7 +359,7 @@ class DistributableWorkflowTests(unittest.TestCase):
         validate_workflow(workflow)
 
     def test_step_ownership_removes_only_saved_step_overrides(self) -> None:
-        workflow = load("02_video_context_loop.json")
+        workflow = load("02_video_generator.json")
         node = only_type(workflow, "MiniMaxH3ChainPlanModern")
         node["widgets_values"][8] = 12
         original = json.loads(node["widgets_values"][0])
@@ -402,7 +387,7 @@ class DistributableWorkflowTests(unittest.TestCase):
         self.assertEqual(workflow, once)
 
     def test_planner_schema_migration_is_idempotent_and_preserves_user_graph(self) -> None:
-        workflow = load("01_plan_compiler_context_loop.json")
+        workflow = load("01_plan_compiler.json")
         planner = only_type(workflow, "MVDirectorTimelinePlanner")
         planner["widgets_values"].insert(18, 3)
         planner["widgets_values_named"] = {"scenes_per_batch": 3, "seed": 123}
@@ -421,20 +406,20 @@ class DistributableWorkflowTests(unittest.TestCase):
         self.assertEqual(workflow, once)
 
     def test_planner_schema_migration_rejects_linked_retired_widget(self) -> None:
-        workflow = load("01_plan_compiler_context_loop.json")
+        workflow = load("01_plan_compiler.json")
         planner = only_type(workflow, "MVDirectorTimelinePlanner")
         planner["inputs"].append({"name": "scenes_per_batch", "link": 123})
         before = copy.deepcopy(planner)
         with self.assertRaisesRegex(ValueError, "manual migration"):
             sync_planner_schema(workflow)
         self.assertEqual(planner, before)
-        video = load("02_video_context_loop.json")
+        video = load("02_video_generator.json")
         before_video = copy.deepcopy(video)
         sync_candidate_policy(video)
         self.assertEqual(video, before_video)
 
     def test_direction_sync_preserves_layout_and_video_plan(self) -> None:
-        workflow = load("01_plan_compiler_context_loop.json")
+        workflow = load("01_plan_compiler.json")
         enhancer = only_type(workflow, "MVDirectorDirectionEnhancer")
         enhancer["widgets_values"][3] = "anime_emotional_mv"
         enhancer["widgets_values_named"] = {"motion_profile": "anime_emotional_mv"}
@@ -455,13 +440,13 @@ class DistributableWorkflowTests(unittest.TestCase):
                 for key in set(actual) | set(original):
                     if key not in {"widgets_values", "widgets_values_named"}:
                         self.assertEqual(actual.get(key), original.get(key))
-        video = load("02_video_context_loop.json")
+        video = load("02_video_generator.json")
         original_video = copy.deepcopy(video)
         sync_direction_settings(video)
         self.assertEqual(video, original_video)
 
     def test_runtime_sync_preserves_layout_metadata_and_non_runtime_settings(self) -> None:
-        workflow = load("01_plan_compiler_context_loop.json")
+        workflow = load("01_plan_compiler.json")
         node = only_type(workflow, "MVDirectorEMDCompiler")
         node["widgets_values"][1] = "old-model.gguf"
         node["widgets_values_named"] = {"model_name": "old-model.gguf", "n_ctx": 8}
@@ -477,7 +462,7 @@ class DistributableWorkflowTests(unittest.TestCase):
                     self.assertEqual(actual.get(key), original.get(key), (actual["id"], key))
             if actual["type"] not in {"MVDirectorEMDCompiler", "MVDirectorTimelinePlanner", "MVDirectorDirectionEnhancer"}:
                 self.assertEqual(actual, original)
-        video = load("02_video_context_loop.json")
+        video = load("02_video_generator.json")
         original = copy.deepcopy(video)
         sync_model_runtime(video, "context_loop")
         self.assertEqual(video, original)
@@ -495,530 +480,141 @@ class DistributableWorkflowTests(unittest.TestCase):
                 self.assertEqual((output_dir / video_name).read_bytes(), original_video[video_name])
 
     def test_distributable_workflow_inventory(self) -> None:
-        actual = {
-            path.name
-            for path in WORKFLOWS.glob("*.json")
-        }
-        expected = {name for pair in FILES.values() for name in pair}
-        expected.update(WORKFLOW_FILENAMES)
-        self.assertEqual(actual, expected)
-        self.assertEqual(list((WORKFLOWS / "development").glob("*.json")), [])
+        self.assertEqual({p.name for p in WORKFLOWS.glob("*.json")}, set(WORKFLOW_FILENAMES))
+        self.assertEqual(set(WORKFLOW_FILENAMES), {"01_plan_compiler.json", "02_video_generator.json"})
+        self.assertFalse(list((WORKFLOWS / "obsolate").rglob("*.json")))
 
-    def test_all_workflows_share_the_documented_palette_and_guidance(self) -> None:
-        for mode, (plan_name, video_name) in FILES.items():
-            for name in (plan_name, video_name):
+    def test_default_generator_preserves_saved_pair_without_external_checkout(self) -> None:
+        before = {name: (WORKFLOWS / name).read_bytes() for name in WORKFLOW_FILENAMES}
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            paths = write_workflows(Path("missing-context-loop-checkout"), output)
+            self.assertEqual({p.name for p in paths}, set(WORKFLOW_FILENAMES))
+            self.assertEqual({p.name for p in output.iterdir()}, set(WORKFLOW_FILENAMES))
+            self.assertEqual({p.name: p.read_bytes() for p in paths}, before)
+            write_workflows(Path("unused"), output)
+            self.assertEqual({p.name: p.read_bytes() for p in paths}, before)
+        self.assertEqual(before, {name: (WORKFLOWS / name).read_bytes() for name in before})
+
+    def test_default_generator_rejects_missing_source_pair_before_writes(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "source"
+            source.mkdir()
+            (source / WORKFLOW_FILENAMES[0]).write_bytes((WORKFLOWS / WORKFLOW_FILENAMES[0]).read_bytes())
+            with self.assertRaises(FileNotFoundError):
+                write_workflows(Path("unused"), root / "output", source_dir=source)
+            self.assertFalse((root / "output").exists())
+
+    def test_sync_flags_ignore_retired_and_unrelated_files(self) -> None:
+        flags = ("runtime_only", "direction_only", "candidate_only", "timing_only",
+                 "video_runtime_only", "planner_schema_only", "step_ownership_only",
+                 "acceleration_only", "subject_inputs_only", "lyric_outputs_only")
+        for flag in flags:
+            with self.subTest(flag=flag), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                for name in WORKFLOW_FILENAMES:
+                    (root / name).write_bytes((WORKFLOWS / name).read_bytes())
+                unrelated = root / "03_plan_compiler_audio_reference.json"
+                unrelated.write_text("not a workflow", encoding="utf-8")
+                retired = root / "obsolate"
+                retired.mkdir()
+                (retired / "old.json").write_text("do not touch", encoding="utf-8")
+                write_workflows(Path("unused"), root, **{flag: True})
+                self.assertEqual({p.name for p in root.glob("*.json")},
+                                 {*WORKFLOW_FILENAMES, unrelated.name})
+                self.assertEqual(unrelated.read_text(encoding="utf-8"), "not a workflow")
+                self.assertEqual((retired / "old.json").read_text(encoding="utf-8"), "do not touch")
+
+    def test_link_metadata_is_bidirectionally_consistent(self) -> None:
+        for name in WORKFLOW_FILENAMES:
+            with self.subTest(name=name):
                 workflow = load(name)
-                labels = [
-                    node
-                    for node in workflow["nodes"]
-                    if node["type"] == "Label (rgthree)"
-                ]
-                self.assertEqual(len(labels), 1, name)
-                self.assertEqual(labels[0]["color"], "#fff0", name)
-                self.assertEqual(
-                    labels[0]["properties"]["fontColor"], "#00ffff", name
-                )
-                notes = [
-                    node
-                    for node in workflow["nodes"]
-                    if node["type"] == "MarkdownNote"
-                ]
-                self.assertTrue(any(node["title"] == "README" for node in notes), name)
-                self.assertGreaterEqual(len(notes), 7, name)
-                for node in workflow["nodes"]:
-                    if node["type"] in {"MarkdownNote", "Label (rgthree)"}:
-                        continue
-                    palette = (node["color"], node["bgcolor"])
-                    self.assertIn(
-                        palette,
-                        {
-                            ("#232", "#353"),  # user-facing source/input
-                            ("#233", "#355"),  # timing/alignment helper
-                            ("#223", "#335"),  # processing
-                            ("#323", "#535"),  # sampling emphasis
-                        },
-                        name,
-                    )
-
-            plan_workflow = load(plan_name)
-            seed = only_type(plan_workflow, "MVDirectorSeed32")
-            self.assertEqual(seed["widgets_values"][:2], ["fixed", 42], mode)
-            self.assertTrue(
-                all(value is None for value in seed["widgets_values"][2:]),
-                mode,
-            )
-            self.assertEqual(len(seed["outputs"][0]["links"]), 5, mode)
-            for target_type in (
-                "MVDirectorDirectionEnhancer",
-                "MVDirectorTimelinePlanner",
-                "MVDirectorEMDCompiler",
-            ):
-                target = only_type(plan_workflow, target_type)
-                self.assertEqual(
-                    input_link(plan_workflow, target, "seed")[1:3],
-                    [seed["id"], 0],
-                    mode,
-                )
-            for target in [
-                node
-                for node in plan_workflow["nodes"]
-                if node["type"] == "MVDirectorImageToSubjectEMD"
-            ]:
-                self.assertEqual(
-                    input_link(plan_workflow, target, "seed")[1:3],
-                    [seed["id"], 0],
-                    mode,
-                )
-
-    def test_every_link_has_consistent_node_metadata(self) -> None:
-        for pair in FILES.values():
-            for name in pair:
-                workflow = load(name)
+                validate_workflow(workflow)
                 nodes = nodes_by_id(workflow)
-                links = {int(link[0]): link for link in workflow["links"]}
-                self.assertEqual(len(nodes), len(workflow["nodes"]), name)
-                self.assertEqual(len(links), len(workflow["links"]), name)
-                for link_id, link in links.items():
-                    origin = nodes[int(link[1])]
-                    target = nodes[int(link[3])]
-                    output = origin["outputs"][int(link[2])]
-                    target_input = target["inputs"][int(link[4])]
-                    self.assertEqual(output["type"], link[5], (name, link_id))
-                    self.assertIn(link_id, output["links"], (name, link_id))
-                    self.assertEqual(target_input["link"], link_id, (name, link_id))
+                links = {r[0]: r for r in workflow["links"]}
+                for node in workflow["nodes"]:
+                    for slot, port in enumerate(node.get("inputs", [])):
+                        if port.get("link") is not None:
+                            self.assertEqual(links[port["link"]][3:5], [node["id"], slot])
+                    for slot, port in enumerate(node.get("outputs", [])):
+                        for link in port.get("links") or []:
+                            self.assertEqual(links[link][1:3], [node["id"], slot])
+                for link in links.values():
+                    self.assertIn(link[0], nodes[link[1]]["outputs"][link[2]]["links"])
 
-    def test_plan_compiler_workflows_fix_only_the_selected_mode(self) -> None:
-        for mode, (name, _video) in FILES.items():
-            workflow = load(name)
-            self.assertEqual(
-                workflow["extra"]["mv_director"],
-                {
-                    "kind": "plan_compiler",
-                    "lip_sync_mode": mode,
-                    "contract": CONTRACT_ID,
-                },
-            )
-            planner = only_type(workflow, "MVDirectorTimelinePlanner")
-            self.assertEqual(planner["widgets_values"][0], mode)
-            character_vision = titled_node(
-                workflow, "Character Vision / Subject EMD"
-            )
-            character_image = titled_node(workflow, "Character Reference Image")
-            self.assertEqual(
-                character_image["widgets_values"][0],
-                "image001_mikofox_ref.jpg",
-            )
-            background_vision = titled_node(
-                workflow, "Background Vision (Scene Only)"
-            )
-            self.assertEqual(character_vision["widgets_values"][1], "subject_only")
-            self.assertEqual(character_vision["widgets_values"][6], "manual")
-            self.assertEqual(background_vision["widgets_values"][1], "scene_only")
-            self.assertEqual(background_vision["widgets_values"][4], "lock_identity")
-            self.assertEqual(background_vision["widgets_values"][6], "manual")
-            self.assertEqual(background_vision["widgets_values"][7], "location")
-            self.assertEqual(background_vision["widgets_values"][8], 2)
-            direction = only_type(workflow, "MVDirectorDirectionEnhancer")
-            self.assertEqual(
-                input_link(workflow, direction, "concept_emd")[1:3],
-                [character_vision["id"], 0],
-            )
-            self.assertEqual(
-                input_link(workflow, direction, "scene_emd")[1:3],
-                [background_vision["id"], 0],
-            )
-            user_prompt = titled_node(workflow, "ユーザープロンプト")
-            self.assertEqual(user_prompt["type"], "PrimitiveStringMultiline")
-            self.assertEqual(user_prompt["widgets_values"], [DEFAULT_USER_PROMPT])
-            self.assertEqual(
-                input_link(workflow, direction, "user_request")[1:3],
-                [user_prompt["id"], 0],
-            )
-            self.assertEqual(
-                input_link(workflow, planner, "scene_emd")[1:3],
-                [background_vision["id"], 0],
-            )
-            compiler = only_type(workflow, "MVDirectorEMDCompiler")
-            self.assertEqual(
-                compiler["widgets_values"],
-                [
-                    "ja_to_en",
-                    "gemma-4-31b-it-heretic-ara-GGUF/gemma-4-31b-it-heretic-ara.Q4_K_S.gguf",
-                    "auto",
-                    4096,
-                    0.0,
-                    0.9,
-                    1.05,
-                    -1,
-                    256,
-                    16384,
-                    True,
-                    "q8_0",
-                    True,
-                    False,
-                    1,
-                    "fixed",
-                    "reuse",
-                ],
-            )
-            seed_controls = {
-                "MVDirectorDirectionEnhancer": (18, 19),
-                "MVDirectorTimelinePlanner": (16, 17),
-            }
-            for node_type, (seed_index, control_index) in seed_controls.items():
-                values = only_type(workflow, node_type)["widgets_values"]
-                self.assertEqual(values[seed_index], 1)
-                self.assertEqual(values[control_index], "fixed")
-            for vision in (character_vision, background_vision):
-                self.assertEqual(vision["widgets_values"][0], compiler["widgets_values"][1])
-                self.assertEqual(vision["widgets_values"][21], 1)
-                self.assertEqual(vision["widgets_values"][22], "fixed")
-                self.assertEqual(vision["widgets_values"][16], 16384)
-            self.assertEqual(planner["widgets_values"][1], "サブジェクト1")
-            self.assertEqual(planner["widgets_values"][5], 4096)
-            self.assertEqual(planner["widgets_values"][3], compiler["widgets_values"][1])
-            self.assertEqual(planner["widgets_values"][4], "auto")
-            self.assertEqual(planner["widgets_values"][6], 0.2)
-            self.assertEqual(planner["widgets_values"][11], 24576)
-            self.assertEqual(
-                direction["widgets_values"][2:5],
-                ["anime_emotional_mv", "anime_scene_composed_mv", "anime_emotional_mv"],
-            )
-            self.assertEqual(direction["widgets_values"][5], compiler["widgets_values"][1])
-            self.assertEqual(direction["widgets_values"][6], "")
-            self.assertEqual(direction["widgets_values"][7], 4096)
-            self.assertEqual(direction["widgets_values"][8], 0.2)
-            self.assertEqual(direction["widgets_values"][12], 256)
-            self.assertEqual(direction["widgets_values"][13], 24576)
-            self.assertEqual(character_vision["widgets_values"][2], CHARACTER_HINT)
-            if "widgets_values_named" in character_vision:
-                self.assertEqual(
-                    character_vision["widgets_values_named"]["subject_hint"],
-                    CHARACTER_HINT,
-                )
-            self.assertIn("小さく塗りつぶされた楕円の点", character_vision["widgets_values"][2])
-            self.assertIn("左右それぞれ一つずつ", character_vision["widgets_values"][2])
-            self.assertIn("各目の少し上", character_vision["widgets_values"][2])
-            self.assertIn("木製台全体は黒色", character_vision["widgets_values"][2])
-            self.assertEqual(planner["widgets_values"][18], "reuse")
-            lyrics = next(
-                node
-                for node in workflow["nodes"]
-                if node["type"] == "MVDirectorLoadTextFile"
-                and node.get("title") == "Plain Lyrics"
-            )
-            self.assertEqual(lyrics["size"], [330, 180])
-            embedded_lyrics = decode_embedded_text(*lyrics["widgets_values"][:3])
-            lyric_segments = parse_plain_lyrics(embedded_lyrics)
-            self.assertTrue(lyric_segments)
-            self.assertEqual(lyric_segments[0].section, "INTRO")
-            self.assertEqual(
-                len([n for n in workflow["nodes"] if n["type"] == "SaveText"]),
-                3,
-            )
-            plan_save = next(
-                node
-                for node in workflow["nodes"]
-                if node["type"] == "SaveText"
-                and node["widgets_values"][0].endswith("_plan")
-            )
-            link = input_link(workflow, plan_save, "text")
-            self.assertEqual(link[1:3], [compiler["id"], 0])
+    def test_current_pair_has_context_loop_and_four_subject_slots(self) -> None:
+        plan = load(WORKFLOW_FILENAMES[0])
+        video = load(WORKFLOW_FILENAMES[1])
+        for workflow in (plan, video):
+            self.assertEqual(workflow["extra"]["mv_director"]["lip_sync_mode"], "context_loop")
+        enhancer = only_type(plan, "MVDirectorDirectionEnhancer")
+        planner = only_type(plan, "MVDirectorTimelinePlanner")
+        self.assertEqual(planner["widgets_values_named"]["lip_sync_mode"], "context_loop")
+        self.assertEqual(input_link(plan, planner, "concept_emd")[1:3], [enhancer["id"], 3])
+        for number, picture in enumerate((1, 3, 4, 5), 1):
+            port = "concept_emd" if number == 1 else f"concept_emd_{number}"
+            vision = nodes_by_id(plan)[input_link(plan, enhancer, port)[1]]
+            self.assertEqual(vision["type"], "MVDirectorImageToSubjectEMD")
+            self.assertEqual(vision["widgets_values_named"]["picture_index"], picture)
+            conditioning = only_type(video, "MiniMaxH3ReferenceToVideo")
+            image = nodes_by_id(video)[input_link(video, conditioning, f"ref_images.ref_image_{picture - 1}")[1]]
+            self.assertEqual(image["type"], "LoadImage")
+            if number > 1:
+                self.assertIsNone(next(p for p in planner["inputs"] if p["name"] == port)["link"])
 
-    def test_installation_documents_context_loop_plan_models(self) -> None:
-        workflow = load(FILES["context_loop"][0])
-        documented = (ROOT / "docs" / "installation.md").read_text(
-            encoding="utf-8"
-        )
-        character_vision = titled_node(
-            workflow, "Character Vision / Subject EMD"
-        )
-        lyrics = only_type(workflow, "MVDirectorLyricSegmentation")
-        direction = only_type(workflow, "MVDirectorDirectionEnhancer")
-        selected_models = {
-            character_vision["widgets_values"][0],
-            lyrics["widgets_values"][0],
-            direction["widgets_values"][5],
-        }
-        for selected_model in selected_models:
-            self.assertIn(selected_model, documented)
-        self.assertIn("gemma-4-31b-it-heretic-ara.mmproj-f16.gguf", documented)
-        self.assertNotIn("Qwen3-VL-4B-Instruct-GGUF", documented)
-        self.assertNotIn("Qwen3-8B", documented)
-        self.assertIn("d80304f05ecc2f504e64cbfb636e2a21d4409909", documented)
-        self.assertIn(
-            "git clone https://github.com/ethanfel/ComfyUI-MiniMaxH3-Contex-Loop.git",
-            documented,
-        )
-        self.assertIn(
-            "https://huggingface.co/mradermacher/gemma-4-31b-it-heretic-ara-GGUF",
-            documented,
-        )
-        self.assertIn(
-            "https://github.com/openai/whisper",
-            documented,
-        )
-        self.assertIn(
-            "git clone https://github.com/scottmudge/ComfyUI_MinimaxH3HybridLoader.git",
-            documented,
-        )
-        self.assertIn("minimax_h3_ref2va_pruned_int8_convrot.safetensors", documented)
-        self.assertIn(
-            "9255f52b6677845ad238f20dfaafa94727053694127ab7f255c048f0f9365779",
-            documented,
-        )
+    def test_plan_outputs_include_plan_emd_srt_and_lrc(self) -> None:
+        plan = load(WORKFLOW_FILENAMES[0])
+        saves = [n for n in plan["nodes"] if n["type"] == "SaveText"]
+        self.assertEqual(len(saves), 4)
+        prefixes = [n["widgets_values"][0] for n in saves]
+        for suffix in ("plan", "emd", "lyrics_srt", "lyrics_lrc"):
+            self.assertTrue(any(p.endswith("context_loop_" + suffix) for p in prefixes), prefixes)
+        segmentation = only_type(plan, "MVDirectorLyricSegmentation")
+        self.assertEqual(segmentation["outputs"][-1]["name"], "lrc_text")
+        compiler = only_type(plan, "MVDirectorEMDCompiler")
+        self.assertNotIn("steps", [p["name"] for p in compiler["inputs"]])
 
-    def test_development_workflows_are_not_distributed(self) -> None:
-        development = WORKFLOWS / "development"
-        self.assertEqual(list(development.glob("*.json")), [])
+    def test_video_preserves_json_handoff_studio_and_source_audio(self) -> None:
+        video = load(WORKFLOW_FILENAMES[1])
+        splitter = only_type(video, "MVDirectorSceneDebugSplitter")
+        loader = nodes_by_id(video)[input_link(video, splitter, "plan_json")[1]]
+        self.assertEqual(loader["type"], "MVDirectorLoadTextFile")
+        production = only_type(video, "MiniMaxH3ChainPlanModern")
+        studio = only_type(video, "MiniMaxH3ChainPlanStudio")
+        start = only_type(video, "MiniMaxH3ChainLoopStart")
+        self.assertEqual(input_link(video, production, "plan_json_input")[1:3], [splitter["id"], 0])
+        self.assertEqual(input_link(video, studio, "plan")[1:3], [production["id"], 0])
+        self.assertEqual(input_link(video, start, "plan")[1:3], [studio["id"], 0])
+        tracks = only_type(video, "MiniMaxH3AudioTracks")
+        self.assertEqual(input_link(video, studio, "source_timeline")[1:3], [tracks["id"], 0])
+        self.assertEqual(input_link(video, start, "source_timeline")[1:3], [tracks["id"], 0])
+        self.assertFalse(splitter["widgets_values_named"]["enable"])
 
-    def test_video_workflows_share_plan_handoff_and_full_mix_timeline(self) -> None:
-        profiles = {
-            "context_loop": "Lip-sync to source audio",
-            "audio_reference": "Use source soundtrack only",
-            "lyrics": "Use source soundtrack only",
-        }
-        alignments = {
-            "context_loop": "off",
-            "audio_reference": "source_scenes_to_plan",
-            "lyrics": "off",
-        }
-        for mode, (_plan, name) in FILES.items():
-            workflow = load(name)
-            metadata = workflow["extra"]["mv_director"]
-            self.assertEqual(metadata["kind"], "video_generation")
-            self.assertEqual(metadata["lip_sync_mode"], mode)
-            self.assertEqual(metadata["contract"], CONTRACT_ID)
+    def test_lipsync_audio_and_global_steps_are_wired(self) -> None:
+        video = load(WORKFLOW_FILENAMES[1])
+        splitter = only_type(video, "MVDirectorSceneDebugSplitter")
+        lip = only_type(video, "MiniMaxH3LipSyncOptions")
+        profile = only_type(video, "MiniMaxH3GenerationProfile")
+        context = only_type(video, "MiniMaxH3ChainContext")
+        self.assertEqual(input_link(video, lip, "voice")[1:3], [splitter["id"], 1])
+        self.assertEqual(input_link(video, profile, "lip_sync_options")[1:3], [lip["id"], 0])
+        self.assertEqual(input_link(video, context, "lip_sync_voice")[1:3], [lip["id"], 1])
+        audio_vae = nodes_by_id(video)[input_link(video, context, "audio_vae")[1]]
+        self.assertEqual(audio_vae["type"], "VAELoader")
+        self.assertEqual(only_type(video, "MiniMaxH3ChainPlanModern")["widgets_values_named"]["default_steps"], 20)
+        self.assertEqual(only_type(video, "ResolutionSelector")["widgets_values_named"]["megapixels"], 0.9)
+        self.assertEqual(only_type(video, "LoraLoaderModelOnly")["mode"], 4)
 
-            plan_loader = next(
-                node
-                for node in workflow["nodes"]
-                if node["type"] == "MVDirectorLoadTextFile"
-                and "Compiled Plan" in node.get("title", "")
-            )
-            plan = only_type(workflow, "MiniMaxH3ChainPlanModern")
-            splitter = only_type(workflow, "MVDirectorSceneDebugSplitter")
-            background_image = titled_node(
-                workflow, "Background Reference • <Picture 2>"
-            )
-            ref2va = only_type(workflow, "MiniMaxH3ReferenceToVideo")
-            character_image = titled_node(
-                workflow, "Reference Image • <Picture 1>"
-            )
-            full_mix = titled_node(workflow, "Full Mix")
-            vocal = titled_node(workflow, "Vocal Stem")
-            fallback_plan = json.loads(plan["widgets_values"][0])
-            self.assertNotIn("steps", fallback_plan.get("defaults", {}))
-            self.assertNotIn("steps", fallback_plan)
-            self.assertTrue(all("steps" not in shot for shot in fallback_plan["shots"]))
-            self.assertEqual(plan["widgets_values"][8], 20)
-            self.assertEqual(
-                input_link(workflow, plan, "plan_json_input")[1:3],
-                [splitter["id"], 0],
-            )
-            self.assertEqual(splitter["widgets_values"], [False, 1, 1])
-            self.assertEqual(
-                input_link(workflow, splitter, "plan_json")[1:3],
-                [plan_loader["id"], 0],
-            )
-            self.assertEqual(
-                character_image["widgets_values"][0],
-                "image001_mikofox_ref.jpg",
-            )
-            self.assertEqual(background_image["widgets_values"][0], "image002_keinai.jpg")
-            self.assertEqual(full_mix["widgets_values"][0], "bgm_millennium_torii.mp3")
-            self.assertEqual(vocal["widgets_values"][0], "bgm_millennium_torii_vocal.mp3")
-            self.assertEqual(
-                input_link(
-                    workflow, ref2va, "ref_images.ref_image_1"
-                )[1:3],
-                [background_image["id"], 0],
-            )
-            self.assertTrue(
-                any("<Picture 2> is the environment reference:" in line
-                    for line in fallback_plan["shots"][0]["prompt"])
-            )
-
-            profile = only_type(workflow, "MiniMaxH3GenerationProfile")
-            self.assertEqual(profile["widgets_values"][1], profiles[mode])
-            pad = only_type(workflow, "MVDirectorAudioPadPair")
-            self.assertEqual(pad["widgets_values"][3], alignments[mode])
-            self.assertEqual(
-                input_link(workflow, pad, "plan_json")[1:3],
-                [plan_loader["id"], 0],
-            )
-            lyric_nodes = [
-                node
-                for node in workflow["nodes"]
-                if node["type"] == "MVDirectorLyricSegmentation"
-            ]
-            plain_lyrics = [
-                node
-                for node in workflow["nodes"]
-                if node.get("title") == "Plain Lyrics"
-            ]
-            expected_count = 1 if mode == "audio_reference" else 0
-            self.assertEqual(len(lyric_nodes), expected_count)
-            self.assertEqual(len(plain_lyrics), expected_count)
-            tracks = only_type(workflow, "MiniMaxH3AudioTracks")
-            loop = only_type(workflow, "MiniMaxH3ChainLoopStart")
-            expected_vocal_slot = 3 if mode == "audio_reference" else 1
-            self.assertEqual(
-                input_link(workflow, splitter, "vocal_audio")[1:3],
-                [pad["id"], expected_vocal_slot],
-            )
-            self.assertEqual(
-                input_link(workflow, splitter, "full_mix_audio")[1:3],
-                [pad["id"], 0],
-            )
-            self.assertEqual(
-                input_link(workflow, tracks, "vocals")[1:3],
-                [splitter["id"], 1],
-            )
-            self.assertEqual(
-                input_link(workflow, tracks, "full_mix")[1:3],
-                [splitter["id"], 2],
-            )
-            self.assertEqual(
-                input_link(workflow, loop, "source_timeline")[1:3],
-                [tracks["id"], 0],
-            )
-
-            lora = only_type(workflow, "LoraLoaderModelOnly")
-            shifts = [
-                node
-                for node in workflow["nodes"]
-                if node["type"] == "MiniMaxH3SigmaShift"
-            ]
-            self.assertEqual(len(shifts), 1)
-            sigma_shift = shifts[0]
-            attention = only_type(workflow, "ModelAttentionBackend")
-            hybrid = only_type(workflow, "MiniMaxH3HybridLoader")
-            self.assertFalse(any(node["type"] == "UNETLoader" for node in workflow["nodes"]))
-            text_encoder = only_type(workflow, "CLIPLoader")
-            video_vae = titled_node(workflow, "Video VAE")
-            audio_vae = titled_node(workflow, "Audio VAE")
-            review = only_type(workflow, "MiniMaxH3ChainReview")
-            resolution = only_type(workflow, "ResolutionSelector")
-            self.assertEqual(
-                input_link(workflow, lora, "model")[1:3], [hybrid["id"], 0]
-            )
-            self.assertEqual(hybrid["widgets_values"], [
-                H3_BASE_MODEL, H3_OVERLAY_MODEL, "block_range_adaln",
-                25, 49, False, "", "", "default",
-            ])
-            self.assertEqual(hybrid["pos"], [1920, 170])
-            self.assertEqual(text_encoder["widgets_values"][0], H3_TEXT_ENCODER)
-            self.assertEqual(
-                video_vae["widgets_values"][0],
-                "MiniMaxH3\\minimax_h3_video_vae_fp16.safetensors",
-            )
-            self.assertEqual(
-                audio_vae["widgets_values"][0],
-                "MiniMaxH3\\minimax_h3_audio_vae_fp32.safetensors",
-            )
-            self.assertEqual(
-                lora["widgets_values"][0],
-                "MiniMaxH3\\minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors",
-            )
-            self.assertEqual(attention["widgets_values"], ["comfy kitchen attention"])
-            self.assertEqual(lora["mode"], 4)
-            sparse = only_type(workflow, "BlockSparseAttention")
-            spectrum = only_type(workflow, "SpectrumApplyMiniMaxH3")
-            torch_settings = only_type(workflow, "ModelPatchTorchSettings")
-            self.assertEqual(sparse["widgets_values"],
-                             ["sla", 10, 0.2, 1, "", 12288, 256, "exact_kv_and_rows", False])
-            self.assertEqual(spectrum["widgets_values"][:9], [True, 0.5, 1, 0.1, 2, 0.75, 1, 1, 8])
-            self.assertEqual(torch_settings["widgets_values"], [True])
-            for source, target in ((attention, sparse), (sparse, spectrum), (spectrum, torch_settings)):
-                self.assertEqual(input_link(workflow, target, "model")[1:3], [source["id"], 0])
-            self.assertFalse(review["widgets_values"][0])
-            self.assertEqual(ref2va["widgets_values"][4], "max")
-            self.assertEqual(
-                resolution["widgets_values"],
-                ["16:9 (Widescreen)", 0.4, 32],
-            )
-            self.assertEqual(
-                input_link(workflow, plan, "width")[1:3],
-                [resolution["id"], 0],
-            )
-            self.assertEqual(
-                input_link(workflow, plan, "height")[1:3],
-                [resolution["id"], 1],
-            )
-            self.assertEqual(
-                input_link(workflow, attention, "model")[1:3],
-                [lora["id"], 0],
-            )
-            self.assertEqual(
-                input_link(workflow, sigma_shift, "model")[1:3],
-                [torch_settings["id"], 0],
-            )
-            self.assertEqual(sigma_shift["widgets_values"], [12, 3])
-            scheduler = only_type(workflow, "BasicScheduler")
-            self.assertEqual(scheduler["widgets_values"][1], 20)
-
-    def test_context_loop_video_wires_options_voice_and_audio_vae(self) -> None:
-        workflow = load(FILES["context_loop"][1])
-        lip = only_type(workflow, "MiniMaxH3LipSyncOptions")
-        splitter = only_type(workflow, "MVDirectorSceneDebugSplitter")
-        profile = only_type(workflow, "MiniMaxH3GenerationProfile")
-        context = only_type(workflow, "MiniMaxH3ChainContext")
-        audio_vae = next(
-            node
-            for node in workflow["nodes"]
-            if node["type"] == "VAELoader" and node.get("title") == "Audio VAE"
-        )
-        self.assertEqual(
-            input_link(workflow, lip, "voice")[1:3], [splitter["id"], 1]
-        )
-        self.assertEqual(
-            input_link(workflow, profile, "lip_sync_options")[1:3],
-            [lip["id"], 0],
-        )
-        self.assertEqual(
-            input_link(workflow, context, "lip_sync_voice")[1:3],
-            [lip["id"], 1],
-        )
-        self.assertEqual(
-            input_link(workflow, context, "audio_vae")[1:3],
-            [audio_vae["id"], 0],
-        )
-
-    def test_audio_reference_video_slices_aligned_vocal_into_audio_one(self) -> None:
-        workflow = load(FILES["audio_reference"][1])
-        splitter = only_type(workflow, "MVDirectorSceneDebugSplitter")
-        current = only_type(workflow, "MiniMaxH3ChainCurrent")
-        trim = only_type(workflow, "TrimAudioDuration")
-        ref2va = only_type(workflow, "MiniMaxH3ReferenceToVideo")
-        self.assertEqual(
-            input_link(workflow, trim, "audio")[1:3], [splitter["id"], 1]
-        )
-        self.assertEqual(
-            input_link(workflow, trim, "start_index")[1:3],
-            [current["id"], 10],
-        )
-        self.assertEqual(
-            input_link(workflow, trim, "duration")[1:3],
-            [current["id"], 11],
-        )
-        self.assertEqual(
-            input_link(workflow, ref2va, "ref_audios.ref_audio_0")[1:3],
-            [trim["id"], 0],
-        )
-
-    def test_lyrics_video_has_no_extra_lip_sync_or_audio_reference_path(self) -> None:
-        workflow = load(FILES["lyrics"][1])
-        types = {node["type"] for node in workflow["nodes"]}
-        self.assertNotIn("MiniMaxH3LipSyncOptions", types)
-        self.assertNotIn("TrimAudioDuration", types)
-        ref2va = only_type(workflow, "MiniMaxH3ReferenceToVideo")
-        audio_input = next(
-            value
-            for value in ref2va["inputs"]
-            if value["name"] == "ref_audios.ref_audio_0"
-        )
-        self.assertIsNone(audio_input["link"])
+    def test_workflow_documentation_lists_only_supported_pair(self) -> None:
+        documented = (WORKFLOWS / "README.md").read_text(encoding="utf-8")
+        for name in WORKFLOW_FILENAMES:
+            self.assertIn(name, documented)
+        self.assertIn("保留中", documented)
+        self.assertIn("Audio参照", documented)
+        self.assertIn("歌詞方式", documented)
+        self.assertIn("Plan Studio", documented)
+        self.assertNotIn("基本6", documented)
 
 
 if __name__ == "__main__":

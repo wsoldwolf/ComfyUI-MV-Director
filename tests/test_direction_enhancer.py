@@ -340,20 +340,20 @@ class DirectionEnhancerTests(unittest.TestCase):
         result = enhance_direction(
             backend,
             value=DirectionEnhancerInput(
-                style_profile="anime_story_mv",
-                motion_profile="anime_story_mv",
-                camera_profile="anime_story_mv",
+                style_profile="anime_emotional_mv",
+                motion_profile="anime_emotional_mv",
+                camera_profile="anime_emotional_mv",
             ),
             system_prompt="fixed",
             runtime_config=LlamaRuntimeConfig(),
         )
         self.assertEqual(
             result.direction.motion_direction,
-            (MOTION_PROFILES["anime_story_mv"],),
+            (MOTION_PROFILES["anime_emotional_mv"],),
         )
         self.assertEqual(
             result.direction.camera_direction,
-            (CAMERA_PROFILES["anime_story_mv"],),
+            (CAMERA_PROFILES["anime_emotional_mv"],),
         )
         enforced = {
             item.source_ref
@@ -361,7 +361,7 @@ class DirectionEnhancerTests(unittest.TestCase):
             if item.record_kind == "output"
             and item.reason == "profile_enforced"
         }
-        self.assertEqual(enforced, {"anime_story_mv"})
+        self.assertEqual(enforced, {"anime_emotional_mv"})
         self.assertEqual(
             json.loads(backend.calls[0]["payload"])["requested_records"],
             [],
@@ -405,18 +405,16 @@ class DirectionEnhancerTests(unittest.TestCase):
         self.assertIn("never move one onto a route's centerline", system_prompt)
         self.assertIn("explicitly selects that exact object", system_prompt)
 
-    def test_anime_story_mv_is_an_emotional_baseline_copy(self) -> None:
-        from core.direction.profiles import (
-            RENDER_PROMPTS,
-        )
+    def test_anime_emotional_motion_matches_retained_composed_profile(self) -> None:
+        from core.direction.profiles import planner_profile_metadata
 
-        for profiles in (STYLE_PROFILES, MOTION_PROFILES, CAMERA_PROFILES):
-            self.assertEqual(profiles["anime_story_mv"], profiles["anime_emotional_mv"])
-        for kind in ("motion", "camera"):
-            self.assertEqual(
-                RENDER_PROMPTS[kind]["anime_story_mv"],
-                RENDER_PROMPTS[kind]["anime_emotional_mv"],
-            )
+        self.assertEqual(MOTION_PROFILES["anime_emotional_mv"],
+                         MOTION_PROFILES["anime_scene_composed_mv"])
+        self.assertEqual(planner_profile_metadata("", "anime_emotional_mv"),
+                         planner_profile_metadata("", "anime_scene_composed_mv"))
+        for preset in DIRECTION_PRESETS.values():
+            for selected, profiles in zip(preset, (STYLE_PROFILES, MOTION_PROFILES, CAMERA_PROFILES)):
+                self.assertIn(selected, profiles)
 
     def test_all_passthrough_skips_inference_and_keeps_exact_text(self) -> None:
         backend = FakeDirectionBackend()
@@ -691,7 +689,6 @@ class DirectionEnhancerTests(unittest.TestCase):
             set(STYLE_PROFILES),
             {
                 "reference_anime",
-                "anime_story_mv",
                 "anime_emotional_mv",
                 "reference_cinematic",
                 "illust_to_photoreal",
@@ -701,9 +698,8 @@ class DirectionEnhancerTests(unittest.TestCase):
         self.assertEqual(
             set(MOTION_PROFILES),
             {
-                "natural_performance", "expressive_mv", "limited_animation",
-                "cinema_mv", "anime_story_mv",
-                "anime_emotional_mv", "anime_scene_author_mv",
+                "natural_performance", "expressive_mv",
+                "cinema_mv", "anime_emotional_mv",
                 "anime_scene_composed_mv",
             },
         )
@@ -711,22 +707,20 @@ class DirectionEnhancerTests(unittest.TestCase):
             set(CAMERA_PROFILES),
             {
                 "readable_depth", "cinematic_depth", "rhythmic_mv",
-                "cinema_mv", "anime_story_mv",
-                "anime_emotional_mv",
+                "cinema_mv", "anime_emotional_mv",
             },
         )
-        camera = CAMERA_PROFILES["anime_story_mv"]
+        camera = CAMERA_PROFILES["anime_emotional_mv"]
         self.assertIn("同じ軌道の反復にせず", camera)
         self.assertIn("60度から120度の経路", camera)
         self.assertIn("顔へのZoom In", camera)
         self.assertIn("Tracking Shot", camera)
         self.assertIn("Pedestal Up", camera)
         self.assertIn("両目、両眉、鼻、口全体", camera)
-        self.assertIn("二コマ打ち又は三コマ打ち", MOTION_PROFILES["anime_story_mv"])
-        self.assertIn("短いアクセント", MOTION_PROFILES["anime_story_mv"])
-        self.assertIn("横への踏み替え", MOTION_PROFILES["anime_story_mv"])
-        self.assertIn("時間方向に連続", MOTION_PROFILES["anime_story_mv"])
-        self.assertIn("痙攣状motion", MOTION_PROFILES["anime_story_mv"])
+        self.assertIn("二コマ打ち又は三コマ打ち", MOTION_PROFILES["anime_emotional_mv"])
+        self.assertIn("明瞭なキーポーズ", MOTION_PROFILES["anime_emotional_mv"])
+        self.assertIn("Shot間で連続", MOTION_PROFILES["anime_emotional_mv"])
+        self.assertIn("同じ時間軸", MOTION_PROFILES["anime_emotional_mv"])
         cinema_motion = MOTION_PROFILES["cinema_mv"]
         self.assertIn("映画的な身体演技", cinema_motion)
         self.assertIn("接地と荷重移動", cinema_motion)
@@ -735,10 +729,10 @@ class DirectionEnhancerTests(unittest.TestCase):
             self.assertNotIn(animation_term, cinema_motion)
         self.assertIn("移動が不要なら静止構図", CAMERA_PROFILES["cinema_mv"])
         self.assertIn("reference_anime", STYLE_PROFILES)
-        self.assertIn("Subject定義と参照画像にある身体表面", STYLE_PROFILES["anime_story_mv"])
-        self.assertIn("局所的なglow、bloom", STYLE_PROFILES["anime_story_mv"])
-        self.assertIn("古傷", STYLE_PROFILES["anime_story_mv"])
-        self.assertIn("完成EMDのShotが可視の状態として明示", STYLE_PROFILES["anime_story_mv"])
+        self.assertIn("Subject定義と参照画像にある身体表面", STYLE_PROFILES["anime_emotional_mv"])
+        self.assertIn("局所的なglow、bloom", STYLE_PROFILES["anime_emotional_mv"])
+        self.assertIn("古傷", STYLE_PROFILES["anime_emotional_mv"])
+        self.assertIn("完成EMDのShotが可視の状態として明示", STYLE_PROFILES["anime_emotional_mv"])
         self.assertIn("cinema_mv", DIRECTION_PRESETS)
         self.assertIn("概ね半数", CAMERA_PROFILES["anime_emotional_mv"])
         self.assertIn("2.5秒以上", CAMERA_PROFILES["anime_emotional_mv"])
@@ -754,13 +748,10 @@ class DirectionEnhancerTests(unittest.TestCase):
             "指定された素材の連続した表面",
             STYLE_PROFILES["anime_emotional_mv"],
         )
-        self.assertIn("単なる歩行", MOTION_PROFILES["anime_emotional_mv"])
-        self.assertIn("短い閉眼、半開き、伏し目", MOTION_PROFILES["anime_emotional_mv"])
-        self.assertIn("そのSceneの元歌詞", MOTION_PROFILES["anime_emotional_mv"])
         self.assertNotIn("苔", MOTION_PROFILES["anime_emotional_mv"])
         self.assertNotIn("狐火", MOTION_PROFILES["anime_emotional_mv"])
         self.assertNotIn("灯籠", MOTION_PROFILES["anime_emotional_mv"])
-        self.assertGreaterEqual(len(DIRECTION_PRESETS), 5)
+        self.assertEqual(len(DIRECTION_PRESETS), 4)
 
     def test_environment_and_time_lighting_records_are_separate(self) -> None:
         backend = FakeDirectionBackend(

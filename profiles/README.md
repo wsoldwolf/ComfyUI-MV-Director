@@ -50,8 +50,11 @@ Motion profileに任意の `# モーション補完`を置けます。通常箇�
 ユーザー入力の同名sectionで全置換でき、`* 無効`で停止します。共通promptには入りません。
 作者確定のShot演技には追加しません。
 
-`anime_scene_author_mv`は補完なし、`anime_scene_composed_mv`は接地・荷重移動を含む補完ありです。
-付属WFのMotion既定は後者です。post_authorでは演技・Camera生成後に補完を合成します。
+Motionの`anime_emotional_mv`は、接地・荷重移動を含む補完ありの方式です。本文、render_prompt、
+post_author及びguarded_no_dropのmetadata、3件の補完候補を`anime_scene_composed_mv`と同一にしています。
+`anime_scene_composed_mv`は既存WFとの互換用に元のファイルを残しており、付属WFでの選択も引き続き有効です。
+post_authorでは演技・Camera生成後に補完を合成します。補完なしで使う場合は、ユーザー入力に
+`# モーション補完`と`* 無効`を記述します。
 guarded_no_dropは確定Event・Performance・Cameraを読み、候補番号だけをSceneごとに選び直します。
 確定本文は書き換えず、補完なしにもできません。不正応答は一回だけ再試行し、
 失敗時は元の巡回選択を維持します。補完による画質・自然さは動画で確認してください。
@@ -66,7 +69,11 @@ guarded_no_dropは確定Event・Performance・Cameraを読み、候補番号だ�
 ID付き `# 振付候補`も廃止しました。ユーザーの任意演出は `# 演出候補`、
 機械的な身体補完は `# モーション補完`へ分けて記述してください。
 旧実験profile `anime_choreography_mv`・`anime_scene_phrase_mv`は撤去しました。
-付属のStyle・Camera及び他のMotionの表現本文は保持しています。
+`anime_scene_author_mv`、`anime_story_mv`及び`limited_animation`は削除しました。
+旧WFでこれらを選択している場合は、該当欄を再選択してください。アニメ向けはStyle・Motion・Cameraの
+`anime_emotional_mv`を使用でき、Motionの`anime_scene_composed_mv`も互換用に残しています。
+従来の補完なしに相当する使い方は、上記の明示的な補完無効化で指定します。
+Style・Cameraの`anime_emotional_mv`、及び削除対象以外のprofile本文は変更していません。
 
 詳細は[EMD仕様](../docs/spec/emd-spec.md)及び
 [補完と演技のTIPS](../docs/tips/mechanical-motion-and-perceived-performance.md)を参照してください。

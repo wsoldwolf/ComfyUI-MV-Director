@@ -81,7 +81,7 @@ def production_inputs(text, user_request, target_scene=11, *, target_scenes=None
         motion_direction=common.get("モーション", ()),
         camera_direction=common.get("カメラ", ()),
         other_direction=common.get("その他", ()),
-        motion_profile_id="anime_scene_author_mv", motion_templates=(),
+        motion_profile_id="anime_emotional_mv", motion_templates=(),
         staging_candidates=candidates)
     concept = text.split("\n# シーン設定", 1)[0].strip() + "\n"
     scene_emd = "# シーン設定" + text.split("# シーン設定", 1)[1].split("# 共通プロンプト", 1)[0]
